@@ -100,7 +100,7 @@ export default class VectorRenderContext extends RenderContext {
    * @param {number} [options.maxPlanes=3] - The number of rendering planes
    * @param {boolean} [options.enableCulling=true] - Whether culling is enabled
    */
-  constructor(renderer, options = {enableCulling: true}) {
+  constructor(renderer, options = {enableCulling: false}) {
     super(renderer, options);
     
     // Initialize intermediate language state tracking
