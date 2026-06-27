@@ -1,10 +1,10 @@
 /**
- * Base ColliderComponent class for collision detection between GameObjects.
+ * Base Collider class for collision detection between GameObjects.
  * This class provides the fundamental mechanism for interacting with the world collision model
  * that all collider component subclasses inherit from.
  */
-import { COLLIDER_PRIORITY } from './../../constants';
-import { GameComponent, GameComponentError } from '../GameComponent.js';
+import { COLLIDER_PRIORITY } from '../../constants.js';
+import { ComponentPart, GameComponentError } from '../ComponentPart.js';
 
 /**
  * @class CollisionData
@@ -37,17 +37,17 @@ class CollisionData {
 };
 
 /**
- * Creates a new ColliderComponent instance
+ * Creates a new Collider instance
  * @param {GameObject} gameObject - The game object this collider belongs to
  * @param {Engine|null} engine - Optional reference to the Engine for global event access
  */
-class ColliderComponent extends GameComponent {
+class ColliderPart extends ComponentPart {
   /**
-   * Creates a ColliderComponent with common collision detection functionality
+   * Creates a ColliderPart with common collision detection functionality
    * @param {String} name - Optional name for this component
    * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'ColliderComponent', engine = null) {
+  constructor(name = 'ColliderPart', engine = null) {
     super(COLLIDER_PRIORITY, name, engine);
     
     this.setEngine(engine);
@@ -131,13 +131,13 @@ class ColliderComponent extends GameComponent {
    */
   checkCollision(otherObject) {
     if (!this.worldCollisionModel) {
-      throw new GameComponentError(this, 'ColliderComponent: world collision model not set');
+      throw new GameComponentError(this, 'ColliderPart: world collision model not set');
     }
     
     const thisShape = this.getCollisionShape();
-    const otherShape = otherObject.getComponent('Transform2dComponent') ? 
-                        otherObject.getComponent('AABBColliderComponent') : 
-                        otherObject.getComponent('Mover2dComponent') || 
+    const otherShape = otherObject.getComponent('Transform2d') ? 
+                        otherObject.getComponent('AABBCollider') : 
+                        otherObject.getComponent('Mover2d') || 
                         otherObject.getComponent('GameObject');
     
     if (!thisShape || !otherShape) {
@@ -161,7 +161,7 @@ class ColliderComponent extends GameComponent {
    * @returns {Object|null} Position data or null if no transform component exists
    */
   getPosition() {
-    const transform = this.getHost().getComponent('Transform2dComponent');
+    const transform = this.getHost().getComponent('Transform2d');
     if (!transform) {
       // Fall back to GameObject properties if available
       return { x: 0, y: 0 };
@@ -179,7 +179,7 @@ class ColliderComponent extends GameComponent {
    * @returns {Object|null} Scale data or null if no transform component exists
    */
   getScale() {
-    const transform = this.getHost().getComponent('Transform2dComponent');
+    const transform = this.getHost().getComponent('Transform2d');
     if (!transform) {
       return { x: 1, y: 1, z: 1 };
     }
@@ -196,7 +196,7 @@ class ColliderComponent extends GameComponent {
    * @returns {number|null} Rotation in radians or null if no transform component exists
    */
   getRotation() {
-    const transform = this.getHost().getComponent('Transform2dComponent');
+    const transform = this.getHost().getComponent('Transform2d');
     return transform ? (transform.rotation !== undefined ? transform.rotation : 0) : null;
   }
 
@@ -210,8 +210,8 @@ class ColliderComponent extends GameComponent {
     this.clearCollisions();
     
     // Perform collision detection if collider model is set and we have a transform
-    if (this.collisionModel && this.getHost().getComponent('Transform2dComponent')) {
-      const transform = this.getHost().getComponent('Transform2dComponent');
+    if (this.collisionModel && this.getHost().getComponent('Transform2d')) {
+      const transform = this.getHost().getComponent('Transform2d');
       
       // Check against all other objects in the world that are collidable
       const otherObjects = this.worldCollisionModel.getCollidableObjects();
@@ -222,7 +222,7 @@ class ColliderComponent extends GameComponent {
           let otherCollider;
           
           // Check if the other object already has a collider
-          const otherColliders = otherObject.getComponentsByType('ColliderComponent');
+          const otherColliders = otherObject.getComponentsByType('ColliderPart');
           if (otherColliders.length > 0) {
             otherCollider = otherColliders[0];
           } else if (otherCollider) {
@@ -236,11 +236,11 @@ class ColliderComponent extends GameComponent {
               const otherType = otherCollider.constructor.name;
               let collisionType = '';
               
-              if (thisType === 'AABBColliderComponent' || otherType === 'AABBColliderComponent') {
+              if (thisType === 'AABBCollider' || otherType === 'AABBCollider') {
                 collisionType = 'AxisAlignedBoundingBox';
-              } else if (thisType === 'ConvexHullColliderComponent' || otherType === 'ConvexHullColliderComponent') {
+              } else if (thisType === 'ConvexHullCollider' || otherType === 'ConvexHullCollider') {
                 collisionType = 'ConvexHull';
-              } else if (thisType === 'CABCColliderComponent' || otherType === 'CABCColliderComponent') {
+              } else if (thisType === 'CABCCollider' || otherType === 'CABCCollider') {
                 collisionType = 'CenterAlignedBoundaryCircle';
               }
               
@@ -296,6 +296,6 @@ class ColliderComponent extends GameComponent {
 }
 
 export default {
-  ColliderComponent,
+  ColliderPart,
   CollisionData
 };

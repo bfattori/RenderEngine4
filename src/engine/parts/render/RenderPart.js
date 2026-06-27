@@ -1,13 +1,13 @@
  /**
-@fileoverview GameComponent subclass for rendering functionality
+@fileoverview ComponentPart subclass for rendering functionality
 Provides a way for game objects to render to the context 
 */
-import { RENDER_PRIORITY } from './../../constants';
-import GameComponent from '../GameComponent.js';
-import Engine from './../../core/Engine.js';
+import { RENDER_PRIORITY } from '../../constants.js';
+import ComponentPart from '../ComponentPart.js';
+import Engine from '../../core/Engine.js';
 
-export default class RenderComponent extends GameComponent {
-    constructor(priority = RENDER_PRIORITY, name = 'RenderComponent') {
+export default class RenderPart extends ComponentPart {
+    constructor(priority = RENDER_PRIORITY, name = 'RenderPart') {
         super(RENDER_PRIORITY, name);
         this._context = Engine.getRenderContext();
         this._transformStackDepth = 0;

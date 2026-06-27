@@ -1,19 +1,19 @@
 /**
- * Mover2dComponent - Physics-based 2D movement component
+ * Mover2d - Physics-based 2D movement component
  * 
- * Extends Transform2dComponent to provide simple "physics-like" movement
+ * Extends Transform2d to provide simple "physics-like" movement
  * using linear and angular momentum properties. Does not implement direct
- * position/rotation/setters since those are inherited from Transform2dComponent.
+ * position/rotation/setters since those are inherited from Transform2d.
  * 
- * @class Mover2dComponent
- * @extends Transform2dComponent
+ * @class Mover2d
+ * @extends Transform2d
  */
 
-import Transform2dComponent from './Transform2dComponent.js';
-import { TRANSFORM_PRIORITY } from './../../constants';
+import Transform2d from './Transform2d.js';
+import { TRANSFORM_PRIORITY } from '../../constants.js';
 
 /**
- * Creates a new Mover2dComponent instance
+ * Creates a new Mover2d instance
  * 
  * @constructor
  * @param {Object} options - Configuration options
@@ -24,7 +24,7 @@ import { TRANSFORM_PRIORITY } from './../../constants';
  * @param {number} [options.maxSpeed=null] - Maximum speed cap (disabled if null)
  * @param {number} [options.drag=0] - Linear drag coefficient (0 = no drag)
  */
-class Mover2dComponent extends Transform2dComponent {
+class Mover2d extends Transform2d {
     /**
      * Velocity vector for linear motion [x, y]
      * @private
@@ -86,10 +86,10 @@ class Mover2dComponent extends Transform2dComponent {
     _persistVelocity = false;
 
     /**
-     * Creates a new Mover2dComponent instance
+     * Creates a new Mover2d instance
      * 
      * @param {number} [priority=TRANSFORM_PRIORITY] - Component update priority
-     * @param {string} [name='Mover2dComponent'] - Optional name for debugging
+     * @param {string} [name='Mover2d'] - Optional name for debugging
      * @param {Object} options - Configuration options
      * @param {Vector} [options.velocity=null] - Initial linear velocity vector [vx, vy]
      * @param {number} [options.angularVelocity=0] - Initial angular velocity in radians/frame
@@ -98,7 +98,7 @@ class Mover2dComponent extends Transform2dComponent {
      * @param {number} [options.maxSpeed=null] - Maximum speed cap (disabled if null)
      * @param {number} [options.drag=0] - Linear drag coefficient (0 = no drag)
      */
-    constructor(priority = TRANSFORM_PRIORITY.MOVER_2D, name = 'Mover2dComponent', options = {}) {
+    constructor(priority = TRANSFORM_PRIORITY.MOVER_2D, name = 'Mover2d', options = {}) {
         super(options);
 
         // Initialize with optional velocity
@@ -597,7 +597,7 @@ class Mover2dComponent extends Transform2dComponent {
      * @param {number} time - Current world time
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      * @param {Array} events - Array to push collision events to
-     * @returns {Transform2dComponent|null} This or boundary if collision handled
+     * @returns {Transform2d|null} This or boundary if collision handled
      */
     _checkBoundaryCollisions(time, deltaTime, events) {
         let collided = false;
@@ -750,7 +750,7 @@ class Mover2dComponent extends Transform2dComponent {
     }
 
     /**
-     * Deserializes a Mover2dComponent from saved state
+     * Deserializes a Mover2d from saved state
      * 
      * @param {Object} data - Serialized data object
      */
@@ -767,4 +767,4 @@ class Mover2dComponent extends Transform2dComponent {
     }
 }
 
-export default Mover2dComponent;
+export default Mover2d;

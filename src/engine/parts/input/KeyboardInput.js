@@ -1,22 +1,22 @@
  /**
-KeyboardInputComponent
+KeyboardInput
 Handles keyboard input and emits events about the state of the keyboard.
 This component interfaces with the system's keyboard event source and provides a unified interface for game objects to respond to keyboard input.
-@class KeyboardInputComponent
-@extends InputComponent 
+@class KeyboardInput
+@extends InputPart 
 */
-import Console from './../../core/Console.js';
-import InputComponent from './InputComponent.js';
-import { INPUT_PRIORITY } from './../../constants';
-import Engine from './../../core/Engine.js';
+import Console from '../../core/Console.js';
+import InputPart from './InputPart.js';
+import { INPUT_PRIORITY } from '../../constants.js';
+import Engine from '../../core/Engine.js';
 
-class KeyboardInputComponent extends InputComponent () {
+class KeyboardInput extends InputPart () {
     
     /**
      * Constructor
-     * @constructs KeyboardInputComponent
+     * @constructs KeyboardInput
      */
-    constructor(priority = INPUT_PRIORITY, name = 'KeyboardInputComponent') {
+    constructor(priority = INPUT_PRIORITY, name = 'KeyboardInput') {
         super(priority, name);
         this._lastKeyPressedTime = 0;
         this._keyHistory = []; // Track recently pressed keys to prevent repeat flooding
@@ -35,7 +35,7 @@ class KeyboardInputComponent extends InputComponent () {
         return {...super.state(), ...{
             keyCode: null,
             state: false,
-            modifiers: Object.assign({}, KeyboardInputComponent.DEFAULT_MODIFIERS),
+            modifiers: Object.assign({}, KeyboardInput.DEFAULT_MODIFIERS),
             repeat: true
         }};
     }
@@ -99,7 +99,7 @@ class KeyboardInputComponent extends InputComponent () {
         this.state = {
             keyCode: null,
             state: false,
-            modifier: Object.assign({}, KeyboardInputComponent.DEFAULT_MODIFIERS),
+            modifier: Object.assign({}, KeyboardInput.DEFAULT_MODIFIERS),
             repeat: true
         };
 
@@ -112,7 +112,7 @@ class KeyboardInputComponent extends InputComponent () {
      * @method bindKeyboardEvents
      */
     bindKeyboardEvents() {
-        Console.log('KeyboardInputComponent: Binding keyboard events');
+        Console.log('KeyboardInput: Binding keyboard events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:
@@ -130,7 +130,7 @@ class KeyboardInputComponent extends InputComponent () {
      * @param {number} deltaTime - Time elapsed since last frame in seconds
      */
    update(time, deltaTime) {
-        // Base implementation from InputComponent is inherited
+        // Base implementation from InputPart is inherited
         super.update(time, deltaTime);
         
         // Additional keyboard-specific logic here if needed
@@ -159,7 +159,7 @@ class KeyboardInputComponent extends InputComponent () {
             this._keyHistory.push(Date.now());
             
             // Emit key pressed event with new data
-            Engine.eventEngine.emitGlobal(InputComponent.INPUT_EVENTS.KEY_DOWN, {
+            Engine.eventEngine.emitGlobal(InputPart.INPUT_EVENTS.KEY_DOWN, {
                 keyCode: event.keyCode,
                 state: true,
                 modifiers: this.state.modifiers,
@@ -190,7 +190,7 @@ class KeyboardInputComponent extends InputComponent () {
         this.state.state = false;
         this.state.repeat = true; // This will be overridden next press
         
-        this.emitGlobal(InputComponent.INPUT_EVENTS.KEY_UP, {
+        this.emitGlobal(InputPart.INPUT_EVENTS.KEY_UP, {
             keyCode: event.keyCode,
             state: false,
             modifiers: this.state.modifiers,
@@ -213,7 +213,7 @@ class KeyboardInputComponent extends InputComponent () {
         if (event.key === 'Escape') {
             // Emit escape press if not already in our state
             if (!this.isModifierKeyPressed()) {
-                Engine.eventEngine.emit(InputComponent.INPUT_EVENTS.KEY_ESCAPE, { keyCode: KeyboardInputComponent.KEY_CODES.KEY_ESCAPE });
+                Engine.eventEngine.emit(InputPart.INPUT_EVENTS.KEY_ESCAPE, { keyCode: KeyboardInput.KEY_CODES.KEY_ESCAPE });
             }
         }
         
@@ -231,22 +231,22 @@ class KeyboardInputComponent extends InputComponent () {
      */
     updateModifierState(event, isPressed) {
         switch (event.keyCode) {
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_SHIFT:
-            case KeyboardInputComponent.KEY_CODES.KEY_RIGHT_SHIFT:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_SHIFT:
+            case KeyboardInput.KEY_CODES.KEY_RIGHT_SHIFT:
                 this.getCurrentState().modifier.shift = isPressed;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_CONTROL:
-            case KeyboardInputComponent.KEY_CODES.KEY_RIGHT_CONTROL:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_CONTROL:
+            case KeyboardInput.KEY_CODES.KEY_RIGHT_CONTROL:
                 this.getCurrentState().modifier.ctrl = isPressed;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_ALT:
-            case KeyboardInputComponent.KEY_CODES.KEY_RIGHT_ALT:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_ALT:
+            case KeyboardInput.KEY_CODES.KEY_RIGHT_ALT:
                 this.getCurrentState().modifier.alt = isPressed;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_WIN:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_WIN:
                 this.getCurrentState().modifier.cmd = isPressed; // Use cmd for Mac compatibility
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_MENU:
+            case KeyboardInput.KEY_CODES.KEY_MENU:
                 this.getCurrentState().modifier.option = isPressed; // Mac/Windows option key
                 break;
         }
@@ -259,22 +259,22 @@ class KeyboardInputComponent extends InputComponent () {
      */
     handleModifierRelease = function(event) {
         switch (event.keyCode) {
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_SHIFT:
-            case KeyboardInputComponent.KEY_CODES.KEY_RIGHT_SHIFT:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_SHIFT:
+            case KeyboardInput.KEY_CODES.KEY_RIGHT_SHIFT:
                 this.getCurrentState().modifier.shift = false;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_CONTROL:
-            case KeyboardInputComponent.KEY_CODES.KEY_RIGHT_CONTROL:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_CONTROL:
+            case KeyboardInput.KEY_CODES.KEY_RIGHT_CONTROL:
                 this.getCurrentState().modifier.ctrl = false;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_ALT:
-            case KeyboardInputComponent.KEY_CODES.KEY_RIGHT_ALT:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_ALT:
+            case KeyboardInput.KEY_CODES.KEY_RIGHT_ALT:
                 this.getCurrentState().modifier.alt = false;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_LEFT_WIN:
+            case KeyboardInput.KEY_CODES.KEY_LEFT_WIN:
                 this.getCurrentState().modifier.cmd = false;
                 break;
-            case KeyboardInputComponent.KEY_CODES.KEY_MENU:
+            case KeyboardInput.KEY_CODES.KEY_MENU:
                 this.getCurrentState().modifier.option = false;
                 break;
         }
@@ -287,7 +287,7 @@ class KeyboardInputComponent extends InputComponent () {
         this.state = {
             keyCode: null,
             state: false,
-            modifier: Object.assign({}, KeyboardInputComponent.DEFAULT_MODIFIERS),
+            modifier: Object.assign({}, KeyboardInput.DEFAULT_MODIFIERS),
             repeat: true
         };
         this.lastKeyPressedTime = 0;
@@ -393,4 +393,4 @@ class KeyboardInputComponent extends InputComponent () {
     }
 }
 
-export default KeyboardInputComponent;
+export default KeyboardInput;

@@ -1,34 +1,34 @@
 /**
- * CABCColliderComponent - Center-Aligned Bounding Circle collision detection
+ * CABCCollider - Center-Aligned Bounding Circle collision detection
  * 
- * This collider component uses the Transform2dComponent's position and a radius to define
+ * This collider component uses the Transform2d's position and a radius to define
  * the bounding circle for collision detection between GameObject instances. It considers
  * the position and scale of the GameObject to calculate the bounding circle for collision.
  * 
- * @class CABCColliderComponent
- * @extends ColliderComponent
+ * @class CABCCollider
+ * @extends ColliderPart
  */
 
-import ColliderComponent from './ColliderComponent.js';
+import ColliderPart from './ColliderPart.js';
 import CABCShape from '../../collisions/models/CABC.js';
 import Console from '../../core/Console.js';
 
 /**
- * Creates a new CABBColliderComponent instance
+ * Creates a new CABBCollider instance
  * @param {GameObject} gameObject - The game object this collider belongs to
  * @param {Engine|null} engine - Optional reference to the Engine for global event access
  */
-class CABCColliderComponent extends ColliderComponent {
+class CABCCollider extends ColliderPart {
   /**
-   * Creates a CABCColliderComponent that detects collisions using center-aligned
-   * bounding circles (CABC). It uses the Transform2dComponent's position and a 
+   * Creates a CABCCollider that detects collisions using center-aligned
+   * bounding circles (CABC). It uses the Transform2d's position and a 
    * radius to define the collision circle.
    * 
    * @constructor
    * @param {String} name - Optional name for this component
    * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'CABCColliderComponent', engine = null) {
+  constructor(name = 'CABCCollider', engine = null) {
     super(name, engine);
     
     /**
@@ -51,7 +51,7 @@ class CABCColliderComponent extends ColliderComponent {
   }
 
   /**
-   * Overrides setCollisionModel to validate CABCColliderComponent compatibility
+   * Overrides setCollisionModel to validate CABCCollider compatibility
    * and warn if an incompatible collision model is used.
    * 
    * @param {CollisionModel} collisionModel - The collision model from GameWorld
@@ -62,7 +62,7 @@ class CABCColliderComponent extends ColliderComponent {
     // Validate that the collision model type matches the collider component type
     if (collisionModel && collisionModel.type !== 'CABC') {
       Console.warn(
-        `CABCColliderComponent: Incompatible collision model detected. ` +
+        `CABCCollider: Incompatible collision model detected. ` +
         `Expected CABCCollisionModel, got ${collisionModel.type || 'unknown'}.` +
         `This may cause unexpected collision behavior.`
       );
@@ -95,9 +95,9 @@ class CABCColliderComponent extends ColliderComponent {
   getCollisionShape() {
     const position = this.getPosition();
     
-    // Calculate radius based on object dimensions using Transform2dComponent
+    // Calculate radius based on object dimensions using Transform2d
     let width, height;
-    const transform = this.getHost().getComponent('Transform2dComponent');
+    const transform = this.getHost().getComponent('Transform2d');
     
     if (!transform) {
       return new CABCShape(position, 10);
@@ -133,7 +133,7 @@ class CABCColliderComponent extends ColliderComponent {
     
     // Get collision shapes for both objects
     const thisShape = this.getCollisionShape();
-    const otherCollider = otherObject.getComponent('CABCColliderComponent');
+    const otherCollider = otherObject.getComponent('CABCCollider');
     
     if (!otherCollider) {
       // No CABC collider on other object - cannot check collision
@@ -148,7 +148,7 @@ class CABCColliderComponent extends ColliderComponent {
       return this.isCollided();
     } catch (error) {
       Console.error(
-        `CABCColliderComponent: Error during collision detection. ` +
+        `CABCCollider: Error during collision detection. ` +
         `This may be due to incompatible collision model.`
       );
       return false;
@@ -170,7 +170,7 @@ class CABCColliderComponent extends ColliderComponent {
     
     // Get collision shapes for both objects
     const thisShape = this.getCollisionShape();
-    const otherCollider = otherObject.getComponent('CABCColliderComponent');
+    const otherCollider = otherObject.getComponent('CABCCollider');
     
     if (!otherCollider) {
       return null;
@@ -183,7 +183,7 @@ class CABCColliderComponent extends ColliderComponent {
       return collisionModel.calculateSeparatingAxis(thisShape, otherShape);
     } catch (error) {
       Console.error(
-        `CABCColliderComponent: Error calculating collision info.` +
+        `CABCCollider: Error calculating collision info.` +
         `This may be due to incompatible collision model.`
       );
       return null;
@@ -202,4 +202,4 @@ class CABCColliderComponent extends ColliderComponent {
   }
 }
 
-export default CABCColliderComponent;
+export default CABCCollider;

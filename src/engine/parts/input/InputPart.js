@@ -1,24 +1,24 @@
 /**
- * InputComponent
+ * Input
  * 
  * Base class for input components that handle user input and emit events about input state.
  * This component provides a unified interface for receiving keyboard, mouse, and other input sources.
  * 
- * @class InputComponent
+ * @class Input
  * @extends GameComponent
  */
 
 import Console from '../../core/Console.js';
-import { INPUT_PRIORITY } from './../../constants';
-import { GameComponent, GameComponentError } from '../GameComponent.js';
+import { INPUT_PRIORITY } from '../../constants.js';
+import { ComponentPart, GameComponentError } from '../ComponentPart.js';
 
 /**
- * Creates a new InputComponent instance
+ * Creates a new Input instance
  * @param {number} priority - Priority for execution order (defaults to 1.0)
- * @constructs InputComponent
+ * @constructs Input
  */
-class InputComponent extends GameComponent {
-    constructor(priority = INPUT_PRIORITY, name = 'InputComponent') {
+class InputPart extends ComponentPart {
+    constructor(priority = INPUT_PRIORITY, name = 'Input') {
         super(priority, name);
     
         // Input state storage
@@ -52,7 +52,7 @@ class InputComponent extends GameComponent {
     //--------------------------------
 
     resetState() {
-        throw new GameComponentError(this, 'InputComponent.resetState() must be implemented by subclasses');
+        throw new GameComponentError(this, 'Input.resetState() must be implemented by subclasses');
     }
 
     /**
@@ -107,4 +107,4 @@ class InputComponent extends GameComponent {
 
 }
 
-export default InputComponent;
+export default InputPart;

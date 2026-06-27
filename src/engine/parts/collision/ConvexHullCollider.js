@@ -1,33 +1,33 @@
 /**
- * ConvexHullColliderComponent - Convex hull collision detection
+ * ConvexHullCollider - Convex hull collision detection
  * 
  * This collider component uses the world's convex hull collision model for collision detection
  * instead of internal SAT logic. It considers the position and scale of the GameObject to 
  * calculate the convex hull based on render context type.
  * 
- * @class ConvexHullColliderComponent
- * @extends ColliderComponent
+ * @class ConvexHullCollider
+ * @extends ColliderPart
  */
 
-import ColliderComponent from './ColliderComponent.js';
+import ColliderPart from './ColliderPart.js';
 import Console from '../../core/Console.js';
 import ConvexHullCollisionModel from '../../collisions/models/ConvexHull.js';
 
 /**
- * Creates a new ConvexHullColliderComponent instance
+ * Creates a new ConvexHullCollider instance
  * @param {String|null} name - The name of the collider component
  * @param {Engine|null} engine - Optional reference to the Engine for global event access
  */
-class ConvexHullColliderComponent extends ColliderComponent {
+class ConvexHullCollider extends ColliderPart {
   /**
-   * Creates a ConvexHullColliderComponent that detects collisions using convex hulls.
+   * Creates a ConvexHullCollider that detects collisions using convex hulls.
    * For vector objects, hull is based on points. For raster objects, hull is based on pixels.
    * 
    * @constructor
    * @param {String|null} name - The optional name of the collider component
    * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'ConvexHullColliderComponent', engine = null) {
+  constructor(name = 'ConvexHullCollider', engine = null) {
     super(name, engine);
     
     /**
@@ -56,7 +56,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
   }
 
   /**
-   * Overrides setCollisionModel to validate ConvexHullColliderComponent compatibility
+   * Overrides setCollisionModel to validate ConvexHullCollider compatibility
    * and warn if an incompatible collision model is used.
    * 
    * @param {CollisionModel} collisionModel - The collision model from GameWorld
@@ -67,7 +67,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
     // Validate that the collision model type matches the collider component type
     if (collisionModel && collisionModel.type !== 'ConvexHull') {
       Console.warn(
-        `ConvexHullColliderComponent: Incompatible collision model detected. ` +
+        `ConvexHullCollider: Incompatible collision model detected. ` +
         `Expected ConvexHullCollisionModel, got ${collisionModel.type || 'unknown'}.` +
         `This may cause unexpected collision behavior.`
       );
@@ -134,7 +134,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
     
     if (this.renderContextType === 'vector') {
       // For vector objects, use transform scale and position to create hull
-      const transform = this.gameObject.getComponent('Transform2dComponent');
+      const transform = this.gameObject.getComponent('Transform2d');
       
       if (!transform) {
         return null;
@@ -171,7 +171,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
     // For raster objects, we use a simplified approach:
     // Calculate bounding box from visible pixels (or use sprite dimensions if available)
     
-    const sprite = this.gameObject.getComponent('RasterRenderComponent');
+    const sprite = this.gameObject.getComponent('RasterRender');
     
     if (!sprite || !sprite.width || !sprite.height) {
       // Default to simple square hull if no sprite data
@@ -212,7 +212,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
     
     // Get collision shapes for both objects
     const thisShape = this.getCollisionShape();
-    const otherColliders = otherObject.getComponentsByType('ConvexHullColliderComponent');
+    const otherColliders = otherObject.getComponentsByType('ConvexHullCollider');
     
     if (otherColliders.length === 0) {
       // No ConvexHull collider on other object - cannot check collision
@@ -227,7 +227,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
       return this.isCollided();
     } catch (error) {
       Console.error(
-        `ConvexHullColliderComponent: Error during collision detection. ` +
+        `ConvexHullCollider: Error during collision detection. ` +
         `This may be due to incompatible collision model.`
       );
       return false;
@@ -249,7 +249,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
     
     // Get collision shapes for both objects
     const thisShape = this.getCollisionShape();
-    const otherColliders = otherObject.getComponentsByType('ConvexHullColliderComponent');
+    const otherColliders = otherObject.getComponentsByType('ConvexHullCollider');
     
     if (otherColliders.length === 0) {
       return null;
@@ -262,7 +262,7 @@ class ConvexHullColliderComponent extends ColliderComponent {
       return collisionModel.calculateSeparatingAxis(thisShape, otherShape);
     } catch (error) {
       Console.error(
-        `ConvexHullColliderComponent: Error calculating collision info.` +
+        `ConvexHullCollider: Error calculating collision info.` +
         `This may be due to incompatible collision model.`
       );
       return null;
@@ -282,4 +282,4 @@ class ConvexHullColliderComponent extends ColliderComponent {
   }
 }
 
-export default ConvexHullColliderComponent;
+export default ConvexHullCollider;

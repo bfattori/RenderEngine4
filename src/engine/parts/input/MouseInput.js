@@ -1,18 +1,18 @@
  /**
-MouseInputComponent
+MouseInput
 Handles mouse input and emits events about the state of the mouse.
 This component interfaces with the system's mouse event source and provides a unified interface for game objects to respond to mouse input.
-@class MouseInputComponent
-@extends InputComponent */
+@class MouseInput
+@extends Input */
 
-import Console from './../../core/Console.js';
-import InputComponent from './InputComponent.js';
-import { INPUT_PRIORITY } from './../../constants';
-import Engine from './../../core/Engine.js';
+import Console from '../../core/Console.js';
+import InputPart from './InputPart.js';
+import { INPUT_PRIORITY } from '../../constants.js';
+import Engine from '../../core/Engine.js';
 
-class MouseInputComponent extends InputComponent {
+class MouseInput extends InputPart {
 
-    constructor(priority = INPUT_PRIORITY, name = 'MouseInputComponent') {
+    constructor(priority = INPUT_PRIORITY, name = 'MouseInput') {
         super(priority, name);
     
         this._lastMouseMoveTime = 0;
@@ -154,7 +154,7 @@ class MouseInputComponent extends InputComponent {
      * @method bindMouseEvents
      */
     bindMouseEvents() {
-        Console.log('MouseInputComponent: Binding mouse events');
+        Console.log('MouseInput: Binding mouse events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:
@@ -200,7 +200,7 @@ class MouseInputComponent extends InputComponent {
         });
         
         // Publish mouse down event with new data
-        Engine.eventEngine.emit(InputComponent.INPUT_EVENTS.MOUSE_DOWN, {
+        Engine.eventEngine.emit(Input.INPUT_EVENTS.MOUSE_DOWN, {
             button: buttonName,
             position: [event.clientX, event.clientY],
             delta: [0, 0], // No movement yet
@@ -229,7 +229,7 @@ class MouseInputComponent extends InputComponent {
         this.state.repeat = true;
         
         // Publish mouse up event with new data
-        Engine.eventEngine.emit(InputComponent.INPUT_EVENTS.MOUSE_UP, {
+        Engine.eventEngine.emit(Input.INPUT_EVENTS.MOUSE_UP, {
             button: buttonName,
             position: [event.clientX, event.clientY],
             delta: [0, 0],
@@ -254,7 +254,7 @@ class MouseInputComponent extends InputComponent {
         this.state.repeat = false; // This is new mouse movement data
         
         // Publish mouse move event with new data
-        Engine.eventEngine.emit(InputComponent.INPUT_EVENTS.MOUSE_MOVE, {
+        Engine.eventEngine.emit(Input.INPUT_EVENTS.MOUSE_MOVE, {
             position: [event.clientX, event.clientY],
             delta: [deltaX, deltaY],
             repeat: false
@@ -273,7 +273,7 @@ class MouseInputComponent extends InputComponent {
         const wheelDelta = Math.round((event.detail || event.wheelDeltaY || 0) / 120);
         
         // Publish wheel event with new data
-        Engine.eventEngine.emitGlobal(InputComponent.INPUT_EVENTS.WHEEL, {
+        Engine.eventEngine.emitGlobal(Input.INPUT_EVENTS.WHEEL, {
             position: [...this.position],
             delta: wheelDelta,
             repeat: false
@@ -316,7 +316,7 @@ class MouseInputComponent extends InputComponent {
      * @param {number} deltaTime - Time elapsed since last frame in seconds
      */
     update(time, deltaTime) {
-        // Base implementation from InputComponent is inherited
+        // Base implementation from Input is inherited
         super.update(time, deltaTime);
         
         // Additional mouse-specific logic here if needed
@@ -368,4 +368,4 @@ class MouseInputComponent extends InputComponent {
         
 }
 
-export default MouseInputComponent;
+export default MouseInput;

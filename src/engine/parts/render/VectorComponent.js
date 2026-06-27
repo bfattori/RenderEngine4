@@ -1,10 +1,10 @@
 import Engine from '../../core/Engine.js';
-import GameComponentError from '../GameComponent.js';
-import RenderComponent from './RenderComponent.js';
+import GameComponentError from '../ComponentPart.js';
+import RenderPart from './RenderPart.js';
 
-export default class VectorComponent extends RenderComponent {
+export default class VectorRender extends RenderComponent {
     constructor(priority, name) {
-        super(priority, name = 'VectorComponent');
+        super(priority, name = 'VectorRender');
         this._instructions = [];
         this._render = {};
 

@@ -1,22 +1,22 @@
 /**
- * TransformComponent - Base transform component for game objects
+ * TransformPart - Base transform component for game objects
  * 
  * Responsible for maintaining and updating a GameObject's position, rotation, and scale.
  * Handles world collision events and boundary checks.
  * 
- * This is the base class for all transform components. Subclasses (like Transform2dComponent)
+ * This is the base class for all transform components. Subclasses (like Transform2d)
  * implement coordinate-specific functionality such as matrix math or physics-based movement.
  * 
- * @class TransformComponent
- * @extends GameComponent
+ * @class TransformPart
+ * @extends ComponentPart
  */
 
-import { TRANSFORM_PRIORITY } from './../../constants';
-import GameComponent from '../GameComponent.js';
+import { TRANSFORM_PRIORITY } from '../../constants.js';
+import ComponentPart from '../ComponentPart.js';
 
-class TransformComponent extends GameComponent {
+class TransformPart extends ComponentPart {
     /**
-     * Creates a new TransformComponent instance
+     * Creates a new TransformPart instance
      * 
      * @constructor
      * @param {number} priority - Execution priority for the component
@@ -31,7 +31,7 @@ class TransformComponent extends GameComponent {
      * @param {number} [options.scale[1]=1] - Y scale factor
      * @param {Object} [options.colliderModel=null] - Optional collision model reference
      */
-    constructor(priority = TRANSFORM_PRIORITY, name = 'TransformComponent', options = {}) {
+    constructor(priority = TRANSFORM_PRIORITY, name = 'TransformPart', options = {}) {
         super(priority, name);
         this.x = options.position ? options.position[0] : 0;
         this.y = options.position ? options.position[1] : 0;
@@ -194,7 +194,7 @@ class TransformComponent extends GameComponent {
      * @returns {Array|null} 3x3 transformation matrix as and array of 3 rows (each an array of 3 elements), or null if not implemented
      */
     get transformMatrix() {
-        // Base TransformComponent does not implement matrix math - subclasses should override
+        // Base TransformPart does not implement matrix math - subclasses should override
         return null;
     }
 
@@ -248,7 +248,7 @@ class TransformComponent extends GameComponent {
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
     _applyTransformLogic(deltaTime) {
-        this.host.getComponentsByType(RenderComponent)
+        this.host.getComponentsByType(RenderPart)
             .forEach(renderComponent => renderComponent.pushTransform(this.transformMatrix));
 
         return this;
@@ -369,4 +369,4 @@ class TransformComponent extends GameComponent {
     }
 }
 
-export default TransformComponent;
+export default TransformPart;

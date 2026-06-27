@@ -1,10 +1,10 @@
  /**
-@fileoverview GameComponent subclass for Sound functionality
+@fileoverview ComponentPart subclass for Sound functionality
 Provides a way for game objects to playback sound effects with simple methods 
 */
-import Console from './../../core/Console.js';
-import { SOUND_PRIORITY } from './../../constants';
-import GameComponent from '../GameComponent.js';
+import Console from '../../core/Console.js';
+import { SOUND_PRIORITY } from '../../constants.js';
+import ComponentPart from '../ComponentPart.js';
 import SoundSystemError from '../../sound/SoundSystem.js';
 
 /**
@@ -15,8 +15,8 @@ import SoundSystemError from '../../sound/SoundSystem.js';
  * @property {number} pan - Pan value (-1.0 left to 1.0 right)
  */
 
-class SoundComponent extends GameComponent {
-    constructor(priority = SOUND_PRIORITY, name = 'SoundComponent', soundSystem = null) {
+class SoundPart extends ComponentPart {
+    constructor(priority = SOUND_PRIORITY, name = 'SoundPart', soundSystem = null) {
         super(priority, name);
         this._audioSystem = soundSystem || null;
         
@@ -407,4 +407,4 @@ class SoundComponent extends GameComponent {
     }
 }
 
-export default SoundComponent;
+export default SoundPart;

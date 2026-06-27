@@ -1,18 +1,18 @@
 /**
- * Transform2dComponent - 2D transform component with matrix math support
+ * Transform2d - 2D transform component with matrix math support
  * 
- * Extends TransformComponent to provide 2D Cartesian coordinate system support
+ * Extends TransformPart to provide 2D Cartesian coordinate system support
  * including rotation, scale operations, and matrix-based transformations for improved performance.
  * 
- * @class Transform2dComponent
- * @extends TransformComponent
+ * @class Transform2d
+ * @extends TransformPart
  */
-import TransformComponent from './TransformComponent.js';
-import { TRANSFORM_PRIORITY } from './../../constants';
+import TransformPart from './TransformPart.js';
+import { TRANSFORM_PRIORITY } from '../../constants.js';
 
-class Transform2dComponent extends TransformComponent {
+class Transform2d extends TransformPart {
     /**
-     * Creates a new Transform2dComponent instance
+     * Creates a new Transform2d instance
      * 
      * @constructor
      * @param {Object} options - Configuration options
@@ -24,7 +24,7 @@ class Transform2dComponent extends TransformComponent {
      * @param {number} [options.scale[0]=1] - Scale factor for X axis
      * @param {number} [options.scale[1]=1] - Scale factor for Y axis
      */
-    constructor(priority = TRANSFORM_PRIORITY, name = 'Transform2dComponent', options = {}) {
+    constructor(priority = TRANSFORM_PRIORITY, name = 'Transform2d', options = {}) {
         super(priority, name, options);
         
         /**
@@ -340,4 +340,4 @@ class Transform2dComponent extends TransformComponent {
 
 }
 
-export default Transform2dComponent;
+export default Transform2d;

@@ -1,33 +1,33 @@
 /**
- * AABBColliderComponent - Axis-Aligned Bounding Box collision detection
+ * AABBCollider - Axis-Aligned Bounding Box collision detection
  * 
  * This collider component focuses on optimized box-to-box collisions regardless of 
  * rotation from the TransformComponent. It considers the position and scale of the
  * GameObject to calculate the world-axis aligned box for collision detection.
  * 
- * @class AABBColliderComponent
- * @extends ColliderComponent
+ * @class AABBCollider
+ * @extends ColliderPart
  */
 
-import ColliderComponent from './ColliderComponent.js';
+import ColliderPart from './ColliderPart.js';
 import AABBShape from '../../collisions/CollisionModel.js'
 import Console from '../../core/Console.js'; // Import Console for warnings
 
 /**
- * Creates a new AABBColliderComponent instance
+ * Creates a new AABBCollider instance
  * @param {GameObject} gameObject - The game object this collider belongs to
  * @param {Engine|null} engine - Optional reference to the Engine for global event access
  */
-class AABBColliderComponent extends ColliderComponent {
+class AABBCollider extends ColliderPart {
   /**
-   * Creates an AABBColliderComponent that detects collisions using axis-aligned 
+   * Creates an AABBCollider that detects collisions using axis-aligned 
    * bounding boxes (AABB) that ignore rotation from TransformComponent.
    * 
    * @constructor
    * @param {GameObject} gameObject - The parent game object
    * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'AABBColliderComponent', engine = null) {
+  constructor(name = 'AABBCollider', engine = null) {
     super(name, engine);
         
     /**
@@ -101,7 +101,7 @@ class AABBColliderComponent extends ColliderComponent {
     
     // Validate that the collision model type matches the collider component type
     if (!this._validateCollisionModelCompatibility(model)) {
-      Console.warn(`AABBColliderComponent: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
+      Console.warn(`AABBCollider: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
       this.isCollided() = false;
     }
   }
@@ -166,7 +166,7 @@ class AABBColliderComponent extends ColliderComponent {
    */
   getOtherObjectAABB(otherObject) {
     // Try to get the collider component first
-    const otherColliders = otherObject.getComponentsByType('ColliderComponent');
+    const otherColliders = otherObject.getComponentsByType('ColliderPart');
     
     for (const collider of otherColliders) {
       const shape = collider.getCollisionShape();
@@ -270,4 +270,4 @@ class AABBColliderComponent extends ColliderComponent {
   }
 }
 
-export default AABBColliderComponent;
+export default AABBCollider;

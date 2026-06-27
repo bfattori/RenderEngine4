@@ -2,27 +2,27 @@
  * Base class for all game components.
  * Components provide functionality to GameObjects and are executed in priority order.
  */
-import defaultPriority from './../constants.js';
+import defaultPriority from '../constants.js';
 import Engine from '../core/Engine.js';
 import GameObjectError from '../gameobject/GameObject.js';
 
 /**
- * GameComponentError contains the {@link GameComponent} related to the error.
+ * ComponentPartError contains the {@link ComponentPart} related to the error.
  * @param {GameObject} component - The GameObject this error relates to.
  * @param {String} message - The error message.
  * @param {Error} rootCause - Optional root cause Error instance
  * @extends GameObjectError
  */
-class GameComponentError extends GameObjectError {
+class ComponentPartError extends GameObjectError {
   constructor(component, message, rootCause) {
     super(component.host, message, rootCause);
     this.component = component;
   }
 }
 
-export default class GameComponent {
+export default class ComponentPart {
   /**
-   * Creates a new GameComponent instance
+   * Creates a new ComponentPart instance
    * @param {number} priority - Priority of execution (0.0 to 1.0, with 1.0 being highest)
    * @param {string} name - Optional name for this component
    */
@@ -91,7 +91,7 @@ export default class GameComponent {
    */
   set priority(newPriority) {
     if (newPriority < 0 || newPriority > 1) {
-      throw new GameComponentError(this, 'Component priority must be between 0.0 and 1.0');
+      throw new ComponentPartError(this, 'Component priority must be between 0.0 and 1.0');
     }
     this._priority = newPriority;
   }
@@ -140,7 +140,7 @@ export default class GameComponent {
    */
   update(time, deltaTime) {
     // Base class does nothing. Subclasses should implement specific logic.
-    throw new GameComponentError(this, 'GameComponent.update() must be implemented by subclasses');
+    throw new ComponentPartError(this, 'ComponentPart.update() must be implemented by subclasses');
   }
 
   /**
@@ -228,5 +228,5 @@ export default class GameComponent {
 }
 
 export { 
-  GameComponentError
+  ComponentPartError
 };

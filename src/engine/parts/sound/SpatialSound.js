@@ -1,9 +1,9 @@
  /**
-@fileoverview SpatialSoundComponent - Advanced spatialized sound component
+@fileoverview SpatialSound - Advanced spatialized sound component
 Uses position and orientation data for 3D audio positioning 
 */
 import Console from '../../core/Console.js';
-import SoundComponent from './SoundComponent.js';
+import SoundPart from './SoundPart.js';
 import { SOUND_PRIORITY } from '../../constants.js';
 
 /**
@@ -14,11 +14,11 @@ import { SOUND_PRIORITY } from '../../constants.js';
  */
 
 /**
- * SpatialSoundComponent provides advanced spatialized audio playback with 
+ * SpatialSound provides advanced spatialized audio playback with 
  * position, orientation, and distance-based volume attenuation.
  */
-class SpatialSoundComponent extends SoundComponent {
-    constructor(priority = SOUND_PRIORITY, name = 'SpatialSoundComponent', soundSystem = null, positionData = null) {
+class SpatialSound extends SoundPart {
+    constructor(priority = SOUND_PRIORITY, name = 'SpatialSound', soundSystem = null, positionData = null) {
         super(priority, name, soundSystem);
         
         // Position tracking for spatialization
@@ -339,4 +339,4 @@ class SpatialSoundComponent extends SoundComponent {
     }
 }
 
-export default SpatialSoundComponent;
+export default SpatialSound;
