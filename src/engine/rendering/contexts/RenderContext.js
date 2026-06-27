@@ -93,7 +93,115 @@ export default class RenderContext {
     this.instructionBuffer = [];
 
     this._immediate = false;
+    
+    this._cursor = [0, 0];
+    this._cursorLimits = [...this._viewport];
+    this._lineHeight = 40;
   }
+
+  //--------------------------------------------
+  // text and cursor
+  //--------------------------------------------
+
+  /**
+   * The renderer line height for text
+   * @return number
+   */
+  get lineHeight() {
+    return this._lineHeight;
+  }
+
+  /**
+   * Set the line height for text
+   * @param {number} height - The line height
+   */
+  set lineHeight(height) {
+    this._lineHeight = height;
+  }
+
+  /**
+   * Get the current cursor position
+   * @returns {Array<number>} The cursor [x, y]
+   */
+  get cursor() {
+    return this._cursor;
+  }
+
+  /**
+   * Get the cursor X position
+   * @returns {number}
+   */
+  get cursorX() {
+    return this._cursor[0];
+  }
+
+  /**
+   * Get the cursor Y position
+   * @returns {number}
+   */
+  get cursorY() {
+    return this._cursor[1];
+  }
+
+  /**
+   * Set the cursor X position
+   * @param {number} x - The X position
+   */
+  set cursorX(x) {
+    this._cursor[0] = x;
+  }
+
+  /**
+   * Set the cursor Y position
+   * @param {number} y - The Y position
+   */
+  set cursorY(y) {
+    this._cursor[1] = y;
+  }
+
+  /**
+   * The the cursor position
+   * @param {Array<number>} [x, y] - The cursor position
+   */
+  set cursor([x, y]) {
+    this._cursor = [x, y];
+  }
+
+  /**
+   * Add a delta value to the X position of the cursor.
+   * @param {number} delta - The value to modify the X position by
+   */
+  set cursorDeltaX(delta) {
+    this._cursor[0] += delta;
+  }
+
+  /**
+   * Add a delta value to the Y poisition of the cursor.
+   * @param {number} delta - The value to modify the Y poisition by
+   */
+  set cursorDeltaY(delta) {
+    this._cursor[1] += delta;
+  }
+
+  /**
+   * Get the boundaries for text rendering.
+   * @returns {Array<number>} [left, top, width, height]
+   */
+  get cursorLimits() {
+    return this._cursorLimits;
+  }
+
+  /**
+   * Set the boundaries for the text being drawn.
+   * @param {Array<number>} [left, top, width, height]
+   */
+  set cursorLimits([left, top, width, height]) {
+    this._cursorLimits = [left, top, width, height];
+  }
+
+  //-----------------------------
+  // viewport and world
+  //------------------------------
 
   set viewport(viewport) {
     this._viewport = viewport;
@@ -107,10 +215,18 @@ export default class RenderContext {
     this._worldDimensions = dims;
   }
   
+  /**
+   * Determine if render commands will be processed immediately by the renderer, or cached until an entire frame has been generated.
+   * @return {boolean} True if the context is in immediate mode
+   */
   get immediateMode() {
     return this._immediate;
   }
 
+  /**
+   * Set whether render commands should be processed immediately by the renderer.
+   * @param {boolean} state - Whether to enable immediate mode
+   */
   set immediateMode(state) {
     this._immediate = state;
   }
@@ -124,6 +240,22 @@ export default class RenderContext {
   }
 
   /**
+   * Returns the instructions for rendering.
+   */
+  get renderInstructions() {
+    return this.instructionBuffer;
+  }
+
+  /**
+   * Set the cursor X back to the starting cursor position and
+   * advance the line by the line height.
+   */
+  carriageReturn() {
+    this.cursor = 0;
+    this.cursorDeltaY += this._lineHeight;
+  }
+
+  /**
    * Updates the rendering state based on current world time and delta
    * @param {number} currentTime - Current game time in milliseconds
    * @param {number} deltaTime - Time since last update in milliseconds
@@ -134,13 +266,6 @@ export default class RenderContext {
     // Default implementation does nothing
     this.lastUpdateTime = currentTime;
     return true;
-  }
-
-  /**
-   * Returns the instructions for rendering.
-   */
-  get renderInstructions() {
-    return this.instructionBuffer;
   }
 
   /**

@@ -87,7 +87,12 @@ export default class CanvasRenderer extends Renderer {
         };
         // assemble the instructions
         instructions.forEach(i => {
-            assembled.push(this._assemble(i, shapeContext));
+            if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
+                // a comment
+                assembled.push(i);
+            } else {
+                assembled.push(this._assemble(i, shapeContext));
+            }
         });
         
         // assemble the function with its drawing context
@@ -187,6 +192,9 @@ export default class CanvasRenderer extends Renderer {
                     `this.surface.ellipse(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});` +
                     args[6] === 1 ? 'this.surface.fill();' : 'this.surface.stroke();';
                 break;
+            case vector.MOVETO:
+                return `this.surface.moveTo(${args[0]}, ${args[1]});`
+                break;
         }    
     }
 
@@ -230,6 +238,7 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.fill();
                 break;
             case vector.LINESEG:
+                this._path = new Path2D;
                 curPath = new Path2D();
                 fillSeg = args[0];
                 break;
@@ -269,6 +278,9 @@ export default class CanvasRenderer extends Renderer {
                 } else {
                     this.surface.stroke();
                 }
+                break;
+            case vector.MOVETO:
+                this.surface.moveTo(args[0], args[1]);
                 break;
         }
     }

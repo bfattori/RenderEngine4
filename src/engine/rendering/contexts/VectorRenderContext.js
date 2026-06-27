@@ -13,9 +13,11 @@ import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 const IL_INSTRUCTIONS = {
   // Decorator Instructions (State Modifiers)
   COLOR: 'COLOR',
+  FONTSIZE: 'FONTSIZE',
   FILL: 'FILL',
   WIDTH: 'WIDTH',
   TOGGLE: 'TOGGLE',
+  MOVETO: 'MOVETO',
   
   // Transformation matrix Instructions (State Modifiers)
   TRANSFORM: 'TRANSFORM',
@@ -336,6 +338,14 @@ export default class VectorRenderContext extends RenderContext {
         return renderContext.render;
       },
       
+      /**
+       * Perform a "carriage return", advancing the cursor down one line and resetting the
+       * cursor back to the value in index 0 of `RenderContext.cursorLimits`.
+       */
+      carriageReturn: () => {
+        renderContext.carriageReturn();
+      },
+
       /**
        * Draw a point at specified coordinates
        * @param {Array} [pos=[x, y]] - Point coordinates [x, y] in screen space

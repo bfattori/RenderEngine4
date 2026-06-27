@@ -31,7 +31,7 @@ context.render
     .color("#ff9100")
     .width(10)
     .circle(100, 100, 50, false)
-    .text("%blue H%red e%green l%orange l%yellow o %[40]%purple World!");
+    .text("%blue H%red e%green l%orange l%yellow o %[40] %purple World!");
 
 // Run out one frame to render it   
 RE4.update(0, 0);
