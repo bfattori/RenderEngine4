@@ -1,0 +1,513 @@
+/**
+ * Engine - Main render loop engine class
+ * Implements simple rendering loop and game object management system
+ */
+import Constants from './../constants.js';
+
+import Console from './Console.js'
+import RenderEngineError from './RenderEngineError.js';
+
+import EventEngine from './EventEngine.js'
+import GameWorld from './GameWorld.js'
+import RenderContext from '../rendering/contexts/RenderContext.js';
+import Renderer from '../rendering/renderers/Renderer.js';
+import ParticleEngine from './../particlesystem/ParticleEngine.js';
+import Camera from '../rendering/cameras/Camera.js';
+
+import AABBCollisionModel from './../collisions/models/AABB.js';
+
+/**
+ * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
+ * @type {Object} primary - Namespace object containing references to Engine, EventEngine, World, and RenderContext.
+ */
+const primary = {
+  ENGINE: null,
+  EVENT_ENGINE: null,
+  WORLD: null,
+  PARTICLE_ENGINE: null
+};
+
+// engine options singleton
+let ENGINE_OPTIONS = null;
+
+/**
+ * Creates a new Engine instance.
+ * 
+ * @param {Object} options - Configuration options from the initializer
+ * @param {Object} options.flags - Flags for enabling or disabling specific features.
+ * @param {boolean} options.flags.debugMode - Enable engine debugging mode. Default is false.
+ * @param {boolean} options.flags.performanceLogging - Enable performance logging for rendering and collision events. Default is false.
+ * @param {boolean} options.flags.showFps - Display the current FPS, target FPS, and frame time on screen. Default is false.
+ * @param {Object} options.world - World configuration options.
+ * @param {number} options.world.fps - Desired frames per second for rendering. Default is 60.
+ * @param {number} options.world.seedTime - Desired time setting when initializing the engine. Default is 0.
+ * @param {Array} options.world.dimensions - Two-element array representing the width and height of the game world. Default is [800, 600].
+ * @param {Array} options.world.screenDimensions - Two-element array representing the width and height of the viewport. Default is [800, 600].
+ * @param {string} options.world.backgroundColor - Background color of the game world. Default is 'black'.
+ * @param {RenderContext} options.world.renderContext - The rendering context for the engine.
+ * @param {CollisionModel} options.world.collisionModel - The collision model for the engine. Default is {@link AABBCollisionModel}
+ * @param {number} options.world.renderPlanes - Number of render planes to use. Default is 3.
+ * @param {Object} options.threading - Threading options.
+ * @param {number} options.threading.renderThreads - Number of rendering threads to use. Default is 1.
+ * @param {number} options.threading.renderThreadPriority - Priority level for rendering threads. Default is 0.
+ * @param {string} options.threading.renderThreadName - Name of the rendering thread. Default is 'RE4 Render Thread'.
+ * @param {number} options.threading.collisionThreads - Number of collision threads to use. Default is 1.
+ * @param {number} options.threading.collisionThreadPriority - Priority level for collision threads. Default is 0.
+ * @param {string} options.threading.collisionThreadName - Name of the collision thread. Default is 'RE4 Collision Thread'.
+ * @param {Object} options.hooks - Engine hooks.
+ * @param {Function} options.hooks.onInit - Callback function to be executed after initialization. Default is No-op.
+ * @param {Function} options.hooks.onStart - Callback function to be executed when the engine starts. Default is No-op.
+ * @param {Function} options.hooks.onStop - Callback function to be executed when the engine stops. Default is No-op.
+ * @param {Function} options.hooks.onReset - Callback function to be executed when the engine is reset. Default is No-op.
+ * @param {Function} options.hooks.onShutdown - Callback function to be executed when the engine exits. Default is No-op.
+ * @param {Function} options.hooks.onError - Stateful callback function to be executed if an error occurs during the run-loop. Example: <code>(error) => {};</code> Default is console logging of errors.
+ * @param {Function} options.hooks.onBeforeFrame - Stateful callback function to be executed before each frame is generate. Example: <code>(time) => {};</code> 
+ * @param {Function} options.hooks.onBeforeUpdate - Stateful callback function to be executed before each world update. Example: <code>(time, deltaTime) => {};</code> 
+ * @param {Function} options.hooks.onUpdate - Stateful callback function to be executed after each world update. Example: <code>(time, deltaTime) => {};</code> 
+ * @param {Function} options.hooks.onBeforeRender - Stateful callback function to be executed before each frame is rendered. Example: <code>(time, deltaTime) => {};</code> 
+ * @param {Function} options.hooks.onRender - Stateful callback function to be executed on each frame of rendering. Example: <code>(time, deltaTime, renderTime) => {};</code>
+ * @param {Function} options.hooks.onCollision - Stateful callback function to be executed on collision events. Example: <code>(collisionData) => {};</code> 
+ * @param {Function} options.hooks.onFrame - Stateful callback function to be executed after each frame is updated and rendered. Example: <code>(time, frameTime) => {};</code> 
+ * @constructor
+ */
+export default class Engine {
+  constructor(options) {
+    // store the engine initialization options
+    ENGINE_OPTIONS = { 
+      flags: {...Constants.DEFAULT_ENGINE_OPTIONS.flags, ...options.flags},
+      world: {...Constants.DEFAULT_ENGINE_OPTIONS.world, ...options.world},
+      threading: {...Constants.DEFAULT_ENGINE_OPTIONS.threading, ...options.threading},
+      hooks: {...Constants.DEFAULT_ENGINE_OPTIONS.hooks, ...options.hooks}
+    };
+
+    // configure basics
+    this._width = ENGINE_OPTIONS.world.dimensions[0];
+    this._height = ENGINE_OPTIONS.world.dimensions[1];
+    
+    // Game timer maintained by the engine
+    this._currentTime = ENGINE_OPTIONS.world.seedTime;
+    this._lastTime = 0;
+    this._deltaTime = 0;
+    
+    // Store render context (initialized later)
+    const renderContext = ENGINE_OPTIONS.world?.renderContext || new RenderContext(new Renderer());
+    renderContext.screenDimensions = ENGINE_OPTIONS.world?.screenDimensions;
+    renderContext.worldDimensions = ENGINE_OPTIONS.world?.dimensions;
+    
+    // Track frame timing
+    this._isRunning = false;
+    this.animationFrameId = null;
+    
+    // Collision model storage
+    this._collisionModel = ENGINE_OPTIONS.world?.collisionModel || new AABBCollisionModel(this);
+    ENGINE_OPTIONS.world.collisionModel = this._collisionModel;
+
+
+    // the camera viewport
+    const camera = ENGINE_OPTIONS.world?.camera || new Camera();
+    camera.viewport = ENGINE_OPTIONS.world?.viewport;
+    ENGINE_OPTIONS.world.camera = camera;
+
+
+    // setup the game world
+    primary.ENGINE = this;
+    primary.EVENT_ENGINE = new EventEngine(this);
+    primary.WORLD = new GameWorld(this, camera, renderContext);
+
+    // intra-stage timing
+    this.__lifecycleTiming = 0;
+
+    // call init hook
+    ENGINE_OPTIONS.hooks.onInit();
+  }
+  
+  //---------------------------------
+
+  /**
+   * Get current world width in pixels
+   * @returns {number}
+   */
+  get width() {
+    return this._width;
+  }
+
+  /**
+   * Set current world width in pixels
+   * @param {number} width - New world width in pixels
+   */
+  set width(width) {
+    this._width = width;
+  }
+
+  /**
+   * Get current world height in pixels
+   * @returns {number}
+   */
+  get height() {
+    return this._height;
+  }
+
+  /**
+   * Set current world height in pixels
+   * @param {number} height - New world height in pixels
+   */
+  set height(height) {
+    this._height = height;
+  }
+
+  /**
+   * Get current world time in milliseconds
+   * @returns {number}
+   */
+  get time() {
+    return this._currentTime;
+  }
+
+  set time(time) {
+    this._currentTime = time;
+  }
+  
+  /**
+   * Get delta time since last frame in milliseconds
+   * @returns {number}
+   */
+  get deltaTime() {
+    return this._deltaTime;
+  }
+
+  set deltaTime(time) {
+    this._deltaTime = time;
+  }
+
+  /**
+   * Get last world time in milliseconds
+   * @returns {number}
+   */
+  get lastTime() {
+    return this._lastTime;
+  }
+
+  set lastTime(time) {
+    this._lastTime = time;
+  }
+    
+  /**
+   * Check if the engine is running
+   * @returns {boolean}
+   */
+  get isRunning() {
+    return this._isRunning;
+  }
+
+  set isRunning(state = true) {
+    this._isRunning = state
+  }
+
+  /**
+   * Get the world's collision model
+   * @returns {CollisionModel|null}
+   */
+  get collisionModel() {
+    return this.world ? this.world.collisionModel : this._collisionModel;
+  }
+
+  /**
+   * Get all game objects in the world
+   * @returns {GameObject[]}
+   */
+  get allObjects() {
+    return this.world ? this.world.getAllObjects() : [];
+  }
+
+  /**
+   * Get the engine operating options
+   * @returns {Object}
+   */
+  get options() {
+    return ENGINE_OPTIONS;
+  }
+
+  //---------------------------
+  // Primary engine components
+  //---------------------------
+
+  /**
+   * Get the Engine instance
+   * @returns {Engine} The current instance of Engine.
+   */
+  static get engine() {
+    return primary.ENGINE;
+  }
+
+  /**
+   * Get the the GameWorld instance
+   * @returns {GameWorld}
+   */
+  get world() {
+    return primary.WORLD;
+  }
+
+  /**
+   * Get the EventEngine instance
+   * @returns {EventEngine}
+   */
+  get eventEngine() {
+    return primary.EVENT_ENGINE;
+  }
+
+  /**
+   * Get the ParticleEngine instance
+   * @returns {ParticleEngine|null}
+   */
+  get particleEngine() {
+    if (primary.PARTICLE_ENGINE === null) {
+      primary.PARTICLE_ENGINE = new ParticleEngine(primary.RENDER_CONTEXT);
+    }
+    return primary.PARTICLE_ENGINE;
+  }
+  
+  /**
+   * Get the render context
+   * @returns {RenderContext|null}
+   */
+  get renderContext() {
+    return primary.RENDER_CONTEXT;
+  }
+
+  /**
+   * Initialize the Engine.
+   * @param {Object} engineOptions - See the {@link Engine} constructor for availble options
+   * @returns {Engine} The current instance of Engine.
+   */
+  static init(engineOptions) {
+    if (primary.ENGINE === null) {
+      primary.ENGINE = new Engine(engineOptions);
+    }
+    return primary.ENGINE;
+  }
+
+  /**
+   * Reset the current engine instance and set it to null, allowing for re-initializaion.
+   */
+  static reset() {
+    primary.ENGINE.reset();
+    primary.ENGINE = null;
+  }
+
+  //-----------------------------
+  // Lifecycle Methods
+  //-----------------------------
+
+  /**
+   * Add a game object to the engine/world
+   * @param {GameObject} object - The GameObject to add
+   * @returns {GameObject|null}
+   */
+  addObject(object) {
+    if (!this.world) return null;
+    return this.world.addObject(object);
+  }
+  
+  /**
+   * Remove a game object from the engine/world
+   * @param {GameObject} object - The GameObject to remove
+   * @returns {boolean}
+   */
+  removeObject(object) {
+    if (!this.world) return false;
+    return this.world.removeObject(object);
+  }
+  
+  /**
+   * Update the scene with current time and delta
+   * @param {number} currentTime - Current game time
+   * @param {number} deltaTime - Time since last frame
+   */
+  update(currentTime, deltaTime) {
+    if (!this.world) return;
+    
+    this.currentTime = currentTime;
+    this.lastTime = this.lastTime === 0 ? currentTime : this.lastTime;
+    this.deltaTime = currentTime - this.lastTime;
+    
+    // Update the world with time and delta
+    this.world.update(currentTime, deltaTime);
+    
+    // If render context exists, update its state
+    if (this.world.renderContext && this.world.renderContext.update) {
+      this.world.renderContext.update(currentTime, deltaTime);
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Render the scene using the render context
+   * @param {number} currentTime - Current game time
+   * @param {number} deltaTime - Time since last frame
+   * @returns {boolean} Whether rendering succeeded
+   */
+  renderWorld(currentTime, deltaTime) {
+    if (!this.world.renderContext) return false;
+
+    try {
+      // Render context traverses its internal structure of GameObjects
+      // to update the scene and then render the scene
+      const result = this.world.renderContext.renderScene(this.world.allObjects, currentTime, deltaTime);
+      
+      return result !== false;
+    } catch (error) {
+      Console.error('Engine: Error during rendering:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Start the game loop
+   * @param {number} frameRate - Target frame rate in frames per second
+   * @param {number} seed - The world timer seed
+   */
+  start(frameRate = ENGINE_OPTIONS.world.fps, seed = 0) {
+    if (this.isRunning) return;
+
+    this.isRunning = true;
+    this.lastTime = performance.now();
+
+    // the frame lifecycle callbacks are called in a loop until the game is stopped
+    const lifecycleHooks = ENGINE_OPTIONS.hooks;
+    
+    const loop = () => {
+      if (!this.isRunning) return;
+
+      // start frame generation
+      const frameStart = performance.now();
+      const currentTime = frameStart;
+      lifecycleHooks?.onBeforeFrame(currentTime);
+
+      // Calculate delta time in milliseconds (convert seconds back to ms)
+      const deltaTime = Math.min((currentTime - this.lastTime), 16.67 * 1000); // Cap at ~60fps
+      this.lastTime = currentTime;
+      
+      // Update the scene
+      const updateStart = performance.now();
+      lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
+      this.update(currentTime, deltaTime);
+      const updateEnd = performance.now();
+      lifecycleHooks?.onUpdate(updateEnd - frameStart, updateEnd - updateStart);
+      
+      // Render the world
+      const renderStart = performance.now();
+      lifecycleHooks?.onPreRender(renderStart - frameStart);
+      this.renderWorld(currentTime, deltaTime);
+      const renderEnd = performance.now();
+      lifecycleHooks?.onRender(renderEnd - frameStart, renderEnd - renderStart);
+
+      // one frame generated
+      lifecycleHooks.onFrame(performance.now() - frameStart);
+
+      if (this.isRunning) {
+        this.animationFrameId = requestAnimationFrame(loop);
+      }
+    };
+    
+    this.animationFrameId = requestAnimationFrame(loop);
+
+    // engine started
+    lifecycleHooks?.onStart();
+  }
+  
+  /**
+   * Stop the game loop
+   */
+  stop() {
+    this.isRunning = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
+    // call stop hook
+    ENGINE_OPTIONS.hooks.onStop();
+  }
+    
+  /**
+   * Reset the engine state
+   */
+  reset() {
+    this.stop();
+    
+    this._currentTime = 0;
+    this._lastTime = 0;
+    this._deltaTime = 0;
+    
+    if (this.world) {
+      this.world.clear();
+    }
+
+    // Keep particle engine but may need to reinitialize
+    if (this.particleEngine && this.particleEngine.reset) {
+      this.particleEngine.reset();
+    }
+
+    // Keep render context but may need to reinitialize
+    if (this.renderContext && this.renderContext.reset) {
+      this.renderContext.reset();
+    }
+
+    // clear all event listeners
+    this.eventEngine.clear();
+
+    // call reset hook
+    ENGINE_OPTIONS.hooks.onReset();
+
+    return this;
+  }
+
+  /**
+   * Called to shutdown and clean up resources.
+   */
+  destroy() {
+    // clean up before exiting
+    primary?.EVENT_ENGINE?.shutdown();
+    primary?.WORLD?.shutdown();
+    primary?.RENDER_CONTEXT?.shutdown();
+    primary?.PARTICLE_ENGINE?.shutdown();
+
+    // async cleanup of the engine
+    setTimeout(() => {
+      // call shutdown hook
+      ENGINE_OPTIONS.hooks.onShutdown();
+      primary.ENGINE = null;
+      ENGINE_OPTIONS = null;
+    }, 250);
+  }
+
+  //-------------------------------
+  // Serialization Method
+  //-------------------------------
+  
+  /**
+   * Serializes an object's properties into a plain object. Subclasses should override this to include specific properties.
+   * 
+   * @param {Object} object - The object to serialize
+   * @param {...string} ignoreKeys - Optional list of property keys to ignore during serialization
+   * @returns {Object} Serialized representation of the component's properties, excluding any specified keys
+   * @example
+   * // In a subclass, you might implement serialize like this:
+   * serialize() {
+   *     return {
+   *         ...super.serialize('temporaryState'), // Ignore 'temporaryState' from base properties
+   *         customProperty: this.customProperty
+   *     };
+   * }
+   */
+  serialize(...ignoreKeys) {
+      let serialize = structuredClone(this);
+      // Remove any keys that should be ignored
+      ignoreKeys.forEach(key => {
+          delete serialize[key];
+      });
+      return serialize;
+  }
+
+}
