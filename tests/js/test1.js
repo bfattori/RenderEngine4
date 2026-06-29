@@ -25,6 +25,7 @@ RenderEngine.init({
 const context = RE4.world.renderContext;
 context.render
     .color("#0000ff")
+    .width(5)
     .line(100, 100, 300, 300)
     .fillColor("#8800cc")
     .circle(100, 100, 50, true)
@@ -32,8 +33,13 @@ context.render
     .width(10)
     .circle(100, 100, 50, false)
     // the string "Hello World!" formatted with colors
-    .text("%blue H%red e%green l%orange l%yellow o %[40] %purple World!");
+    .width(3)
+    .cursor(50, 400)
+    .text("%#00f **H%#f00 ** e%green %[4]l%orange l%#2e867f %[]o")
+    .cursor(50, 520)
+    .text(" %[6]%#808 **World!**");
 
 // Run out one frame to render it   
 RE4.update(0, 0);
 RE4.renderWorld();
+

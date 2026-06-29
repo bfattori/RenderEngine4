@@ -22,11 +22,14 @@ function getWord(text, idx) {
 
 /**
  * Method to process text content with formatting markers into rendering instructions.
- * @param {VectorRenderContext} context - The context to render the text to
  * @param {string} text - Text content to process
+ * @param {number} spaceWidth - The size of a space character (default: 45);
  * @returns {Array} Array of IL instructions
  */
-export default function processText(text, spaceWidth = 50) {
+export default function processText(text, spaceWidth = 45) {
+    // get the current font size of the render context
+    let fontSize = this.fontSize;
+
     // Parse and process each character in the text
     let i = 0;
     while (i < text.length) {
@@ -82,7 +85,6 @@ export default function processText(text, spaceWidth = 50) {
                 // Reset to previous/default color
                 instructions.push(`${IL_INSTRUCTIONS.COLOR}`);
                 i += 2;
-                continue;
             } else if (nextChar === '[') {
                 // Font size marker - find closing bracket
                 let j = i + 1;
@@ -93,9 +95,10 @@ export default function processText(text, spaceWidth = 50) {
                         
                         // Handle font size reset or set
                         if (fontSizeValue === 0 || fontSizeValue === '') {
-                            instructions.push(`${IL_INSTRUCTIONS.FONTSIZE}`);
+                            this.popFontSize;
                         } else {
-                            instructions.push(`${IL_INSTRUCTIONS.FONTSIZE} ${fontSizeValue}`);
+                            this.fontSize += fontSizeValue;
+                            spaceWidth *= fontSizeValue * 0.47;
                         }
                         foundBracket = true;
                     }
@@ -108,14 +111,12 @@ export default function processText(text, spaceWidth = 50) {
                 const colorName = getWord.call(this, text, i).substr(1).trim();
                 instructions.push(`${IL_INSTRUCTIONS.COLOR} ${colorName}`);
                 i += colorName.length + 2;
-                continue;
             } else if (nextChar !== undefined) {
                 // Color name - remove the %
                 const colorName = getWord.call(this, text, i).substr(1).trim();
 
                 instructions.push(`${IL_INSTRUCTIONS.COLOR} ${colorName}`);
                 i += colorName.length + 2;
-                continue;
             }
             
             this.addInstruction(...instructions);
@@ -124,21 +125,22 @@ export default function processText(text, spaceWidth = 50) {
 
         // Handle italic marker (single underscore)
         if (char === '_') {
-            this.addInstruction(`${IL_INSTRUCTIONS.TOGGLE} ITALICS`);
+            this.formatting.italics != this.formatting.italics;
             i++;
             continue;
         }
         
         // Handle bold marker
         if (char === '*' && text[i + 1] === '*') {
-            this.addInstruction(`${IL_INSTRUCTIONS.TOGGLE} BOLD`);
+            this.formatting.bold != this.formatting.bold;
+            this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth + this.formatting.bold ? (this.fontSize / 4) * 3 : 0}`); 
             i += 2;
             continue;
         }
         
         // Handle underline marker
         if (char === '~') {
-            this.addInstruction(`${IL_INSTRUCTIONS.TOGGLE} UNDERLINE`);
+            this.formatting.underline != this.formatting.underline;
             i++;
             continue;
         }
@@ -160,7 +162,7 @@ function characterInstruction(char, width) {
     // Get character instructions from vector.js
     const charInstructions = getCharacterInstructions.call(this, char);
 
-    if (!charInstructions) {
+    if (!charInstructions || !charInstructions.instructions) {
         // Character not in set (e.g., lowercase letters), skip or use fallback
         return;
     }
@@ -168,12 +170,12 @@ function characterInstruction(char, width) {
     // Add character instructions
     const context = this;
     context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
-    charInstructions.forEach(inst => {
+    charInstructions.instructions.forEach(inst => {
         context.addInstruction(inst);
     });
 
     // Advance cursor by character width
-   this.cursorDeltaX = width; // Will be set based on character type in actual implementation
+   context.cursorX += charInstructions.width + (3 * this.fontSize);
 }
 
 /**
@@ -184,6 +186,8 @@ function characterInstruction(char, width) {
  * @private
  */
 function getCharacterInstructions(char) {
+    const minMax = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+
     // currently only supports upper case characters
     char = char.toUpperCase();
 
@@ -196,9 +200,8 @@ function getCharacterInstructions(char) {
     }
 
     if (ascii === 32) {
-        this.cursorDeltaX = 40;
-        return [`${IL_INSTRUCTIONS.MOVETO} ${this.cursorX} ${this.cursorY}`];
-    } 
+        return null;
+    }
 
     // Check character set array
     if (CHARACTER_MAP[ascii]) {
@@ -207,9 +210,25 @@ function getCharacterInstructions(char) {
         const points = CHARACTER_MAP[ascii];
         let first = true;
 
-        // start new line segment
-        if (points.length > 0) instructions.push(IL_INSTRUCTIONS.LINESEG);
+        if (points.length === 0) {
+            return null;
+        }
 
+        // calculate the character box
+        for (let j = 0; j < points.length; j++) {
+            if (points[j] !== null) {
+                minMax[0] = points[j][0] < minMax[0] ? points[j][0] * this.fontSize : minMax[0];
+                minMax[1] = points[j][0] > minMax[1] ? points[j][0] * this.fontSize : minMax[1];
+                minMax[2] = points[j][1] < minMax[2] ? points[j][1] * this.fontSize : minMax[2];
+                minMax[3] = points[j][1] > minMax[3] ? points[j][1] * this.fontSize : minMax[3];
+            }
+        }
+        const charWidth = minMax[1] - minMax[0];
+        const halfWidth = Math.round(charWidth * 0.5);
+        const charHeight = minMax[3] - minMax[2];
+        const halfHeight = Math.round(charHeight);
+
+        instructions.push(`${IL_INSTRUCTIONS.LINESEG} 0`);
         for (let j = 0; j < points.length; j++) {
             const point = points[j];
             const next = j+1 < points.length ? points[j + 1] : [0,0];
@@ -217,29 +236,35 @@ function getCharacterInstructions(char) {
             if (point === null) {
                 // End of line segment
                 instructions.push(IL_INSTRUCTIONS.ENDSEG);
-                if (j + 1 < points.length) {
-                    instructions.push(IL_INSTRUCTIONS.LINESEG);
-                    first = true;    
-                }
+                instructions.push(`${IL_INSTRUCTIONS.LINESEG} 0`);
+                first = true;    
                 continue;
             }
 
-            const [x, y] = point;
-            const [ex, ey] = next != null ? next : [0,0];
+
+            const [x, y] = [halfWidth + point[0] * this.fontSize, point[1] * this.fontSize];
             
             if (first) {                
-                // Add first point with initial line instruction
+                // Add first 2 points with initial line instruction
+                const [ex, ey] = next != null ? [halfWidth + next[0] * this.fontSize, next[1] * this.fontSize] : [0,0];
                 instructions.push(`${IL_INSTRUCTIONS.LINE} ${this.cursor[0] + x} ${this.cursor[1] + y} ${this.cursor[0] + ex} ${this.cursor[1] + ey}`); // Invert Y for screen coordinates
                 first = false;
+                j++;
             } else {
-                instructions.push(`${IL_INSTRUCTIONS.LINEREL}  ${this.cursor[0] + x} ${this.cursor[1] + y}`);
+                instructions.push(`${IL_INSTRUCTIONS.LINEREL} ${this.cursor[0] + x} ${this.cursor[1] + y}`);
             }
         }
+        instructions.push(IL_INSTRUCTIONS.ENDSEG);
 
-        if (points.length > 0) instructions.push(IL_INSTRUCTIONS.ENDSEG);
+        if (this.formatting.underline) {
+            instructions.push(`${IL_INSTRUCTIONS.LINE} ${minMax[0]} ${this.cursor[1] + charHeight + 5} ${minMax[1]} ${this.cursor[1] + charHeight + 5}`);
+        }
 
-
-        return instructions;
+        return {
+            instructions: instructions,
+            width: charWidth,
+            height: charHeight
+        };
     }
 
     return null;

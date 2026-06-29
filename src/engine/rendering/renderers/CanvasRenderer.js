@@ -19,12 +19,6 @@ export default class CanvasRenderer extends Renderer {
         // currently being updated in tha shape's drawing context
         this._pathId = null;
 
-        this.formatTemp = {
-            bold: false,
-            italics: false,
-            underline: false
-        };
-
         // Let the context know the renderer can compile shapes
         this.hasCompiler = true;
     }
@@ -183,7 +177,7 @@ export default class CanvasRenderer extends Renderer {
                 if (pid !== null) {
                     shapeContext.paths[pid].path.lineTo(args[0], args[1]);
                 } else {
-                    return `this.surface.lineTo(${args[0]}, ${args[1]});` +
+                    return `this.surface.moveTo(${args[0]}, ${args[1]});` +
                         'this.surface.stroke();';
                 }
                 break;
@@ -206,7 +200,6 @@ export default class CanvasRenderer extends Renderer {
     render(instruction) {
         // render the drawing instruction
         let fillSeg = "0";
-        let curPath = null;
         const parts = instruction.split(' ');
         const {operand, args} = {operand: parts.shift(), args: parts};
         switch (operand) {
@@ -239,22 +232,21 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.LINESEG:
                 this._path = new Path2D;
-                curPath = new Path2D();
                 fillSeg = args[0];
                 break;
             case vector.ENDSEG:
                 if (fillSeg === "1") {
-                    this.surface.fill(curPath);
+                    this.surface.fill(this._path);
                 } else {
                     this.surface.stroke(this._path);
                 }
                 fillSeg = "0"; // Reset fill to false after drawing the path
-                curPath = null;
+                this._path = null;
                 break;
             case vector.LINE:
-                if (curPath) {
-                    curPath.moveTo(args[0], args[1]);
-                    curPath.lineTo(args[2], args[3]);
+                if (this._path) {
+                    this._path.moveTo(args[0], args[1]);
+                    this._path.lineTo(args[2], args[3]);
                 } else {
                     this.surface.beginPath();
                     this.surface.moveTo(args[0], args[1]);
@@ -263,8 +255,8 @@ export default class CanvasRenderer extends Renderer {
                 }
                 break;
             case vector.LINEREL:
-                if (curPath) {
-                    curPath.lineTo(args[0], args[1]);
+                if (this._path) {
+                    this._path.lineTo(args[0], args[1]);
                 } else {
                     this.surface.lineTo(args[0], args[1]);
                     this.surface.stroke();
@@ -281,6 +273,13 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.MOVETO:
                 this.surface.moveTo(args[0], args[1]);
+                break;
+            case vector.FONTSIZE:
+                if (args[0]) {
+                    this.renderContext.fontSize += parseInt(args[0]);
+                } else {
+                    this.renderContext.popFontSize;
+                }
                 break;
         }
     }

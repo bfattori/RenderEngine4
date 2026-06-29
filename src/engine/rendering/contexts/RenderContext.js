@@ -50,6 +50,7 @@ export default class RenderContext {
    * @param {number} [options.viewport=[0, 0, 800,600]] - The viewport dimensions
    * @param {number} [options.worldDimensions=[800, 600]] - The world dimensions
    * @param {number} [options.maxPlanes=3] - Maximum number of render planes to support
+   * @param {number} [options.lineHeight=40] - The line height for characters rendered
    * @param {Array<string>} [options.planeNames] - Names of render planes (default: background, middle, foreground)
    */
   constructor(renderer, options = {}) {
@@ -95,13 +96,23 @@ export default class RenderContext {
     this._immediate = false;
     
     this._cursor = [0, 0];
-    this._cursorLimits = [...this._viewport];
-    this._lineHeight = 40;
+    this._cursorLimits = [this._viewport[0], this._viewport[1]];
+    this._lineHeight = options.lineHeight || 50;
+
+    this._formatting = {
+      bold: false,
+      italics: false,
+      underline: false
+    };
   }
 
   //--------------------------------------------
   // text and cursor
   //--------------------------------------------
+
+  get formatting() {
+    return this._formatting;
+  }
 
   /**
    * The renderer line height for text
@@ -163,7 +174,7 @@ export default class RenderContext {
    * The the cursor position
    * @param {Array<number>} [x, y] - The cursor position
    */
-  set cursor([x, y]) {
+  setCursor([x, y]) {
     this._cursor = [x, y];
   }
 
@@ -195,7 +206,7 @@ export default class RenderContext {
    * Set the boundaries for the text being drawn.
    * @param {Array<number>} [left, top, width, height]
    */
-  set cursorLimits([left, top, width, height]) {
+  setCursorLimits([left, top, width, height]) {
     this._cursorLimits = [left, top, width, height];
   }
 

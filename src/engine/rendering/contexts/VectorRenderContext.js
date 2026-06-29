@@ -87,7 +87,7 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   static get DEFAULT_FONT_SIZE() {
-    return 12;
+    return 4;
   }
 
   /**
@@ -139,18 +139,23 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   set lineColor(c) {
-    this._previousColor.push(this._currentColor);
-    this._currentColor = c;
+    if (c) {
+      this._previousColor.push(this._currentColor);
+      this._currentColor = c;
+    } else {
+      this.popLineColor;
+      return;
+    }
 
     // Add color instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this._currentColor}`);
+    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this.lineColor}`);
   }  
 
-  get popColor() {
+  get popLineColor() {
     this._currentColor = this._previousColor.length > 0 ? this._previousColor.pop() : VectorRenderContext.DEFAULT_COLOR;
 
     // Add color instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this._currentColor}`);
+    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this.lineColor}`);
     return undefined;
   }
 
@@ -159,17 +164,22 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   set fillColor(f) {
-    this._previousFillColor.push(this._currentFillColor);
-    this._currentFillColor = f;
+    if (f) {
+      this._previousFillColor.push(this._currentFillColor);
+      this._currentFillColor = f;
+    } else {
+      this.popFillColor;
+      return;
+    }
     
-    this.addInstruction(`${IL_INSTRUCTIONS.FILL} ${this._currentFillColor}`);
+    this.addInstruction(`${IL_INSTRUCTIONS.FILL} ${this.fillColor}`);
   }
 
-  get popFill() {
+  get popFillColor() {
     this._currentFillColor = this._previousFillColor.length > 0 ? this._previousFillColor.pop() : VectorRenderContext.DEFAULT_FILL_COLOR;
   
     // Add color instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this._currentColor}`);
+    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this.fillColor}`);
     return undefined;
   }
 
@@ -178,18 +188,22 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   set lineWidth(w) {
-    this._previousWidth.push(this._currentWidth);
-    this._currentWidth = w;
+    if (w) {
+      this._previousWidth.push(this._currentWidth);
+      this._currentWidth = w;
+    } else {
+      this.popLineWidth;
+    }
 
     // Add width instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this._currentWidth}`);
+    this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth}`);
   }
 
   get popLineWidth() {
     this._currentWidth = this._previousWidth.length > 0 ? this._previousWidth.pop() : VectorRenderContext.DEFAULT_LINE_WIDTH;
 
     // Add width instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this._currentWidth}`);
+    this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth}`);
     return undefined;
   }
 
@@ -198,12 +212,22 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   set fontSize(s) {
-    this._previousFontSize.push(this._currentFontSize);
-    this._currentFontSize = s;
+    if (s) {
+      this._previousFontSize.push(this._currentFontSize);
+      this._currentFontSize = s;
+    } else {
+      this.popFontSize;
+    }
+
+    // Add width instruction
+    this.addInstruction(`${IL_INSTRUCTIONS.FONTSIZE} ${this.fontSize}`);
   }
 
   get popFontSize() {
     this._currentFontSize = this._previousFontSize.length > 0 ? this._previousFontSize.pop() : VectorRenderContext.DEFAULT_FONT_SIZE;
+
+    // Add font size instruction
+    this.addInstruction(`${IL_INSTRUCTIONS.FONTSIZE} ${this.fontSize}`);
     return undefined;
   }
 
@@ -257,24 +281,41 @@ export default class VectorRenderContext extends RenderContext {
   get render() {
     const renderContext = this;
     return {
+      /**
+       * Push a transformation matrix onto the transform stack.
+       * @param {Matrix2d} transformationMatrix 
+       */
       pushTransform: (transformationMatrix) => {
         this.pushTransform(transformationMatrix);
       },
 
+      /**
+       * Pop the last transform off the transform stack.
+       * @returns {Matrix2d} The previous transform matrix
+       */
       popTransform: () => {
         return this.popTransform();
       },
 
+      /**
+       * Peek at the top-most entry on the transform stack, but does not remove it or apply it.
+       * @returns {Matrix2d} The top-most entry on the transform stack
+       */
       peekTransform: () => {
         return this.peekTransform();
       },
 
+      /**
+       * Hard reset the transform to the Identity Matrix and empty the transform stack.
+       */
       resetTransform: () => {
         this.resetTransform();
       },
 
       /**
-       * Set color with decorator pattern - tracks previous value
+       * Set line color with decorator pattern - tracks previous value. If no values are provided,
+       * it will set the line color to the previous color on the stack, until the stack is empty. Then
+       * it will set to the default color.
        * @param {number|string} r - Red value (0-1) or hex string E.g. "#da7d12"
        * @param {number|string} g - Green value (0-1) 
        * @param {number|string} b - Red value (0-1)
@@ -282,27 +323,56 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       color: (r, g = null, b = null, { a = 1 } = {}) => {
-        renderContext.lineColor = getColor(r, g, b, a);        
+        if (r || (r && g && b)) {
+          renderContext.lineColor = getColor(r, g, b, a);        
+        } else {
+          renderContext.lineColor = undefined;
+        }
         return renderContext.render;
       },
 
+      /**
+       * Set fill color with decorator pattern - tracks previous value. If no values are provided,
+       * it will set the fill color to the previous color on the stack, until the stack is empty. Then
+       * it will set to the default color.
+       * @param {number|string} r - Red value (0-1) or hex string E.g. "#da7d12"
+       * @param {number|string} g - Green value (0-1) 
+       * @param {number|string} b - Red value (0-1)
+       * @param {number|string} a - Alpha value (0-1)
+       * @returns {Object} Returns this for chaining
+       */
       fillColor: (r, g = null, b = null, { a = 1 } = {}) => {
-        renderContext.fillColor = getColor(r, g, b, a);
+        if (r || (r && g && b)) {
+          renderContext.fillColor = getColor(r, g, b, a);
+        } else {
+          renderContext.fillColor = undefined;
+        }
         return renderContext.render;
       },
       
       /**
-       * Reset color to previous state
+       * Reset line color to default color and reset memory stack.
        * @returns {Object} Returns this for chaining
        */
       resetColor: () => {
-        renderContext.popColor;
+        renderContext.lineColor = renderContext.DEFAULT_COLOR;
+        renderContext._previousColor = [];
         return renderContext.render;
       },
       
       /**
-       * Set line width with decorator pattern - tracks previous value
-       * @param {number} w - Line thickness in pixels
+       * Reset fill color to default color and reset memory stack.
+       * @returns {Object} Returns this for chaining
+       */
+      resetFill: () => {
+        renderContext.fillColor = renderContext.DEFAULT_COLOR;
+        renderContext._previousFillColor = [];
+        return renderContext.render;
+      },
+
+      /**
+       * Set line width with decorator pattern - tracks previous value.
+       * @param {number} w - Line thickness in pixels. If not provided, restoresd the previous line with.
        * @returns {Object} Returns this for chaining
        */
       width: (w) => {
@@ -311,17 +381,18 @@ export default class VectorRenderContext extends RenderContext {
       },
       
       /**
-       * Reset width to previous state
+       * Reset line width to default width and reset memory stack.
        * @returns {Object} Returns this for chaining
        */
       resetWidth: () => {
-        renderContext.popLineWidth;
+        renderContext.lineWidth = renderContext.DEFAULT_LINE_WIDTH;
+        renderContext._previousWidth = [];
         return renderContext.render;
       },
       
       /**
-       * Set font size with decorator pattern - tracks previous value
-       * @param {number} s - Font size in pixels
+       * Set font size with decorator pattern - tracks previous value.
+       * @param {number} s - Font size in pixels. If empty, pops the last font size off the stack
        * @returns {Object} Returns this for chaining
        */
       fontSize: (s) => {
@@ -330,11 +401,12 @@ export default class VectorRenderContext extends RenderContext {
       },
       
       /**
-       * Reset font size to previous state
+       * Reset font size to defailt size and reset memory stack.
        * @returns {Object} Returns this for chaining
        */
       resetFontSize: () => {
-        renderContext.popFontSize;
+        renderContext.fontSize = renderContext.DEFAULT_FONT_SIZE;
+        renderContext._previousFontSize = [];
         return renderContext.render;
       },
       
@@ -344,6 +416,54 @@ export default class VectorRenderContext extends RenderContext {
        */
       carriageReturn: () => {
         renderContext.carriageReturn();
+        return renderContext.render;
+      },
+
+      /**
+       * Set the cursor X position
+       * @param {number} x - The cursor X position
+       */
+      cursorX: (x) => {
+        renderContext.cursorX = x;
+        return renderContext.render;
+      },
+
+      /**
+       * Set the cursor Y position
+       * @param {number} y - The cursor Y position
+       */
+      cursorY: (y) => {
+        renderContext.cursorY = y;
+        return renderContext.render;
+      },
+
+      /**
+       * Sets the cursor X & Y simultaneously
+       * @param {number} x - X coordinate in screen space
+       * @param {number} y - Y coordinate in screen space
+       */
+      cursor: (x, y) => {
+        renderContext.setCursor([x, y]);
+        return renderContext.render;
+      },
+
+      /**
+       * Moves the cursor relatively along each axis.
+       * @param {number} x - Relative X to add to the cursor X
+       * @param {number} y - Relative Y to add to the cursor Y
+       */
+      cursorDelta: (deltaX, deltaY) => {
+        renderContext.cursorDeltaX = deltaX;
+        renderContext.cursorDeltaY = deltaY;
+        return renderContext.render;
+      },
+
+      /**
+       * Get the cursor position: [x, y]
+       * @returns {Array<number>} [x, y] - The X and Y position of the cursor
+       */
+      getCursor: () => {
+        return renderContext.cursor;
       },
 
       /**
