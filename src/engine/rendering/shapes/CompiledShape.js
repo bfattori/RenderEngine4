@@ -17,13 +17,6 @@ export default class CompiledShape {
         this._assembly = null;
     }
 
-    /**
-     * The index of the shape
-     */
-    get id() {
-        return this._id;
-    }
-
     get instructions() {
         return this._instructions;
     }
@@ -60,7 +53,7 @@ export default class CompiledShape {
 
     draw(time, deltaTime) {
         if (this._assembly !== null) {
-            this._assembly(time, deltaTime);
+            this.renderer.renderShape(this._assembly, time, deltaTime);
         } else {
             this.instructions.forEach(inst => {
                 this.renderer.render(inst);

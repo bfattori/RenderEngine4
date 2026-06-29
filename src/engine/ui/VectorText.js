@@ -125,22 +125,23 @@ export default function processText(text, spaceWidth = 45) {
 
         // Handle italic marker (single underscore)
         if (char === '_') {
-            this.formatting.italics != this.formatting.italics;
+            this._formatting.italics = !this._formatting.italics;
             i++;
             continue;
         }
         
         // Handle bold marker
         if (char === '*' && text[i + 1] === '*') {
-            this.formatting.bold != this.formatting.bold;
-            this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth + this.formatting.bold ? (this.fontSize / 4) * 3 : 0}`); 
+            this._formatting.bold = !this._formatting.bold;
+            this.addInstruction(`// format: bold (${this._formatting.bold})`);
+            this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth + (this.formatting.bold ? 3 : 0)}`); 
             i += 2;
             continue;
         }
         
         // Handle underline marker
         if (char === '~') {
-            this.formatting.underline != this.formatting.underline;
+            this._formatting.underline = !this._formatting.underline;
             i++;
             continue;
         }
@@ -257,7 +258,8 @@ function getCharacterInstructions(char) {
         instructions.push(IL_INSTRUCTIONS.ENDSEG);
 
         if (this.formatting.underline) {
-            instructions.push(`${IL_INSTRUCTIONS.LINE} ${minMax[0]} ${this.cursor[1] + charHeight + 5} ${minMax[1]} ${this.cursor[1] + charHeight + 5}`);
+            instructions.push('// format: underline');
+            instructions.push(`${IL_INSTRUCTIONS.LINE} ${this.cursor[0] + minMax[0] + halfWidth} ${this.cursor[1] + halfHeight} ${this.cursor[0] + minMax[1] + halfWidth} ${this.cursor[1] + halfHeight}`);
         }
 
         return {

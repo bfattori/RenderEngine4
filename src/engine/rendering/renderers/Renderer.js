@@ -7,6 +7,7 @@ export default class Renderer {
         this._renderContext = null;
         this._surface = null;
         this._hasCompiler = false;
+        this._compiledShapes = {};
     }
 
     set renderContext(context) {
@@ -51,6 +52,15 @@ export default class Renderer {
     }
 
     /**
+     * Renders a compiled shape with the given index.
+     * @param {number} shapeIdx - The shape index to render
+     * @param {number} time - The current world time
+     * @param {number} deltaTime - The time past since the last frame
+     */
+    renderShape(shapeIdx, time, deltaTime) {
+    }
+
+    /**
      * Compile a set of render instructions into an assembly that is executed by the renderer. 
      * @param {String[]} instructions - The render instructions.
      * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
@@ -58,6 +68,7 @@ export default class Renderer {
      */
     getCompiledShape(instructions) {
         if (!this._hasCompiler) { return null; }
-        return new CompiledShape(this, instructions);
+        this._compiledShapes[this._shapeIdx] = new CompiledShape(this, instructions);
+        return this._shapeIdx;
     }
 }

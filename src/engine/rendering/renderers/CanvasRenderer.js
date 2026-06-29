@@ -63,7 +63,8 @@ export default class CanvasRenderer extends Renderer {
 
     /**
      * Compile a set of drawing instructions into a function that, when called, executes the
-     * instructions to the canvases viewport.
+     * instructions to the canvas' viewport. This means that instructions are not sent for the
+     * shape, and instead the object is rendered from a stored procedure.
      * 
      * @param {String} instructions - The instructions to compile.
      * @returns {Function} The compiled function, containing its drawing context.
@@ -94,6 +95,21 @@ export default class CanvasRenderer extends Renderer {
             const fn = Function("shapeContext", "time", "deltaTime", assembled.join());
             return fn.call(renderer, shapeContext, time, deltaTime);
         };
+    }
+
+    /**
+     * Renders the compiled shape stored at the given index.
+     * @param {number} shapeIdx - The shape index to render
+     * @param {number} time - The current world time
+     * @param {number} deltaTime - The time past since the last frame
+     */
+    renderShape(shapeIdx, time, deltaTime) {
+        const drawShape = this._compiledShapes[shapeIdx];
+        if (drawShape) {
+            drawShape(time, deltaTime);
+        } else {
+            throw new RenderEngineError(`Shape ${shapeIdx} not found!`);
+        }
     }
 
     /**

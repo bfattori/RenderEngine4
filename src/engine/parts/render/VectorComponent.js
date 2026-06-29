@@ -64,7 +64,8 @@ export default class VectorRender extends RenderComponent {
      */
     draw(time, deltaTime) {
         if (this._compiledShape !== null) {
-            this._compiledShape.draw(time, deltaTime);
+            // TODO: This should trigger a draw in the Renderer
+            // renderer.renderShape(this._compiledShape, time, deltaTime);
         } else {
             this.instructions.forEach(instruction => {
                 this.context.renderer.render(instruction);
