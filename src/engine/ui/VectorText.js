@@ -1,5 +1,5 @@
 import Console from '../core/Console.js';
-import { IL_INSTRUCTIONS } from '../rendering/contexts/VectorRenderContext.js';
+import { VECTOR_IL } from '../rendering/contexts/VectorRenderContext.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 
@@ -83,7 +83,7 @@ export default function processText(text, spaceWidth = 45) {
             
             if (nextChar === '!') {
                 // Reset to previous/default color
-                instructions.push(`${IL_INSTRUCTIONS.COLOR}`);
+                instructions.push(`${VECTOR_IL.COLOR}`);
                 i += 2;
             } else if (nextChar === '[') {
                 // Font size marker - find closing bracket
@@ -109,13 +109,13 @@ export default function processText(text, spaceWidth = 45) {
             } else if (nextChar !== undefined && !isNaN(parseFloat(nextChar))) {
                 // Color name with hex digit
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-                instructions.push(`${IL_INSTRUCTIONS.COLOR} ${colorName}`);
+                instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             } else if (nextChar !== undefined) {
                 // Color name - remove the %
                 const colorName = getWord.call(this, text, i).substr(1).trim();
 
-                instructions.push(`${IL_INSTRUCTIONS.COLOR} ${colorName}`);
+                instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             }
             
@@ -134,7 +134,7 @@ export default function processText(text, spaceWidth = 45) {
         if (char === '*' && text[i + 1] === '*') {
             this._formatting.bold = !this._formatting.bold;
             this.addInstruction(`// format: bold (${this._formatting.bold})`);
-            this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth + (this.formatting.bold ? 3 : 0)}`); 
+            this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? 3 : 0)}`); 
             i += 2;
             continue;
         }
@@ -229,15 +229,15 @@ function getCharacterInstructions(char) {
         const charHeight = minMax[3] - minMax[2];
         const halfHeight = Math.round(charHeight);
 
-        instructions.push(`${IL_INSTRUCTIONS.LINESEG} 0`);
+        instructions.push(`${VECTOR_IL.LINESEG} 0`);
         for (let j = 0; j < points.length; j++) {
             const point = points[j];
             const next = j+1 < points.length ? points[j + 1] : [0,0];
 
             if (point === null) {
                 // End of line segment
-                instructions.push(IL_INSTRUCTIONS.ENDSEG);
-                instructions.push(`${IL_INSTRUCTIONS.LINESEG} 0`);
+                instructions.push(VECTOR_IL.ENDSEG);
+                instructions.push(`${VECTOR_IL.LINESEG} 0`);
                 first = true;    
                 continue;
             }
@@ -248,18 +248,18 @@ function getCharacterInstructions(char) {
             if (first) {                
                 // Add first 2 points with initial line instruction
                 const [ex, ey] = next != null ? [halfWidth + next[0] * this.fontSize, next[1] * this.fontSize] : [0,0];
-                instructions.push(`${IL_INSTRUCTIONS.LINE} ${this.cursor[0] + x} ${this.cursor[1] + y} ${this.cursor[0] + ex} ${this.cursor[1] + ey}`); // Invert Y for screen coordinates
+                instructions.push(`${VECTOR_IL.LINE} ${this.cursor[0] + x} ${this.cursor[1] + y} ${this.cursor[0] + ex} ${this.cursor[1] + ey}`); // Invert Y for screen coordinates
                 first = false;
                 j++;
             } else {
-                instructions.push(`${IL_INSTRUCTIONS.LINEREL} ${this.cursor[0] + x} ${this.cursor[1] + y}`);
+                instructions.push(`${VECTOR_IL.LINEREL} ${this.cursor[0] + x} ${this.cursor[1] + y}`);
             }
         }
-        instructions.push(IL_INSTRUCTIONS.ENDSEG);
+        instructions.push(VECTOR_IL.ENDSEG);
 
         if (this.formatting.underline) {
             instructions.push('// format: underline');
-            instructions.push(`${IL_INSTRUCTIONS.LINE} ${this.cursor[0] + minMax[0] + halfWidth} ${this.cursor[1] + halfHeight} ${this.cursor[0] + minMax[1] + halfWidth} ${this.cursor[1] + halfHeight}`);
+            instructions.push(`${VECTOR_IL.LINE} ${this.cursor[0] + minMax[0] + halfWidth} ${this.cursor[1] + halfHeight} ${this.cursor[0] + minMax[1] + halfWidth} ${this.cursor[1] + halfHeight}`);
         }
 
         return {

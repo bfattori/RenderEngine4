@@ -11,49 +11,48 @@ export default class CompiledShape {
      * @param {String[]} instructions - A set of instructions to compile 
      */
     constructor(renderer, instructions) {
-        this._renderer = renderer;
-        this._instructions = [];
-        this._drawContext = {};
-        this._assembly = null;
+        this.#renderer = renderer;
+        this.#instructions = [];
+        // the shape opaque Id from the renderer
+        this.#assembly = null;
     }
 
     get instructions() {
-        return this._instructions;
+        return this.#instructions;
     }
 
     get renderer() {
-        return this._renderer;
+        return this.#renderer;
     }
 
-    set drawContext(relContext) {
-        this._drawContext = relContext;
-    }
-
-    get compiled() {
-        return this._compiled;
-    }
-
-    set compiled(assembly) {
-        this._compiled = assembly;
-    }
-
-    compile() {
-        this._assembly = this.renderer.compile(this.instructions);
+    get assembly() {
+        return this.#assembly;
     }
 
     /**
-     * Remove the compiled shape from the cache.
+     * Compile
      */
-    destroy() {
-        SHAPE_CACHE.splice(this._id, 1);
-        this._renderer = null;
-        this._id = null;
-        this._instructions = null;
+    compile() {
+        this.#assembly = this.renderer.compile(this.instructions);
     }
 
+    /**
+     * Allow a compiled shape to be garbage collected
+     */
+    destroy() {
+        this.#renderer = null;
+        this.#instructions = null;
+        this.#assembly = null;
+    }
+
+    /**
+     * Draw this shape to the renderer.
+     * @param {number} time - The current world time in milliseconds 
+     * @param {number} deltaTime - The last frame time in milliseconds
+     */
     draw(time, deltaTime) {
-        if (this._assembly !== null) {
-            this.renderer.renderShape(this._assembly, time, deltaTime);
+        if (this.#assembly !== null) {
+            this.renderer.renderShape(this.#assembly, time, deltaTime);
         } else {
             this.instructions.forEach(inst => {
                 this.renderer.render(inst);

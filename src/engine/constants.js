@@ -52,10 +52,27 @@ const Constants = {
             collisionModel: null
         },
         threading: {
-            renderThreads: 1,
+            render: {
+                enabled: false,
+                priority: 0,
+                name: 'RE4 Render Thread',
+            },
+            collision: {
+                enabled: false,
+                priority: 0,
+                name: 'RE4 Collision Thread',
+            },
+        },
+        hooks: {
+            // Licecycle hooks
+            onInit: NOP,
+            onStart: NOP,
+            onStop: NOP,
+            onReset: NOP,
+            onShutdown: NOP,
             renderThreadPriority: 0,
             renderThreadName: 'RE4 Render Thread',
-            collisionThreads: 1,
+            collisionThread: true,
             collisionThreadPriority: 0,
             collisionThreadName: 'RE4 Collision Thread',
         },

@@ -1,6 +1,6 @@
 import Console from '../../core/Console.js';
 import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
-import { IL_INSTRUCTIONS as vector} from '../contexts/VectorRenderContext.js';
+import { VECTOR_IL as vector} from '../contexts/VectorRenderContext.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
@@ -11,35 +11,58 @@ const HALF_P = Math.floor(POINT_SIZE * 0.5);
 export default class CanvasRenderer extends Renderer {
     constructor(htmlElement, buffered = false) {
         super();
-        this._buffered = buffered;
-        this._blit = null;
-        this._htmlElement = htmlElement;
+        this.#buffered = buffered;
+        this.#blit = null;
+        this.#htmlElement = htmlElement;
             
         // when compiling shapes, this is the index to the path id 
         // currently being updated in tha shape's drawing context
-        this._pathId = null;
+        this.#pathId = null;
 
         // Let the context know the renderer can compile shapes
         this.hasCompiler = true;
     }
 
+    get isDoubleBuffered() {
+        return this.#buffered;
+    }
+
+    get blitter() {
+        return this.#blit;
+    }
+
+    /**
+     * Build a new instance of the CanvasRenderer. Do not contruct the renderer directly.
+     * @param {HTMLElement} htmlElement - The element that represents host the <code>Canvas</code> element.
+     * @param {boolean} buffered - If true, the renderer will use a double-buffered canvas for rendering.
+     * @returns {CanvasRenderer} - The initialized CanvasRenderer instance.
+     */
     static build(htmlElement, buffered) {
         return new CanvasRenderer(htmlElement, buffered);
     }
 
+     /**
+     * Initialize the <code>CanvasRenderer</code>.
+     * @param {RenderContext} context - The <code>RenderContext</code> that is connected to the renderer.
+     */
     init(context) {
-        this.renderContext = context;
-        this._canvas = document.createElement("canvas");
-        this._canvas.width = context.getRenderArea().width;
-        this._canvas.height = context.getRenderArea().height;
-        this._htmlElement.appendChild(this._canvas);
+        super.init(context);
+        this.#canvas = document.createElement("canvas");
+        this.#canvas.width = context.getRenderArea().width;
+        this.#canvas.height = context.getRenderArea().height;
+        this.#htmlElement.appendChild(this._canvas);
 
-        if (this._buffered) {
-            this._offscreen = new OffscreenCanvas(context.getRenderArea().width, context.getRenderArea().height);
-            this.surface = this._offscreen.getContext("2d");
-            this._blit = this._canvas.getContext("bitmaprenderer");
+        if (this.#buffered) {
+            // double-buffered
+            this.#offscreen = new OffscreenCanvas(context.getRenderArea().width, context.getRenderArea().height);
+            this.surface = this.#offscreen.getContext("2d");
+
+            // the blitter target is the bitmap renderer of the visible context
+            this.#blit = this.#canvas.getContext("bitmaprenderer");
         } else {
-            this.surface = this._canvas.getContext("2d");
+            // single-buffered
+            this._canvas.getContext("2d");
+            this.surface = this.#canvas.getContext("2d");
         }
     }
 
@@ -55,60 +78,58 @@ export default class CanvasRenderer extends Renderer {
      * After rendering, if buffered, swap offscreen to visible context.
      */
     postFrame() {
-        if (this._buffered) {
+        if (this.#buffered) {
             // swap offscreen to visible context
-            this._blit.transferFromImageBitmap(this._offscreen.transferToImageBitmap());
+            this.#blit.transferFromImageBitmap(this.#offscreen.transferToImageBitmap());
         }
     }
 
     /**
-     * Compile a set of drawing instructions into a function that, when called, executes the
+     * Compile a set of intermediate drawing instructions into a function that, when called, executes the
      * instructions to the canvas' viewport. This means that instructions are not sent for the
      * shape, and instead the object is rendered from a stored procedure.
      * 
-     * @param {String} instructions - The instructions to compile.
+     * @param {String[]} instructions - The instructions to compile.
      * @returns {Function} The compiled function, containing its drawing context.
      */
     compile(instructions) {
-        if (instructions.length === 0) {
-           Console.warn('Cannot compile an empty shape!');
-        }
-
+        super(instructions);
+        
         // generate the re-usable function
         const renderer = this;
-        const assembled = [];
-        const shapeContext = {
-            paths: []
-        };
+        const shapeContext = new Map({
+            paths: [],
+            assembled = []
+        });
         // assemble the instructions
         instructions.forEach(i => {
             if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
                 // a comment
-                assembled.push(i);
+                shapeContext.assembled.push(i);
             } else {
-                assembled.push(this._assemble(i, shapeContext));
+                shapeContext.assembled.push(this.#assemble(i, shapeContext));
             }
         });
         
         // assemble the function with its drawing context
         return function(time, deltaTime) {
-            const fn = Function("shapeContext", "time", "deltaTime", assembled.join());
-            return fn.call(renderer, shapeContext, time, deltaTime);
+            shapeContext.fn = Function("shapeContext", "time", "deltaTime", assembled.join("\n"));
+            return shapeContext.fn.call(renderer, shapeContext, time, deltaTime);
         };
     }
 
     /**
-     * Renders the compiled shape stored at the given index.
-     * @param {number} shapeIdx - The shape index to render
+     * Renders a compiled shape referenced by the opaque shape Id.
+     * @param {number} opaqueId - The shape index to render
      * @param {number} time - The current world time
      * @param {number} deltaTime - The time past since the last frame
      */
-    renderShape(shapeIdx, time, deltaTime) {
-        const drawShape = this._compiledShapes[shapeIdx];
+    renderCompiledShape(opaqueId, time, deltaTime) {
+        const drawShape = this.#compiledShapes[opaqueId];
         if (drawShape) {
             drawShape(time, deltaTime);
         } else {
-            throw new RenderEngineError(`Shape ${shapeIdx} not found!`);
+            throw new RenderEngineError(`Shape '${opaqueId}' not found in cache!`);
         }
     }
 
@@ -116,13 +137,14 @@ export default class CanvasRenderer extends Renderer {
      * Assemble the instruction into a renderer-appropriate function call.
      * 
      * @param {String} instruction - The instruction to assemble.
-     * @param {Object} shapeContext - The context that contains state variables for a compilation 
+     * @param {Map} shapeContext - The context that contains state variables for a compilation 
      * @returns {String} The configured instruction to invoke in the renderer
+     * @private
      */
-    _assemble(instruction, shapeContext) {
+    #assemble(instruction, shapeContext) {
         const parts = instruction.split(' ');
         const {operand, ...args} = {operand: parts.shift(), args: parts};
-        const pid = this._pathId;
+        const pid = this.#pathId;
         switch (operand) {
             case vector.TOGGLE:
                 args[0] === 'BOLD' && (this.formatTemp.bold != this.formatTemp.bold);

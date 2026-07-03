@@ -55,17 +55,17 @@ export default class RenderContext {
    */
   constructor(renderer, options = {}) {
     // the renderer which will be targeted by the context
-    this._renderer = renderer;
-    this._renderer.renderContext = this;
+    this.#renderer = renderer;
+    this.#renderer.renderContext = this;
 
     // Screen coordinate boundaries (top, left, right, bottom)
     // These define the visible world within the render context
-    this._viewport = options.viewport || [0, 0, 800, 600];
-    this._worldDimensions = options.worldDimensions || [800, 600];
+    this.#viewport = options.viewport || [0, 0, 800, 600];
+    this.#worldDimensions = options.worldDimensions || [800, 600];
     
     // World coordinate boundaries (usually larger than screen)
-    this.worldWidth = this._worldDimensions[0];
-    this.worldHeight = this._worldDimensions[1];
+    this.worldWidth = this.#worldDimensions[0];
+    this.worldHeight = this.#worldDimensions[1];
     
     // Flag to control whether culling is enabled
     this.enableCulling = options.enableCulling !== false;
@@ -93,13 +93,13 @@ export default class RenderContext {
     // Instruction buffer for async consumption by subclasses
     this.instructionBuffer = [];
 
-    this._immediate = false;
+    this.#immediate = false;
     
-    this._cursor = [0, 0];
-    this._cursorLimits = [this._viewport[0], this._viewport[1]];
-    this._lineHeight = options.lineHeight || 50;
+    this.#cursor = [0, 0];
+    this.#cursorLimits = [this.#viewport[0], this.#viewport[1]];
+    this.#lineHeight = options.lineHeight || 50;
 
-    this._formatting = {
+    this.#formatting = {
       bold: false,
       italics: false,
       underline: false
@@ -111,7 +111,7 @@ export default class RenderContext {
   //--------------------------------------------
 
   get formatting() {
-    return this._formatting;
+    return this.#formatting;
   }
 
   /**
@@ -119,7 +119,7 @@ export default class RenderContext {
    * @return number
    */
   get lineHeight() {
-    return this._lineHeight;
+    return this.#lineHeight;
   }
 
   /**
@@ -127,7 +127,7 @@ export default class RenderContext {
    * @param {number} height - The line height
    */
   set lineHeight(height) {
-    this._lineHeight = height;
+    this.#lineHeight = height;
   }
 
   /**
@@ -135,7 +135,7 @@ export default class RenderContext {
    * @returns {Array<number>} The cursor [x, y]
    */
   get cursor() {
-    return this._cursor;
+    return this.#cursor;
   }
 
   /**
@@ -143,7 +143,7 @@ export default class RenderContext {
    * @returns {number}
    */
   get cursorX() {
-    return this._cursor[0];
+    return this.#cursor[0];
   }
 
   /**
@@ -151,7 +151,7 @@ export default class RenderContext {
    * @returns {number}
    */
   get cursorY() {
-    return this._cursor[1];
+    return this.#cursor[1];
   }
 
   /**
@@ -159,7 +159,7 @@ export default class RenderContext {
    * @param {number} x - The X position
    */
   set cursorX(x) {
-    this._cursor[0] = x;
+    this.#cursor[0] = x;
   }
 
   /**
@@ -167,7 +167,7 @@ export default class RenderContext {
    * @param {number} y - The Y position
    */
   set cursorY(y) {
-    this._cursor[1] = y;
+    this.#cursor[1] = y;
   }
 
   /**
@@ -175,7 +175,7 @@ export default class RenderContext {
    * @param {Array<number>} [x, y] - The cursor position
    */
   setCursor([x, y]) {
-    this._cursor = [x, y];
+    this.#cursor = [x, y];
   }
 
   /**
@@ -183,7 +183,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the X position by
    */
   set cursorDeltaX(delta) {
-    this._cursor[0] += delta;
+    this.#cursor[0] += delta;
   }
 
   /**
@@ -191,7 +191,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the Y poisition by
    */
   set cursorDeltaY(delta) {
-    this._cursor[1] += delta;
+    this.#cursor[1] += delta;
   }
 
   /**
@@ -199,7 +199,7 @@ export default class RenderContext {
    * @returns {Array<number>} [left, top, width, height]
    */
   get cursorLimits() {
-    return this._cursorLimits;
+    return this.#cursorLimits;
   }
 
   /**
@@ -207,7 +207,23 @@ export default class RenderContext {
    * @param {Array<number>} [left, top, width, height]
    */
   setCursorLimits([left, top, width, height]) {
-    this._cursorLimits = [left, top, width, height];
+    this.#cursorLimits = [left, top, width, height];
+  }
+
+  //-----------------------------
+  // compiled shapes
+  //----------------------------
+  
+  getCompiledShape(instructions) {
+    return this.renderer.getCompiledShape(instructions);
+  }
+
+  destroyCompiledShapre(opaqueId) {
+    this.renderer.destroyCompiledShape(opaqueId);
+  }
+
+  renderCompiledShape(opaqueId, time, deltaTime) {
+    this.renderer.renderCompiledShape(opaqueId, time, deltaTime);
   }
 
   //-----------------------------
@@ -215,15 +231,15 @@ export default class RenderContext {
   //------------------------------
 
   set viewport(viewport) {
-    this._viewport = viewport;
+    this.#viewport = viewport;
   }
 
   get viewport() {
-    return this._viewport;
+    return this.#viewport;
   }
 
   set worldDimensions(dims) {
-    this._worldDimensions = dims;
+    this.#worldDimensions = dims;
   }
   
   /**
@@ -231,7 +247,7 @@ export default class RenderContext {
    * @return {boolean} True if the context is in immediate mode
    */
   get immediateMode() {
-    return this._immediate;
+    return this.#immediate;
   }
 
   /**
@@ -239,7 +255,7 @@ export default class RenderContext {
    * @param {boolean} state - Whether to enable immediate mode
    */
   set immediateMode(state) {
-    this._immediate = state;
+    this.#immediate = state;
   }
 
   /**
@@ -247,7 +263,7 @@ export default class RenderContext {
    * @returns {Renderer} The target of the render context
    */
   get renderer() {
-    return this._renderer;
+    return this.#renderer;
   }
 
   /**
@@ -263,7 +279,7 @@ export default class RenderContext {
    */
   carriageReturn() {
     this.cursor = 0;
-    this.cursorDeltaY += this._lineHeight;
+    this.cursorDeltaY += this.#lineHeight;
   }
 
   /**
@@ -285,7 +301,7 @@ export default class RenderContext {
    * @param  {String} instruction A rendering instruction
    */
   addInstruction(instruction) {
-    if (this._immediate) {
+    if (this.#immediate) {
       this.renderer.render(instruction);
     } else {
       this.instructionBuffer.push(instruction);
@@ -303,7 +319,7 @@ export default class RenderContext {
    * Returns the object containing the high-level API methods exposed by the sub-class.
    * @returns {Object}
    */
-  get render() {
+  get API() {
     throw new RenderContextError(this, 'render() must be implemented by the sub-class to expose a high-level API.');
   }
   
@@ -344,11 +360,11 @@ export default class RenderContext {
    * Renders the current scene to produce video output
    * Objects are automatically sorted into render planes for depth-based rendering
    * @param {Array<GameObject>} objects - Array of GameObjects to render in order
-   * @param {number} currentTime - Current game time in milliseconds (for parallax effects)
+   * @param {number} time - Current game time in milliseconds (for parallax effects)
    * @param {number} deltaTime - Time since last update in milliseconds
    * @returns {boolean} true if rendering was successful
    */
-  renderScene(objects, currentTime, deltaTime) {
+  renderScene(objects, time, deltaTime) {
     // Clear active objects for this frame
     this.clearActiveObjects();
 
@@ -410,7 +426,7 @@ export default class RenderContext {
         });
       });
 
-      // play out any instructions
+      // play out any pending instructions
       this.instructionBuffer.forEach(instruction => {
         this.renderer.render(instruction);
       });
@@ -635,10 +651,10 @@ export default class RenderContext {
    */
   getRenderArea() {
     return {
-      width: this._viewport[2],
-      height: this._viewport[3],
-      x: this._viewport[0],
-      y: this._viewport[1]
+      width: this.#viewport[2],
+      height: this.#viewport[3],
+      x: this.#viewport[0],
+      y: this.#viewport[1]
     };
   }
   
@@ -648,8 +664,8 @@ export default class RenderContext {
    */
   getWorldArea() {
     return {
-      width: this._worldDimensions[0],
-      height: this._worldDimensions[1],
+      width: this.#worldDimensions[0],
+      height: this.#worldDimensions[1],
       x: 0,
       y: 0
     };

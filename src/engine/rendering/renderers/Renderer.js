@@ -4,71 +4,133 @@ import RenderEngineError from '../../core/RenderEngineError.js';
 
 export default class Renderer {
     constructor() {
-        this._renderContext = null;
-        this._surface = null;
-        this._hasCompiler = false;
-        this._compiledShapes = {};
-    }
-
-    set renderContext(context) {
-        this._renderContext = context;
-    }
-
-    get renderContext() {
-        return this._renderContext;
-    }
-
-    set surface(renderSurface) {
-        this._surface = renderSurface;
-    }
-
-    get surface() {
-        return this._surface;
-    }
-
-    set hasCompiler(state = true) {
-        this._hasCompiler = state; 
-    }
-
-    init(context) {
-        this.renderContext = context;    
+        this.#renderContext = null;
+        this.#surface = null;
+        this.#hasCompiler = false;
+        this.#compiledShapes = {};
+        this.#opaqueShapeId = 100;
     }
 
     /**
-     * Called before the frame is rendered
+     * Set the associated render context for the renderer.
+     * @param {RenderContext} context - The render context to set for the renderer. 
+     */
+    set renderContext(context) {
+        this.#renderContext = context;
+    }
+
+    /**
+     * Get the associated render context for the renderer.
+     * @returns {RenderContext} The render context associated with the renderer. 
+     */
+    get renderContext() {
+        return this.#renderContext;
+    }
+
+    /**
+     * Set the associated render surface for the renderer. The surface is the hardware 
+     * context within the renderer that the images are rendered to.
+     * @param {Object} renderSurface - The render surface to set for the renderer. 
+     */
+    set surface(renderSurface) {
+        this.#surface = renderSurface;
+    }
+
+    /**
+     * Get the associated render surface for the renderer. The surface is the hardware 
+     * context within the renderer that the images are rendered to. 
+     * @returns {Object} The render surface associated with the renderer. 
+     */
+    get surface() {
+        return this.#surface;
+    }
+
+    /**
+     * Set whether the renderer supports compiling. 
+     * @param {Boolean} state - Whether the renderer has a compiler or not. 
+     */
+    set hasCompiler(state = true) {
+        this.#hasCompiler = state; 
+    }
+
+    /**
+     * Initialize this renderer.
+     * @param {RenderContext} context 
+     */
+    init(context) {
+        this.#renderContext = context;    
+    }
+
+    /**
+     * Called before a frame is rendered.
      */
     preFrame() {}
 
-    render() {
+    /**
+     * Method to render a single frame to the hardware context. Must be implmented by
+     * sub-classes. 
+     * @param {string} instruction - The intermediate language instruction to render
+     * @returns {void} 
+     */
+    render(instruction) {
         throw new RenderEngineError('render() must implemented by sub-classes!');
     }
 
     /**
-     * Called after the frame is rendered
+     * Called after a frame is rendered.
      */
     postFrame() {}
 
-    compile() {
-    }
-
     /**
-     * Renders a compiled shape with the given index.
-     * @param {number} shapeIdx - The shape index to render
-     * @param {number} time - The current world time
-     * @param {number} deltaTime - The time past since the last frame
+     * The method to compile a set of render instructions into an assembly that is executed by the renderer.
+     * Invocations of this method are used to build a compiled function that can be executed each frame to
+     * reduce the number of instructions that must be executed each frame. 
+     * 
+     * @param {String[]} instructions - A set of instructions to compile.
+     * @returns {Function} An assembly (function) containing the shape context.
+     * @private
      */
-    renderShape(shapeIdx, time, deltaTime) {
+    compile(instructions) {
+        if (instructions.length === 0) {
+           Console.warn('Cannot compile an empty shape!');
+        }
+        return null;
     }
 
     /**
-     * Compile a set of render instructions into an assembly that is executed by the renderer. 
+     * Renders a compiled shape with the given opaque Id. Compiled shapes are fixed shaped that can be
+     * rendered without having to pass an entire set of render instructions to generate the assembly at each frame. 
+     * @param {number} opaqueId - The shape Id to render
+     * @param {number} time - The current world time
+     * @param {number} deltaTime - The time that has past since the last frame
+     */
+    renderCompiledShape(opaqueId, time, deltaTime) {
+    }
+
+    /**
+     * Compile a set of render instructions into an assembly that will be executed by the renderer. Used with
+     * <code>renderShape</code> to render a shape to the context without having to pass an entire set of
+     * render instructions to generate the assembly at each frame. 
      * @param {String[]} instructions - The render instructions.
      * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
      *                   the renderer does not support pre-compilation of renderable objects.
      */
     getCompiledShape(instructions) {
-        if (!this._hasCompiler) { return null; }
-        this._compiledShapes[this._shapeIdx] = new CompiledShape(this, instructions);
-        return this._shapeIdx;
+        if (!this.#hasCompiler) { return null; }
+        this.#compiledShapes[this.#opaqueShapeId] = new CompiledShape(this, instructions);
+        return this.#opaqueShapeId++;
     }
+
+    /**
+     * Us this method to destroy previously compiled shapes. Do not destroy a compiled shape directly
+     * so it can be appropriately garbage collected.
+     * @param {number} opaqueId Destroy the shape at the opque index.
+     * @returns 
+     */
+    destroyCompiledShape(opaqueId) {
+        if (!this.#hasCompiler) { return; }
+        this.#compiledShapes[opaqueId].destroy();
+        delete this.#compiledShapes[opaqueId];
+    }
+
 }

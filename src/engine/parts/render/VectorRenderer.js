@@ -2,31 +2,31 @@ import Engine from '../../core/Engine.js';
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
 
-export default class VectorRender extends RenderComponent {
+export default class VectorRenderer extends RenderPart {
     constructor(priority, name) {
-        super(priority, name = 'VectorRender');
-        this._instructions = [];
-        this._render = {};
+        super(priority, name = 'VectorRenderer');
+        this.#instructions = [];
+        this.#api = {};
 
         // the compiled shape object (if supported by the render context)
-        this._compiledShape = null;
+        this.#compiledShape = null;
 
-        // redirect the renderer's calls from the context's render 
+        // redirect the renderer's calls from the context's API 
         // methods to this component with this shape being the context of
         // the function call
-        this.context.render.forEach(fn => {
-            this._render[fn.name] = (...args) => {
-                this.context.render[fn.name].apply(this, ...args);
+        this.context.API.forEach(fn => {
+            this.#api[fn.name] = (...args) => {
+                this.context.API[fn.name].apply(this, ...args);
             }
         });
     }
 
-    get render() {
-        return this._render;
+    get API() {
+        return this.#api;
     }
 
     get instructions() {
-        return [...this._instructions];
+        return [...this.#instructions];
     }
 
     /**
@@ -34,23 +34,23 @@ export default class VectorRender extends RenderComponent {
      * @param {String} inst - Instruction from the render method 
      */
     addInstruction(inst) {
-        this._instructions.push(inst);
+        this.#instructions.push(inst);
     }
 
     /**
      * Reset the component's shape and compiled status.
      */
     reset() {
-        this._instructions = [];
-        this._compiled = null;
+        this.#instructions = [];
+        this.#compiledShape = null;
     }
 
     /**
      * Prepare the component, compiling it if the renderer supports it.
      */
     compile() {
-        if (!this._compiledShape) {
-            this._compiledShape = this.context.renderer.getCompiledShape(this.instructions);
+        if (!this.#compiledShape) {
+            this.#compiledShape = this.context.getCompiledShape(this.instructions);
         } else {
             throw new GameComponentError(this, 'Attempt recompile an already compiled shape!');
         }
@@ -63,12 +63,12 @@ export default class VectorRender extends RenderComponent {
      * @param {number} deltaTime 
      */
     draw(time, deltaTime) {
-        if (this._compiledShape !== null) {
+        if (this.#compiledShape !== null) {
             // TODO: This should trigger a draw in the Renderer
-            // renderer.renderShape(this._compiledShape, time, deltaTime);
+            this.context.renderCompiledShape(this.#compiledShape, time, deltaTime);
         } else {
             this.instructions.forEach(instruction => {
-                this.context.renderer.render(instruction);
+                this.context.render(instruction);
             });
         }
     }

@@ -9,8 +9,8 @@ import Engine from '../../core/Engine.js';
 export default class RenderPart extends ComponentPart {
     constructor(priority = RENDER_PRIORITY, name = 'RenderPart') {
         super(RENDER_PRIORITY, name);
-        this._context = Engine.getRenderContext();
-        this._transformStackDepth = 0;
+        this.#context = Engine.getRenderContext();
+        this.#transformStackDepth = 0;
     }
 
     //--------------------------------
@@ -26,7 +26,7 @@ export default class RenderPart extends ComponentPart {
      * @returns {object} An object containing the render methods of the context
      */
     get context() {
-        return this._context.render;
+        return this.#context.render;
     }
 
     //-------------------------------
@@ -35,7 +35,7 @@ export default class RenderPart extends ComponentPart {
 
     get properties() {
         return {...super.properties, ...{
-            _context: this._context
+            context: this.#context
         }};
     }
 
@@ -57,8 +57,8 @@ export default class RenderPart extends ComponentPart {
      */
     composeAndDraw(time, deltaTime) {
         this.draw(time, deltaTime);
-        while (this._transformStackDepth-- > 0)
-            this._context?.popTransform();
+        while (this.#transformStackDepth-- > 0)
+            this.#context?.popTransform();
     }
 
     /**
@@ -73,7 +73,7 @@ export default class RenderPart extends ComponentPart {
      * @param {Number[Number[]]} transformMatrix The Transformation matrix to apply to the render context.
      */
     pushTransform(transformMatrix) {
-        this._transformStackDepth++;
-        this._context?.pushTransform(transformMatrix);
+        this.#transformStackDepth++;
+        this.#context?.pushTransform(transformMatrix);
     }
 }

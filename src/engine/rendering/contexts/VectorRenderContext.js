@@ -10,16 +10,16 @@ import processText from '../../ui/VectorText.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 
 // Intermediate Language instruction types for vector rendering
-const IL_INSTRUCTIONS = {
+const VECTOR_IL = {
   // Decorator Instructions (State Modifiers)
   COLOR: 'COLOR',
   FONTSIZE: 'FONTSIZE',
   FILL: 'FILL',
   WIDTH: 'WIDTH',
   TOGGLE: 'TOGGLE',
-  MOVETO: 'MOVETO',
-  
+   
   // Transformation matrix Instructions (State Modifiers)
+  MOVETO: 'MOVETO',
   TRANSFORM: 'TRANSFORM',
   ABS_TRANSFORM: 'ABS_TRANSFORM',
   PUSH: 'PUSH',
@@ -106,139 +106,158 @@ export default class VectorRenderContext extends RenderContext {
     // Initialize intermediate language state tracking
     
     // Color state - RGB values (0-1 range) with optional alpha
-    this._previousColor = [];  // Previous color before modification
-    this._currentColor = VectorRenderContext.DEFAULT_COLOR;   // Current active color
+    this.#previousColor = [];  // Previous color before modification
+    this.#currentColor = VectorRenderContext.DEFAULT_COLOR;   // Current active color
     
     // Width/Line thickness state
-    this._previousWidth = [];
-    this._currentWidth = VectorRenderContext.DEFAULT_LINE_WIDTH;
+    this.#previousWidth = [];
+    this.#currentWidth = VectorRenderContext.DEFAULT_LINE_WIDTH;
     
     // Font size state
-    this._previousFontSize = [];
-    this._currentFontSize = VectorRenderContext.DEFAULT_FONT_SIZE;
+    this.#previousFontSize = [];
+    this.#currentFontSize = VectorRenderContext.DEFAULT_FONT_SIZE;
         
     // Shape state tracking for container instructions
-    this._activeShapeStack = [];  // Stack for LINESEG/RECTANGLE/etc. containers
-    this._activeCurvePoints = []; // Points for Bezier curves
+    this.#activeShapeStack = [];  // Stack for LINESEG/RECTANGLE/etc. containers
+    this.#activeCurvePoints = []; // Points for Bezier curves
 
-    this._fill = false;
-    this._previousFillColor = [];
-    this._currenFillColor = VectorRenderContext.DEFAULT_FILL_COLOR;
+    this.#fill = false;
+    this.#previousFillColor = [];
+    this.#currenFillColor = VectorRenderContext.DEFAULT_FILL_COLOR;
 
-    this._shapeTable = {};
-    this._shapeId = 100;
+    this.#shapeTable = {};
+    this.#shapeId = 100;
   }
 
   set screenDimensions(dims) {
-    this._screenDimensions = dims;
+    this.#screenDimensions = dims;
     this.renderer.init(this);
   }
 
   get lineColor() {
-    return this._currentColor;
+    return this.#currentColor;
   }
 
   set lineColor(c) {
     if (c) {
-      this._previousColor.push(this._currentColor);
-      this._currentColor = c;
+      this.#previousColor.push(this.#currentColor);
+      this.#currentColor = c;
     } else {
       this.popLineColor;
       return;
     }
 
     // Add color instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this.lineColor}`);
+    this.addInstruction(`${VECTOR_IL.COLOR} ${this.lineColor}`);
   }  
 
   get popLineColor() {
-    this._currentColor = this._previousColor.length > 0 ? this._previousColor.pop() : VectorRenderContext.DEFAULT_COLOR;
+    this.#currentColor = this.#previousColor.length > 0 ? this.#previousColor.pop() : VectorRenderContext.DEFAULT_COLOR;
 
     // Add color instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this.lineColor}`);
+    this.addInstruction(`${VECTOR_IL.COLOR} ${this.lineColor}`);
     return undefined;
   }
 
+  resetColor() {
+    this.#currentColor = renderContext.DEFAULT_COLOR;
+    this.#previousColor = [];
+  }
+
   get fillColor() {
-    return this._currentFillColor;
+    return this.#currentFillColor;
   }
 
   set fillColor(f) {
     if (f) {
-      this._previousFillColor.push(this._currentFillColor);
-      this._currentFillColor = f;
+      this.#previousFillColor.push(this.#currentFillColor);
+      this.#currentFillColor = f;
     } else {
       this.popFillColor;
       return;
     }
     
-    this.addInstruction(`${IL_INSTRUCTIONS.FILL} ${this.fillColor}`);
+    this.addInstruction(`${VECTOR_IL.FILL} ${this.fillColor}`);
   }
 
   get popFillColor() {
-    this._currentFillColor = this._previousFillColor.length > 0 ? this._previousFillColor.pop() : VectorRenderContext.DEFAULT_FILL_COLOR;
+    this.#currentFillColor = this.#previousFillColor.length > 0 ? this.#previousFillColor.pop() : VectorRenderContext.DEFAULT_FILL_COLOR;
   
     // Add color instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.COLOR} ${this.fillColor}`);
+    this.addInstruction(`${VECTOR_IL.COLOR} ${this.fillColor}`);
     return undefined;
   }
 
+  resetFillColor() {
+    this.#currentFillColor = renderContext.DEFAULT_COLOR;
+    this.#previousFillColor = [];
+  }
+
   get lineWidth() {
-    return this._currentWidth;
+    return this.#currentWidth;
   }
 
   set lineWidth(w) {
     if (w) {
-      this._previousWidth.push(this._currentWidth);
-      this._currentWidth = w;
+      this.#previousWidth.push(this.#currentWidth);
+      this.#currentWidth = w;
     } else {
       this.popLineWidth;
     }
 
     // Add width instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth}`);
+    this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
   }
 
   get popLineWidth() {
-    this._currentWidth = this._previousWidth.length > 0 ? this._previousWidth.pop() : VectorRenderContext.DEFAULT_LINE_WIDTH;
+    this.#currentWidth = this.#previousWidth.length > 0 ? this.#previousWidth.pop() : VectorRenderContext.DEFAULT_LINE_WIDTH;
 
     // Add width instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.WIDTH} ${this.lineWidth}`);
+    this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
     return undefined;
   }
 
+  resetLineWidth() {
+    this.#currentWidth = renderContext.DEFAULT_LINE_WIDTH;
+    this.#previousWidth = [];
+  }
+
   get fontSize() {
-    return this._currentFontSize;
+    return this.#currentFontSize;
   }
 
   set fontSize(s) {
     if (s) {
-      this._previousFontSize.push(this._currentFontSize);
-      this._currentFontSize = s;
+      this.#previousFontSize.push(this.#currentFontSize);
+      this.#currentFontSize = s;
     } else {
       this.popFontSize;
     }
 
     // Add width instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.FONTSIZE} ${this.fontSize}`);
+    this.addInstruction(`${VECTOR_IL.FONTSIZE} ${this.fontSize}`);
   }
 
   get popFontSize() {
-    this._currentFontSize = this._previousFontSize.length > 0 ? this._previousFontSize.pop() : VectorRenderContext.DEFAULT_FONT_SIZE;
+    this.#currentFontSize = this.#previousFontSize.length > 0 ? this.#previousFontSize.pop() : VectorRenderContext.DEFAULT_FONT_SIZE;
 
     // Add font size instruction
-    this.addInstruction(`${IL_INSTRUCTIONS.FONTSIZE} ${this.fontSize}`);
+    this.addInstruction(`${VECTOR_IL.FONTSIZE} ${this.fontSize}`);
     return undefined;
   }
 
+  resetFontSize() {
+    this.#currentFontSize = renderContext.DEFAULT_FONT_SIZE;
+    this.#previousFontSize = [];
+  }
   /**
    * Reset all render context state for a new frame
    */
   reset() {
     super.reset();
     this.clearInstructionBuffer();
-    this._activeShapeStack = [];
-    this._activeCurvePoints = [];
+    this.#activeShapeStack = [];
+    this.#activeCurvePoints = [];
     if (this.world?.stackDepth > 1) {
       Console.warn('Stack depth is greater than 1 at frame reset.')
     }
@@ -250,7 +269,7 @@ export default class VectorRenderContext extends RenderContext {
    */
   pushTransform(transformationMatrix) {
     super.pushTransform(transformationMatrix);
-    this.addInstruction(`${IL_INSTRUCTIONS.TRANSFORM} ${transformationMatrix}`);
+    this.addInstruction(`${VECTOR_IL.TRANSFORM} ${transformationMatrix}`);
   }
 
   /**
@@ -259,7 +278,7 @@ export default class VectorRenderContext extends RenderContext {
    */
   popTransform() {
     const previousTransform = super.popTransform();
-    this.addInstruction(`${IL_INSTRUCTIONS.ABS_TRANSFORM} ${previousTransform}`);
+    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${previousTransform}`);
     return previousTransform;
   }
 
@@ -268,7 +287,7 @@ export default class VectorRenderContext extends RenderContext {
    */
   resetTransforms() {
     super.resetTransforms();
-    this.addInstruction(`${IL_INSTRUCTIONS.ABS_TRANSFORM} ${IdentityMatrix}`);
+    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${IdentityMatrix}`);
   }
 
   //--------------------------------------
@@ -278,7 +297,7 @@ export default class VectorRenderContext extends RenderContext {
   /**
    * @returns {Object} Returns the high-level API methods for vector drawing.
    */
-  get render() {
+  get API() {
     const renderContext = this;
     return {
       /**
@@ -286,7 +305,7 @@ export default class VectorRenderContext extends RenderContext {
        * @param {Matrix2d} transformationMatrix 
        */
       pushTransform: (transformationMatrix) => {
-        this.pushTransform(transformationMatrix);
+        renderContext.pushTransform(transformationMatrix);
       },
 
       /**
@@ -294,7 +313,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Matrix2d} The previous transform matrix
        */
       popTransform: () => {
-        return this.popTransform();
+        return renderContext.popTransform();
       },
 
       /**
@@ -302,14 +321,14 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Matrix2d} The top-most entry on the transform stack
        */
       peekTransform: () => {
-        return this.peekTransform();
+        return renderContext.peekTransform();
       },
 
       /**
        * Hard reset the transform to the Identity Matrix and empty the transform stack.
        */
       resetTransform: () => {
-        this.resetTransform();
+        renderContext.resetTransform();
       },
 
       /**
@@ -328,7 +347,7 @@ export default class VectorRenderContext extends RenderContext {
         } else {
           renderContext.lineColor = undefined;
         }
-        return renderContext.render;
+        return renderContext.API;
       },
 
       /**
@@ -347,7 +366,7 @@ export default class VectorRenderContext extends RenderContext {
         } else {
           renderContext.fillColor = undefined;
         }
-        return renderContext.render;
+        return renderContext.API;
       },
       
       /**
@@ -355,9 +374,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetColor: () => {
-        renderContext.lineColor = renderContext.DEFAULT_COLOR;
-        renderContext._previousColor = [];
-        return renderContext.render;
+        renderContext.resetColor();
+        return renderContext.API;
       },
       
       /**
@@ -365,9 +383,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetFill: () => {
-        renderContext.fillColor = renderContext.DEFAULT_COLOR;
-        renderContext._previousFillColor = [];
-        return renderContext.render;
+        renderContext.resetFillColor();
+        return renderContext.API;
       },
 
       /**
@@ -377,7 +394,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       width: (w) => {
         renderContext.lineWidth = w;        
-        return renderContext.render;
+        return renderContext.API;
       },
       
       /**
@@ -385,9 +402,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetWidth: () => {
-        renderContext.lineWidth = renderContext.DEFAULT_LINE_WIDTH;
-        renderContext._previousWidth = [];
-        return renderContext.render;
+        renderContext.resetLineWidth();
+        return renderContext.API;
       },
       
       /**
@@ -397,7 +413,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       fontSize: (s) => {
         renderContext.fontSize = s;
-        return renderContext.render;
+        return renderContext.API;
       },
       
       /**
@@ -405,9 +421,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetFontSize: () => {
-        renderContext.fontSize = renderContext.DEFAULT_FONT_SIZE;
-        renderContext._previousFontSize = [];
-        return renderContext.render;
+        renderContext.resetFontSize();
+        return renderContext.API;
       },
       
       /**
@@ -416,7 +431,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       carriageReturn: () => {
         renderContext.carriageReturn();
-        return renderContext.render;
+        return renderContext.API;
       },
 
       /**
@@ -425,7 +440,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       cursorX: (x) => {
         renderContext.cursorX = x;
-        return renderContext.render;
+        return renderContext.API;
       },
 
       /**
@@ -434,7 +449,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       cursorY: (y) => {
         renderContext.cursorY = y;
-        return renderContext.render;
+        return renderContext.API;
       },
 
       /**
@@ -444,7 +459,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       cursor: (x, y) => {
         renderContext.setCursor([x, y]);
-        return renderContext.render;
+        return renderContext.API;
       },
 
       /**
@@ -455,7 +470,7 @@ export default class VectorRenderContext extends RenderContext {
       cursorDelta: (deltaX, deltaY) => {
         renderContext.cursorDeltaX = deltaX;
         renderContext.cursorDeltaY = deltaY;
-        return renderContext.render;
+        return renderContext.API;
       },
 
       /**
@@ -503,8 +518,8 @@ export default class VectorRenderContext extends RenderContext {
         }
         
         const pointInst = [];
-        renderContext.addInstruction(`${IL_INSTRUCTIONS.POINT} ${pointX} ${pointY}`);
-        return renderContext.render;
+        renderContext.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY}`);
+        return renderContext.API;
       },
       
       /**
@@ -529,12 +544,12 @@ export default class VectorRenderContext extends RenderContext {
             endScreen = endObj;
           } else {
             // Start or end point outside view bounds - skip rendering
-            return renderContext.render;
+            return renderContext.API;
           }
         }
         
-        renderContext.addInstruction(`${IL_INSTRUCTIONS.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
-        return renderContext.render;
+        renderContext.addInstruction(`${VECTOR_IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
+        return renderContext.API;
       },
 
       /**
@@ -554,12 +569,12 @@ export default class VectorRenderContext extends RenderContext {
             startScreen = [startObj[0], startObj[1]];
           } else {
             // Start or end point outside view bounds - skip rendering
-            return renderContext.render;
+            return renderContext.API;
           }
         }
 
-        renderContext.addInstruction(`${IL_INSTRUCTIONS.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
-        return renderContext.render;
+        renderContext.addInstruction(`${VECTOR_IL.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
+        return renderContext.API;
       },
       
       /**
@@ -570,18 +585,18 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       lineSegment: (filled, [x1, y1], ... coords) => {
-        renderContext.addInstruction(`${IL_INSTRUCTIONS.LINESEG} ${filled ? '1' : '0'}`);
+        renderContext.addInstruction(`${VECTOR_IL.LINESEG} ${filled ? '1' : '0'}`);
         
         // first line of segment
-        renderContext.render.line([x1, y1], coords.shift());
+        renderContext.API.line([x1, y1], coords.shift());
 
         // run out the remainder of the coordinates in the line segment
         for (let rel of coords) {
-          renderContext.render.lineRel(rel);
+          renderContext.API.lineRel(rel);
         }
         
-        renderContext.addInstruction(`${IL_INSTRUCTIONS.ENDSEG}`);
-        return renderContext.render;
+        renderContext.addInstruction(`${VECTOR_IL.ENDSEG}`);
+        return renderContext.API;
       },
       
       /**
@@ -605,12 +620,12 @@ export default class VectorRenderContext extends RenderContext {
             center = [startObj[0], startObj[1]];
           } else {
             // Center is outside the context
-            return renderContext.render;
+            return renderContext.API;
           }
         }
 
-        renderContext.addInstruction(`${IL_INSTRUCTIONS.ARC} ${cx} ${cy} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
-        return renderContext.render;
+        renderContext.addInstruction(`${VECTOR_IL.ARC} ${cx} ${cy} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
+        return renderContext.API;
       },
 
       /**
@@ -622,7 +637,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       ellipse: (cx, cy, rX, rY, filled) => {
-        return renderContext.render.arc(cx, cy, rX, rY, 0, twoPi, filled);
+        return renderContext.API.arc(cx, cy, rX, rY, 0, twoPi, filled);
       },
 
       /**
@@ -633,7 +648,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       circle: (cx, cy, r, filled) => {
-        return renderContext.render.arc(cx, cy, r, r, 0, twoPi, filled);
+        return renderContext.API.arc(cx, cy, r, r, 0, twoPi, filled);
       },
       
       /**
@@ -646,7 +661,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       rectangle: (x1, y1, x2, y2, filled) => {
         // Convert to absolute coordinates from top-left corner
-        renderContext.render.lineSegment(filled, 
+        renderContext.API.lineSegment(filled, 
             [x1, y1],
             [x2, y1],
             [x2, y2],
@@ -654,7 +669,7 @@ export default class VectorRenderContext extends RenderContext {
             [x1, y1]
           );
 
-        return renderContext.render;
+        return renderContext.API;
       },
       
       /**
@@ -665,7 +680,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       square: (x, y, side, filled) => {
-        return renderContext.render.rectangle(x, y, x + side, y + side, filled);
+        return renderContext.API.rectangle(x, y, x + side, y + side, filled);
       },
       
       /**
@@ -685,8 +700,8 @@ export default class VectorRenderContext extends RenderContext {
         restVertices.push(firstVertex);
 
         // Draw each edge of the polygon
-        renderContext.render.lineSegment(filled, firstVertex, ...restVertices);
-        return renderContext.render;
+        renderContext.API.lineSegment(filled, firstVertex, ...restVertices);
+        return renderContext.API;
       },
       
       /**
@@ -707,7 +722,7 @@ export default class VectorRenderContext extends RenderContext {
           vertices.push([x, y]);
         }
         
-        return renderContext.render.polygon(filled, ...vertices);
+        return renderContext.API.polygon(filled, ...vertices);
       },
 
       /**
@@ -723,7 +738,7 @@ export default class VectorRenderContext extends RenderContext {
       text(text, options = {formatting: {bold:false,italics:false,underline:false}}) {
         // Validate input
         if (typeof text !== 'string' || text.length === 0) {
-          return renderContext.render;
+          return renderContext.API;
         }
 
         // Apply initial color if provided
@@ -748,17 +763,17 @@ export default class VectorRenderContext extends RenderContext {
         }
 
         if (options.formatting.bold)
-            renderContext.addInstruction(`${IL_INSTRUCTIONS.TOGGLE} BOLD\n`);
+            renderContext.addInstruction(`${VECTOR_IL.TOGGLE} BOLD\n`);
 
         if (options.formatting.italics)
-            renderContext.addInstruction(`${IL_INSTRUCTIONS.TOGGLE} ITALICS\n`);
+            renderContext.addInstruction(`${VECTOR_IL.TOGGLE} ITALICS\n`);
         
         if (options.formatting.underline)
-            renderContext.addInstruction(`${IL_INSTRUCTIONS.TOGGLE} UNDERLINE\n`);
+            renderContext.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
         // Process text with markers and generate instructions
         processText.call(renderContext, text);
-        return renderContext.render;
+        return renderContext.API;
       }
     };
   }
@@ -766,5 +781,5 @@ export default class VectorRenderContext extends RenderContext {
 
 // Export the VectorRenderContext class
 export {
-  IL_INSTRUCTIONS
+  VECTOR_IL as IL_INSTRUCTIONS
 }
