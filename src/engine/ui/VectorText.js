@@ -6,9 +6,9 @@ import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 function getWord(text, idx) {
     let check = text.substring(idx);
     const space = check.indexOf(' ');
-    const percent = check.indexOf('%', 1);
+    const brace = check.indexOf('{', 1);
 
-    if (percent > -1 && space > -1 && percent < space) {
+    if (brace > -1 && space > -1 && brace < space) {
         throw new RenderContextError(this, "VectorText::getWord() - Tag found in character string before space!");
     } 
 
@@ -16,7 +16,8 @@ function getWord(text, idx) {
         // return with the trailing space
         return text.substring(idx, idx + space);
     } else {
-        return text;
+        // return without the next starting brace
+        return text.substring(idx, idx + (brace - 1));
     }
 }
 
@@ -41,11 +42,11 @@ export default function processText(text, spaceWidth = 45) {
             if (nextChar !== undefined) {
                 switch (nextChar) {
                 case '*':
-                    characterInstruction.call(this, ' ', spaceWidth);
+                    characterInstruction.call(this, '*', spaceWidth);
                     i += 2;
                     break;
-                case '%':
-                    characterInstruction.call(this, '%', spaceWidth);
+                case '{':
+                    characterInstruction.call(this, '{', spaceWidth);
                     i += 2;
                     break;
                 case '_':
@@ -75,8 +76,8 @@ export default function processText(text, spaceWidth = 45) {
             continue;
         }
 
-        // Handle color markers
-        if (char === '%') {
+        // Handle formatting markers
+        if (char === '{') {
             const instructions = [];
             const nextChar = text[i + 1];
             let markerType = '';
@@ -84,27 +85,29 @@ export default function processText(text, spaceWidth = 45) {
             if (nextChar === '!') {
                 // Reset to previous/default color
                 instructions.push(`${VECTOR_IL.COLOR}`);
-                i += 2;
-            } else if (nextChar === '[') {
-                // Font size marker - find closing bracket
-                let j = i + 1;
-                let foundBracket = false;
-                while (j < text.length && !foundBracket) {
-                    if (text[j] === ']') {
-                        const fontSizeValue = parseFloat(text.substring(i + 2, j).trim());
-                        
-                        // Handle font size reset or set
-                        if (fontSizeValue === 0 || fontSizeValue === '') {
-                            this.popFontSize;
-                        } else {
+                i += 3;
+            } else if (nextChar === '+' || nextChar === '-') {
+                // Font size marker - next character
+                let nextNext = text[i + 2];
+                if (nextNext === '}') {
+                    // pop to the last font size
+                    this.popFontSize;
+                } else {
+                    // get the value and apply the delta to font size
+                    let j = i + 1;
+                    let foundBracket = false;
+                    while (j < text.length && !foundBracket) {
+                        if (text[j] === '}') {
+                            const fontSizeValue = parseFloat(text.substring(i + 2, j).trim());
+                            
                             this.fontSize += fontSizeValue;
                             spaceWidth *= fontSizeValue * 0.47;
+                            foundBracket = true;
                         }
-                        foundBracket = true;
+                        j++;
                     }
-                    j++;
+                    i = j;
                 }
-                i = j;
                 continue;
             } else if (nextChar !== undefined && !isNaN(parseFloat(nextChar))) {
                 // Color name with hex digit
@@ -112,7 +115,7 @@ export default function processText(text, spaceWidth = 45) {
                 instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             } else if (nextChar !== undefined) {
-                // Color name - remove the %
+                // Color name - remove the { - may need to remove the training } as well??
                 const colorName = getWord.call(this, text, i).substr(1).trim();
 
                 instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);

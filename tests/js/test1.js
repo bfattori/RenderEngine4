@@ -35,12 +35,13 @@ context.API
     .width(10)
     .circle(100, 100, 50, false)
     
-    // the string "Hello World!" formatted with colors
+    // the string "Hello World!" formatted 
+    // with colors and font size changes
     .width(3)
     .cursor(50, 350)
-    .text("%#00f **H%#f00 ** e%green %[4]l%orange l%#2e867f %[]o")
+    .text("{#00f}**H{#f00}e**{green}{+4}l{orange}l{#2e867f}{+}o ")
     .cursor(50, 455)
-    .text(" %[6]%#808 **~World!~**");
+    .text("{+6}{#808}**~World!~**");
 
 // Run out one frame to render it   
 RE4.update(0, 0);
