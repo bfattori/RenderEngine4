@@ -21,8 +21,10 @@ RenderEngine.init({
     }
 });
 
-// draw a simple shape
+// draw some shapes and text
 const context = RE4.world.renderContext;
+
+// chainable API for drawing shapes and text
 context.API
     .color("#0000ff")
     .width(5)
@@ -32,6 +34,7 @@ context.API
     .color("#ff9100")
     .width(10)
     .circle(100, 100, 50, false)
+    
     // the string "Hello World!" formatted with colors
     .width(3)
     .cursor(50, 350)
