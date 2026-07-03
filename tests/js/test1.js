@@ -23,7 +23,7 @@ RenderEngine.init({
 
 // draw a simple shape
 const context = RE4.world.renderContext;
-context.render
+context.API
     .color("#0000ff")
     .width(5)
     .line(100, 100, 300, 300)
