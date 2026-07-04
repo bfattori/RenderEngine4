@@ -1,3 +1,12 @@
+/**
+ * RasterRenderContext - Renders raster-style graphics (sprites, tilemaps, etc.) using an intermediate language
+ * Consumed by subclasses (Canvas, WebGL) for actual frame output
+ * 
+ * @extends RenderContext
+ */
+import Console from '../../core/Console.js';
+import RenderContext from './RenderContext.js';
+import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 
 // Intermediate Language instruction types for vector rendering
 const RASTER_IL = {
@@ -21,3 +30,10 @@ const RASTER_IL = {
   TILE: 'TILE',
   TILEMAP: 'TILEMAP'
 };
+
+export default class RasterRenderContext extends RenderContext {
+    constructor(renderer) {
+        super(renderer);
+        this.pushTransform(new Matrix2d(IdentityMatrix[0], IdentityMatrix[1], IdentityMatrix[2]));
+    }
+}
