@@ -23,7 +23,7 @@ const RASTER_IL = {
   // Rendering Instructions (primitives)
   POINT: 'POINT',       // "POINT X Y" would be a point at X, Y
   LINE: 'LINE',         // "LINE X1 Y1 X2 Y2" would be a line from (X1, Y1) to (X2, Y2)
-  TEXT: 'TEXT',         // "TEXT X Y STRING" would be a string at (X, Y)
+  TEXT: 'TEXT',         // "TEXT X Y ALIGN STRING" would be a string at (X, Y) with (X, Y) being the anchor point, and ALIGN being one of: "left", "center", "right"
 
   // Rendering Instructions (complex)
   SPRITE: 'SPRITE',     // Sprites have state: "SPRITE 1 2 X Y" would be sprite 1, state 2, at X, Y
