@@ -8,7 +8,7 @@ import Console from '../../core/Console.js';
 import RenderContext from './RenderContext.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 
-// Intermediate Language instruction types for vector rendering
+// Intermediate Language instruction types for raster rendering
 const RASTER_IL = {
   // Decorator Instructions (State Modifiers)
   COLOR: 'COLOR',
