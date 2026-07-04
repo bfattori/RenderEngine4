@@ -35,9 +35,9 @@ context.API
     
     // the string "Hello World!" formatted 
     // with colors and font size changes
-    .cursor(50, 350)
+    .cursor(50, 330)
     .width(3)
-    .text("{#00f}**H{#f00}e**{green}{+4}l{orange}l{#2e867f}{+}o ")
+    .text("{#00f}**H{#f00}e**{green}{+2}l{orange}~l~{#2e867f}{+}o ")
     .cursor(50, 455)
     .text("{+6}{#808}**~World!~**");
 
