@@ -1,6 +1,8 @@
 import Console from '../../core/Console.js';
 import CompiledShape from '../shapes/CompiledShape.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
+import VectorAssembler from '../assemblers/VectorAssembler.js';
+import RasterAssembler from '../assemblers/RasterAssembler.js';
 
 export default class Renderer {
     #renderContext = null;
@@ -8,6 +10,12 @@ export default class Renderer {
     #hasCompiler = false;
     #compiledShapes = {};
     #opaqueShapeId = 100;
+    #assembler = null;
+
+    // when compiling shapes, this is the index to the path id 
+    // currently being updated in tha shape's drawing context
+    #pathId = null;
+    #path = null;
 
     constructor() {
     }
@@ -26,6 +34,20 @@ export default class Renderer {
      */
     get renderContext() {
         return this.#renderContext;
+    }
+
+    get assembler() {
+        if (this.#assembler === null) {
+            if (this.#renderContext.constructor.name === 'VectorRenderContext') {
+                this.#assembler = VectorAssembler;
+            } else if (this.#renderContext.constructor.name === 'RasterRenderContext') {
+                this.#assembler = RasterAssembler;
+            } else {
+                throw new RenderEngineError("Unsupported render context type");
+            }
+        }
+
+        return this.#assembler;
     }
 
     /**
@@ -60,6 +82,22 @@ export default class Renderer {
      */
     get hasCompiler() {
         return this.#hasCompiler;
+    }
+
+    set pathId(id) {
+        this.#pathId = id;
+    }
+
+    get pathId() {
+        return this.#pathId;
+    }
+
+    set path(path) {
+        this.#path = path;
+    }
+
+    get path() {
+        return this.#path;
     }
 
     /**
