@@ -4,6 +4,11 @@
  * stored in the SHAPE_CACHE. 
  */
 export default class CompiledShape {
+    #renderer = null;
+    #instructions = [];
+    // the shape opaque Id from the renderer
+    #assembly = null;
+
     /**
      * Create a CompiledShape
      * 
@@ -12,9 +17,6 @@ export default class CompiledShape {
      */
     constructor(renderer, instructions) {
         this.#renderer = renderer;
-        this.#instructions = [];
-        // the shape opaque Id from the renderer
-        this.#assembly = null;
     }
 
     get instructions() {

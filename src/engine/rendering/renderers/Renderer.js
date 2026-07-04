@@ -3,12 +3,13 @@ import CompiledShape from '../shapes/CompiledShape.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 
 export default class Renderer {
+    #renderContext = null;
+    #surface = null;
+    #hasCompiler = false;
+    #compiledShapes = {};
+    #opaqueShapeId = 100;
+
     constructor() {
-        this.#renderContext = null;
-        this.#surface = null;
-        this.#hasCompiler = false;
-        this.#compiledShapes = {};
-        this.#opaqueShapeId = 100;
     }
 
     /**
@@ -54,6 +55,14 @@ export default class Renderer {
     }
 
     /**
+     * Returns whether the renderer supports compiling.
+     * @returns {Boolean} Whether the renderer has a compiler or not.
+     */
+    get hasCompiler() {
+        return this.#hasCompiler;
+    }
+
+    /**
      * Initialize this renderer.
      * @param {RenderContext} context 
      */
@@ -94,7 +103,6 @@ export default class Renderer {
         if (instructions.length === 0) {
            Console.warn('Cannot compile an empty shape!');
         }
-        return null;
     }
 
     /**

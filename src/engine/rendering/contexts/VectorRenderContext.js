@@ -90,6 +90,32 @@ export default class VectorRenderContext extends RenderContext {
     return 4;
   }
 
+  // Color state - RGB values (0-1 range) with optional alpha
+  #previousColor = [];  // Previous color stack
+  #currentColor = VectorRenderContext.DEFAULT_COLOR;   // Current active color
+  
+  // Width/Line thickness state
+  #previousWidth = [];
+  #currentWidth = VectorRenderContext.DEFAULT_LINE_WIDTH;
+  
+  // Font size state
+  #previousFontSize = [];
+  #currentFontSize = VectorRenderContext.DEFAULT_FONT_SIZE;
+      
+  // Shape state tracking for container instructions
+  #activeShapeStack = [];  // Stack for LINESEG/RECTANGLE/etc. containers
+  #activeCurvePoints = []; // Points for Bezier curves
+
+  #fill = false;
+  #previousFillColor = [];
+  #currentFillColor = VectorRenderContext.DEFAULT_FILL_COLOR;
+
+  #shapeTable = new Map();
+  #shapeId = 100;
+
+  #screenDimensions = [800, 600];
+  #worldDimensions = [800, 600];
+
   /**
    * Creates a new VectorRenderContext instance
    * @constructor
@@ -100,37 +126,12 @@ export default class VectorRenderContext extends RenderContext {
    * @param {number} [options.maxPlanes=3] - The number of rendering planes
    * @param {boolean} [options.enableCulling=true] - Whether culling is enabled
    */
-  constructor(renderer, options = {enableCulling: false}) {
+  constructor(renderer, options) {
     super(renderer, options);
-    
-    // Initialize intermediate language state tracking
-    
-    // Color state - RGB values (0-1 range) with optional alpha
-    this.#previousColor = [];  // Previous color before modification
-    this.#currentColor = VectorRenderContext.DEFAULT_COLOR;   // Current active color
-    
-    // Width/Line thickness state
-    this.#previousWidth = [];
-    this.#currentWidth = VectorRenderContext.DEFAULT_LINE_WIDTH;
-    
-    // Font size state
-    this.#previousFontSize = [];
-    this.#currentFontSize = VectorRenderContext.DEFAULT_FONT_SIZE;
-        
-    // Shape state tracking for container instructions
-    this.#activeShapeStack = [];  // Stack for LINESEG/RECTANGLE/etc. containers
-    this.#activeCurvePoints = []; // Points for Bezier curves
-
-    this.#fill = false;
-    this.#previousFillColor = [];
-    this.#currenFillColor = VectorRenderContext.DEFAULT_FILL_COLOR;
-
-    this.#shapeTable = {};
-    this.#shapeId = 100;
   }
 
   set screenDimensions(dims) {
-    this.#screenDimensions = dims;
+    super.viewport = dims;
     this.renderer.init(this);
   }
 
@@ -256,8 +257,6 @@ export default class VectorRenderContext extends RenderContext {
   reset() {
     super.reset();
     this.clearInstructionBuffer();
-    this.#activeShapeStack = [];
-    this.#activeCurvePoints = [];
     if (this.world?.stackDepth > 1) {
       Console.warn('Stack depth is greater than 1 at frame reset.')
     }
@@ -458,7 +457,7 @@ export default class VectorRenderContext extends RenderContext {
        * @param {number} y - Y coordinate in screen space
        */
       cursor: (x, y) => {
-        renderContext.setCursor([x, y]);
+        renderContext.cursor = [x, y];
         return renderContext.API;
       },
 
@@ -781,5 +780,5 @@ export default class VectorRenderContext extends RenderContext {
 
 // Export the VectorRenderContext class
 export {
-  VECTOR_IL as IL_INSTRUCTIONS
+  VECTOR_IL
 }

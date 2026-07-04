@@ -2,6 +2,8 @@
 
 RenderEngine4 is a lightweight 2D game engine implemented in plain JavaScript. It focuses on a component-based architecture, simple render loops, and modular subsystems for world management, event handling, collision, rendering, and audio.
 
+**This is a work in progress and not yet fully functional**
+
 ## Project Status
 
 - Source modules are located under `src/engine/`.

@@ -8,7 +8,7 @@ const _IdentityMatrix = [
 
 // Canonical shearing matrix
 const _ShearingMatrix = [ 
-    [1, 3, 0],
+    [1, 0.267, 0],              // 15-degree slant (tan(15) = 0.26794919243) , alternative is 12-degree slant (tan(12) = 0.21255656167)
     [0, 1, 0],
     [0, 0, 1]
 ];
@@ -46,7 +46,7 @@ export {
  * @param {Number} options.m22 - The value at (2, 2).
  */
 export class Matrix2d {
-    constructor({m00, m10, m20} = _IdentityMatrix[0], {m01, m11, m21} = _IdentityMatrix[1], {m02, m12, m22} = _IdentityMatrix[2]) {
+    constructor([m00, m10, m20] = _IdentityMatrix[0], [m01, m11, m21] = _IdentityMatrix[1], [m02, m12, m22] = _IdentityMatrix[2]) {
         this._props = {scale:[1,1],rotation:0,position:[0,0]};
         this._matrix = [
             [m00, m10, m20],
@@ -133,6 +133,14 @@ export class Matrix2d {
      */
     toString() {
         return `${this.rows[0][0]} ${this.rows[0][1]} ${this.rows[0][2]} ${this.rows[1][0]} ${this.rows[1][1]} ${this.rows[1][2]} ${this.rows[2][0]} ${this.rows[2][1]} ${this.rows[2][2]}`;
+    }
+
+    /**
+     * Outputs the maxtrix as a string in the format used by the HTML5 canvas context's transform() method.
+     * @returns The matrix as a string
+     */
+    toCanvas() {
+        return `${this.rows[0][0]} ${this.rows[1][0]} ${this.rows[0][1]} ${this.rows[1][1]} ${this.rows[0][2]} ${this.rows[1][2]}`;
     }
 
     /**

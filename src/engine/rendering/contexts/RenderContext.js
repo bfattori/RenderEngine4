@@ -6,23 +6,6 @@ import Console from '../../core/Console.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 
-// Define the interface that all RenderContext subclasses must implement
-const RenderContextInterface = {
-  // Required methods
-  update: 'Must be implemented - Updates rendering state based on current world time and delta',
-  render: 'Must be implemented - Produces video output for the game frame',
-  
-  // Screen coordinate properties (defined by each subclass)
-  top: 'Screen Y-coordinate of the top edge (set by subclass)',
-  left: 'Screen X-coordinate of the left edge (set by subclass)',
-  right: 'Screen X-coordinate of the right edge (set by subclass)',
-  bottom: 'Screen Y-coordinate of the bottom edge (set by subclass)',
-  
-  // Transform methods
-  worldToScreen: 'Must be implemented - Converts world coordinates to screen coordinates',
-  screenToWorld: 'Must be implemented - Converts screen coordinates to world coordinates',
-};
-
 /**
  * Render context error class for rendering errors.
  * @param {RenderContext} context - The rendering context
@@ -37,12 +20,41 @@ class RenderContextError extends RenderEngineError {
   }
 }
 
+export {
+  RenderContextError
+};
+
 /**
  * RenderContext base class - Interface definition only, no implementation
  * This serves as the contract that all render contexts (VectorRenderContext, RasterRenderContext)
  * must implement. Actual implementations should extend this class or follow its interface.
  */
 export default class RenderContext {
+  #renderer = null;
+  #viewport = {left: 0, top: 0, width: 800, height: 600};
+  #worldDimensions = {width: 800, height: 600};
+  #enableCulling = false;
+  #world = null;
+  #activeObjects = [];
+  #maxPlanes = 3;
+  #renderPlanes = [
+      'background',      // Farthest plane (lowest priority)
+      'middle',          // Middle plane
+      'foreground'       // Closest plane (highest priority)
+    ];
+  #objectPlaneAssignments = new Map();
+  #lastUpdateTime = null;
+  #instructionBuffer = [];
+  #cursor = {x: 0, y: 0};
+  #cursorLimits = {left: 0, top: 0, width: 800, height: 600};
+  #lineHeight = 50;
+  #immediateMode = false;
+  #formatting = {
+      bold: false,
+      italics: false,
+      underline: false
+    };
+
   /**
    * Creates a new RenderContext instance
    * @param {Renderer} renderer - The renderer for the context
@@ -60,50 +72,23 @@ export default class RenderContext {
 
     // Screen coordinate boundaries (top, left, right, bottom)
     // These define the visible world within the render context
-    this.#viewport = options.viewport || [0, 0, 800, 600];
-    this.#worldDimensions = options.worldDimensions || [800, 600];
-    
-    // World coordinate boundaries (usually larger than screen)
-    this.worldWidth = this.#worldDimensions[0];
-    this.worldHeight = this.#worldDimensions[1];
-    
-    // Flag to control whether culling is enabled
-    this.enableCulling = options.enableCulling !== false;
+    if (options.viewport && options.viewport.length === 4) {
+      this.#viewport.top = options.viewport[0];
+      this.#viewport.left = options.viewport[1];
+      this.#viewport.width = options.viewport[2];
+      this.#viewport.height = options.viewport[3];
+    }
+    if (options.worldDimensions && options.worldDimensions.length === 2) {
+      this.#worldDimensions.width = options.worldDimensions[0];
+      this.#worldDimensions.height = options.worldDimensions[1];
+    }
 
-    // Store the world that owns this render context (set by Engine)
-    this.world = null;
-    
-    // Track which GameObjects are currently being rendered
-    this.activeObjects = [];
+    // Flag to control whether culling is enabled
+    this.#enableCulling = options.enableCulling !== false || this.#enableCulling;
     
     // NEW: Render planes configuration - support any number of planes, default 3
-    this.maxPlanes = options.maxPlanes || 3;
-    this.renderPlanes = [
-      'background',      // Farthest plane (lowest priority)
-      'middle',          // Middle plane
-      'foreground'       // Closest plane (highest priority)
-    ];
-    
-    // Object-to-plane assignments (null for auto-sort by depth)
-    this.objectPlaneAssignments = new Map();
-    
-    // Store the time/delta passed to last update/render call
-    this.lastUpdateTime = null;
-
-    // Instruction buffer for async consumption by subclasses
-    this.instructionBuffer = [];
-
-    this.#immediate = false;
-    
-    this.#cursor = [0, 0];
-    this.#cursorLimits = [this.#viewport[0], this.#viewport[1]];
-    this.#lineHeight = options.lineHeight || 50;
-
-    this.#formatting = {
-      bold: false,
-      italics: false,
-      underline: false
-    };
+    this.#maxPlanes = options.maxPlanes || this.#maxPlanes;
+    this.#lineHeight = options.lineHeight || this.#lineHeight;
   }
 
   //--------------------------------------------
@@ -135,7 +120,16 @@ export default class RenderContext {
    * @returns {Array<number>} The cursor [x, y]
    */
   get cursor() {
-    return this.#cursor;
+    return [this.#cursor.x, this.#cursor.y];
+  }
+
+  /**
+   * The the cursor position
+   * @param {Array<number>} [x, y] - The cursor position
+   */
+  set cursor([x, y]) {
+    this.#cursor.x = x;
+    this.#cursor.y = y;
   }
 
   /**
@@ -143,7 +137,7 @@ export default class RenderContext {
    * @returns {number}
    */
   get cursorX() {
-    return this.#cursor[0];
+    return this.#cursor.x;
   }
 
   /**
@@ -151,7 +145,7 @@ export default class RenderContext {
    * @returns {number}
    */
   get cursorY() {
-    return this.#cursor[1];
+    return this.#cursor.y;
   }
 
   /**
@@ -159,7 +153,7 @@ export default class RenderContext {
    * @param {number} x - The X position
    */
   set cursorX(x) {
-    this.#cursor[0] = x;
+    this.#cursor.y = x;
   }
 
   /**
@@ -167,15 +161,7 @@ export default class RenderContext {
    * @param {number} y - The Y position
    */
   set cursorY(y) {
-    this.#cursor[1] = y;
-  }
-
-  /**
-   * The the cursor position
-   * @param {Array<number>} [x, y] - The cursor position
-   */
-  setCursor([x, y]) {
-    this.#cursor = [x, y];
+    this.#cursor.y = y;
   }
 
   /**
@@ -183,7 +169,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the X position by
    */
   set cursorDeltaX(delta) {
-    this.#cursor[0] += delta;
+    this.#cursor.x += delta;
   }
 
   /**
@@ -191,7 +177,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the Y poisition by
    */
   set cursorDeltaY(delta) {
-    this.#cursor[1] += delta;
+    this.#cursor.y += delta;
   }
 
   /**
@@ -207,7 +193,7 @@ export default class RenderContext {
    * @param {Array<number>} [left, top, width, height]
    */
   setCursorLimits([left, top, width, height]) {
-    this.#cursorLimits = [left, top, width, height];
+    this.#cursorLimits = {left: left, top: top, width: width, height: height};
   }
 
   //-----------------------------
@@ -215,31 +201,31 @@ export default class RenderContext {
   //----------------------------
   
   getCompiledShape(instructions) {
-    return this.renderer.getCompiledShape(instructions);
+    return this.#renderer.getCompiledShape(instructions);
   }
 
   destroyCompiledShapre(opaqueId) {
-    this.renderer.destroyCompiledShape(opaqueId);
+    this.#renderer.destroyCompiledShape(opaqueId);
   }
 
   renderCompiledShape(opaqueId, time, deltaTime) {
-    this.renderer.renderCompiledShape(opaqueId, time, deltaTime);
+    this.#renderer.renderCompiledShape(opaqueId, time, deltaTime);
   }
 
   //-----------------------------
   // viewport and world
   //------------------------------
 
-  set viewport(viewport) {
-    this.#viewport = viewport;
+  set viewport([left, top, width, height] = [0, 0, 800, 600]) {
+    this.#viewport = {left: left, top: top, width: width, height: height};
   }
 
   get viewport() {
     return this.#viewport;
   }
 
-  set worldDimensions(dims) {
-    this.#worldDimensions = dims;
+  set worldDimensions([width, height] = [800, 600]) {
+    this.#worldDimensions = {width: width, height: height};
   }
   
   /**
@@ -247,7 +233,7 @@ export default class RenderContext {
    * @return {boolean} True if the context is in immediate mode
    */
   get immediateMode() {
-    return this.#immediate;
+    return this.#immediateMode;
   }
 
   /**
@@ -255,7 +241,7 @@ export default class RenderContext {
    * @param {boolean} state - Whether to enable immediate mode
    */
   set immediateMode(state) {
-    this.#immediate = state;
+    this.#immediateMode = state;
   }
 
   /**
@@ -270,7 +256,7 @@ export default class RenderContext {
    * Returns the instructions for rendering.
    */
   get renderInstructions() {
-    return this.instructionBuffer;
+    return this.#instructionBuffer;
   }
 
   /**
@@ -278,8 +264,7 @@ export default class RenderContext {
    * advance the line by the line height.
    */
   carriageReturn() {
-    this.cursor = 0;
-    this.cursorDeltaY += this.#lineHeight;
+    this.#cursor = {x: 0, y: this.#cursor.y + this.#lineHeight};
   }
 
   /**
@@ -291,7 +276,7 @@ export default class RenderContext {
   update(currentTime, deltaTime) {
     // This method MUST be implemented by subclasses
     // Default implementation does nothing
-    this.lastUpdateTime = currentTime;
+    this.#lastUpdateTime = currentTime;
     return true;
   }
 
@@ -301,10 +286,10 @@ export default class RenderContext {
    * @param  {String} instruction A rendering instruction
    */
   addInstruction(instruction) {
-    if (this.#immediate) {
-      this.renderer.render(instruction);
+    if (this.#immediateMode) {
+      this.#renderer.render(instruction);
     } else {
-      this.instructionBuffer.push(instruction);
+      this.#instructionBuffer.push(instruction);
     }
   }
 
@@ -312,7 +297,7 @@ export default class RenderContext {
    * Clear the instruction buffer without resetting internal state
    */
   clearInstructionBuffer() {
-    this.instructionBuffer = [];
+    this.#instructionBuffer = [];
   }
 
   /**
@@ -330,7 +315,7 @@ export default class RenderContext {
   pushTransform(transformationMatrix) {
     // multiply the new transform and store that
     transformationMatrix.mul(this.world?.peekTransformation());
-    this.world?.pushTransformation(transformationMatrix);    
+    this.#world?.pushTransformation(transformationMatrix);    
   }
 
   /**
@@ -338,7 +323,7 @@ export default class RenderContext {
    * @returns A matrix representing the top-most element of the transformation stack
    */
   popTransform() {
-    return this.world?.popTransform();
+    return this.#world?.popTransform();
   }
 
   /**
@@ -346,14 +331,14 @@ export default class RenderContext {
    * @returns A matrix representing the top-most element of the transformation stack
    */
   peekTransform() {
-    return this.world?.peekTransform();
+    return this.#world?.peekTransform();
   }
 
   /**
    * Resets the transformation stack to the initial state (identity matrix)
    */
   resetTransforms() {
-    this.world?.resetTransforms();
+    this.#world?.resetTransforms();
   }
 
   /**
@@ -368,20 +353,20 @@ export default class RenderContext {
     // Clear active objects for this frame
     this.clearActiveObjects();
 
-    if (this.renderer && this.renderer.constructor !== Renderer) {
+    if (this.#renderer && this.#renderer.constructor !== Renderer) {
       // pre-frame generation
-      this.renderer.preFrame();
+      this.#renderer.preFrame();
 
       // Add all objects to active list
       for (const obj of objects) {
-        if (!this.activeObjects.includes(obj)) {
-          this.activeObjects.push(obj);
+        if (!this.#activeObjects.includes(obj)) {
+          this.#activeObjects.push(obj);
         }
       }
       
       // If culling is enabled, check visibility before rendering
-      if (this.enableCulling) {
-        const visibleObjects = this.activeObjects.filter((obj) => this.isObjectVisible(obj));
+      if (this.#enableCulling) {
+        const visibleObjects = this.#activeObjects.filter((obj) => this.isObjectVisible(obj));
         
         // Assign objects to render planes based on their world positions
         // or use auto-sorting if no explicit assignment
@@ -389,7 +374,7 @@ export default class RenderContext {
           let plane = null;
           
           // Check for explicit plane assignment
-          const assignment = this.objectPlaneAssignments.get(obj);
+          const assignment = this.#objectPlaneAssignments.get(obj);
           if (assignment) {
             plane = assignment;
           } else {
@@ -399,15 +384,15 @@ export default class RenderContext {
             plane = this.autoAssignToPlane(obj);
           }
           
-          if (!this.activeObjects.find((o) => o === obj)) {
+          if (!this.#activeObjects.find((o) => o === obj)) {
             const assignedObj = {...obj, assignedPlane: plane};
-            this.activeObjects.push(assignedObj);
+            this.#activeObjects.push(assignedObj);
           }
         }
       } else {
         // No culling, use all active objects with plane assignments
-        for (const obj of this.activeObjects) {
-          const assignment = this.objectPlaneAssignments.get(obj);
+        for (const obj of this.#activeObjects) {
+          const assignment = this.#objectPlaneAssignments.get(obj);
           if (!obj.assignedPlane && !assignment) {
             obj.assignedPlane = this.autoAssignToPlane(obj);
           } else if (assignment && !obj.assignedPlane) {
@@ -420,20 +405,20 @@ export default class RenderContext {
       this.sortObjectsByPlanes();
 
       // render the objects to the renderer surface
-      this.activeObjects.forEach(object => {
+      this.#activeObjects.forEach(object => {
         object.getComponentsByType(RenderComponent).forEach(component => {
           component.composeAndDraw(time, deltaTime);
         });
       });
 
       // play out any pending instructions
-      this.instructionBuffer.forEach(instruction => {
-        this.renderer.render(instruction);
+      this.#instructionBuffer.forEach(instruction => {
+        this.#renderer.render(instruction);
       });
 
 
       // post-frame generation
-      this.renderer.postFrame();
+      this.#renderer.postFrame();
     }
     return true;
   }
@@ -449,7 +434,7 @@ export default class RenderContext {
    * @returns {string} The assigned plane name
    */
   autoAssignToPlane(object) {
-    const assignment = this.objectPlaneAssignments.get(object);
+    const assignment = this.#objectPlaneAssignments.get(object);
     if (assignment !== null) {
       return assignment;
     }
@@ -478,13 +463,13 @@ export default class RenderContext {
    * @returns {boolean} true if assignment was successful
    */
   assignObjectToPlane(object, planeName) {
-    const validPlanes = this.renderPlanes.slice(0, this.maxPlanes);
+    const validPlanes = this.#renderPlanes.slice(0, this.maxPlanes);
     if (!validPlanes.includes(planeName)) {
-      Console.warn(`RenderContext: Invalid plane name "${planeName}". Valid planes: ${this.renderPlanes.join(', ')}`);
+      Console.warn(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.#renderPlanes.join(', ')}`);
       return false;
     }
     
-    this.objectPlaneAssignments.set(object, planeName);
+    this.#objectPlaneAssignments.set(object, planeName);
     object.assignedPlane = planeName;
     return true;
   }
@@ -510,7 +495,7 @@ export default class RenderContext {
    * @param {GameObject} object - The GameObject to unassign
    */
   removeObjectFromPlaneAssignment(object) {
-    this.objectPlaneAssignments.delete(object);
+    this.#objectPlaneAssignments.delete(object);
     if (object.assignedPlane) {
       delete object.assignedPlane;
     }
@@ -522,8 +507,8 @@ export default class RenderContext {
    * @returns {Array<GameObject>} Array of objects in this plane
    */
   getObjectsInPlane(planeName) {
-    if (this.renderPlanes.includes(planeName)) {
-      return this.activeObjects.filter((obj) => obj.assignedPlane === planeName);
+    if (this.#renderPlanes.includes(planeName)) {
+      return this.#activeObjects.filter((obj) => obj.assignedPlane === planeName);
     }
     return [];
   }
@@ -533,10 +518,10 @@ export default class RenderContext {
    * Objects in the background plane render first, then middle, then foreground
    */
   sortObjectsByPlanes() {
-    const planes = this.renderPlanes.slice(0, this.maxPlanes);
+    const planes = this.#renderPlanes.slice(0, this.#maxPlanes);
     
     // Clear active objects and rebuild with proper plane sorting
-    this.activeObjects = [];
+    this.#activeObjects = [];
     
     // Render each plane in order from background to foreground
     for (const planeName of planes) {
@@ -550,11 +535,11 @@ export default class RenderContext {
             filteredObj[key] = obj[key];
           }
         }
-        this.activeObjects.push(filteredObj);
+        this.#activeObjects.push(filteredObj);
       }
     }
     
-    return this.activeObjects;
+    return this.#activeObjects;
   }
   
   /**
@@ -566,10 +551,10 @@ export default class RenderContext {
    * @returns {Array|null} Array [screenX, screenY]
    */
   worldToScreen(x, y, plane = 'middle') {
-    let screenX = x - this.world.camera.viewport[0];
-    let screenY = y - this.world.camera.viewport[1];
-    screenX += this.world.camera.viewport[2] / 2;
-    screenY += this.world.camera.viewport[3] / 2;
+    let screenX = x - this.#world.camera.viewport[0];
+    let screenY = y - this.#world.camera.viewport[1];
+    screenX += this.#world.camera.viewport[2] / 2;
+    screenY += this.#world.camera.viewport[3] / 2;
 
     return [screenX, screenY];
   }
@@ -583,10 +568,10 @@ export default class RenderContext {
    * @returns {Array|null} Array [worldX, worldY]
    */
   screenToWorld(x, y, plane = 'middle') {
-    const centerX = x - (this.world.camera.viewport[2] / 2);
-    const centerY = y - (this.world.camera.viewport[3] / 2);
-    const worldX = (centerX / this.world.camera.scale[0]) + this.world.camera.position[0];
-    const worldY = (centerY / this.world.camera.scale[1]) + this.world.camera.position[1];
+    const centerX = x - (this.#world.camera.viewport[2] / 2);
+    const centerY = y - (this.#world.camera.viewport[3] / 2);
+    const worldX = (centerX / this.#world.camera.scale[0]) + this.#world.camera.position[0];
+    const worldY = (centerY / this.#world.camera.scale[1]) + this.#world.camera.position[1];
     return [worldX, worldY];
   }
   
@@ -610,51 +595,51 @@ export default class RenderContext {
    * Set the owning world for this render context
    * @param {GameWorld} world - The world that manages GameObjects for this context
    */
-  setWorld(world) {
-    this.world = world;
+  set world(world) {
+    this.#world = world;
   }
   
   /**
    * Get the owning world
    * @returns {GameWorld|null} The associated world or null
    */
-  getWorld() {
-    return this.world;
+  get world() {
+    return this.#world;
   }
   
   /**
    * Set enable/disable culling for this render context
    * @param {boolean} enabled - Whether culling should be active
    */
-  setCullingEnabled(enabled) {
-    this.enableCulling = enabled;
+  set culling(enabled) {
+    this.#enableCulling = enabled;
   }
   
   /**
    * Get whether culling is enabled
    * @returns {boolean}
    */
-  getEnableCulling() {
-    return this.enableCulling;
+  get culling() {
+    return this.#enableCulling;
   }
   
   /**
    * Clear active objects list (used during render preparation)
    */
   clearActiveObjects() {
-    this.activeObjects = [];
+    this.#activeObjects = [];
   }
   
   /**
    * Get render area dimensions
    * @returns {Object} Object with width and height of screen coordinates
    */
-  getRenderArea() {
+  get renderArea() {
     return {
-      width: this.#viewport[2],
-      height: this.#viewport[3],
-      x: this.#viewport[0],
-      y: this.#viewport[1]
+      width: this.#viewport.width,
+      height: this.#viewport.height,
+      x: this.#viewport.left,
+      y: this.#viewport.top
     };
   }
   
@@ -662,10 +647,10 @@ export default class RenderContext {
    * Get world dimensions
    * @returns {Object} Object with world width and height
    */
-  getWorldArea() {
+  get worldArea() {
     return {
-      width: this.#worldDimensions[0],
-      height: this.#worldDimensions[1],
+      width: this.#worldDimensions.width,
+      height: this.#worldDimensions.height,
       x: 0,
       y: 0
     };
@@ -675,16 +660,16 @@ export default class RenderContext {
    * Get the number of configured render planes
    * @returns {number} Number of active render planes
    */
-  getPlaneCount() {
-    return this.renderPlanes.length;
+  get planeCount() {
+    return this.#renderPlanes.length;
   }
   
   /**
    * Get the list of configured render plane names
    * @returns {Array<string>} Array of plane names
    */
-  getPlaneNames() {
-    return this.renderPlanes.slice(0, this.maxPlanes);
+  get planeNames() {
+    return this.#renderPlanes.slice(0, this.#maxPlanes);
   }
   
   /**
@@ -693,14 +678,14 @@ export default class RenderContext {
    * @param {Array<string>} names - Names for each plane (optional)
    */
   setPlaneConfiguration(count, names = null) {
-    this.maxPlanes = count;
+    this.#maxPlanes = count;
     
     if (!names) {
       // Generate default plane names
       const defaults = ['background', 'middle', 'foreground'];
-      this.renderPlanes = defaults.slice(0, count);
+      this.#renderPlanes = defaults.slice(0, count);
     } else {
-      this.renderPlanes = names.slice(0, count);
+      this.#renderPlanes = names.slice(0, count);
     }
   }
   
@@ -710,15 +695,15 @@ export default class RenderContext {
    * @param {string} name - Name for the new plane
    */
   addRenderPlane(index, name) {
-    if (index < 0 || index > this.maxPlanes) {
-      throw new RenderContextError(this, `Cannot add plane at index ${index}. Max planes: ${this.maxPlanes}`);
+    if (index < 0 || index > this.#maxPlanes) {
+      throw new RenderContextError(this, `Cannot add plane at index ${index}. Max planes: ${this.#maxPlanes}`);
     }
     
-    if (!this.renderPlanes[index]) {
-      this.renderPlanes.splice(index, 0, name);
-    } else if (this.renderPlanes.length <= this.maxPlanes) {
-      this.renderPlanes.push(name);
-      this.maxPlanes = this.renderPlanes.length;
+    if (!this.#renderPlanes[index]) {
+      this.#renderPlanes.splice(index, 0, name);
+    } else if (this.#renderPlanes.length <= this.#maxPlanes) {
+      this.#renderPlanes.push(name);
+      this.#maxPlanes = this.#renderPlanes.length;
     }
   }
   
@@ -727,13 +712,13 @@ export default class RenderContext {
    * @param {string} planeName - Name of the plane to remove
    */
   removeRenderPlane(planeName) {
-    const index = this.renderPlanes.indexOf(planeName);
+    const index = this.#renderPlanes.indexOf(planeName);
     if (index > -1) {
-      this.renderPlanes.splice(index, 1);
+      this.#renderPlanes.splice(index, 1);
       
       // Update max planes if needed
-      if (this.renderPlanes.length < this.maxPlanes) {
-        this.maxPlanes = this.renderPlanes.length;
+      if (this.#renderPlanes.length < this.#maxPlanes) {
+        this.#maxPlanes = this.#renderPlanes.length;
       }
     }
   }
@@ -743,8 +728,8 @@ export default class RenderContext {
    */
   reset() {
     this.clearActiveObjects();
-    this.objectPlaneAssignments.clear();
-    this.lastUpdateTime = null;
+    this.#objectPlaneAssignments.clear();
+    this.#lastUpdateTime = null;
   }
 
   /**
@@ -754,8 +739,3 @@ export default class RenderContext {
     this.reset();
   }
 }
-
-export {
-  RenderContextError,
-  RenderContextInterface
-};

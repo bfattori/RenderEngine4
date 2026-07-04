@@ -8,19 +8,37 @@ import Engine from '../../core/Engine.js';
 const POINT_SIZE = 4;
 const HALF_P = Math.floor(POINT_SIZE * 0.5);
 
+let built = false;
 export default class CanvasRenderer extends Renderer {
-    constructor(htmlElement, buffered = false) {
-        super();
-        this.#buffered = buffered;
-        this.#blit = null;
-        this.#htmlElement = htmlElement;
+        #buffered = false;
+        #blit = null;
+        #htmlElement = null;
+        #canvas = null;
+        #offscreen = null;
             
         // when compiling shapes, this is the index to the path id 
         // currently being updated in tha shape's drawing context
-        this.#pathId = null;
+        #pathId = null;
+        #path = null;
+
+        #compiledShapes = new Map();
+
+        #localFormat = new Map();
+
+    constructor(htmlElement, buffered) {
+        super();
+        if (!built) {
+            throw new RenderEngineError("CanvasRenderer must be built using CanvasRenderer.build()!");
+        }
+        built = false;
+        this.#buffered = buffered;
+        this.#htmlElement = htmlElement;
 
         // Let the context know the renderer can compile shapes
         this.hasCompiler = true;
+        this.#localFormat.set('b', false);
+        this.#localFormat.set('i', false);
+        this.#localFormat.set('u', false);
     }
 
     get isDoubleBuffered() {
@@ -32,12 +50,14 @@ export default class CanvasRenderer extends Renderer {
     }
 
     /**
-     * Build a new instance of the CanvasRenderer. Do not contruct the renderer directly.
+     * Build a new instance of the CanvasRenderer.
+     * 
      * @param {HTMLElement} htmlElement - The element that represents host the <code>Canvas</code> element.
      * @param {boolean} buffered - If true, the renderer will use a double-buffered canvas for rendering.
      * @returns {CanvasRenderer} - The initialized CanvasRenderer instance.
      */
     static build(htmlElement, buffered) {
+        built = true;
         return new CanvasRenderer(htmlElement, buffered);
     }
 
@@ -48,20 +68,20 @@ export default class CanvasRenderer extends Renderer {
     init(context) {
         super.init(context);
         this.#canvas = document.createElement("canvas");
-        this.#canvas.width = context.getRenderArea().width;
-        this.#canvas.height = context.getRenderArea().height;
-        this.#htmlElement.appendChild(this._canvas);
+        this.#canvas.width = context.viewport.width;
+        this.#canvas.height = context.viewport.height;
+        this.#htmlElement.appendChild(this.#canvas);
 
         if (this.#buffered) {
             // double-buffered
-            this.#offscreen = new OffscreenCanvas(context.getRenderArea().width, context.getRenderArea().height);
+            this.#offscreen = new OffscreenCanvas(context.viewport.width, context.viewport.height);
             this.surface = this.#offscreen.getContext("2d");
 
             // the blitter target is the bitmap renderer of the visible context
             this.#blit = this.#canvas.getContext("bitmaprenderer");
         } else {
             // single-buffered
-            this._canvas.getContext("2d");
+            this.#canvas.getContext("2d");
             this.surface = this.#canvas.getContext("2d");
         }
     }
@@ -71,7 +91,7 @@ export default class CanvasRenderer extends Renderer {
      */
     preFrame() {
         // clear the surface before rendering
-        this.surface.clearRect(0, 0, this.renderContext.getRenderArea().width, this.renderContext.getRenderArea().height);
+        this.surface.clearRect(0, 0, this.renderContext.viewport.width, this.renderContext.viewport.height);
     }
 
     /**
@@ -93,28 +113,28 @@ export default class CanvasRenderer extends Renderer {
      * @returns {Function} The compiled function, containing its drawing context.
      */
     compile(instructions) {
-        super(instructions);
+        super.compile(instructions);
         
         // generate the re-usable function
         const renderer = this;
-        const shapeContext = new Map({
-            paths: [],
-            assembled = []
-        });
+        const shapeContext = new Map();
+        shapeContext.set('paths', []);
+        shapeContext.set('assembled', []);
+
         // assemble the instructions
         instructions.forEach(i => {
             if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
                 // a comment
-                shapeContext.assembled.push(i);
+                shapeContext.get('assembled').push(i);
             } else {
-                shapeContext.assembled.push(this.#assemble(i, shapeContext));
+                shapeContext.get('assembled').push(this.#assemble(i, shapeContext));
             }
         });
         
         // assemble the function with its drawing context
         return function(time, deltaTime) {
-            shapeContext.fn = Function("shapeContext", "time", "deltaTime", assembled.join("\n"));
-            return shapeContext.fn.call(renderer, shapeContext, time, deltaTime);
+            shapeContext.set('fn', Function("shapeContext", "time", "deltaTime", shapeContext.get('assembled').join("\n")));
+            return shapeContext.get('fn').call(renderer, shapeContext, time, deltaTime);
         };
     }
 
@@ -147,22 +167,22 @@ export default class CanvasRenderer extends Renderer {
         const pid = this.#pathId;
         switch (operand) {
             case vector.TOGGLE:
-                args[0] === 'BOLD' && (this.formatTemp.bold != this.formatTemp.bold);
-                args[0] === 'ITALICS' && (this.formatTemp.italics != this.formatTemp.italics);
-                args[0] === 'UNDERLINE' && (this.formatTemp.underline != this.formatTemp.underline);
-                
+                args[0] === 'BOLD' && (this.#localFormat.set('b', !this.#localFormat.get('b')));
+                args[0] === 'ITALICS' && (this.#localFormat.set('i', !this.#localFormat.get('i')));
+                args[0] === 'UNDERLINE' && (this.#localFormat.set('u', !this.#localFormat.get('u')));
+
                 // Bold thickens the line width
-                if (args[0] === 'BOLD' && this.formatTemp.bold) {
+                if (args[0] === 'BOLD' && this.#localFormat.get('b')) {
                     return `this.surface.lineWidth = ${ this.renderContext.lineWidth * 3 };`;
-                } else if (!this.formatTemp.bold) {
+                } else if (!this.#localFormat.get('b')) {
                     return `this.surface.lineWidth = ${ this.renderContext.lineWidth };`;
                 }
 
                 // italics applies a shearing transform matrix
-                if (args[0] === 'ITALICS' && this.formatTemp.italics) {
+                if (args[0] === 'ITALICS' && this.#localFormat.get('i')) {
                     return `this.surface.transform(${ShearingMatrix[0,0]}, ${ShearingMatrix[0,1]}, ${ShearingMatrix[1,0]}, ${ShearingMatrix[1,1]}, ${ShearingMatix[2,0]}, ${ShearingMatrix[2,1]});` +
                         'this.surface.save();';
-                } else if (!this.formatTemp.italics) {
+                } else if (!this.#localFormat.get('i')) {
                     // pop the shearing matrix off the internal state stack
                     return 'this.surface.restore();';
                 }
@@ -182,6 +202,12 @@ export default class CanvasRenderer extends Renderer {
             case vector.ABS_TRANSFORM:
                 return `this.surface.setTransform(${args[0]}, ${args[3]}, ${args[1]}, ${args[4]}, ${args[2]}, ${args[5]});`;
                 break;
+            case vector.PUSH:
+                return 'this.surface.save();';
+                break;    
+            case vector.POP:
+                return 'this.surface.restore();';
+                break;
             case vector.IDENTITY:
                 return `this.surface.setTransform(${IdentityMatrix[0,0]}, ${IdentityMatrix[0,1]}, ${IdentityMatrix[1,0]}, ${IdentityMatrix[1,1]}, ${IdentityMatrix[2,0]}, ${IdentityMatrix[2,1]});`;
                 break;
@@ -190,12 +216,12 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.LINESEG:
                 const pathInfo = { path: new Path2D(), fill: args[0] };
-                shapeContext.paths.push(pathInfo);
-                this._pathId = shapeContext.paths.length - 1;
+                shapeContext.get('paths').push(pathInfo);
+                this.#pathId = shapeContext.get('paths').length - 1;
                 break;
             case vector.ENDSEG:
-                this._pathId = null;
-                if (shapeContext.paths[pid].fill) {
+                this.#pathId = null;
+                if (shapeContext.get('paths')[pid].fill) {
                     return `this.surface.fill(shapeContext.paths[${pid}].path);`;
                 } else {
                     return `this.surface.stroke(shapeContext.paths[${pid}].path);`;
@@ -203,8 +229,8 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.LINE:
                 if (pid !== null) {
-                    shapeContext.paths[pid].path.moveTo(args[0], args[1]);
-                    shapeContext.paths[pid].path.lineTo(args[2], args[3]);
+                    shapeContext.get('paths')[pid].path.moveTo(args[0], args[1]);
+                    shapeContext.get('paths')[pid].path.lineTo(args[2], args[3]);
                 } else {
                     return `this.surface.moveTo(${args[0]}, ${args[1]});` +
                         `this.surface.lineTo(${args[2]}, ${args[3]});` +
@@ -213,7 +239,7 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.LINEREL:
                 if (pid !== null) {
-                    shapeContext.paths[pid].path.lineTo(args[0], args[1]);
+                    shapeContext.get('paths')[pid].path.lineTo(args[0], args[1]);
                 } else {
                     return `this.surface.moveTo(${args[0]}, ${args[1]});` +
                         'this.surface.stroke();';
@@ -242,9 +268,9 @@ export default class CanvasRenderer extends Renderer {
         const {operand, args} = {operand: parts.shift(), args: parts};
         switch (operand) {
             case vector.TOGGLE:
-                args[0] === 'BOLD' && (this._format.bold != this._format.bold);
-                args[0] === 'ITALICS' && (this._format.italics != this._format.italics);
-                args[0] === 'UNDERLINE' && (this._format.underline != this._format.underline);
+                args[0] === 'BOLD' && (this.#localFormat.set('b', !this.#localFormat.get('b')));
+                args[0] === 'ITALICS' && (this.#localFormat.set('i', !this.#localFormat.get('i')));
+                args[0] === 'UNDERLINE' && (this.#localFormat.set('u', !this.#localFormat.get('u')));
                 break;
             case vector.COLOR:
                 this.surface.strokeStyle = args[0];
@@ -261,6 +287,12 @@ export default class CanvasRenderer extends Renderer {
             case vector.ABS_TRANSFORM:
                 this.surface.setTransform(args[0], args[3], args[1], args[4], args[2], args[5]);
                 break;
+            case vector.PUSH:
+                this.surface.save();
+                break;
+            case vector.POP:
+                this.surface.restore();
+                break;
             case vector.IDENTITY:
                 this.surface.setTransform(IdentityMatrix[0,0], IdentityMatrix[0,1], IdentityMatrix[1,0], IdentityMatrix[1,1], IdentityMatrix[2,0], IdentityMatrix[2,1]);
                 break;
@@ -269,22 +301,22 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.fill();
                 break;
             case vector.LINESEG:
-                this._path = new Path2D;
+                this.#path = new Path2D;
                 fillSeg = args[0];
                 break;
             case vector.ENDSEG:
                 if (fillSeg === "1") {
-                    this.surface.fill(this._path);
+                    this.surface.fill(this.#path);
                 } else {
-                    this.surface.stroke(this._path);
+                    this.surface.stroke(this.#path);
                 }
                 fillSeg = "0"; // Reset fill to false after drawing the path
-                this._path = null;
+                this.#path = null;
                 break;
             case vector.LINE:
-                if (this._path) {
-                    this._path.moveTo(args[0], args[1]);
-                    this._path.lineTo(args[2], args[3]);
+                if (this.#path) {
+                    this.#path.moveTo(args[0], args[1]);
+                    this.#path.lineTo(args[2], args[3]);
                 } else {
                     this.surface.beginPath();
                     this.surface.moveTo(args[0], args[1]);
@@ -293,8 +325,8 @@ export default class CanvasRenderer extends Renderer {
                 }
                 break;
             case vector.LINEREL:
-                if (this._path) {
-                    this._path.lineTo(args[0], args[1]);
+                if (this.#path) {
+                    this.#path.lineTo(args[0], args[1]);
                 } else {
                     this.surface.lineTo(args[0], args[1]);
                     this.surface.stroke();

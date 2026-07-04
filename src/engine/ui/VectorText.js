@@ -2,23 +2,22 @@ import Console from '../core/Console.js';
 import { VECTOR_IL } from '../rendering/contexts/VectorRenderContext.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
+import { ShearingMatrix, Matrix2d } from '../core/Matrix.js';
+
+
+const ITALICS_MATRIX = new Matrix2d(ShearingMatrix[0], ShearingMatrix[1], ShearingMatrix[2]);
 
 function getWord(text, idx) {
     let check = text.substring(idx);
-    const space = check.indexOf(' ');
-    const brace = check.indexOf('{', 1);
+    const headBrace = check.indexOf('{', 1);
+    const tailBrace = check.indexOf('}', 1);
 
-    if (brace > -1 && space > -1 && brace < space) {
-        throw new RenderContextError(this, "VectorText::getWord() - Tag found in character string before space!");
-    } 
-
-    if (space > -1) {
-        // return with the trailing space
-        return text.substring(idx, idx + space);
-    } else {
-        // return without the next starting brace
-        return text.substring(idx, idx + (brace - 1));
+    if ((headBrace > -1 && tailBrace > -1 && tailBrace < headBrace) || (headBrace === -1 && tailBrace > -1)) {
+        // return without the trailing brace
+        return text.substring(idx, idx + tailBrace);
     }
+
+    throw new RenderContextError(this, `Unmatched '{' in text at index ${idx}: ${text}`);
 }
 
 /**
@@ -87,64 +86,86 @@ export default function processText(text, spaceWidth = 45) {
                 instructions.push(`${VECTOR_IL.COLOR}`);
                 i += 3;
             } else if (nextChar === '+' || nextChar === '-') {
+                const scalar = nextChar === '+' ? 1 : -1;
                 // Font size marker - next character
                 let nextNext = text[i + 2];
                 if (nextNext === '}') {
                     // pop to the last font size
                     this.popFontSize;
+                    i += 3;
                 } else {
                     // get the value and apply the delta to font size
-                    let j = i + 1;
+                    let j = i + 2;
                     let foundBracket = false;
                     while (j < text.length && !foundBracket) {
                         if (text[j] === '}') {
                             const fontSizeValue = parseFloat(text.substring(i + 2, j).trim());
                             
-                            this.fontSize += fontSizeValue;
+                            this.fontSize += (fontSizeValue * scalar);
                             spaceWidth *= fontSizeValue * 0.47;
                             foundBracket = true;
+                            break;
                         }
                         j++;
                     }
-                    i = j;
+                    i = j + 1;
                 }
                 continue;
-            } else if (nextChar !== undefined && !isNaN(parseFloat(nextChar))) {
-                // Color name with hex digit
+            } else if (nextChar === '#') {
+                // Color name - hex color
                 const colorName = getWord.call(this, text, i).substr(1).trim();
                 instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             } else if (nextChar !== undefined) {
                 // Color name - remove the { - may need to remove the training } as well??
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-
                 instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             }
-            
+
             this.addInstruction(...instructions);
             continue;
         }
 
         // Handle italic marker (single underscore)
         if (char === '_') {
-            this._formatting.italics = !this._formatting.italics;
+            this.formatting.italics = !this.formatting.italics;
+            this.addInstruction(`// format: italics (${this.formatting.italics})`);
+            if (this.formatting.italics) {
+                this.addInstruction(`${VECTOR_IL.PUSH}`);
+                this.addInstruction(`${VECTOR_IL.TRANSFORM} ${ITALICS_MATRIX.toCanvas()}`);
+            } else {
+                this.addInstruction(`${VECTOR_IL.POP}`)
+            }
             i++;
             continue;
         }
         
         // Handle bold marker
         if (char === '*' && text[i + 1] === '*') {
-            this._formatting.bold = !this._formatting.bold;
-            this.addInstruction(`// format: bold (${this._formatting.bold})`);
-            this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? 3 : 0)}`); 
+            this.formatting.bold = !this.formatting.bold;
+            this.addInstruction(`// format: bold (${this.formatting.bold})`);
+            if (this.formatting.bold) {
+                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? 3 : 0)}`);
+            } else {
+                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
+            }
             i += 2;
             continue;
         }
         
         // Handle underline marker
         if (char === '~') {
-            this._formatting.underline = !this._formatting.underline;
+            this.formatting.underline = !this.formatting.underline;
+            this.startUnderline = this.formatting.underline ? this.cursor[0] : this.startUnderline;
+            if (!this.formatting.underline && this.startUnderline !== null) {
+                // Draw underline from startUnderline to current cursor position
+                this.addInstruction(`// format: underline ${this.formatting.underline} (${this.startUnderline} - ${this.cursor[0]})`);
+                this.addInstruction(`${VECTOR_IL.WIDTH} 2`);
+                this.addInstruction(`${VECTOR_IL.LINE} ${this.startUnderline} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))} ${this.cursor[0]} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))}`);
+                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
+                this.startUnderline = null;
+            }
             i++;
             continue;
         }
@@ -179,7 +200,7 @@ function characterInstruction(char, width) {
     });
 
     // Advance cursor by character width
-   context.cursorX += charInstructions.width + (3 * this.fontSize);
+   context.cursorDeltaX = charInstructions.width + (3 * this.fontSize);
 }
 
 /**
@@ -259,11 +280,6 @@ function getCharacterInstructions(char) {
             }
         }
         instructions.push(VECTOR_IL.ENDSEG);
-
-        if (this.formatting.underline) {
-            instructions.push('// format: underline');
-            instructions.push(`${VECTOR_IL.LINE} ${this.cursor[0] + minMax[0] + halfWidth} ${this.cursor[1] + halfHeight} ${this.cursor[0] + minMax[1] + halfWidth} ${this.cursor[1] + halfHeight}`);
-        }
 
         return {
             instructions: instructions,
