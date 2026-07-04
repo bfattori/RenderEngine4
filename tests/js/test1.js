@@ -26,19 +26,17 @@ const context = RE4.world.renderContext;
 
 // chainable API for drawing shapes and text
 context.API
-    .color("#0000ff")
-    .width(5)
+    .color("#0000ff").width(5)
     .line(100, 100, 300, 300)
     .fillColor("#8800cc")
     .circle(100, 100, 50, true)
-    .color("#ff9100")
-    .width(10)
+    .color("#ff9100").width(10)
     .circle(100, 100, 50, false)
     
     // the string "Hello World!" formatted 
     // with colors and font size changes
-    .width(3)
     .cursor(50, 350)
+    .width(3)
     .text("{#00f}**H{#f00}e**{green}{+4}l{orange}l{#2e867f}{+}o ")
     .cursor(50, 455)
     .text("{+6}{#808}**~World!~**");
