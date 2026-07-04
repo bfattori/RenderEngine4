@@ -12,29 +12,28 @@ import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 // Intermediate Language instruction types for vector rendering
 const VECTOR_IL = {
   // Decorator Instructions (State Modifiers)
-  COLOR: 'COLOR',
-  FONTSIZE: 'FONTSIZE',
-  FILL: 'FILL',
-  WIDTH: 'WIDTH',
-  TOGGLE: 'TOGGLE',
+  COLOR: 'COLOR',         // "COLOR #ff0000" would be a red color
+  FONTSIZE: 'FONTSIZE',   // "FONTSIZE 12" would be a font size of 12
+  FILL: 'FILL',           // "FILL #ff0000" would be a red fill color
+  WIDTH: 'WIDTH',         // "WIDTH 5" would be a line width of 5
    
   // Transformation matrix Instructions (State Modifiers)
-  MOVETO: 'MOVETO',
-  TRANSFORM: 'TRANSFORM',
-  ABS_TRANSFORM: 'ABS_TRANSFORM',
-  PUSH: 'PUSH',
-  POP: 'POP',
-  IDENTITY: 'IDENTITY',
+  MOVETO: 'MOVETO',               // "MOVETO X Y" would move the cursor to X, Y
+  TRANSFORM: 'TRANSFORM',         // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
+  ABS_TRANSFORM: 'ABS_TRANSFORM', // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
+  PUSH: 'PUSH',                   // "PUSH" will save the current transformation matrix  
+  POP: 'POP',                     // "POP" will restore the previous transformation matrix
+  IDENTITY: 'IDENTITY',           // "IDENTITY" will reset the transformation matrix to the identity matrix
   
   // Rendering Instructions (Imperative)
-  POINT: 'POINT',
-  LINESEG: 'LINESEG',
-  ENDSEG: 'ENDSEG',
-  CURVE: 'CURVE',
-  ENDCURVE: 'ENDCURVE',
-  LINE: 'LINE',
-  LINEREL: 'LINEREL',
-  ARC: 'ARC'
+  POINT: 'POINT',         // "POINT X Y" will draw a point at X, Y
+  LINESEG: 'LINESEG',     // "LINESEG FILLED" starts a line segment, FILLED is a boolean indicating whether the shape is filled or not
+  ENDSEG: 'ENDSEG',       // "ENDSEG" ends the current line segment
+  CURVE: 'CURVE',         // "CURVE FILLED" draws a cubic Bezier curve, FILLED is a boolean indicating whether the shape is filled or not
+  ENDCURVE: 'ENDCURVE',   // "ENDCURVE" ends the current curve
+  LINE: 'LINE',           // "LINE X1 Y1 X2 Y2" is a line from (X1, Y1) to (X2, Y2)
+  LINEREL: 'LINEREL',     // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
+  ARC: 'ARC'              // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
 };
 
 const twoPi = 6.2831;   // approx. Math.PI * 2

@@ -11,14 +11,14 @@ import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 // Intermediate Language instruction types for raster rendering
 const RASTER_IL = {
   // Decorator Instructions (State Modifiers)
-  COLOR: 'COLOR',
-  WIDTH: 'WIDTH',
-  FONT: 'FONT',
+  COLOR: 'COLOR',       // "COLOR #ff0000" would be a red color
+  WIDTH: 'WIDTH',       // "WIDTH 5" would be a line width of 5
+  FONT: 'FONT',         // "FONT FONTNAME FONTSIZE" would be a font with the given name and size
    
   // Transformation matrix Instructions (State Modifiers)
-  TRANSFORM: 'TRANSFORM',
-  PUSH: 'PUSH',
-  POP: 'POP',
+  TRANSFORM: 'TRANSFORM',   // "TRANSFORM m00 m01 m01 m11 m02 m21" would be a transformation matrix
+  PUSH: 'PUSH',             // "PUSH" will push the current transformation matrix onto the stack
+  POP: 'POP',               // "POP" will pop the current transformation matrix off the stack
   
   // Rendering Instructions (primitives)
   POINT: 'POINT',       // "POINT X Y" would be a point at X, Y
