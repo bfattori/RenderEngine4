@@ -21,14 +21,14 @@ const RASTER_IL = {
   POP: 'POP',
   
   // Rendering Instructions (primitives)
-  POINT: 'POINT',
-  LINE: 'LINE',
-  TEXT: 'TEXT',
+  POINT: 'POINT',       // "POINT X Y" would be a point at X, Y
+  LINE: 'LINE',         // "LINE X1 Y1 X2 Y2" would be a line from (X1, Y1) to (X2, Y2)
+  TEXT: 'TEXT',         // "TEXT X Y STRING" would be a string at (X, Y)
 
   // Rendering Instructions (complex)
-  SPRITE: 'SPRITE',
-  TILE: 'TILE',
-  TILEMAP: 'TILEMAP'
+  SPRITE: 'SPRITE',     // Sprites have state: "SPRITE 1 2 X Y" would be sprite 1, state 2, at X, Y
+  TILE: 'TILE',         // Tiles are just images: "TILE 1 X Y" would be tile 1, at X, Y
+  TILEMAP: 'TILEMAP'    // Tilemaps are comprised of tiles: "TILEMAP 1 X Y" would be tilemap 1, at X, Y
 };
 
 export default class RasterRenderContext extends RenderContext {
