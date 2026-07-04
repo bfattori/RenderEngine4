@@ -14,6 +14,7 @@ const RASTER_IL = {
   COLOR: 'COLOR',       // "COLOR #ff0000" would be a red color
   WIDTH: 'WIDTH',       // "WIDTH 5" would be a line width of 5
   FONT: 'FONT',         // "FONT FONTNAME FONTSIZE" would be a font with the given name and size
+  TOGGLE: 'TOGGLE',     // "TOGGLE BOLD" would toggle bold on/off
    
   // Transformation matrix Instructions (State Modifiers)
   TRANSFORM: 'TRANSFORM',   // "TRANSFORM m00 m01 m01 m11 m02 m21" would be a transformation matrix
