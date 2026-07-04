@@ -225,7 +225,11 @@ function getCharacterInstructions(char) {
     }
 
     if (ascii === 32) {
-        return null;
+        return {
+            instructions: [],
+            width: 10,
+            height: 10
+        };    
     }
 
     // Check character set array

@@ -33,13 +33,16 @@ context.API
     .color("#ff9100").width(10)
     .circle(100, 100, 50, false)
     
-    // the string "Hello World!" formatted 
+    // the string "Inline Format" formatted 
     // with colors and font size changes
     .cursor(50, 330)
     .width(3)
-    .text("{#00f}**H{#f00}e**{green}{+2}l{orange}~l~{#2e867f}{+}o ")
+    .text("{#00f}**I{#f00}n**{green}{+2}l{orange}~i~{#2e867f}{+}ne")
     .cursor(50, 455)
-    .text("{+6}{#808}**~World!~**");
+    .text("{+6}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
+    .cursor(100, 15).color("#000").width(1)
+    .text("Plain text, no formatting.", 
+        {color: "black", fontSize: 1.5, lineWidth: 1});
 
 // Run out one frame to render it   
 RE4.update(0, 0);

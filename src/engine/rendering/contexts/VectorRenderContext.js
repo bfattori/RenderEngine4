@@ -734,11 +734,13 @@ export default class VectorRenderContext extends RenderContext {
        * @param {Object} [options.formatting] - Initial formatting states: {bold, italics, underline}
        * @returns {Object} Returns this for chaining
        */
-      text(text, options = {formatting: {bold:false,italics:false,underline:false}}) {
+      text(text, options) {
         // Validate input
         if (typeof text !== 'string' || text.length === 0) {
           return renderContext.API;
         }
+
+        options = { ...{ formatting: { bold: false, italics: false, underline: false } }, ...options };
 
         // Apply initial color if provided
         if (options.color && options.color !== renderContext.lineColor) {
@@ -753,8 +755,8 @@ export default class VectorRenderContext extends RenderContext {
         }
 
         // Apply initial font size if provided
-        if (options.fontsize !== undefined && options.fontSize !== renderContext.fontSize) {
-          renderContext.fontSize = options.fontsize;
+        if (options.fontSize !== undefined && options.fontSize !== renderContext.fontSize) {
+          renderContext.fontSize = options.fontSize;
         }
 
         if (options.lineWidth !== undefined && options.lineWidth !== renderContext.lineWidth) {
