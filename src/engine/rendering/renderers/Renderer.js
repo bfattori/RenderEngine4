@@ -1,5 +1,6 @@
 import Console from '../../core/Console.js';
 import CompiledShape from '../shapes/CompiledShape.js';
+import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import VectorAssembler from '../assemblers/VectorAssembler.js';
 import RasterAssembler from '../assemblers/RasterAssembler.js';
@@ -100,6 +101,14 @@ export default class Renderer {
         return this.#path;
     }
 
+    get compiledShapes() {
+        return this.#compiledShapes;
+    }
+
+    get nextShapeId() {
+        return this.#opaqueShapeId++;
+    }
+
     /**
      * Initialize this renderer.
      * @param {RenderContext} context 
@@ -134,12 +143,13 @@ export default class Renderer {
      * reduce the number of instructions that must be executed each frame. 
      * 
      * @param {String[]} instructions - A set of instructions to compile.
-     * @returns {Function} An assembly (function) containing the shape context.
+     * @returns {number} An opaque Id that references the compiled shape.
      * @private
      */
     compile(instructions) {
         if (instructions.length === 0) {
-           Console.warn('Cannot compile an empty shape!');
+           Console.warn('Compiling an empty shape!');
+           return Constants.COMPILATION_FAILED;
         }
     }
 
@@ -162,9 +172,8 @@ export default class Renderer {
      *                   the renderer does not support pre-compilation of renderable objects.
      */
     getCompiledShape(instructions) {
-        if (!this.#hasCompiler) { return null; }
-        this.#compiledShapes[this.#opaqueShapeId] = new CompiledShape(this, instructions);
-        return this.#opaqueShapeId++;
+        if (!this.#hasCompiler) { return Constants.COMPILATION_NOT_SUPPORTED; }
+        return this.compile(instructions);
     }
 
     /**

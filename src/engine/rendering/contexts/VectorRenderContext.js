@@ -103,6 +103,16 @@ export default class VectorRenderContext extends RenderContext {
     super(renderer, options);
   }
 
+  get cursor() {
+    return super.cursor;
+  }
+
+  // Adjust transformation
+  set cursor([x, y]) {
+    super.cursor = [x, y];
+    this.setCursorPosition(x, y);
+  }
+
   set screenDimensions(dims) {
     super.viewport = dims;
     this.renderer.init(this);
@@ -235,23 +245,19 @@ export default class VectorRenderContext extends RenderContext {
     }
   }
   
+  setCursorPosition(x, y) {
+    const starting = Matrix2d.identity();
+    starting.translate(x, y);
+    this.pushTransform(starting);
+  }
+
   /**
    * Push a transformation onto the stack and apply it to the context.
    * @param {Matrix2d} transformationMatrix 
    */
   pushTransform(transformationMatrix) {
     super.pushTransform(transformationMatrix);
-    this.addInstruction(`${VECTOR_IL.TRANSFORM} ${transformationMatrix}`);
-  }
-
-  /**
-   * Pop the last transformation off the stack.
-   * @returns {Matrix2d} A 2d matrix
-   */
-  popTransform() {
-    const previousTransform = super.popTransform();
-    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${previousTransform}`);
-    return previousTransform;
+    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${transformationMatrix.toCanvas()}`);
   }
 
   /**
@@ -259,7 +265,7 @@ export default class VectorRenderContext extends RenderContext {
    */
   resetTransforms() {
     super.resetTransforms();
-    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${IdentityMatrix}`);
+    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${IdentityMatrix.toCanvas()}`);
   }
 
   //--------------------------------------

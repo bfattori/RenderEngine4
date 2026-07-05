@@ -13,20 +13,33 @@ export default class CompiledShape {
      * Create a CompiledShape
      * 
      * @param {Renderer} renderer - The renderer that produced this shape.
-     * @param {String[]} instructions - A set of instructions to compile 
+     * @param {String[]} instructions - (optional) A set of instructions to compile 
      */
     constructor(renderer, instructions) {
         this.#renderer = renderer;
+        this.#instructions = instructions;
+        this.compile();
     }
 
+    /**
+     * Get the language instructions that were used to compile this shape.
+     */
     get instructions() {
         return this.#instructions;
     }
 
+    /**
+     * Get the renderer that produced this shape. The renderer is used to render the compiled
+     */
     get renderer() {
         return this.#renderer;
     }
 
+    /**
+     * Get the assembly that was produced by the renderer when compiling this shape.
+     * The assembly takes two parameters, the current time and the delta time since the last frame.
+     * @returns {Function} - The assembly that was produced by the renderer
+     */
     get assembly() {
         return this.#assembly;
     }
@@ -54,7 +67,7 @@ export default class CompiledShape {
      */
     draw(time, deltaTime) {
         if (this.#assembly !== null) {
-            this.renderer.renderShape(this.#assembly, time, deltaTime);
+            this.renderer.renderCompiledShape(this.#assembly, time, deltaTime);
         } else {
             this.instructions.forEach(inst => {
                 this.renderer.render(inst);

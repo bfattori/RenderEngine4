@@ -11,13 +11,16 @@ import RenderEngineError from '../../core/RenderEngineError.js';
  * @return {Camera} A new instance of Camera
  */
 export default class Camera {
+    #name = 'Camera';
+    #matrix = new Matrix2d();
+    #viewport = null;
+
     constructor(name = 'Camera', position = [0, 0], viewportDimensions = [800, 600], { rotation, scale } = {rotation:0, scale:[1, 1]}) {
-        this._name = name;
-        this._position = position;
-        this._rotation = rotation;
-        this._scale = scale;
-        this._viewport = viewportDimensions;
-        this._matrix = new Matrix2d();
+        this.#name = name;
+        this.#matrix.translate(position[0], position[1]);
+        this.#matrix.rotate(rotation);
+        this.#matrix.scale(scale[0], scale[1]);
+        this.#viewport = viewportDimensions;
     }
 
     /**
@@ -25,7 +28,7 @@ export default class Camera {
      * @returns {String} The name of the camera
      */
     get name() {
-        return this.name;
+        return this.#name;
     }
 
     /**
@@ -33,7 +36,7 @@ export default class Camera {
      * @returns {Array<number>} The viewport dimensions as [x, y, width, height]
      */
     get viewport() {
-        return [...this.position, ...this._viewport];
+        return [...this.#matrix.translation, ...this.#viewport];
     }
 
     /**
@@ -41,26 +44,26 @@ export default class Camera {
      * @param {Array<number>} viewportDimensions - The new viewport dimensions as [x, y, width, height]
      */
     set viewport([x, y, width, height]) {
-        this._position = [x, y];
-        this._viewport = [width, height];
+        this.#matrix.translate(x, y);
+        this.#viewport = [width, height];
     }
 
     /**
      * Get the camera transform
      * @return {Matrix2d} The camera transform matrix
      */
-    get transform() {
-        return this._matrix;
+    get transformMatrix() {
+        return this.#matrix;
     }
 
     /**
      * Set the camera transform
      * @param {Matrix2d} matrix - The camera transformation matrix
      */
-    set transform(matrix) {
-        if (matrix.constructor !== Matrix2d)
-            throw new RenderEngineError('Must be Matrix2d');
-        this._matrix = matrix;
+    set transformMatrix(matrix) {
+        if (!matrix.constructor instanceof DOMMatrix)
+            throw new RenderEngineError('Input matrix must be Matrix2d or DOMMatrix');
+        this.#matrix = matrix;
     }
 
     /**
@@ -68,7 +71,7 @@ export default class Camera {
      * @returns {Array<number>} - The camera position [x, y]
      */
     get position() {
-        return this._position;
+        return this.#matrix.translation;
     }
 
     /**
@@ -76,8 +79,7 @@ export default class Camera {
      * @param {Array<number>} position - The new camera position [x, y]
      */
     set position(position) {
-        this._position = position;
-        this._matrix.update({ position: this.position });
+        this.#matrix.translate(position[0], position[1]);
     }
 
     /**
@@ -85,7 +87,7 @@ export default class Camera {
      * @param {Array<number>} delta - The translation vector [dx, dy]
      */
     translate(delta = [0, 0]) {
-        this.position = [this._position[0] + delta[0], this._position[1] + delta[1]];
+        this.#matrix.translate(this.position[0] + delta[0], this.position[1] + delta[1]);
     }
 
     /**
@@ -93,7 +95,7 @@ export default class Camera {
      * @returns {number} The camera rotation in radians
      */
     get rotation() {
-        return this._rotation;
+        return this.#matrix.rotation;
     }
 
     /**
@@ -101,8 +103,7 @@ export default class Camera {
      * @param {number} rotation - The new camera rotation in radians
      */
     set rotation(rotation) {
-        this._rotation = rotation;
-        this._matrix.update({ rotation: this.rotation });
+        this.#matrix.rotate(rotation);
     }
 
     /**
@@ -110,7 +111,7 @@ export default class Camera {
      * @param {number} delta - The rotation to apply to the current rotation in radians
      */
     rotate(delta) {
-        this.rotation += delta;
+        this.#matrix.rotate(this.#matrix.rotation + delta);
     }
 
     /**
@@ -118,7 +119,7 @@ export default class Camera {
      * @returns {Array<number>} The current camera scale as an array [sx, sy]
      */
     get scale() {
-        return this._scale;
+        return this.#matrix.scaling;
     }
 
     /**
@@ -129,8 +130,7 @@ export default class Camera {
         if (Number.isInteger(scale)) {
             this.uniformScale(scale);
         }
-        this._scale = scale;
-        this._matrix.update({ scale: this.scale });
+        this.#matrix.scale(scale[0], scale[1]);
     }
 
     /**
@@ -138,7 +138,7 @@ export default class Camera {
      * @param {number} scale - The new uniform camera scale
      */
     set uniformScale(scale = 1) {
-        this.scale = [scale, scale];
+        this.#matrix.scale(scale, scale);
     }
 
     /**

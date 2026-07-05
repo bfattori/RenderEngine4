@@ -1,11 +1,13 @@
 import Console from '../core/Console.js';
+import Constants from '../Constants.js';
 import { VECTOR_IL } from '../rendering/assemblers/VectorAssembler.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 import { ShearingMatrix, Matrix2d } from '../core/Matrix.js';
 
 
-const ITALICS_MATRIX = new Matrix2d(ShearingMatrix[0], ShearingMatrix[1], ShearingMatrix[2]);
+const ITALICS_MATRIX = ShearingMatrix;
+const shapeCache = new Map();
 
 function getWord(text, idx) {
     let check = text.substring(idx);
@@ -133,7 +135,7 @@ export default function processText(text, spaceWidth = 45) {
             this.addInstruction(`// format: italics (${this.formatting.italics})`);
             if (this.formatting.italics) {
                 this.addInstruction(`${VECTOR_IL.PUSH}`);
-                this.addInstruction(`${VECTOR_IL.TRANSFORM} ${ITALICS_MATRIX.toCanvas()}`);
+                this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${ITALICS_MATRIX.toCanvas()}`);
             } else {
                 this.addInstruction(`${VECTOR_IL.POP}`)
             }
@@ -160,7 +162,7 @@ export default function processText(text, spaceWidth = 45) {
             this.startUnderline = this.formatting.underline ? this.cursor[0] : this.startUnderline;
             if (!this.formatting.underline && this.startUnderline !== null) {
                 // Draw underline from startUnderline to current cursor position
-                this.addInstruction(`// format: underline ${this.formatting.underline} (${this.startUnderline} - ${this.cursor[0]})`);
+                this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.startUnderline} - ${this.cursor[0]})`);
                 this.addInstruction(`${VECTOR_IL.WIDTH} 2`);
                 this.addInstruction(`${VECTOR_IL.LINE} ${this.startUnderline} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))} ${this.cursor[0]} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))}`);
                 this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
@@ -195,12 +197,31 @@ function characterInstruction(char, width) {
     // Add character instructions
     const context = this;
     context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
-    charInstructions.instructions.forEach(inst => {
-        context.addInstruction(inst);
-    });
 
-    // Advance cursor by character width
-   context.cursorDeltaX = charInstructions.width + (3 * this.fontSize);
+    const current = this.world.currentTransform;
+    const oldScale = current.scaling;
+    current.translate(context.cursorX, 0);
+    current.uniformScale(oldScale[0] * this.fontSize, oldScale[1] * this.fontSize);
+    context.pushTransform(current);
+
+    if (context.renderer.hasCompiler) {
+        if (!shapeCache.has(char)) {
+            // Compile the character shape and store in cache
+            const shapeId = context.renderer.getCompiledShape(charInstructions.instructions);
+            if (shapeId !== Constants.COMPILATION_FAILED) {
+                shapeCache.set(char, shapeId);
+                context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
+            }
+        } else {
+            context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeCache.get(char)}`);
+        }
+    } else {
+        charInstructions.instructions.forEach(inst => {
+            context.addInstruction(inst);
+        });
+    }
+    context.popTransform();
+    context.cursorDeltaX = charInstructions.width;
 }
 
 /**
@@ -227,8 +248,8 @@ function getCharacterInstructions(char) {
     if (ascii === 32) {
         return {
             instructions: [],
-            width: 10,
-            height: 10
+            width: 21,
+            height: 21
         };    
     }
 
@@ -246,12 +267,21 @@ function getCharacterInstructions(char) {
         // calculate the character box
         for (let j = 0; j < points.length; j++) {
             if (points[j] !== null) {
-                minMax[0] = points[j][0] < minMax[0] ? points[j][0] * this.fontSize : minMax[0];
-                minMax[1] = points[j][0] > minMax[1] ? points[j][0] * this.fontSize : minMax[1];
-                minMax[2] = points[j][1] < minMax[2] ? points[j][1] * this.fontSize : minMax[2];
-                minMax[3] = points[j][1] > minMax[3] ? points[j][1] * this.fontSize : minMax[3];
+                const scale = this.world.currentTransform.scaling;
+                const scaledPoints = [(points[j][0] * scale[0]) * this.fontSize, (points[j][1] * scale[0]) * this.fontSize];
+                minMax[0] = scaledPoints[0] < minMax[0] ? scaledPoints[0] : minMax[0];
+                minMax[1] = scaledPoints[0] > minMax[1] ? scaledPoints[0] : minMax[1];
+                minMax[2] = scaledPoints[1] < minMax[2] ? scaledPoints[1] : minMax[2];
+                minMax[3] = scaledPoints[1] > minMax[3] ? scaledPoints[1] : minMax[3];
             }
         }
+
+        // make positive for width and height calculations
+        minMax[1] = minMax[0] < 0 ? Math.abs(minMax[0]) + minMax[1] : minMax[1];
+        minMax[3] = minMax[2] < 0 ? Math.abs(minMax[2]) + minMax[3] : minMax[3];
+        minMax[0] = minMax[0] < 0 ? 0 : minMax[0];
+        minMax[2] = minMax[2] < 0 ? 0 : minMax[2];
+
         const charWidth = minMax[1] - minMax[0];
         const halfWidth = Math.round(charWidth * 0.5);
         const charHeight = minMax[3] - minMax[2];
@@ -271,23 +301,23 @@ function getCharacterInstructions(char) {
             }
 
 
-            const [x, y] = [halfWidth + point[0] * this.fontSize, point[1] * this.fontSize];
+            const [x, y] = [point[0], point[1]];
             
             if (first) {                
                 // Add first 2 points with initial line instruction
-                const [ex, ey] = next != null ? [halfWidth + next[0] * this.fontSize, next[1] * this.fontSize] : [0,0];
-                instructions.push(`${VECTOR_IL.LINE} ${this.cursor[0] + x} ${this.cursor[1] + y} ${this.cursor[0] + ex} ${this.cursor[1] + ey}`); // Invert Y for screen coordinates
+                const [ex, ey] = next != null ? [next[0], next[1]] : [0,0];
+                instructions.push(`${VECTOR_IL.LINE} ${x} ${y} ${ex} ${ey}`); // Invert Y for screen coordinates
                 first = false;
                 j++;
             } else {
-                instructions.push(`${VECTOR_IL.LINEREL} ${this.cursor[0] + x} ${this.cursor[1] + y}`);
+                instructions.push(`${VECTOR_IL.LINEREL} ${x} ${y}`);
             }
         }
         instructions.push(VECTOR_IL.ENDSEG);
 
         return {
             instructions: instructions,
-            width: charWidth,
+            width: charWidth * this.world.currentTransform.scaling[0],
             height: charHeight
         };
     }

@@ -48,8 +48,7 @@ export default class VectorAssembler {
     static assemble(renderer, instruction, shapeContext) {
         const vector = VECTOR_IL;
         const parts = instruction.split(' ');
-        const {operand, ...args} = {operand: parts.shift(), args: parts};
-        const pid = renderer.pathId;
+        const {operand, args} = {operand: parts.shift(), args: parts};
         switch (operand) {
             case vector.TOGGLE:
                 args[0] === 'BOLD' && (renderer.localFormat.set('b', !renderer.localFormat.get('b')));
@@ -82,10 +81,10 @@ export default class VectorAssembler {
                 return `this.surface.lineWidth = ${width};`;
                 break;
             case vector.TRANSFORM:
-                return `this.surface.transform(${args[0]}, ${args[3]}, ${args[1]}, ${args[4]}, ${args[2]}, ${args[5]});`;
+                return `this.surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
                 break;
             case vector.ABS_TRANSFORM:
-                return `this.surface.setTransform(${args[0]}, ${args[3]}, ${args[1]}, ${args[4]}, ${args[2]}, ${args[5]});`;
+                return `this.surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
                 break;
             case vector.PUSH:
                 return 'this.surface.save();';
@@ -94,28 +93,34 @@ export default class VectorAssembler {
                 return 'this.surface.restore();';
                 break;
             case vector.IDENTITY:
-                return `this.surface.setTransform(${IdentityMatrix[0,0]}, ${IdentityMatrix[0,1]}, ${IdentityMatrix[1,0]}, ${IdentityMatrix[1,1]}, ${IdentityMatrix[2,0]}, ${IdentityMatrix[2,1]});`;
+                return `this.surface.resetTransform();`;
                 break;
             case vector.POINT:
                 return `this.surface.fillRect(${parseInt(args[0]) - HALF_P}, ${parseInt(args[1]) - HALF_P}, ${POINT_SIZE}, ${POINT_SIZE});`;
                 break;
             case vector.LINESEG:
-                const pathInfo = { path: new Path2D(), fill: args[0] };
+                const pathInfo = { path: new Path2D(), fill: args[0], points: [] };
                 shapeContext.get('paths').push(pathInfo);
                 renderer.pathId = shapeContext.get('paths').length - 1;
+                return null;
                 break;
             case vector.ENDSEG:
-                renderer.pathId = null;
-                if (shapeContext.get('paths')[pid].fill) {
-                    return `this.surface.fill(shapeContext.paths[${pid}].path);`;
+                let instruction = '';
+                if (shapeContext.get('paths')[renderer.pathId].fill === "1") {
+                    instruction = `this.surface.fill(shapeContext.get('paths')[${renderer.pathId}].path);`;
                 } else {
-                    return `this.surface.stroke(shapeContext.paths[${pid}].path);`;
+                    instruction = `this.surface.stroke(shapeContext.get('paths')[${renderer.pathId}].path);`;
                 }
+                renderer.pathId = null;
+                return instruction;
                 break;
             case vector.LINE:
-                if (pid !== null) {
-                    shapeContext.get('paths')[pid].path.moveTo(args[0], args[1]);
-                    shapeContext.get('paths')[pid].path.lineTo(args[2], args[3]);
+                if (renderer.pathId !== null) {
+                    const pathInfo = shapeContext.get('paths')[renderer.pathId];
+                    pathInfo.points.push([args[0], args[1], args[2], args[3]]);
+                    shapeContext.get('paths')[renderer.pathId].path.moveTo(args[0], args[1]);
+                    shapeContext.get('paths')[renderer.pathId].path.lineTo(args[2], args[3]);
+                    return null;
                 } else {
                     return `this.surface.moveTo(${args[0]}, ${args[1]});` +
                         `this.surface.lineTo(${args[2]}, ${args[3]});` +
@@ -123,8 +128,11 @@ export default class VectorAssembler {
                 }
                 break;
             case vector.LINEREL:
-                if (pid !== null) {
-                    shapeContext.get('paths')[pid].path.lineTo(args[0], args[1]);
+                if (renderer.pathId !== null) {
+                    const pathInfo = shapeContext.get('paths')[renderer.pathId];
+                    pathInfo.points.push([args[0], args[1], args[2], args[3]]);
+                    shapeContext.get('paths')[renderer.pathId].path.lineTo(args[0], args[1]);
+                    return null;
                 } else {
                     return `this.surface.moveTo(${args[0]}, ${args[1]});` +
                         'this.surface.stroke();';
@@ -138,6 +146,11 @@ export default class VectorAssembler {
             case vector.MOVETO:
                 return `this.surface.moveTo(${args[0]}, ${args[1]});`
                 break;
+            case vector.SHAPE:
+                return `this.renderCompiledShape(${args[0]}, time, deltaTime);`;
+                break;
+            default:
+                return `// Unrecognized instruction: ${instruction}`;
         }    
     }
 
@@ -146,8 +159,11 @@ export default class VectorAssembler {
      * <b>Immediate Mode</b>
      * @param {Renderer} renderer - The renderer to use for immediate rendering
      * @param {String} instruction - The instruction to render 
+     * @param {Number} time - The current time in seconds
+     * @param {Number} deltaTime - The time elapsed since the last frame in seconds
+     * @returns {void}
      */
-    static immediate(renderer, instruction) {
+    static immediate(renderer, instruction, time, deltaTime) {
         // render the drawing instruction
         let fillSeg = "0";
         const vector = VECTOR_IL;
@@ -169,10 +185,10 @@ export default class VectorAssembler {
                 renderer.surface.lineWidth = args[0];
                 break;
             case vector.TRANSFORM:
-                renderer.surface.setTransform(args[0], args[3], args[1], args[4], args[2], args[5]);
+                renderer.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.ABS_TRANSFORM:
-                renderer.surface.setTransform(args[0], args[3], args[1], args[4], args[2], args[5]);
+                renderer.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.PUSH:
                 renderer.surface.save();
@@ -181,7 +197,7 @@ export default class VectorAssembler {
                 renderer.surface.restore();
                 break;
             case vector.IDENTITY:
-                renderer.surface.setTransform(IdentityMatrix[0,0], IdentityMatrix[0,1], IdentityMatrix[1,0], IdentityMatrix[1,1], IdentityMatrix[2,0], IdentityMatrix[2,1]);
+                renderer.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.POINT:
                 renderer.surface.rect(args[0], args[1], 2, 2);
@@ -231,12 +247,8 @@ export default class VectorAssembler {
             case vector.MOVETO:
                 renderer.surface.moveTo(args[0], args[1]);
                 break;
-            case vector.FONTSIZE:
-                if (args[0]) {
-                    renderer.renderContext.fontSize += parseInt(args[0]);
-                } else {
-                    renderer.renderContext.popFontSize;
-                }
+            case vector.SHAPE:
+                renderer.renderCompiledShape(args[0], time, deltaTime);
                 break;
         }
     }

@@ -8,7 +8,7 @@ RenderEngine.init({
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                true
+                false
             )
         ),
         dimensions: [800, 600],

@@ -1,11 +1,21 @@
 import Console from './Console.js';
 import GameObjectError from '../gameobject/GameObject.js';
-import { IdentityMatrix } from './Matrix.js';
+import { Matrix2d, IdentityMatrix } from './Matrix.js';
 
 /**
  * GameWorld - Static class to contain game objects and manage their interactions
  */
 class GameWorld {
+  #objects = [];
+  #width = 0;
+  #height = 0;
+  #transformStack = [IdentityMatrix];
+  #worldCollisionModel = null;
+  #collisionEvents = [];
+  #engine = null;
+  #camera = null;
+  #renderContext = null;
+
   /**
    * Creates a new GameWorld instance
    * @param {Engine} engine - Reference to the Engine for global event access
@@ -13,28 +23,20 @@ class GameWorld {
    * @param {RenderContext} renderContext - The rendering context
    */
   constructor(engine, camera, renderContext) {
-    this._objects = []; // Array of GameObject instances
-    
     // World-level data
-    this._width = engine.options.world.dimensions[0];  // Default world width
-    this._height = engine.options.world.dimensions[1]; // Default world height
+    this.#width = engine.options.world.dimensions[0];  // Default world width
+    this.#height = engine.options.world.dimensions[1]; // Default world height
     
-    // Transform stack to manage coordinate transformations
-    this._transformStack = [IdentityMatrix];  
-     
     // Collision model reference
-    this._worldCollisionModel = engine.collisionModel;
+    this.#worldCollisionModel = engine.collisionModel;
         
-    // Collision events cache
-    this._collisionEvents = [];
-
     // Tell the context about the world
     renderContext.world = this;
 
     // Store engine references
-    this._engine = engine;
-    this._camera = camera;
-    this._renderContext = renderContext;
+    this.#engine = engine;
+    this.#camera = camera;
+    this.#renderContext = renderContext;
   }
   
   //--------------------------------
@@ -46,7 +48,7 @@ class GameWorld {
    * @returns {Engine}
    */
   get engine() {
-    return this._engine;
+    return this.#engine;
   }
 
   /**
@@ -54,7 +56,7 @@ class GameWorld {
    * @returns {Camera} The world camera
    */
   get camera() {
-    return this._camera;
+    return this.#camera;
   }
 
   /**
@@ -62,7 +64,7 @@ class GameWorld {
    * @returns {RenderContext} The rendering context for the world
    */
   get renderContext() {
-    return this._renderContext;
+    return this.#renderContext;
   }
 
   /**
@@ -87,7 +89,7 @@ class GameWorld {
    * @param {Object} model - The collision model to use
    */
   set collisionModel(model) {
-    this._worldCollisionModel = model;
+    this.#worldCollisionModel = model;
   }
   
   /**
@@ -95,7 +97,7 @@ class GameWorld {
    * @returns {Object|null}
    */
   get collisionModel() {
-    return this._worldCollisionModel;
+    return this.#worldCollisionModel;
   }
   
   /**
@@ -103,7 +105,7 @@ class GameWorld {
    * @returns {Array} An array with two elements (width and height)
    */
   get dimensions() {
-    return [this._width, this._height];
+    return [this.#width, this.#height];
   }
 
   /**
@@ -111,8 +113,8 @@ class GameWorld {
    * @returns {Array} An array with two elements (width and height)
    */
   set dimensions([width, height]) {
-    this._width = width;
-    this._height = height;
+    this.#width = width;
+    this.#height = height;
   }
 
   /**
@@ -120,7 +122,7 @@ class GameWorld {
    * @returns {number} The width of the world
    */
   get width() {
-    return this._width;
+    return this.#width;
   }
 
   /**
@@ -135,7 +137,7 @@ class GameWorld {
    * @returns {number} The height of the world
    */
   get height() {
-    return this._height;
+    return this.#height;
   }
 
   /**
@@ -150,7 +152,7 @@ class GameWorld {
    * @returns {GameObject[]}
    */
   get allObjects() {
-    return [...this._objects];
+    return [...this.#objects];
   }
 
   /**
@@ -158,7 +160,14 @@ class GameWorld {
    * @returns {number} 
    */
   get stackDepth() {
-    return this._transformStack.length;
+    return this.#transformStack.length;
+  }
+
+  /**
+   * Returns the current transform applied to the world
+   */
+  get currentTransform() {
+    return this.peekTransformation();
   }
 
   //--------------------------------
@@ -172,10 +181,10 @@ class GameWorld {
    */
   update(currentTime, deltaTime) {
     // Clear previous collision events
-    this._collisionEvents = [];
+    this.#collisionEvents = [];
     
     // Update each GameObject in the world
-    for (const object of this._objects) {
+    for (const object of this.#objects) {
       try {
         if (object.update) {
           object.update(currentTime, deltaTime);
@@ -195,8 +204,8 @@ class GameWorld {
   * @returns {GameObject}
   */
   addObject(object) {
-    if (!this._objects.includes(object)) {
-        this._objects.push(object);
+    if (!this.#objects.includes(object)) {
+        this.#objects.push(object);
         
         if (this.eventEngine) {
           this.eventEngine.emit("objectAdded", {
@@ -217,9 +226,9 @@ class GameWorld {
    * @returns {boolean}
    */
   removeObject(object) {
-    const index = this._objects.indexOf(object);
+    const index = this.#objects.indexOf(object);
     if (index > -1) {
-        this._objects.splice(index, 1);
+        this.#objects.splice(index, 1);
         
         // Emit event through the event engine if available
         if (this.eventEngine) {
@@ -237,9 +246,9 @@ class GameWorld {
    * Clear all game objects from the world
    */
   clear() {
-    this._objects = [];
-    this._transformStack = [];
-    this._collisionEvents = [];
+    this.#objects = [];
+    this.#transformStack = [];
+    this.#collisionEvents = [];
   }
 
   /**
@@ -253,7 +262,7 @@ class GameWorld {
    * Process and handle all pending collision events
    */
   processCollisionEvents() {
-    for (const event of this._collisionEvents) {
+    for (const event of this.#collisionEvents) {
       if (event.handler && typeof event.handler === 'function') {
         try {
           event.handler(event);
@@ -262,7 +271,7 @@ class GameWorld {
         }
       }
     }
-    this._collisionEvents = [];
+    this.#collisionEvents = [];
   }
   
   /**
@@ -270,14 +279,14 @@ class GameWorld {
    * @param {Object} event - The collision event to queue
    */
   queueCollisionEvent(event) {
-    this._collisionEvents.push(event);
+    this.#collisionEvents.push(event);
   }
   
   /**
    * Reset world transformations (clears transform stack)
    */
   resetTransforms() {
-    this._transformStack = [IdentityMatrix];
+    this.#transformStack = [IdentityMatrix];
   }
   
   /**
@@ -285,8 +294,7 @@ class GameWorld {
    * @param {Matrix2d} transformation - The transformation to push
    */
   pushTransformation(transformation) {
-    const m = Matrix2d.
-    this._transformStack.push(transformation);
+    this.#transformStack.push(transformation);
   }
   
   /**
@@ -294,8 +302,8 @@ class GameWorld {
    * @returns {Matrix2d|null} The top-most transformation off the stack, or null if stack is empty
    */
   popTransformation() {
-    if (this._transformStack.length === 0) throw new RenderEngineError('Cannot pop from an empty transform stack');
-    return this._transformStack.pop();
+    if (this.#transformStack.length === 0) throw new RenderEngineError('Cannot pop from an empty transform stack');
+    return new Matrix2d(this.#transformStack.pop());
   }
 
   /**
@@ -303,11 +311,11 @@ class GameWorld {
    * @returns {Matrix2d|null} The last transformation in the stack, or null if stack is empty
    */
   peekTransformation() {
-    if (this._transformStack.length === 0) {
+    if (this.#transformStack.length === 0) {
       Console.error('Transform stack is empty!');
-      return null;
+      return IdentityMatrix;
     }
-    return this._transformStack[this._transformStack.length - 1];
+    return new Matrix2d(this.#transformStack[this.#transformStack.length - 1]);
   }
 
 }

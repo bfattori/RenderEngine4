@@ -1,4 +1,5 @@
 import Console from '../../core/Console.js';
+import Constants from '../../Constants.js';
 import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import Renderer from './Renderer.js';
@@ -15,8 +16,6 @@ export default class CanvasRenderer extends Renderer {
         #canvas = null;
         #offscreen = null;
             
-        #compiledShapes = new Map();
-
         #localFormat = new Map();
 
 
@@ -101,14 +100,16 @@ export default class CanvasRenderer extends Renderer {
 
     /**
      * Compile a set of intermediate drawing instructions into a function that, when called, executes the
-     * instructions to the canvas' viewport. This means that instructions are not sent for the
-     * shape, and instead the object is rendered from a stored procedure.
+     * instructions to the canvas' surface. Further references are to the opaque id, deferring rendering into
+     * the renderer's scope.
      * 
      * @param {String[]} instructions - The instructions to compile.
-     * @returns {Function} The compiled function, containing its drawing context.
+     * @returns {number} The opaque reference to the function that will render the shape.
      */
     compile(instructions) {
-        super.compile(instructions);
+        if (super.compile(instructions) === Constants.COMPILATION_FAILED) {
+            return Constants.COMPILATION_FAILED;
+        }
         
         // generate the re-usable function
         const renderer = this;
@@ -118,19 +119,32 @@ export default class CanvasRenderer extends Renderer {
 
         // assemble the instructions
         instructions.forEach(i => {
+            i = i.trim();
             if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
-                // a comment
-                shapeContext.get('assembled').push(i);
-            } else {
-                shapeContext.get('assembled').push(this.assembler.assemble(this, i, shapeContext));
+                // ignore comments
+                const assembled = renderer.assembler.assemble(renderer, i, shapeContext);
+                if (assembled !== null) {
+                    shapeContext.get('assembled').push(assembled);
+                }
             }
         });
         
         // assemble the function with its drawing context
-        return function(time, deltaTime) {
-            shapeContext.set('fn', Function("shapeContext", "time", "deltaTime", shapeContext.get('assembled').join("\n")));
-            return shapeContext.get('fn').call(renderer, shapeContext, time, deltaTime);
-        };
+        const instructionSet = shapeContext.get('assembled').join("\n");
+
+        // the function that will be executed each frame to render the shape.
+        const shapeFn = Function("shapeContext", "time", "deltaTime", instructionSet);
+        const opaqueId = this.nextShapeId;
+        
+        // the stored procedure captures the shape context and the shape function, 
+        // and executes the shape function using the current engine time and delta time.
+        const storedProcedure = function(time, deltaTime) {
+            shapeFn.call(this, shapeContext, time, deltaTime);
+        }
+
+        // store the procedure that will run the instructions
+        this.compiledShapes[opaqueId] = storedProcedure;
+        return opaqueId;
     }
 
     /**
@@ -140,11 +154,11 @@ export default class CanvasRenderer extends Renderer {
      * @param {number} deltaTime - The time past since the last frame
      */
     renderCompiledShape(opaqueId, time, deltaTime) {
-        const drawShape = this.#compiledShapes[opaqueId];
+        const drawShape = this.compiledShapes[opaqueId];
         if (drawShape) {
-            drawShape(time, deltaTime);
+            drawShape.call(this, time, deltaTime);
         } else {
-            throw new RenderEngineError(`Shape '${opaqueId}' not found in cache!`);
+            Console.warn(`No compiled shape found for opaqueId: ${opaqueId}`);
         }
     }
 
@@ -152,10 +166,13 @@ export default class CanvasRenderer extends Renderer {
      * Renders the instruction to the surface as soon as it is received.
      * <b>Immediate Mode</b>
      * @param {String} instruction - The instruction to render 
+     * @param {Number} time - The current time in seconds
+     * @param {Number} deltaTime - The time elapsed since the last frame in seconds
+     * @returns {void}
      */
-    render(instruction) {
+    render(instruction, time, deltaTime) {
         if (this.assembler) {
-            this.assembler.immediate(this, instruction);
+            this.assembler.immediate(this, instruction, time, deltaTime);
         } else {
             throw new RenderEngineError("No assembler is associated with the CanvasRenderer!");
         }

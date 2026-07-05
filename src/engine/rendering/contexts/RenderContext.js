@@ -153,7 +153,7 @@ export default class RenderContext {
    * @param {number} x - The X position
    */
   set cursorX(x) {
-    this.#cursor.y = x;
+    this.#cursor.x = x;
   }
 
   /**
@@ -169,7 +169,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the X position by
    */
   set cursorDeltaX(delta) {
-    this.#cursor.x += delta;
+    this.cursorX += delta;
   }
 
   /**
@@ -177,7 +177,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the Y poisition by
    */
   set cursorDeltaY(delta) {
-    this.#cursor.y += delta;
+    this.cursorY += delta;
   }
 
   /**
@@ -314,8 +314,7 @@ export default class RenderContext {
    */
   pushTransform(transformationMatrix) {
     // multiply the new transform and store that
-    transformationMatrix.mul(this.world?.peekTransformation());
-    this.#world?.pushTransformation(transformationMatrix);    
+    this.#world.pushTransformation(transformationMatrix);    
   }
 
   /**
@@ -323,7 +322,7 @@ export default class RenderContext {
    * @returns A matrix representing the top-most element of the transformation stack
    */
   popTransform() {
-    return this.#world?.popTransform();
+    return this.#world.popTransformation();
   }
 
   /**
@@ -331,7 +330,7 @@ export default class RenderContext {
    * @returns A matrix representing the top-most element of the transformation stack
    */
   peekTransform() {
-    return this.#world?.peekTransform();
+    return this.#world?.peekTransformation();
   }
 
   /**
@@ -413,7 +412,7 @@ export default class RenderContext {
 
       // play out any pending instructions
       this.#instructionBuffer.forEach(instruction => {
-        this.#renderer.render(instruction);
+        this.#renderer.render(instruction, time, deltaTime);
       });
 
 

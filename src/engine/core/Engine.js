@@ -2,7 +2,7 @@
  * Engine - Main render loop engine class
  * Implements simple rendering loop and game object management system
  */
-import Constants from './../constants.js';
+import Constants from '../Constants.js';
 
 import Console from './Console.js'
 import RenderEngineError from './RenderEngineError.js';

@@ -33,6 +33,10 @@ const Constants = {
     
     // Console error logging
     ERROR_LOGGER: ENGINE_ERRORS,
+
+    // Compilation
+    COMPILATION_FAILED: -1,
+    COMPILATION_NOT_SUPPORTED: -2,
     
     // Default engine configuration options
     DEFAULT_ENGINE_OPTIONS: {
