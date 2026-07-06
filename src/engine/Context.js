@@ -2,15 +2,16 @@
  * Global context for the engine
  */
 export default class Context {
-    #debug = false;
+    #debug = true;
+    static #instance = null;
 
     constructor() {}
 
     static getInstance() {
-        if (this.#instance === null) {
-            this.#instance = new Context();
+        if (Context.#instance === null) {
+            Context.#instance = new Context();
         }
-        return this.#instance;
+        return Context.#instance;
     }
 
     static get debug() {

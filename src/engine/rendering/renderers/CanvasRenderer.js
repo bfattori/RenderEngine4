@@ -106,7 +106,7 @@ export default class CanvasRenderer extends Renderer {
      * @param {String[]} instructions - The instructions to compile.
      * @returns {number} The opaque reference to the function that will render the shape.
      */
-    compile(instructions) {
+    compile(instructions, tag = null) {
         if (super.compile(instructions) === Constants.COMPILATION_FAILED) {
             return Constants.COMPILATION_FAILED;
         }
@@ -140,6 +140,9 @@ export default class CanvasRenderer extends Renderer {
         // and executes the shape function using the current engine time and delta time.
         const storedProcedure = function(time, deltaTime) {
             shapeFn.call(this, shapeContext, time, deltaTime);
+        }
+        if (tag !== null) {
+            storedProcedure.tag = tag;
         }
 
         // store the procedure that will run the instructions

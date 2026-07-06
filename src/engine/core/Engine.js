@@ -16,6 +16,8 @@ import Camera from '../rendering/cameras/Camera.js';
 
 import AABBCollisionModel from './../collisions/models/AABB.js';
 
+import Context from '../Context.js';
+
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
  * @type {Object} primary - Namespace object containing references to Engine, EventEngine, World, and RenderContext.
@@ -27,6 +29,7 @@ const primary = {
   PARTICLE_ENGINE: null
 };
 
+const ctx = Context.getInstance();
 
 /**
  * Creates a new Engine instance.
@@ -69,6 +72,12 @@ const primary = {
  * @constructor
  */
 export default class Engine {
+  #ENGINE = null
+  #WORLD = null
+  #EVENT_ENGINE = null;
+  #PARTICLE_ENGINE = null;
+  #RENDER_CONTEXT = null;
+
   #ENGINE_OPTIONS = null;
   #width = 0;
   #height = 0;
@@ -102,27 +111,25 @@ export default class Engine {
     const renderContext = this.#ENGINE_OPTIONS.world?.renderContext || new RenderContext(new Renderer());
     renderContext.screenDimensions = this.#ENGINE_OPTIONS.world?.screenDimensions;
     renderContext.worldDimensions = this.#ENGINE_OPTIONS.world?.dimensions;
-    
-    // Track frame timing
+    this.#RENDER_CONTEXT = renderContext;
     
     // Collision model storage
     this.#collisionModel = this.#ENGINE_OPTIONS.world?.collisionModel || new AABBCollisionModel(this);
     this.#ENGINE_OPTIONS.world.collisionModel = this.#collisionModel;
 
-
-    // the camera viewport
+    // the game camera
     const camera = this.#ENGINE_OPTIONS.world?.camera || new Camera();
     camera.viewport = this.#ENGINE_OPTIONS.world?.viewport;
-    this.#ENGINE_OPTIONS.world.camera = camera;
-
 
     // setup the game world
-    primary.ENGINE = this;
-    primary.EVENT_ENGINE = new EventEngine(this);
-    primary.WORLD = new GameWorld(this, camera, renderContext);
+    this.#ENGINE = this;
+    this.#EVENT_ENGINE = new EventEngine(this);
+    this.#WORLD = new GameWorld(this, camera, renderContext);
+    this.#PARTICLE_ENGINE = new ParticleEngine();
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
+    ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
   }
 
     //---------------------------
@@ -133,8 +140,8 @@ export default class Engine {
    * Get the Engine instance
    * @returns {Engine} The current instance of Engine.
    */
-  static get engine() {
-    return primary.ENGINE;
+  get engine() {
+    return this.#ENGINE;
   }
 
   /**
@@ -142,7 +149,7 @@ export default class Engine {
    * @returns {GameWorld}
    */
   get world() {
-    return primary.WORLD;
+    return this.#WORLD;
   }
 
   /**
@@ -150,7 +157,7 @@ export default class Engine {
    * @returns {EventEngine}
    */
   get eventEngine() {
-    return primary.EVENT_ENGINE;
+    return this.#EVENT_ENGINE;
   }
 
   /**
@@ -158,10 +165,7 @@ export default class Engine {
    * @returns {ParticleEngine|null}
    */
   get particleEngine() {
-    if (primary.PARTICLE_ENGINE === null) {
-      primary.PARTICLE_ENGINE = new ParticleEngine(primary.RENDER_CONTEXT);
-    }
-    return primary.PARTICLE_ENGINE;
+    return this.#PARTICLE_ENGINE;
   }
   
   /**
@@ -169,7 +173,7 @@ export default class Engine {
    * @returns {RenderContext|null}
    */
   get renderContext() {
-    return primary.RENDER_CONTEXT;
+    return this.#RENDER_CONTEXT;
   }
 
   //---------------------------------

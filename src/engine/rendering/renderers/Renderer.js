@@ -168,12 +168,13 @@ export default class Renderer {
      * <code>renderShape</code> to render a shape to the context without having to pass an entire set of
      * render instructions to generate the assembly at each frame. 
      * @param {String[]} instructions - The render instructions.
+     * @param {String} tag - optional tag to apply to the generated function
      * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
      *                   the renderer does not support pre-compilation of renderable objects.
      */
-    getCompiledShape(instructions) {
+    getCompiledShape(instructions, tag) {
         if (!this.#hasCompiler) { return Constants.COMPILATION_NOT_SUPPORTED; }
-        return this.compile(instructions);
+        return this.compile(instructions, tag);
     }
 
     /**

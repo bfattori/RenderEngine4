@@ -566,11 +566,12 @@ export default class VectorRenderContext extends RenderContext {
         renderContext.addInstruction(`${VECTOR_IL.LINESEG} ${filled ? '1' : '0'}`);
         
         // first line of segment
-        renderContext.API.line([x1, y1], coords.shift());
+        const lineTo = coords.shift();
+        renderContext.API.line(x1, y1, lineTo[0], lineTo[1]);
 
         // run out the remainder of the coordinates in the line segment
         for (let rel of coords) {
-          renderContext.API.lineRel(rel);
+          renderContext.API.lineRel(rel[0], rel[1]);
         }
         
         renderContext.addInstruction(`${VECTOR_IL.ENDSEG}`);

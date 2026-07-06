@@ -4,10 +4,14 @@ import { VECTOR_IL } from '../rendering/assemblers/VectorAssembler.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 import { ShearingMatrix, Matrix2d } from '../core/Matrix.js';
+import Context from '../Context.js';
 
 
 const ITALICS_MATRIX = ShearingMatrix;
 const shapeCache = new Map();
+
+// get the engine context
+const ctx = Context.getInstance();
 
 function getWord(text, idx) {
     let check = text.substring(idx);
@@ -79,13 +83,12 @@ export default function processText(text, spaceWidth = 45) {
 
         // Handle formatting markers
         if (char === '{') {
-            const instructions = [];
             const nextChar = text[i + 1];
             let markerType = '';
             
             if (nextChar === '!') {
                 // Reset to previous/default color
-                instructions.push(`${VECTOR_IL.COLOR}`);
+                this.lineColor = undefined;
                 i += 3;
             } else if (nextChar === '+' || nextChar === '-') {
                 const scalar = nextChar === '+' ? 1 : -1;
@@ -116,16 +119,14 @@ export default function processText(text, spaceWidth = 45) {
             } else if (nextChar === '#') {
                 // Color name - hex color
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-                instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
+                this.lineColor = colorName;
                 i += colorName.length + 2;
             } else if (nextChar !== undefined) {
                 // Color name - remove the { - may need to remove the training } as well??
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-                instructions.push(`${VECTOR_IL.COLOR} ${colorName}`);
+                this.lineColor = colorName;
                 i += colorName.length + 2;
             }
-
-            this.addInstruction(...instructions);
             continue;
         }
 
@@ -186,6 +187,9 @@ export default function processText(text, spaceWidth = 45) {
  * @private
  */
 function characterInstruction(char, width) {
+    // until we have lowercase characters
+    char = char.toUpperCase();
+    
     // Get character instructions from vector.js
     const charInstructions = getCharacterInstructions.call(this, char);
 
@@ -204,10 +208,15 @@ function characterInstruction(char, width) {
     current.uniformScale(this.fontSize);
     context.pushTransform(current);
 
+    if (ctx.debug) {
+        const ci = charInstructions;
+        context.API.color("#000").width(1).rectangle(-ci.halfWidth, -ci.halfHeight, ci.width - ci.halfWidth, ci.height - ci.halfHeight).color().width();
+    }
+
     if (context.renderer.hasCompiler) {
         if (!shapeCache.has(char)) {
             // Compile the character shape and store in cache
-            const shapeId = context.renderer.getCompiledShape(charInstructions.instructions);
+            const shapeId = context.renderer.getCompiledShape(charInstructions.instructions, `CHAR '${char}'`);
             if (shapeId !== Constants.COMPILATION_FAILED) {
                 shapeCache.set(char, shapeId);
                 context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
@@ -269,10 +278,10 @@ function getCharacterInstructions(char) {
             if (points[j] !== null) {
                 const scale = this.world.currentTransform.scaling;
                 const scaledPoints = [(points[j][0] * scale[0]) * this.fontSize, (points[j][1] * scale[0]) * this.fontSize];
-                minMax[0] = scaledPoints[0] < minMax[0] ? scaledPoints[0] : minMax[0];
-                minMax[1] = scaledPoints[0] > minMax[1] ? scaledPoints[0] : minMax[1];
-                minMax[2] = scaledPoints[1] < minMax[2] ? scaledPoints[1] : minMax[2];
-                minMax[3] = scaledPoints[1] > minMax[3] ? scaledPoints[1] : minMax[3];
+                minMax[0] = scaledPoints[0] < minMax[0] ? scaledPoints[0] : minMax[0];  // min X
+                minMax[1] = scaledPoints[0] > minMax[1] ? scaledPoints[0] : minMax[1];  // max X
+                minMax[2] = scaledPoints[1] < minMax[2] ? scaledPoints[1] : minMax[2];  // min Y
+                minMax[3] = scaledPoints[1] > minMax[3] ? scaledPoints[1] : minMax[3];  // max Y
             }
         }
 
@@ -282,10 +291,10 @@ function getCharacterInstructions(char) {
         minMax[0] = minMax[0] < 0 ? 0 : minMax[0];
         minMax[2] = minMax[2] < 0 ? 0 : minMax[2];
 
-        const charWidth = minMax[1] - minMax[0];
+        const charWidth = minMax[1];
         const halfWidth = Math.round(charWidth * 0.5);
-        const charHeight = minMax[3] - minMax[2];
-        const halfHeight = Math.round(charHeight);
+        const charHeight = minMax[3];
+        const halfHeight = Math.round(charHeight * 0.5);
 
         instructions.push(`${VECTOR_IL.LINESEG} 0`);
         for (let j = 0; j < points.length; j++) {
@@ -318,7 +327,9 @@ function getCharacterInstructions(char) {
         return {
             instructions: instructions,
             width: charWidth * this.world.currentTransform.scaling[0],
-            height: charHeight
+            height: charHeight,
+            halfWidth: halfWidth,
+            halfHeight: halfHeight
         };
     }
 

@@ -4,11 +4,14 @@ import CanvasRenderer from '../../src/engine/rendering/renderers/CanvasRenderer.
 
 // create a double-buffered canvas renderer
 RenderEngine.init({
+    flags: {
+        debugMode: false
+    },
     world: {
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                false
+                true
             )
         ),
         dimensions: [800, 600],
