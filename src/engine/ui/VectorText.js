@@ -148,7 +148,7 @@ export default function processText(text, spaceWidth = 45) {
             this.formatting.bold = !this.formatting.bold;
             this.addInstruction(`// format: bold (${this.formatting.bold})`);
             if (this.formatting.bold) {
-                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? 3 : 0)}`);
+                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? (3 * 1/this.fontSize) : 0)}`);
             } else {
                 this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
             }
@@ -201,7 +201,7 @@ function characterInstruction(char, width) {
     const current = this.world.currentTransform;
     const oldScale = current.scaling;
     current.translate(context.cursorX, 0);
-    current.uniformScale(oldScale[0] * this.fontSize, oldScale[1] * this.fontSize);
+    current.uniformScale(this.fontSize);
     context.pushTransform(current);
 
     if (context.renderer.hasCompiler) {
@@ -221,7 +221,7 @@ function characterInstruction(char, width) {
         });
     }
     context.popTransform();
-    context.cursorDeltaX = charInstructions.width;
+    context.cursorDeltaX = charInstructions.width * ((this.formatting.bold ? 8*(1 / this.fontSize) : 1.3));
 }
 
 /**

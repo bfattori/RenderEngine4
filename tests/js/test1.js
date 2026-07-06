@@ -42,7 +42,10 @@ context.API
     .text("{+6}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
     .cursor(100, 15).color("#000").width(1)
     .text("Plain text, no formatting.", 
-        {color: "black", fontSize: 1.5, lineWidth: 1});
+        {color: "black", fontSize: 1.5, lineWidth: 1})
+    .cursor(120, 80)
+    .fontSize(4)
+    .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l");
 
 // Run out one frame to render it   
 RE4.update(0, 0);

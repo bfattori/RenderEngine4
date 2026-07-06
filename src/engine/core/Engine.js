@@ -27,8 +27,6 @@ const primary = {
   PARTICLE_ENGINE: null
 };
 
-// engine options singleton
-let ENGINE_OPTIONS = null;
 
 /**
  * Creates a new Engine instance.
@@ -71,9 +69,20 @@ let ENGINE_OPTIONS = null;
  * @constructor
  */
 export default class Engine {
+  #ENGINE_OPTIONS = null;
+  #width = 0;
+  #height = 0;
+  #currentTime = 0;
+  #lastTime = 0;
+  #deltaTime = 0;
+  #isRunning = false;
+  #animationFrameId = null;
+  #lifecycleTiming = 0;
+  #collisionModel = null;
+
   constructor(options) {
     // store the engine initialization options
-    ENGINE_OPTIONS = { 
+    this.#ENGINE_OPTIONS = { 
       flags: {...Constants.DEFAULT_ENGINE_OPTIONS.flags, ...options.flags},
       world: {...Constants.DEFAULT_ENGINE_OPTIONS.world, ...options.world},
       threading: {...Constants.DEFAULT_ENGINE_OPTIONS.threading, ...options.threading},
@@ -81,32 +90,30 @@ export default class Engine {
     };
 
     // configure basics
-    this._width = ENGINE_OPTIONS.world.dimensions[0];
-    this._height = ENGINE_OPTIONS.world.dimensions[1];
+    this.#width = this.#ENGINE_OPTIONS.world.dimensions[0];
+    this.#height = this.#ENGINE_OPTIONS.world.dimensions[1];
     
     // Game timer maintained by the engine
-    this._currentTime = ENGINE_OPTIONS.world.seedTime;
-    this._lastTime = 0;
-    this._deltaTime = 0;
+    this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;
+    this.#lastTime = 0;
+    this.#deltaTime = 0;
     
     // Store render context (initialized later)
-    const renderContext = ENGINE_OPTIONS.world?.renderContext || new RenderContext(new Renderer());
-    renderContext.screenDimensions = ENGINE_OPTIONS.world?.screenDimensions;
-    renderContext.worldDimensions = ENGINE_OPTIONS.world?.dimensions;
+    const renderContext = this.#ENGINE_OPTIONS.world?.renderContext || new RenderContext(new Renderer());
+    renderContext.screenDimensions = this.#ENGINE_OPTIONS.world?.screenDimensions;
+    renderContext.worldDimensions = this.#ENGINE_OPTIONS.world?.dimensions;
     
     // Track frame timing
-    this._isRunning = false;
-    this.animationFrameId = null;
     
     // Collision model storage
-    this._collisionModel = ENGINE_OPTIONS.world?.collisionModel || new AABBCollisionModel(this);
-    ENGINE_OPTIONS.world.collisionModel = this._collisionModel;
+    this.#collisionModel = this.#ENGINE_OPTIONS.world?.collisionModel || new AABBCollisionModel(this);
+    this.#ENGINE_OPTIONS.world.collisionModel = this.#collisionModel;
 
 
     // the camera viewport
-    const camera = ENGINE_OPTIONS.world?.camera || new Camera();
-    camera.viewport = ENGINE_OPTIONS.world?.viewport;
-    ENGINE_OPTIONS.world.camera = camera;
+    const camera = this.#ENGINE_OPTIONS.world?.camera || new Camera();
+    camera.viewport = this.#ENGINE_OPTIONS.world?.viewport;
+    this.#ENGINE_OPTIONS.world.camera = camera;
 
 
     // setup the game world
@@ -114,120 +121,11 @@ export default class Engine {
     primary.EVENT_ENGINE = new EventEngine(this);
     primary.WORLD = new GameWorld(this, camera, renderContext);
 
-    // intra-stage timing
-    this.__lifecycleTiming = 0;
-
     // call init hook
-    ENGINE_OPTIONS.hooks.onInit();
-  }
-  
-  //---------------------------------
-
-  /**
-   * Get current world width in pixels
-   * @returns {number}
-   */
-  get width() {
-    return this._width;
+    this.#ENGINE_OPTIONS.hooks.onInit();
   }
 
-  /**
-   * Set current world width in pixels
-   * @param {number} width - New world width in pixels
-   */
-  set width(width) {
-    this._width = width;
-  }
-
-  /**
-   * Get current world height in pixels
-   * @returns {number}
-   */
-  get height() {
-    return this._height;
-  }
-
-  /**
-   * Set current world height in pixels
-   * @param {number} height - New world height in pixels
-   */
-  set height(height) {
-    this._height = height;
-  }
-
-  /**
-   * Get current world time in milliseconds
-   * @returns {number}
-   */
-  get time() {
-    return this._currentTime;
-  }
-
-  set time(time) {
-    this._currentTime = time;
-  }
-  
-  /**
-   * Get delta time since last frame in milliseconds
-   * @returns {number}
-   */
-  get deltaTime() {
-    return this._deltaTime;
-  }
-
-  set deltaTime(time) {
-    this._deltaTime = time;
-  }
-
-  /**
-   * Get last world time in milliseconds
-   * @returns {number}
-   */
-  get lastTime() {
-    return this._lastTime;
-  }
-
-  set lastTime(time) {
-    this._lastTime = time;
-  }
-    
-  /**
-   * Check if the engine is running
-   * @returns {boolean}
-   */
-  get isRunning() {
-    return this._isRunning;
-  }
-
-  set isRunning(state = true) {
-    this._isRunning = state
-  }
-
-  /**
-   * Get the world's collision model
-   * @returns {CollisionModel|null}
-   */
-  get collisionModel() {
-    return this.world ? this.world.collisionModel : this._collisionModel;
-  }
-
-  /**
-   * Get all game objects in the world
-   * @returns {GameObject[]}
-   */
-  get allObjects() {
-    return this.world ? this.world.getAllObjects() : [];
-  }
-
-  /**
-   * Get the engine operating options
-   * @returns {Object}
-   */
-  get options() {
-    return ENGINE_OPTIONS;
-  }
-
-  //---------------------------
+    //---------------------------
   // Primary engine components
   //---------------------------
 
@@ -272,6 +170,112 @@ export default class Engine {
    */
   get renderContext() {
     return primary.RENDER_CONTEXT;
+  }
+
+  //---------------------------------
+
+  /**
+   * Get current world width in pixels
+   * @returns {number}
+   */
+  get width() {
+    return this.#width;
+  }
+
+  /**
+   * Set current world width in pixels
+   * @param {number} width - New world width in pixels
+   */
+  set width(width) {
+    this.#width = width;
+  }
+
+  /**
+   * Get current world height in pixels
+   * @returns {number}
+   */
+  get height() {
+    return this.#height;
+  }
+
+  /**
+   * Set current world height in pixels
+   * @param {number} height - New world height in pixels
+   */
+  set height(height) {
+    this.#height = height;
+  }
+
+  /**
+   * Get current world time in milliseconds
+   * @returns {number}
+   */
+  get time() {
+    return this.#currentTime;
+  }
+
+  set time(time) {
+    this.#currentTime = time;
+  }
+  
+  /**
+   * Get delta time since last frame in milliseconds
+   * @returns {number}
+   */
+  get deltaTime() {
+    return this.#deltaTime;
+  }
+
+  set deltaTime(time) {
+    this.#deltaTime = time;
+  }
+
+  /**
+   * Get last world time in milliseconds
+   * @returns {number}
+   */
+  get lastTime() {
+    return this.#lastTime;
+  }
+
+  set lastTime(time) {
+    this.#lastTime = time;
+  }
+    
+  /**
+   * Check if the engine is running
+   * @returns {boolean}
+   */
+  get isRunning() {
+    return this.#isRunning;
+  }
+
+  set isRunning(state = true) {
+    this.#isRunning = state
+  }
+
+  /**
+   * Get the world's collision model
+   * @returns {CollisionModel|null}
+   */
+  get collisionModel() {
+    return this.world ? this.world.collisionModel : this.#collisionModel;
+  }
+
+  /**
+   * Get all game objects in the world
+   * @returns {GameObject[]}
+   */
+  get allObjects() {
+    return this.world ? this.world.getAllObjects() : [];
+  }
+
+  /**
+   * Get the engine operating options
+   * @returns {Object}
+   */
+  get options() {
+    return this.#ENGINE_OPTIONS;
   }
 
   /**
@@ -326,7 +330,7 @@ export default class Engine {
   update(currentTime, deltaTime) {
     if (!this.world) return;
     
-    this.currentTime = currentTime;
+    this.time = currentTime;
     this.lastTime = this.lastTime === 0 ? currentTime : this.lastTime;
     this.deltaTime = currentTime - this.lastTime;
     
@@ -367,14 +371,15 @@ export default class Engine {
    * @param {number} frameRate - Target frame rate in frames per second
    * @param {number} seed - The world timer seed
    */
-  start(frameRate = ENGINE_OPTIONS.world.fps, seed = 0) {
+  start(frameRate = 60, seed = 0) {
     if (this.isRunning) return;
 
     this.isRunning = true;
     this.lastTime = performance.now();
+    this.frameRate = this.options.world.fps;
 
     // the frame lifecycle callbacks are called in a loop until the game is stopped
-    const lifecycleHooks = ENGINE_OPTIONS.hooks;
+    const lifecycleHooks = this.options.hooks;
     
     const loop = () => {
       if (!this.isRunning) return;
@@ -406,11 +411,11 @@ export default class Engine {
       lifecycleHooks.onFrame(performance.now() - frameStart);
 
       if (this.isRunning) {
-        this.animationFrameId = requestAnimationFrame(loop);
+        this.#animationFrameId = requestAnimationFrame(loop);
       }
     };
     
-    this.animationFrameId = requestAnimationFrame(loop);
+    this.#animationFrameId = requestAnimationFrame(loop);
 
     // engine started
     lifecycleHooks?.onStart();
@@ -421,13 +426,13 @@ export default class Engine {
    */
   stop() {
     this.isRunning = false;
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
+    if (this.#animationFrameId) {
+      cancelAnimationFrame(this.#animationFrameId);
+      this.#animationFrameId = null;
     }
 
     // call stop hook
-    ENGINE_OPTIONS.hooks.onStop();
+    this.#ENGINE_OPTIONS.hooks.onStop();
   }
     
   /**
@@ -436,9 +441,9 @@ export default class Engine {
   reset() {
     this.stop();
     
-    this._currentTime = 0;
-    this._lastTime = 0;
-    this._deltaTime = 0;
+    this.#currentTime = 0;
+    this.#lastTime = 0;
+    this.#deltaTime = 0;
     
     if (this.world) {
       this.world.clear();
@@ -468,17 +473,18 @@ export default class Engine {
    */
   destroy() {
     // clean up before exiting
-    primary?.EVENT_ENGINE?.shutdown();
-    primary?.WORLD?.shutdown();
-    primary?.RENDER_CONTEXT?.shutdown();
-    primary?.PARTICLE_ENGINE?.shutdown();
+    primary.EVENT_ENGINE?.shutdown();
+    primary.WORLD?.shutdown();
+    primary.RENDER_CONTEXT?.shutdown();
+    primary.PARTICLE_ENGINE?.shutdown();
 
+    const self = this;
     // async cleanup of the engine
     setTimeout(() => {
       // call shutdown hook
-      ENGINE_OPTIONS.hooks.onShutdown();
+      self.options.hooks.onShutdown();
       primary.ENGINE = null;
-      ENGINE_OPTIONS = null;
+      this.#ENGINE_OPTIONS = null;
     }, 250);
   }
 
