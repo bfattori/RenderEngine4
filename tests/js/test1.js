@@ -39,7 +39,7 @@ context.API
     // the string "Inline Format" formatted 
     // with colors and font size changes
     .cursor(50, 330)
-    .width(3)
+    .width(1)
     .text("{#00f}**I{#f00}n**{green}{+2}l{orange}~i~{#2e867f}{+}ne")
     .cursor(50, 455)
     .text("{+6}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
