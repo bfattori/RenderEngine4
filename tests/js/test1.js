@@ -43,7 +43,7 @@ context.API
     .text("{#00f}**I{#f00}n**{green}{+2}l{orange}~i~{#2e867f}{+}ne")
     .cursor(50, 455)
     .text("{+6}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
-    .cursor(100, 15).color("#000").width(1)
+    .cursor(100, 15)
     .text("Plain text, no formatting.", 
         {color: "black", fontSize: 1.5, lineWidth: 1})
     .cursor(120, 80)
