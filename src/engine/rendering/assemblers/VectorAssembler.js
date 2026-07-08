@@ -1,3 +1,5 @@
+import AssemblerError from './AssemblerError.js';
+
 // Intermediate Language instruction types for vector rendering
 const VECTOR_IL = {
   // Decorator Instructions (State Modifiers)
@@ -21,6 +23,8 @@ const VECTOR_IL = {
   ENDSEG: 'ENDSEG',       // "ENDSEG" ends the current line segment
   CURVE: 'CURVE',         // "CURVE FILLED" draws a cubic Bezier curve, FILLED is a boolean indicating whether the shape is filled or not
   ENDCURVE: 'ENDCURVE',   // "ENDCURVE" ends the current curve
+  QUAD: 'QUAD',           // "QUAD CX1 CY1 X Y" is a quadratric curve through the control point to the end point
+  BEZIER: 'BEZIER',       // "BEZIER CX1 CY1 CX2 XY2 X Y" is a Bezier curve through the control points to the end point
   LINE: 'LINE',           // "LINE X1 Y1 X2 Y2" is a line from (X1, Y1) to (X2, Y2)
   LINEREL: 'LINEREL',     // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
   ARC: 'ARC',             // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
@@ -49,6 +53,9 @@ export default class VectorAssembler {
         const vector = VECTOR_IL;
         const parts = instruction.split(' ');
         const {operand, args} = {operand: parts.shift(), args: parts};
+        let pathInfo;
+        let _instruction;
+
         switch (operand) {
             case vector.TOGGLE:
                 args[0] === 'BOLD' && (renderer.localFormat.set('b', !renderer.localFormat.get('b')));
@@ -98,44 +105,64 @@ export default class VectorAssembler {
             case vector.POINT:
                 return `this.surface.fillRect(${parseInt(args[0]) - HALF_P}, ${parseInt(args[1]) - HALF_P}, ${POINT_SIZE}, ${POINT_SIZE});`;
                 break;
+            case vector.CURVE:
+                pathInfo = { path: new Path2D(), fill: args[0], points: [[args[1], args[2]]], controls: [] };
+                _instruction = operand === vector.CURVE ? `this.surface.moveTo(${args[1]}, ${args[2]});` : null;
             case vector.LINESEG:
-                const pathInfo = { path: new Path2D(), fill: args[0], points: [] };
+                pathInfo = pathInfo || { path: new Path2D(), fill: args[0], points: [] };
                 shapeContext.get('paths').push(pathInfo);
                 renderer.pathId = shapeContext.get('paths').length - 1;
-                return null;
+                return _instruction;
                 break;
+            case vector.ENDCURVE:
             case vector.ENDSEG:
-                let instruction = '';
+                _instruction = '';
                 if (shapeContext.get('paths')[renderer.pathId].fill === "1") {
-                    instruction = `this.surface.fill(shapeContext.get('paths')[${renderer.pathId}].path);`;
+                    _instruction = `this.surface.fill(shapeContext.get('paths')[${renderer.pathId}].path);`;
                 } else {
-                    instruction = `this.surface.stroke(shapeContext.get('paths')[${renderer.pathId}].path);`;
+                    _instruction = `this.surface.stroke(shapeContext.get('paths')[${renderer.pathId}].path);`;
                 }
                 renderer.pathId = null;
-                return instruction;
+                return _instruction;
                 break;
             case vector.LINE:
-                if (renderer.pathId !== null) {
-                    const pathInfo = shapeContext.get('paths')[renderer.pathId];
-                    pathInfo.points.push([args[0], args[1], args[2], args[3]]);
-                    shapeContext.get('paths')[renderer.pathId].path.moveTo(args[0], args[1]);
-                    shapeContext.get('paths')[renderer.pathId].path.lineTo(args[2], args[3]);
-                    return null;
-                } else {
-                    return `this.surface.moveTo(${args[0]}, ${args[1]});` +
-                        `this.surface.lineTo(${args[2]}, ${args[3]});` +
-                        'this.surface.stroke();';
-                }
-                break;
             case vector.LINEREL:
                 if (renderer.pathId !== null) {
                     const pathInfo = shapeContext.get('paths')[renderer.pathId];
-                    pathInfo.points.push([args[0], args[1], args[2], args[3]]);
-                    shapeContext.get('paths')[renderer.pathId].path.lineTo(args[0], args[1]);
+                    if (args.length === 4) {
+                        pathInfo.points.push([args[0], args[1], args[2], args[3]]);
+                        shapeContext.get('paths')[renderer.pathId].path.moveTo(args[0], args[1]);
+                        shapeContext.get('paths')[renderer.pathId].path.lineTo(args[2], args[3]);
+                    } else {
+                        pathInfo.points.push([args[0], args[1]]);
+                        shapeContext.get('paths')[renderer.pathId].path.lineTo(args[0], args[1]);
+                    }
                     return null;
+                } else if (args.length === 4) {
+                    return `this.surface.moveTo(${args[0]}, ${args[1]});` +
+                        `this.surface.lineTo(${args[2]}, ${args[3]});` +
+                        'this.surface.stroke();';
                 } else {
                     return `this.surface.moveTo(${args[0]}, ${args[1]});` +
                         'this.surface.stroke();';
+                }
+                break;
+            case vector.QUAD:
+            case vector.BEZIER:
+                if (renderer.pathId !== null) {
+                    const pathInfo = shapeContext.get('paths')[renderer.pathId];
+                    if (args.length === 4) {
+                        pathInfo.controls.push("q", [args[0], args[1], args[2], args[3]]);
+                        shapeContext.get('paths')[renderer.pathId].path.quadraticCurveTo(args[0], args[1], args[2], args[3]);
+                    } else {
+                        pathInfo.controls.push("b", [args[0], args[1], args[2], args[3], args[4], arg[5]]);
+                        shapeContext.get('paths')[renderer.pathId].path.bezierCurveTo(args[0], args[1], args[2], args[3], args[4], arg[5]);
+                    }
+                    return null;
+                } else if (args.length === 4) {
+                    return 'this.surface.quadraticCurveTo(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})';
+                } else {
+                    return 'this.surface.bezierCurveTo(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]})';
                 }
                 break;
             case vector.ARC:
@@ -150,106 +177,7 @@ export default class VectorAssembler {
                 return `this.renderCompiledShape(${args[0]}, time, deltaTime);`;
                 break;
             default:
-                return `// Unrecognized instruction: ${instruction}`;
+                throw new AssemblerError(this, `Unrecognized instruction: ${operand} w/(${args})`);
         }    
-    }
-
-    /**
-     * Renders the instruction to the surface as soon as it is received.
-     * <b>Immediate Mode</b>
-     * @param {Renderer} renderer - The renderer to use for immediate rendering
-     * @param {String} instruction - The instruction to render 
-     * @param {Number} time - The current time in seconds
-     * @param {Number} deltaTime - The time elapsed since the last frame in seconds
-     * @returns {void}
-     */
-    static immediate(renderer, instruction, time, deltaTime) {
-        // render the drawing instruction
-        let fillSeg = "0";
-        const vector = VECTOR_IL;
-        const parts = instruction.split(' ');
-        const {operand, args} = {operand: parts.shift(), args: parts};
-        switch (operand) {
-            case vector.TOGGLE:
-                args[0] === 'BOLD' && (renderer.localFormat.set('b', !renderer.localFormat.get('b')));
-                args[0] === 'ITALICS' && (renderer.localFormat.set('i', !renderer.localFormat.get('i')));
-                args[0] === 'UNDERLINE' && (renderer.localFormat.set('u', !renderer.localFormat.get('u')));
-                break;
-            case vector.COLOR:
-                renderer.surface.strokeStyle = args[0];
-                break;
-            case vector.FILL:
-                renderer.surface.fillStyle = args[0];
-                break;
-            case vector.WIDTH:
-                renderer.surface.lineWidth = args[0];
-                break;
-            case vector.TRANSFORM:
-                renderer.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
-                break;
-            case vector.ABS_TRANSFORM:
-                renderer.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
-                break;
-            case vector.PUSH:
-                renderer.surface.save();
-                break;
-            case vector.POP:
-                renderer.surface.restore();
-                break;
-            case vector.IDENTITY:
-                renderer.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
-                break;
-            case vector.POINT:
-                renderer.surface.rect(args[0], args[1], 2, 2);
-                renderer.surface.fill();
-                break;
-            case vector.LINESEG:
-                renderer.path = new Path2D;
-                fillSeg = args[0];
-                break;
-            case vector.ENDSEG:
-                if (fillSeg === "1") {
-                    renderer.surface.fill(renderer.path);
-                } else {
-                    renderer.surface.stroke(renderer.path);
-                }
-                fillSeg = "0"; // Reset fill to false after drawing the path
-                renderer.path = null;
-                break;
-            case vector.LINE:
-                if (renderer.path) {
-                    renderer.path.moveTo(args[0], args[1]);
-                    renderer.path.lineTo(args[2], args[3]);
-                } else {
-                    renderer.surface.beginPath();
-                    renderer.surface.moveTo(args[0], args[1]);
-                    renderer.surface.lineTo(args[2], args[3]);
-                    renderer.surface.stroke();
-                }
-                break;
-            case vector.LINEREL:
-                if (renderer.path) {
-                    renderer.path.lineTo(args[0], args[1]);
-                } else {
-                    renderer.surface.lineTo(args[0], args[1]);
-                    renderer.surface.stroke();
-                }
-                break;
-            case vector.ARC:
-                renderer.surface.beginPath();
-                renderer.surface.ellipse(args[0], args[1], args[2], args[3], 0, args[4], args[5]);
-                if (args[6] === "1") {
-                    renderer.surface.fill();
-                } else {
-                    renderer.surface.stroke();
-                }
-                break;
-            case vector.MOVETO:
-                renderer.surface.moveTo(args[0], args[1]);
-                break;
-            case vector.SHAPE:
-                renderer.renderCompiledShape(args[0], time, deltaTime);
-                break;
-        }
     }
 }

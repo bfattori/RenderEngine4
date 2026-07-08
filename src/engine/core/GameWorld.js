@@ -27,9 +27,6 @@ class GameWorld {
     this.#width = engine.options.world.dimensions[0];  // Default world width
     this.#height = engine.options.world.dimensions[1]; // Default world height
     
-    // Collision model reference
-    this.#worldCollisionModel = engine.collisionModel;
-        
     // Tell the context about the world
     renderContext.world = this;
 

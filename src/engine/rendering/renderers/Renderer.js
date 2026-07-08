@@ -5,6 +5,24 @@ import RenderEngineError from '../../core/RenderEngineError.js';
 import VectorAssembler from '../assemblers/VectorAssembler.js';
 import RasterAssembler from '../assemblers/RasterAssembler.js';
 
+/**
+ * Renderer error class for low-level rendering errors.
+ * @param {Renderer} renderer - The renderer
+ * @param {String} message - The error message
+ * @param {Error} rootCause - Optional root cause Error instance
+ * @extends RenderEngineError
+ */
+class RendererError extends RenderEngineError {
+  constructor(renderer, message, rootCause) {
+    super(message, rootCause);
+    this.renderer = renderer;
+  }
+}
+
+export {
+    RendererError
+};
+
 export default class Renderer {
     #renderContext = null;
     #surface = null;

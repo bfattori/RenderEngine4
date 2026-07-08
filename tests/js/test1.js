@@ -28,6 +28,7 @@ RenderEngine.init({
 const context = RE4.world.renderContext;
 
 // chainable API for drawing shapes and text
+const q = context.API.quadratic;
 context.API
     .color("#0000ff").width(5)
     .line(100, 100, 300, 300)
@@ -48,7 +49,11 @@ context.API
         {color: "black", fontSize: 1.5, lineWidth: 1})
     .cursor(120, 80)
     .fontSize(4)
-    .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l");
+    .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l")
+    .color("blue")
+    .curve(false, [60, 180], 
+        q(90, 160, 100, 50), 
+        q(140, 100, 200, 44));
 
 // Run out one frame to render it   
 RE4.update(0, 0);

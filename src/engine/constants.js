@@ -74,19 +74,6 @@ const Constants = {
             onStop: NOP,
             onReset: NOP,
             onShutdown: NOP,
-            renderThreadPriority: 0,
-            renderThreadName: 'RE4 Render Thread',
-            collisionThread: true,
-            collisionThreadPriority: 0,
-            collisionThreadName: 'RE4 Collision Thread',
-        },
-        hooks: {
-            // Licecycle hooks
-            onInit: NOP,
-            onStart: NOP,
-            onStop: NOP,
-            onReset: NOP,
-            onShutdown: NOP,
             
             // Stateful runtime hooks
             onError: ENGINE_ERRORS,
@@ -138,6 +125,20 @@ const Constants = {
              * @param {number} frameTime - The total time to generate the frame.
              */
             onFrame: (frameTime) => {}
+        },
+        canvasDefaults: {
+            filter: "none",
+            globalAlpha: 1.0,
+            globalCompositeOperation: "source-over",
+            lineDashOffset: 0.0,
+            lineJoin: "round",
+            lineCap: "round",
+            miterLimit: 10.0,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: "low",
+            font: "10px sans-serif",
+            letterSpacing: 0,
+            textRendering: "auto"
         }
     }
 };

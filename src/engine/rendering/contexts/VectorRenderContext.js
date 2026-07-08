@@ -577,9 +577,63 @@ export default class VectorRenderContext extends RenderContext {
         renderContext.addInstruction(`${VECTOR_IL.ENDSEG}`);
         return renderContext.API;
       },
+
+      /**
+       * Helper to generate the appropriate structure for quadratic curves
+       * to use with the <code>curve()</code> method.
+       * @param {number} controlX - The X control point 
+       * @param {number} controlY - The Y control point
+       * @param {number} endX - The X end point of the curve
+       * @param {number} endY - The Y end point of the curve
+       * @returns {Array<number>} A 4-element Quadratic control and end points
+       */
+      quadratic: (controlX, controlY, endX, endY) => {
+        return [controlX, controlY, endX, endY];
+      },
+
+      /**
+       * Helper to generate the appropriate structure for Bezier curves
+       * to use with the <code>curve()</code> method.
+       * @param {number} controlX - The X control point 
+       * @param {number} controlY - The Y control point
+       * @param {number} endX - The X end point of the curve
+       * @param {number} endY - The Y end point of the curve
+       * @returns {Array<number>} A 4-element Quadratic control and end points
+       */
+      bezier: (controlX1, controlY1, controlX2, controlY2, endX, endY) => {
+        return [controlX1, controlY1, controlX2, controlY2, endX, endY];
+      },
+
+      /**
+       * Draw a curve from a starting point, and a set of control points, either
+       * filled or not. See the helper methods for generating points for the curve.
+       * {@link #quadratic} and {@link #bezier}
+       * @param {boolean} filled - True to fill the curve
+       * @param {Array<number>} [x1, y1] - The starting point of the curve 
+       * @param  {...any} coords - The remaining coordinates of the curve expressed as 
+       *                           either 4-element (quadratic) or 6-element (bezier) arrays
+       * @returns {Object} Returns the API for chaining
+       */
+      curve: (filled, [x1, y1], ... coords) => {
+        renderContext.addInstruction(`${VECTOR_IL.CURVE} ${filled ? '1' : '0'} ${x1} ${y1}`);
+        
+        // the rest of the coordinates need to be either 4 coordinates (quadratic) or 6 coordinates (bezier)
+        for (let rel of coords) {
+          if (rel.length === 4) {
+            renderContext.addInstruction(`${VECTOR_IL.QUAD} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]}`)
+          } else if (rel.length === 6) {
+            renderContext.addInstruction(`${VECTOR_IL.BEZIER} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]} ${rel[4]} ${rel[5]} ${rel[6]}`);
+          } else {
+            throw new RenderContextError(this, "Invalid number of coordinates for a curve (4 or 6)");
+          }
+        }
+        
+        renderContext.addInstruction(`${VECTOR_IL.ENDCURVE}`);
+        return renderContext.API;
+      },
       
       /**
-       * Draw an arc segment
+       * Draw an arc, or arc segment
        * @param {number} cx - Center X coordinate in screen space
        * @param {number} cy - Center Y coordinate in screen space
        * @param {number} rX - X radius of the ellipse

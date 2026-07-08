@@ -1,9 +1,11 @@
 import Console from '../../core/Console.js';
 import Constants from '../../Constants.js';
 import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
-import RenderEngineError from '../../core/RenderEngineError.js';
+import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
+import { VECTOR_IL } from '../assemblers/VectorAssembler.js';
+
 
 const POINT_SIZE = 4;
 const HALF_P = Math.floor(POINT_SIZE * 0.5);
@@ -22,7 +24,7 @@ export default class CanvasRenderer extends Renderer {
     constructor(htmlElement, buffered) {
         super();
         if (!built) {
-            throw new RenderEngineError("CanvasRenderer must be built using CanvasRenderer.build()!");
+            throw new RendererError(this, "CanvasRenderer must be built using CanvasRenderer.build()!");
         }
         built = false;
         this.#buffered = buffered;
@@ -64,6 +66,7 @@ export default class CanvasRenderer extends Renderer {
         this.#canvas = document.createElement("canvas");
         this.#canvas.width = context.viewport.width;
         this.#canvas.height = context.viewport.height;
+
         this.#htmlElement.appendChild(this.#canvas);
 
         if (this.#buffered) {
@@ -77,6 +80,13 @@ export default class CanvasRenderer extends Renderer {
             // single-buffered
             this.#canvas.getContext("2d");
             this.surface = this.#canvas.getContext("2d");
+        }
+
+        if (Engine.options.canvasDefaults) {
+            // apply canvas default options
+            for (const opt in Engine.options.canvasDefaults) {
+                this.surface[opt] = Engine.options.canvasDefaults[opt];
+            }
         }
     }
 
@@ -174,10 +184,125 @@ export default class CanvasRenderer extends Renderer {
      * @returns {void}
      */
     render(instruction, time, deltaTime) {
-        if (this.assembler) {
-            this.assembler.immediate(this, instruction, time, deltaTime);
-        } else {
-            throw new RenderEngineError("No assembler is associated with the CanvasRenderer!");
+        this.#immediate(instruction, time, deltaTime);
+    }
+       
+    /**
+     * Renders the instruction to the surface as soon as it is received.
+     * <b>Immediate Mode</b>
+     * @param {String} instruction - The instruction to render 
+     * @param {Number} time - The current time in seconds
+     * @param {Number} deltaTime - The time elapsed since the last frame in seconds
+     * @returns {void}
+     */
+    #immediate(instruction, time, deltaTime) {
+        // render the drawing instruction
+        let fillSeg = "0";
+        const vector = VECTOR_IL;
+        const parts = instruction.trim().split(' ');
+        const {operand, args} = {operand: parts.shift(), args: parts};
+        switch (operand) {
+            case vector.TOGGLE:
+                args[0] === 'BOLD' && (this.localFormat.set('b', !this.localFormat.get('b')));
+                args[0] === 'ITALICS' && (this.localFormat.set('i', !this.localFormat.get('i')));
+                args[0] === 'UNDERLINE' && (this.localFormat.set('u', !this.localFormat.get('u')));
+                break;
+            case vector.COLOR:
+                this.surface.strokeStyle = args[0];
+                break;
+            case vector.FILL:
+                this.surface.fillStyle = args[0];
+                break;
+            case vector.WIDTH:
+                this.surface.lineWidth = args[0];
+                break;
+            case vector.TRANSFORM:
+                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+            case vector.ABS_TRANSFORM:
+                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+            case vector.PUSH:
+                this.surface.save();
+                break;
+            case vector.POP:
+                this.surface.restore();
+                break;
+            case vector.IDENTITY:
+                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+            case vector.POINT:
+                this.surface.rect(args[0], args[1], 2, 2);
+                this.surface.fill();
+                break;
+            case vector.CURVE:
+                this.path = new Path2D;
+                this.path.moveTo(args[1], args[2]);
+            case vector.LINESEG:
+                fillSeg = args[0];
+                break;
+            case vector.ENDCURVE:
+            case vector.ENDSEG:
+                if (fillSeg === "1") {
+                    this.surface.fill(this.path);
+                } else {
+                    this.surface.stroke(this.path);
+                }
+                fillSeg = "0"; // Reset fill to false after drawing the path
+                this.path = null;
+                break;
+            case vector.LINE:
+            case vector.LINEREL:
+                if (this.path) {
+                    if (args.length === 4) {
+                        this.path.moveTo(args[0], args[1]);
+                        this.path.lineTo(args[2], args[3]);
+                    } else {
+                        this.path.lineTo(args[0], args[1]);
+                    }
+                } else if (args.length === 4) {
+                    this.surface.beginPath();
+                    this.surface.moveTo(args[0], args[1]);
+                    this.surface.lineTo(args[2], args[3]);
+                    this.surface.stroke();
+                } else {
+                    this.surface.lineTo(args[0], args[1]);
+                    this.surface.stroke();
+                }
+                break;
+            case vector.QUAD:
+            case vector.BEZIER:
+                if (this.path) {
+                    if (args.length === 4) {
+                        this.path.quadraticCurveTo(args[0], args[1], args[2], args[3]);
+                    } else {
+                        this.path.bezierCurveTo(args[0], args[1], args[2], args[3], args[4], args[5]);
+                    }
+                } else {
+                    throw new RendererError(this, 'Cannot draw a curve without a path!');
+                }
+                break;
+            case vector.ARC:
+                this.surface.beginPath();
+                this.surface.ellipse(args[0], args[1], args[2], args[3], 0, args[4], args[5]);
+                if (args[6] === "1") {
+                    this.surface.fill();
+                } else {
+                    this.surface.stroke();
+                }
+                break;
+            case vector.MOVETO:
+                this.surface.moveTo(args[0], args[1]);
+                break;
+            case vector.SHAPE:
+                this.renderCompiledShape(args[0], time, deltaTime);
+                break;
+            case vector.FONTSIZE:
+            case '//':
+                // eat these in immediate mode
+                break;
+            default:
+                throw new RendererError(this, `Unrecognized instruction: ${operand} w/(${args})`);
         }
-    }   
+    }
 }

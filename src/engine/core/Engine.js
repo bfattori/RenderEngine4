@@ -30,6 +30,7 @@ const primary = {
 };
 
 const ctx = Context.getInstance();
+let waitInit = false;
 
 /**
  * Creates a new Engine instance.
@@ -90,13 +91,23 @@ export default class Engine {
   #collisionModel = null;
 
   constructor(options) {
+    if (!waitInit) {
+      throw new RenderEngineError("Engine must be initialized before use. Please call 'init' first.")
+    }
+    waitInit = false;
+
+    primary.ENGINE = this;
+
     // store the engine initialization options
     this.#ENGINE_OPTIONS = { 
       flags: {...Constants.DEFAULT_ENGINE_OPTIONS.flags, ...options.flags},
       world: {...Constants.DEFAULT_ENGINE_OPTIONS.world, ...options.world},
       threading: {...Constants.DEFAULT_ENGINE_OPTIONS.threading, ...options.threading},
-      hooks: {...Constants.DEFAULT_ENGINE_OPTIONS.hooks, ...options.hooks}
+      hooks: {...Constants.DEFAULT_ENGINE_OPTIONS.hooks, ...options.hooks},
+      canvasDefaults: {...Constants.DEFAULT_ENGINE_OPTIONS.canvasDefaults, ...options.canvasDefaults}
     };
+
+    ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
 
     // configure basics
     this.#width = this.#ENGINE_OPTIONS.world.dimensions[0];
@@ -107,29 +118,26 @@ export default class Engine {
     this.#lastTime = 0;
     this.#deltaTime = 0;
     
-    // Store render context (initialized later)
-    const renderContext = this.#ENGINE_OPTIONS.world?.renderContext || new RenderContext(new Renderer());
-    renderContext.screenDimensions = this.#ENGINE_OPTIONS.world?.screenDimensions;
-    renderContext.worldDimensions = this.#ENGINE_OPTIONS.world?.dimensions;
-    this.#RENDER_CONTEXT = renderContext;
+    // render context (initialized later)
+    const renderContext = this.#ENGINE_OPTIONS.world.renderContext || new RenderContext(new Renderer());
+    renderContext.screenDimensions = this.#ENGINE_OPTIONS.world.screenDimensions;
+    renderContext.worldDimensions = this.#ENGINE_OPTIONS.world.dimensions;
     
-    // Collision model storage
-    this.#collisionModel = this.#ENGINE_OPTIONS.world?.collisionModel || new AABBCollisionModel(this);
-    this.#ENGINE_OPTIONS.world.collisionModel = this.#collisionModel;
-
-    // the game camera
-    const camera = this.#ENGINE_OPTIONS.world?.camera || new Camera();
-    camera.viewport = this.#ENGINE_OPTIONS.world?.viewport;
+    // the world camera
+    const camera = this.#ENGINE_OPTIONS.world.camera || new Camera();
+    camera.viewport = this.#ENGINE_OPTIONS.world.viewport;
 
     // setup the game world
-    this.#ENGINE = this;
     this.#EVENT_ENGINE = new EventEngine(this);
     this.#WORLD = new GameWorld(this, camera, renderContext);
     this.#PARTICLE_ENGINE = new ParticleEngine();
 
+    // Collision model storage
+    const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new AABBCollisionModel(this);
+    this.#ENGINE_OPTIONS.world.collisionModel = collisionModel;
+
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
-    ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
   }
 
     //---------------------------
@@ -141,7 +149,7 @@ export default class Engine {
    * @returns {Engine} The current instance of Engine.
    */
   get engine() {
-    return this.#ENGINE;
+    return primary.ENGINE;
   }
 
   /**
@@ -173,7 +181,7 @@ export default class Engine {
    * @returns {RenderContext|null}
    */
   get renderContext() {
-    return this.#RENDER_CONTEXT;
+    return this.#WORLD.renderContext;
   }
 
   //---------------------------------
@@ -183,15 +191,7 @@ export default class Engine {
    * @returns {number}
    */
   get width() {
-    return this.#width;
-  }
-
-  /**
-   * Set current world width in pixels
-   * @param {number} width - New world width in pixels
-   */
-  set width(width) {
-    this.#width = width;
+    return this.#WORLD.width;
   }
 
   /**
@@ -199,16 +199,10 @@ export default class Engine {
    * @returns {number}
    */
   get height() {
-    return this.#height;
+    return this.#WORLD.height;
   }
 
-  /**
-   * Set current world height in pixels
-   * @param {number} height - New world height in pixels
-   */
-  set height(height) {
-    this.#height = height;
-  }
+  //---------------------------------
 
   /**
    * Get current world time in milliseconds
@@ -218,6 +212,10 @@ export default class Engine {
     return this.#currentTime;
   }
 
+  /**
+   * Set the current world time in milliseconds
+   * @param {number} time - New world time in milliseconds
+   */
   set time(time) {
     this.#currentTime = time;
   }
@@ -230,6 +228,10 @@ export default class Engine {
     return this.#deltaTime;
   }
 
+  /**
+   * Set the delta time since last frame in milliseconds
+   * @param {number} time - New delta time in milliseconds
+   */
   set deltaTime(time) {
     this.#deltaTime = time;
   }
@@ -242,10 +244,16 @@ export default class Engine {
     return this.#lastTime;
   }
 
+  /**
+   * Set the last world time in milliseconds
+   * @param {number} time - The last world time in milliseconds
+   */
   set lastTime(time) {
     this.#lastTime = time;
   }
-    
+ 
+  //--------------------------------
+
   /**
    * Check if the engine is running
    * @returns {boolean}
@@ -254,7 +262,11 @@ export default class Engine {
     return this.#isRunning;
   }
 
-  set isRunning(state = true) {
+  /**
+   * Set the running state of the engine
+   * @param {boolean} state - The new running state of the engine
+   */
+  set isRunning(state) {
     this.#isRunning = state
   }
 
@@ -263,7 +275,7 @@ export default class Engine {
    * @returns {CollisionModel|null}
    */
   get collisionModel() {
-    return this.world ? this.world.collisionModel : this.#collisionModel;
+    return this.#WORLD.collisionModel;
   }
 
   /**
@@ -271,7 +283,7 @@ export default class Engine {
    * @returns {GameObject[]}
    */
   get allObjects() {
-    return this.world ? this.world.getAllObjects() : [];
+    return this.#WORLD.allObjects;
   }
 
   /**
@@ -282,16 +294,20 @@ export default class Engine {
     return this.#ENGINE_OPTIONS;
   }
 
+  static get options() {
+    return primary.ENGINE.options;
+  }
+
   /**
    * Initialize the Engine.
    * @param {Object} engineOptions - See the {@link Engine} constructor for availble options
    * @returns {Engine} The current instance of Engine.
    */
   static init(engineOptions) {
-    if (primary.ENGINE === null) {
-      primary.ENGINE = new Engine(engineOptions);
-    }
-    return primary.ENGINE;
+    waitInit = true;
+    // validate engine options
+    // ...
+    return new Engine(engineOptions);
   }
 
   /**
@@ -300,30 +316,6 @@ export default class Engine {
   static reset() {
     primary.ENGINE.reset();
     primary.ENGINE = null;
-  }
-
-  //-----------------------------
-  // Lifecycle Methods
-  //-----------------------------
-
-  /**
-   * Add a game object to the engine/world
-   * @param {GameObject} object - The GameObject to add
-   * @returns {GameObject|null}
-   */
-  addObject(object) {
-    if (!this.world) return null;
-    return this.world.addObject(object);
-  }
-  
-  /**
-   * Remove a game object from the engine/world
-   * @param {GameObject} object - The GameObject to remove
-   * @returns {boolean}
-   */
-  removeObject(object) {
-    if (!this.world) return false;
-    return this.world.removeObject(object);
   }
   
   /**
@@ -467,7 +459,7 @@ export default class Engine {
     this.eventEngine.clear();
 
     // call reset hook
-    ENGINE_OPTIONS.hooks.onReset();
+    this.#ENGINE_OPTIONS.hooks.onReset();
 
     return this;
   }
@@ -477,10 +469,9 @@ export default class Engine {
    */
   destroy() {
     // clean up before exiting
-    primary.EVENT_ENGINE?.shutdown();
-    primary.WORLD?.shutdown();
-    primary.RENDER_CONTEXT?.shutdown();
-    primary.PARTICLE_ENGINE?.shutdown();
+    this.#EVENT_ENGINE?.shutdown();
+    this.#WORLD?.shutdown();
+    this.#PARTICLE_ENGINE?.shutdown();
 
     const self = this;
     // async cleanup of the engine
