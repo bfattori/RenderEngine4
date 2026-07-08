@@ -13,7 +13,6 @@ RenderEngine4 is a 2D game engine implemented in plain JavaScript. It focuses on
 
 ## Repository Structure
 
-- `spec/` � Specification files defining engine architecture, features, and class contracts
 - `src/engine/` � Core implementation
   - `Engine.js` � Main engine loop and orchestration class
   - `EventEngine.js` � Event handling subsystem
