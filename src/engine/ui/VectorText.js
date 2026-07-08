@@ -133,7 +133,7 @@ export default function processText(text, spaceWidth = 45) {
         // Handle italic marker (single underscore)
         if (char === '_') {
             this.formatting.italics = !this.formatting.italics;
-            this.addInstruction(`// format: italics (${this.formatting.italics})`);
+            if (ctx.debug) this.addInstruction(`// format: italics (${this.formatting.italics})`);
             if (this.formatting.italics) {
                 this.addInstruction(`${VECTOR_IL.PUSH}`);
                 this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${ITALICS_MATRIX.toCanvas()}`);
@@ -147,7 +147,7 @@ export default function processText(text, spaceWidth = 45) {
         // Handle bold marker
         if (char === '*' && text[i + 1] === '*') {
             this.formatting.bold = !this.formatting.bold;
-            this.addInstruction(`// format: bold (${this.formatting.bold})`);
+            if (ctx.debug) this.addInstruction(`// format: bold (${this.formatting.bold})`);
             if (this.formatting.bold) {
                 this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? (3 * 1/this.fontSize) : 0)}`);
             } else {
@@ -163,7 +163,7 @@ export default function processText(text, spaceWidth = 45) {
             this.startUnderline = this.formatting.underline ? this.cursor[0] : this.startUnderline;
             if (!this.formatting.underline && this.startUnderline !== null) {
                 // Draw underline from startUnderline to current cursor position
-                this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.startUnderline} - ${this.cursor[0]})`);
+                if (ctx.debug) this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.startUnderline} - ${this.cursor[0]})`);
                 this.addInstruction(`${VECTOR_IL.WIDTH} 2`);
                 this.addInstruction(`${VECTOR_IL.LINE} ${this.startUnderline} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))} ${this.cursor[0]} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))}`);
                 this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
@@ -200,7 +200,9 @@ function characterInstruction(char, width) {
 
     // Add character instructions
     const context = this;
-    context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
+    if (ctx.debug) {
+        context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
+    }
 
     const current = this.world.currentTransform;
     const oldScale = current.scaling;
