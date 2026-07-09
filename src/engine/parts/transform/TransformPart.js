@@ -11,10 +11,21 @@
  * @extends ComponentPart
  */
 
-import { TRANSFORM_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
+import RenderPart from '../render/RenderPart.js';
 
 class TransformPart extends ComponentPart {
+    #localSpace = null;
+    #x = 0;
+    #y = 0;
+    #rotation = 0;
+    #scale = [1,1];
+    #colliderModel = null;
+    #worldWidth = 0;
+    #worldHeight = 0;
+    #world = null;
+  
     /**
      * Creates a new TransformPart instance
      * 
@@ -31,20 +42,27 @@ class TransformPart extends ComponentPart {
      * @param {number} [options.scale[1]=1] - Y scale factor
      * @param {Object} [options.colliderModel=null] - Optional collision model reference
      */
-    constructor(priority = TRANSFORM_PRIORITY, name = 'TransformPart', options = {}) {
+    constructor(priority = Constants.TRANSFORM_PRIORITY, name = 'TransformPart', options = {}) {
         super(priority, name);
-        this.x = options.position ? options.position[0] : 0;
-        this.y = options.position ? options.position[1] : 0;
-        this._rotation = options.rotation || 0;
-        this._scale = options.scale !== undefined ? Array.isArray(options.scale) ? options.scale : [options.scale, options.scale] : [1, 1];
-        this._colliderModel = options.colliderModel;
+        
+        this.#localSpace = {
+            position: [0,0],
+            rotation: 0,
+            scale: [1,1]
+        };
+
+        this.#x = options?.position?.[0] || this.#x;
+        this.#y = options?.position?.[1] || this.#y;
+        this.#rotation = options?.rotation || 0;
+        this.#scale = options?.scale !== undefined ? Array.isArray(options.scale) ? options.scale : [options.scale, options.scale] : [1, 1];
+        this.#colliderModel = options?.colliderModel;
 
         /**
          * Boundary dimensions for collision detection
          * @private
          */
-        this._worldWidth = 800; // Default world width
-        this._worldHeight = 600; // Default world height
+        this.#worldWidth = 800; // Default world width
+        this.#worldHeight = 600; // Default world height
     }
 
     // -------------------------------
@@ -52,19 +70,37 @@ class TransformPart extends ComponentPart {
     // -------------------------------
 
     /**
+     * Gets the local space properties for hierarchical transformations
+     * @returns {Object} Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
+     */
+    get localSpace() {
+        return this.#localSpace;
+    }
+
+    /**
+     * Sets the local space properties for hierarchical transformations
+     * @param {Object} localSpace - Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
+     */
+    set localSpace({ position, rotation, scale }) {
+        this.#localSpace = { position, rotation, scale };
+        const pointInWorld = this.transformPoint(x, y);
+        return pointInWorld;
+    }
+
+    /**
      * Sets the component to use a specific world instance
      * 
      * @param {GameWorld} world - The GameWorld instance to attach to
      */
     set world(world) {
-        this._world = world;
+        this.#world = world;
         if (world) {
             // Update boundary dimensions from world if available
             if (world.width !== undefined) {
-                this._worldWidth = world.width;
+                this.#worldWidth = world.width;
             }
             if (world.height !== undefined) {
-                this._worldHeight = world.height;
+                this.#worldHeight = world.height;
             }
         }
     }
@@ -74,7 +110,7 @@ class TransformPart extends ComponentPart {
      * @returns {GameWorld|null} The world instance or null if not set
      */
     get world() {
-        return this._world;
+        return this.#world;
     }
 
     /**
@@ -84,8 +120,8 @@ class TransformPart extends ComponentPart {
      * @param {number} height - World height in pixels/units
      */
     set boundaries([width, height]) {
-        this._worldWidth = width;
-        this._worldHeight = height;
+        this.#worldWidth = width;
+        this.#worldHeight = height;
     }
 
     /**
@@ -94,7 +130,7 @@ class TransformPart extends ComponentPart {
      * @returns {Array} Position object with x and y elements
      */
     get position() {
-        return [this.x, this.y ];
+        return [this.#x, this.#y];
     }
 
     /**
@@ -103,8 +139,24 @@ class TransformPart extends ComponentPart {
      * @param {Array} position - Position object with x and y elements
      */
     set position([x, y]) {
-        this.x = x;
-        this.y = y;
+        this.#x = x;
+        this.#y = y;
+    }
+
+    get x() {
+        return this.#x;
+    }
+
+    get y() {
+        return this.#y;
+    }
+
+    set x(X) {
+        this.#x = X;
+    }
+
+    set y(Y) {
+        this.#y = Y;
     }
 
     /**
@@ -113,7 +165,7 @@ class TransformPart extends ComponentPart {
      * @returns {number} Current rotation in radians
      */
     get rotation() {
-        return this._rotation;
+        return this.#rotation;
     }
 
     /**
@@ -122,7 +174,7 @@ class TransformPart extends ComponentPart {
      * @param {number} newRotation - New rotation in radians
      */
     set rotation(newRotation) {
-        this._rotation = newRotation;
+        this.#rotation = newRotation;
     }
 
     /**
@@ -131,7 +183,7 @@ class TransformPart extends ComponentPart {
      * @returns {number} Current uniform scale factor
      */
     get scale() {
-        return this._scale;
+        return this.#scale;
     }
 
     /**
@@ -140,7 +192,7 @@ class TransformPart extends ComponentPart {
      * @returns {number} Current X scale factor
      */
     get scaleX() {
-        return this._scale[0];
+        return this.#scale[0];
     }
 
     /**
@@ -149,7 +201,7 @@ class TransformPart extends ComponentPart {
      * @param {number} scaleX - New X scale factor
      */
     set scaleX(scaleX) {
-        this._scale[0] = scaleX;
+        this.#scale[0] = scaleX;
     }
 
     /**
@@ -158,7 +210,7 @@ class TransformPart extends ComponentPart {
      * @returns {number} Current Y scale factor
      */
     get scaleY() {
-        return this._scale[1];
+        return this.#scale[1];
     }
 
     /**
@@ -166,7 +218,7 @@ class TransformPart extends ComponentPart {
      * @param {number} scaleY - New Y scale factor
      */
     set scaleY(scaleY) {
-        this._scale[1] = scaleY;
+        this.#scale[1] = scaleY;
     }
 
     /**
@@ -176,7 +228,7 @@ class TransformPart extends ComponentPart {
      */
     set scale(newScale) {
         Array.isArray(newScale) || (newScale = [newScale, newScale]);
-        this._scale = newScale;
+        this.#scale = newScale;
     }
 
     /**
@@ -232,11 +284,11 @@ class TransformPart extends ComponentPart {
         const events = options.events || [];
 
         // Update transform logic can be overridden by subclasses
-        this._applyTransformLogic(deltaTime);
+        this.#applyTransformLogic(deltaTime);
 
         // Check boundaries if world is available
         if (this.world && this._worldWidth !== undefined && this._worldHeight !== undefined) {
-            this._checkBoundaries(time, deltaTime, events);
+            this.#checkBoundaries(time, deltaTime, events);
         }
 
         return this;
@@ -247,7 +299,7 @@ class TransformPart extends ComponentPart {
      * 
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
-    _applyTransformLogic(deltaTime) {
+    #applyTransformLogic(deltaTime) {
         this.host.getComponentsByType(RenderPart)
             .forEach(renderComponent => renderComponent.pushTransform(this.transformMatrix));
 
@@ -261,41 +313,41 @@ class TransformPart extends ComponentPart {
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      * @param {Array} events - Array to push collision events to
      */
-    _checkBoundaries(time, deltaTime, events) {
+    #checkBoundaries(time, deltaTime, events) {
         // X-axis boundary check
-        if (this.x <= 0 && this._worldWidth > 0) {
-            this.x = 0;
-            this._emitBoundaryEvent(events, 'x', 'left', time);
-        } else if (this.x >= this._worldWidth - this.scale && this._worldWidth > 0) {
-            this.x = this._worldWidth - this.scale;
-            this._emitBoundaryEvent(events, 'x', 'right', time);
+        if (this.#x <= 0 && this.#worldWidth > 0) {
+            this.#x = 0;
+            this.#emitBoundaryEvent(events, 'x', 'left', time);
+        } else if (this.#x >= this.#worldWidth - this.#scale[0] && this.#worldWidth > 0) {
+            this.#x = this.#worldWidth - this.#scale[0];
+            this.#emitBoundaryEvent(events, 'x', 'right', time);
         }
 
         // Y-axis boundary check
-        if (this.y <= 0 && this._worldHeight > 0) {
-            this.y = 0;
-            this._emitBoundaryEvent(events, 'y', 'bottom', time);
-        } else if (this.y >= this._worldHeight - this.scale && this._worldHeight > 0) {
-            this.y = this._worldHeight - this.scale;
-            this._emitBoundaryEvent(events, 'y', 'top', time);
+        if (this.#y <= 0 && this._worldHeight > 0) {
+            this.#y = 0;
+            this.#emitBoundaryEvent(events, 'y', 'bottom', time);
+        } else if (this.#y >= this.#worldHeight - this.#scale[1] && this.#worldHeight > 0) {
+            this.#y = this.#worldHeight - this.#scale[1];
+            this.#emitBoundaryEvent(events, 'y', 'top', time);
         }
 
         // Corner collision check (diagonal boundaries)
-        if (this.x < 0 && this.y < 0) {
-            this.x = 0;
-            this.y = 0;
-            this._emitBoundaryEvent(events, 'corner', 'bottom-left', time);
-        } else if (this.x > this._worldWidth - this.scale && this.y < 0) {
-            this.x = this._worldWidth - this.scale;
-            this.y = 0;
-            this._emitBoundaryEvent(events, 'corner', 'top-right', time);
-        } else if (this.x > this._worldWidth - this.scale && this.y > this._worldHeight - this.scale) {
-            this.x = this._worldWidth - this.scale;
-            this.y = this._worldHeight - this.scale;
-            this._emitBoundaryEvent(events, 'corner', 'top-right', time);
-        } else if (this.x < 0 && this.y > this._worldHeight - this.scale) {
-            this.x = 0;
-            this.y = this._worldHeight - this.scale;
+        if (this.#x < 0 && this.#y < 0) {
+            this.#x = 0;
+            this.#y = 0;
+            this.#emitBoundaryEvent(events, 'corner', 'bottom-left', time);
+        } else if (this.#x > this.#worldWidth - this.#scale[0] && this.#y < 0) {
+            this.#x = this.#worldWidth - this.#scale[0];
+            this.#y = 0;
+            this.#emitBoundaryEvent(events, 'corner', 'top-right', time);
+        } else if (this.#x > this.#worldWidth - this.#scale[0] && this.#y > this.#worldHeight - this.#scale[1]) {
+            this.#x = this.#worldWidth - this.#scale[0];
+            this.#y = this.#worldHeight - this.#scale[1];
+            this.#emitBoundaryEvent(events, 'corner', 'top-right', time);
+        } else if (this.#x < 0 && this.#y > this.#worldHeight - this.#scale[1]) {
+            this.#x = 0;
+            this.#y = this.#worldHeight - this.#scale[1];
             this._emitBoundaryEvent(events, 'corner', 'bottom-left', time);
         }
 
@@ -310,14 +362,14 @@ class TransformPart extends ComponentPart {
      * @param {string} side - Side of collision ('left', 'right', 'top', 'bottom', 'corner')
      * @param {number} timestamp - Timestamp of the collision event
      */
-    _emitBoundaryEvent(events, axis, side, timestamp) {
+    #emitBoundaryEvent(events, axis, side, timestamp) {
         const event = {
             type: 'boundary',
             timestamp: timestamp,
             deltaTime: 0.016, // Default delta if not available
-            position: [this.x, this.y],
-            rotation: this._rotation,
-            scale: this._scale,
+            position: [this.#x, this.#y],
+            rotation: this.#rotation,
+            scale: this.#scale,
             axis: axis,
             side: side,
             collisionType: 'WorldBoundary'
@@ -332,18 +384,18 @@ class TransformPart extends ComponentPart {
      * @returns {boolean} True if within bounds, false otherwise
      */
     isInBounds() {
-        if (!this.world || !this._worldWidth || !this._worldHeight) {
+        if (!this.world || !this.#worldWidth || !this.#worldHeight) {
             return true; // No bounds to check
         }
 
-        const width = this.scale;
-        const height = this.scale;
+        const width = this.#scale[0];
+        const height = this.#scale[1];
 
         return (
-            this.x >= 0 &&
-            this.x + width <= this._worldWidth &&
-            this.y >= 0 &&
-            this.y + height <= this._worldHeight
+            this.#x >= 0 &&
+            this.#x + width <= this.#worldWidth &&
+            this.#y >= 0 &&
+            this.#y + height <= this.#worldHeight
         );
     }
 

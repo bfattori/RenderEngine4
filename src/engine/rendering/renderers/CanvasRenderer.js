@@ -224,6 +224,7 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.PUSH:
                 this.surface.save();
+                //this.pushTransform(Matrix2d.from(this.surface.getTransform()));
                 break;
             case vector.POP:
                 this.surface.restore();
@@ -297,10 +298,31 @@ export default class CanvasRenderer extends Renderer {
             case vector.SHAPE:
                 this.renderCompiledShape(args[0], time, deltaTime);
                 break;
-            case vector.FONTSIZE:
-            case '//':
-                // eat these in immediate mode
+            case vector.TRANSLATE:
+                this.surface.translate(args[0], args[1]);
                 break;
+            case vector.ROTATE:
+                this.surface.rotate(args[0]);
+                break;
+            case vector.SCALE:
+                this.surface.scale(args[0], args[1]);
+                break;
+            case vector.USCALE:
+                this.surface.scale(args[0], args[0]);
+                break;
+            case vector.SKEW:
+                const txfm = Matrix2d.identity().skew(args[0], args[1] || 0);
+                this.surface.transform(txfm.a, txfm.b, txfm.c, txfm.d, txfm.e, txfm.f);
+                break;
+            case vector.FONTSIZE:
+                this.surface.scale(args[0], args[0]);
+                break;
+
+            // eat these in immediate mode
+            case '//':
+                break;
+
+            // UNRECOGNIZED
             default:
                 throw new RendererError(this, `Unrecognized instruction: ${operand} w/(${args})`);
         }

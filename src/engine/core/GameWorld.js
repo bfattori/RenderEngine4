@@ -211,7 +211,7 @@ class GameWorld {
           });
         }
 
-        object.setWorld(this);        
+        object.world = this;        
         return object;
     }
     throw new GameObjectError(object, `GameObject ${object.id || 'unnamed'} already exists in world`);

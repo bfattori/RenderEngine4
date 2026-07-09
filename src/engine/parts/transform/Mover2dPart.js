@@ -10,7 +10,7 @@
  */
 
 import Transform2d from './Transform2d.js';
-import { TRANSFORM_PRIORITY } from '../../constants.js';
+import Constants from '../../constants.js';
 
 /**
  * Creates a new Mover2d instance
@@ -24,7 +24,7 @@ import { TRANSFORM_PRIORITY } from '../../constants.js';
  * @param {number} [options.maxSpeed=null] - Maximum speed cap (disabled if null)
  * @param {number} [options.drag=0] - Linear drag coefficient (0 = no drag)
  */
-class Mover2d extends Transform2d {
+class Mover2dPart extends Transform2d {
     /**
      * Velocity vector for linear motion [x, y]
      * @private
@@ -98,7 +98,7 @@ class Mover2d extends Transform2d {
      * @param {number} [options.maxSpeed=null] - Maximum speed cap (disabled if null)
      * @param {number} [options.drag=0] - Linear drag coefficient (0 = no drag)
      */
-    constructor(priority = TRANSFORM_PRIORITY.MOVER_2D, name = 'Mover2d', options = {}) {
+    constructor(priority = Constants.TRANSFORM_PRIORITY.MOVER_2D, name = 'Mover2d', options = {}) {
         super(options);
 
         // Initialize with optional velocity
@@ -767,4 +767,4 @@ class Mover2d extends Transform2d {
     }
 }
 
-export default Mover2d;
+export default Mover2dPart;

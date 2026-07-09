@@ -7,12 +7,12 @@ This component interfaces with the system's mouse event source and provides a un
 
 import Console from '../../core/Console.js';
 import InputPart from './InputPart.js';
-import { INPUT_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 
 class MouseInput extends InputPart {
 
-    constructor(priority = INPUT_PRIORITY, name = 'MouseInput') {
+    constructor(priority = Constants.INPUT_PRIORITY, name = 'MouseInput') {
         super(priority, name);
     
         this._lastMouseMoveTime = 0;

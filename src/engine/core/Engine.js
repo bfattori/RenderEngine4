@@ -24,8 +24,6 @@ import Context from '../Context.js';
  */
 const primary = {
   ENGINE: null,
-  EVENT_ENGINE: null,
-  WORLD: null,
   PARTICLE_ENGINE: null
 };
 
@@ -152,12 +150,20 @@ export default class Engine {
     return primary.ENGINE;
   }
 
+  static get world() {
+    return primary.ENGINE.world;
+  }
+
   /**
    * Get the the GameWorld instance
    * @returns {GameWorld}
    */
   get world() {
     return this.#WORLD;
+  }
+
+  static get eventEngine() {
+    return primary.ENGINE.eventEngine;
   }
 
   /**
@@ -168,6 +174,10 @@ export default class Engine {
     return this.#EVENT_ENGINE;
   }
 
+  static get particleEngine() {
+    return primary.ENGINE.particleEngine;
+  }
+
   /**
    * Get the ParticleEngine instance
    * @returns {ParticleEngine|null}
@@ -176,6 +186,10 @@ export default class Engine {
     return this.#PARTICLE_ENGINE;
   }
   
+  static get renderContext() {
+    return primary.ENGINE.renderContext;
+  }
+
   /**
    * Get the render context
    * @returns {RenderContext|null}

@@ -9,7 +9,7 @@
  */
 
 import Console from '../../core/Console.js';
-import { INPUT_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
 import { ComponentPart, GameComponentError } from '../ComponentPart.js';
 
 /**
@@ -18,7 +18,7 @@ import { ComponentPart, GameComponentError } from '../ComponentPart.js';
  * @constructs Input
  */
 class InputPart extends ComponentPart {
-    constructor(priority = INPUT_PRIORITY, name = 'Input') {
+    constructor(priority = Constants.INPUT_PRIORITY, name = 'Input') {
         super(priority, name);
     
         // Input state storage

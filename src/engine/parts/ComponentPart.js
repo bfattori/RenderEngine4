@@ -2,9 +2,9 @@
  * Base class for all game components.
  * Components provide functionality to GameObjects and are executed in priority order.
  */
-import defaultPriority from '../constants.js';
+import Constants from '../Constants.js';
 import Engine from '../core/Engine.js';
-import GameObjectError from '../gameobject/GameObject.js';
+import RenderEngineError from '../core/RenderEngineError.js';
 
 /**
  * ComponentPartError contains the {@link ComponentPart} related to the error.
@@ -13,32 +13,38 @@ import GameObjectError from '../gameobject/GameObject.js';
  * @param {Error} rootCause - Optional root cause Error instance
  * @extends GameObjectError
  */
-class ComponentPartError extends GameObjectError {
+class ComponentPartError extends RenderEngineError {
   constructor(component, message, rootCause) {
-    super(component.host, message, rootCause);
+    super(message, rootCause);
+    this.gameObject = component.host;
     this.component = component;
   }
 }
 
 export default class ComponentPart {
+  #priority = 0;
+  #name = null;
+  #host = null;
+  #type = null;
+  #localEventContext = null;
+
   /**
    * Creates a new ComponentPart instance
    * @param {number} priority - Priority of execution (0.0 to 1.0, with 1.0 being highest)
    * @param {string} name - Optional name for this component
    */
-  constructor(priority = defaultPriority, name = '') {
-    this._priority = priority;
-    this._name = name;
-    this.__host = null; // The GameObject this component is attached to
+  constructor(priority = Constants.defaultPriority, name = '') {
+    this.#priority = priority;
+    this.#name = name;
     
     // Store the component type for identification
-    this._type = this.constructor.name;
+    this.#type = this.constructor.name;
 
     /**
      * Reference to EventEngine's global event system
      * Components can publish/subscribe to global events through this interface
      */
-    this._localEventContext = Engine.getEventEngine().createGameObjectContext(this);
+    this.#localEventContext = Engine.eventEngine.createGameObjectContext(this);
   }
 
   //--------------------------------
@@ -50,7 +56,7 @@ export default class ComponentPart {
    * @param {string} newName - The new name for the component
    */
   set name(newName) {
-    this._name = newName;
+    this.#name = newName;
   }
 
   /**
@@ -58,7 +64,7 @@ export default class ComponentPart {
    * @returns {string} The name of the component
    */
   get name() {
-    return this._name;
+    return this.#name;
   }
 
   /**
@@ -66,7 +72,7 @@ export default class ComponentPart {
    * @param {GameObject} gameObject - The GameObject this component is attached to
    */
   set host(gameObject) {
-    this.__host = gameObject;
+    this.#host = gameObject;
   }
 
   /**
@@ -74,7 +80,7 @@ export default class ComponentPart {
    * @returns {GameObject|null} The host game object or null if not set
    */
   get host() {
-    return this.__host;
+    return this.#host;
   }
 
   /**
@@ -82,7 +88,7 @@ export default class ComponentPart {
    * @returns {number} - Priority value (0.0 to 1.0)
    */
   get priority() {
-    return this._priority;
+    return this.#priority;
   }
 
   /**
@@ -93,7 +99,7 @@ export default class ComponentPart {
     if (newPriority < 0 || newPriority > 1) {
       throw new ComponentPartError(this, 'Component priority must be between 0.0 and 1.0');
     }
-    this._priority = newPriority;
+    this.#priority = newPriority;
   }
 
   /**
@@ -101,7 +107,7 @@ export default class ComponentPart {
    * @returns {string} The type of the component
    */
   get type() {
-    return this._type;
+    return this.#type;
   }
 
   /**
@@ -109,7 +115,7 @@ export default class ComponentPart {
    * @returns {Object|null} - The event context or null if not available
    */
   get eventContext() {
-    return this._localEventContext;
+    return this.#localEventContext;
   }
 
   //-------------------------------
@@ -150,7 +156,7 @@ export default class ComponentPart {
    * @returns {Function} - Unsubscribe function that can be called to stop listening
    */
   on(eventName, callback) {
-    return this._localEventContext.on(eventName, callback);
+    return this.#localEventContext.on(eventName, callback);
   }
 
   /**
@@ -159,7 +165,7 @@ export default class ComponentPart {
    * @param {Function|null} callback - Callback function to remove (null removes all handlers for this event)
    */
   off(eventName, callback = null) {
-    this._localEventContext.off(eventName, callback);
+    this.#localEventContext.off(eventName, callback);
   }
 
   /**
@@ -168,7 +174,7 @@ export default class ComponentPart {
    * @param {*} data - Data to pass along with the event
    */
   emit(eventName, data) {
-    return this._localEventContext.publish(eventName, data);
+    return this.#localEventContext.publish(eventName, data);
   }
 
   /**
@@ -178,7 +184,7 @@ export default class ComponentPart {
    * @returns {Function} - Unsubscribe function that can be called to stop listening
    */
   subscribeGlobal(eventName, callback) {
-    return Engine.getEventEngine().subscribe(eventName, callback);
+    return Engine.eventEngine.subscribe(eventName, callback);
   }
 
   /**
@@ -187,7 +193,7 @@ export default class ComponentPart {
    * @param {*} data - Data to pass along with the event
    */
   emitGlobal(eventName, data) {
-    return Engine.getEventEngine().emit(eventName, data);
+    return Engine.eventEngine.emit(eventName, data);
   }
 
   //-------------------------------
@@ -209,7 +215,7 @@ export default class ComponentPart {
    * }
    */
   serialize(...ignoreKeys) {
-      return Engine.ENGINE.serialize.call(this, ...ignoreKeys);
+      return Engine.engine.serialize.call(this, ...ignoreKeys);
   }
 
   /**

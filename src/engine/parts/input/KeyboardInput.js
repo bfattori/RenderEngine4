@@ -7,7 +7,7 @@ This component interfaces with the system's keyboard event source and provides a
 */
 import Console from '../../core/Console.js';
 import InputPart from './InputPart.js';
-import { INPUT_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 
 class KeyboardInput extends InputPart () {
@@ -16,7 +16,7 @@ class KeyboardInput extends InputPart () {
      * Constructor
      * @constructs KeyboardInput
      */
-    constructor(priority = INPUT_PRIORITY, name = 'KeyboardInput') {
+    constructor(priority = Constants.INPUT_PRIORITY, name = 'KeyboardInput') {
         super(priority, name);
         this._lastKeyPressedTime = 0;
         this._keyHistory = []; // Track recently pressed keys to prevent repeat flooding

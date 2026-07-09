@@ -1,5 +1,6 @@
 import Console from '../core/Console.js'
 import RenderEngineError from '../core/RenderEngineError.js';
+import ComponentPart from '../parts/ComponentPart.js';
 
 /**
  * GameObjectError contains the {@link GameObject} related to the error.
@@ -21,22 +22,29 @@ class GameObjectError extends RenderEngineError {
  * different aspects of its behavior such as position, rotation, scale, input, and rendering.
  */
 export default class GameObject {
+  #name = 'GameObject';
+  #components = [];
+  #componentMap = new Map();
+  #eventHandlers = new Map();
+  #world = null;
+
+  static #nextId = 0;
+  static get nextId() {
+    return GameObject.#nextId++;
+  }
+
   /**
    * Creates a new GameObject instance
    * @param {string} name - The name of the game object (defaults to "GameObject###" with ### being the creation index)
    */
-  constructor(name = 'GameObject') {
+  constructor(name) {
     // Generate default name if none provided
     if (!name || name.trim() === '') {
-      const count = GameObject._nextId++;
+      const count = GameObject.nextId;
       name = `GameObject${count}`;
     }
     
-    this._name = name;
-    this.components = [];
-    this._componentMap = new Map();
-    this._eventHandlers = new Map();
-    this._gameWorld = null;
+    this.#name = name;
   }
 
   // -------------------------------
@@ -44,11 +52,11 @@ export default class GameObject {
   // -------------------------------
 
   set name(name) {
-    this._name = name;
+    this.#name = name;
   }
 
   get name() {
-    return this._name;
+    return this.#name;
   }
 
   /**
@@ -56,11 +64,15 @@ export default class GameObject {
    * @param {GameWorld} world - The GameWorld instance to attach to
    */
   set world(world) {
-    this._gameWorld = world;
+    this.#world = world;
   }
 
   get world() {
-    return this._gameWorld;
+    return this.#world;
+  }
+
+  get components() {
+    return this.#components;
   }
 
   /**
@@ -69,7 +81,7 @@ export default class GameObject {
    */
   get allComponents() {
     // Sort components by priority (highest first)
-    return [...this.components].sort((a, b) => {
+    return [...this.#components].sort((a, b) => {
       const aPriority = a.priority !== undefined ? a.priority : 0;
       const bPriority = b.priority !== undefined ? b.priority : 0;
       return bPriority - aPriority;
@@ -85,7 +97,7 @@ export default class GameObject {
       return { type: component.type, properties: component.properties };
     });
     return {
-      name: this._name,
+      name: this.#name,
       components: componentProperties
     }
   }
@@ -107,13 +119,20 @@ export default class GameObject {
 
     // Add to components array
     this.components.push(component);
-    
-    // Register component in the map for quick lookup by type
-    const componentType = component.constructor.name;
-    if (!this._componentMap.has(componentType)) {
-      this._componentMap.set(componentType, []);
+
+    // find the type that comes just before ComponentPart
+    let baseType = component.__proto__;
+    let lastType;
+    while (baseType.constructor != ComponentPart) {
+      lastType = baseType.constructor;
+      baseType = baseType.__proto__;
     }
-    this._componentMap.get(componentType).push(component);
+    const componentType = lastType;
+    // Register component in the map for quick lookup by type
+    if (!this.#componentMap.has(componentType)) {
+      this.#componentMap.set(componentType, []);
+    }
+    this.#componentMap.get(componentType).push(component);
     
     component.host = this;
     return this;
@@ -134,7 +153,7 @@ export default class GameObject {
     this.components.splice(index, 1);
     
     // Remove from component map
-    for (const [type, components] of this._componentMap.entries()) {
+    for (const [type, components] of this.#componentMap.entries()) {
       const compIndex = components.indexOf(component);
       if (compIndex !== -1) {
         components.splice(compIndex, 1);
@@ -148,11 +167,16 @@ export default class GameObject {
 
   /**
    * Gets all components of a specific type
-   * @param {string} componentType - The constructor name of the component type to retrieve
+   * @param {Class} componentType - The constructor of the component type to retrieve
    * @returns {Array<GameComponent>} - Array of components of the specified type
    */
   getComponentsByType(componentType) {
-    return this._componentMap.get(componentType) || [];
+    for (const type of this.#componentMap.keys()) {
+      if (type === componentType || type.isPrototypeOf(componentType)) {
+        return this.#componentMap.get(type);
+      }
+    }
+    return []; 
   }
 
   /**
@@ -182,7 +206,7 @@ export default class GameObject {
    */
   publish(eventName, data) {
     // Get all handlers for this event
-    const handlers = this._eventHandlers.get(eventName);
+    const handlers = this.#eventHandlers.get(eventName);
     
     if (handlers && handlers.length > 0) {
       // Call each handler with the provided data
@@ -202,12 +226,12 @@ export default class GameObject {
    * @param {Function} callback - Callback function when event is published
    */
   on(eventName, callback) {
-    if (!this._eventHandlers.has(eventName)) {
-      this._eventHandlers.set(eventName, []);
+    if (!this.#eventHandlers.has(eventName)) {
+      this.#eventHandlers.set(eventName, []);
     }
     
     // Add handler to the list for this event
-    this._eventHandlers.get(eventName).push(callback);
+    this.#eventHandlers.get(eventName).push(callback);
   }
 
   /**
@@ -218,11 +242,11 @@ export default class GameObject {
   off(eventName, callback) {
     if (!callback) {
       // Remove all handlers for this event
-      this._eventHandlers.delete(eventName);
+      this.#eventHandlers.delete(eventName);
       return;
     }
     
-    const handlers = this._eventHandlers.get(eventName);
+    const handlers = this.#eventHandlers.get(eventName);
     if (handlers) {
       const index = handlers.indexOf(callback);
       if (index !== -1) {
@@ -265,9 +289,6 @@ export default class GameObject {
     if (data.name !== undefined) this.name = data.name;  
   }
 }
-
-// Static counter for generating unique names
-GameObject._nextId = 0;
 
 export {
   GameObjectError

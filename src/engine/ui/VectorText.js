@@ -106,7 +106,7 @@ export default function processText(text, spaceWidth = 45) {
                         if (text[j] === '}') {
                             const fontSizeValue = parseFloat(text.substring(i + 2, j).trim());
                             
-                            this.fontSize += (fontSizeValue * scalar);
+                            this.fontSize = (fontSizeValue * scalar);
                             spaceWidth *= fontSizeValue * 0.47;
                             foundBracket = true;
                             break;
@@ -149,9 +149,9 @@ export default function processText(text, spaceWidth = 45) {
             this.formatting.bold = !this.formatting.bold;
             if (ctx.debug) this.addInstruction(`// format: bold (${this.formatting.bold})`);
             if (this.formatting.bold) {
-                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth + (this.formatting.bold ? (3 * 1/this.fontSize) : 0)}`);
+                this.addInstruction(`${VECTOR_IL.WIDTH} 3`);
             } else {
-                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
+                this.addInstruction(`${VECTOR_IL.WIDTH} 1`);
             }
             i += 2;
             continue;
@@ -191,9 +191,9 @@ function characterInstruction(char, width) {
     char = char.toUpperCase();
     
     // Get character instructions from vector.js
-    const charInstructions = getCharacterInstructions.call(this, char);
+    const ci = getCharacterInstructions.call(this, char);
 
-    if (!charInstructions || !charInstructions.instructions) {
+    if (!ci || !ci.instructions) {
         // Character not in set (e.g., lowercase letters), skip or use fallback
         return;
     }
@@ -203,22 +203,15 @@ function characterInstruction(char, width) {
     if (ctx.debug) {
         context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
     }
-
-    const current = this.world.currentTransform;
-    const oldScale = current.scaling;
-    current.translate(context.cursorX, 0);
-    current.uniformScale(this.fontSize);
-    context.pushTransform(current);
-
+    
     if (ctx.debug) {
-        const ci = charInstructions;
         context.API.color("#000").width(1).rectangle(-ci.halfWidth, -ci.halfHeight, ci.width - ci.halfWidth, ci.height - ci.halfHeight).color().width();
     }
 
     if (context.renderer.hasCompiler) {
         if (!shapeCache.has(char)) {
             // Compile the character shape and store in cache
-            const shapeId = context.renderer.getCompiledShape(charInstructions.instructions, `CHAR '${char}'`);
+            const shapeId = context.renderer.getCompiledShape(ci.instructions, `CHAR '${char}'`);
             if (shapeId !== Constants.COMPILATION_FAILED) {
                 shapeCache.set(char, shapeId);
                 context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
@@ -227,12 +220,12 @@ function characterInstruction(char, width) {
             context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeCache.get(char)}`);
         }
     } else {
-        charInstructions.instructions.forEach(inst => {
+        ci.instructions.forEach(inst => {
             context.addInstruction(inst);
         });
     }
-    context.popTransform();
-    context.cursorDeltaX = charInstructions.width * ((this.formatting.bold ? 8*(1 / this.fontSize) : 1.3));
+    context.addInstruction(`${VECTOR_IL.TRANSLATE} ${ci.width} 0`);
+    context.cursorDeltaX = ci.width;
 }
 
 /**
@@ -278,8 +271,7 @@ function getCharacterInstructions(char) {
         // calculate the character box
         for (let j = 0; j < points.length; j++) {
             if (points[j] !== null) {
-                const scale = this.world.currentTransform.scaling;
-                const scaledPoints = [(points[j][0] * scale[0]) * this.fontSize, (points[j][1] * scale[0]) * this.fontSize];
+                const scaledPoints = [points[j][0], points[j][1]];
                 minMax[0] = scaledPoints[0] < minMax[0] ? scaledPoints[0] : minMax[0];  // min X
                 minMax[1] = scaledPoints[0] > minMax[1] ? scaledPoints[0] : minMax[1];  // max X
                 minMax[2] = scaledPoints[1] < minMax[2] ? scaledPoints[1] : minMax[2];  // min Y
@@ -328,7 +320,7 @@ function getCharacterInstructions(char) {
 
         return {
             instructions: instructions,
-            width: charWidth * this.world.currentTransform.scaling[0],
+            width: charWidth + 3,
             height: charHeight,
             halfWidth: halfWidth,
             halfHeight: halfHeight

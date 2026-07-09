@@ -8,9 +8,13 @@
  * @extends TransformPart
  */
 import TransformPart from './TransformPart.js';
-import { TRANSFORM_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
+import { Matrix2d } from '../../core/Matrix.js';
 
-class Transform2d extends TransformPart {
+class Transform2dPart extends TransformPart {
+    #transformMatrix = Matrix2d.identity();
+    #enableMatrixCaching = true;
+    
     /**
      * Creates a new Transform2d instance
      * 
@@ -24,30 +28,8 @@ class Transform2d extends TransformPart {
      * @param {number} [options.scale[0]=1] - Scale factor for X axis
      * @param {number} [options.scale[1]=1] - Scale factor for Y axis
      */
-    constructor(priority = TRANSFORM_PRIORITY, name = 'Transform2d', options = {}) {
+    constructor(priority = Constants.TRANSFORM_PRIORITY, name = 'Transform2dPart', options = {}) {
         super(priority, name, options);
-        
-        /**
-         * Precomputed transform matrix for performance-critical operations
-         * @private
-         */
-        this._transformMatrix = null;
-        
-        /**
-         * Local/parent coordinate system (for hierarchical transformations)
-         * @private
-         */
-        this._localSpace = {
-            position: [0, 0],
-            rotation: 0,
-            scale: [1, 1]
-        };
-        
-        /**
-         * Enable matrix cache for optimized rendering
-         * @private
-         */
-        this._enableMatrixCaching = true;
     }
 
     //-------------------------------
@@ -55,29 +37,11 @@ class Transform2d extends TransformPart {
     //-------------------------------
 
     /**
-     * Gets the local space properties for hierarchical transformations
-     * @returns {Object} Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
-     */
-    get localSpace() {
-        return this._localSpace;
-    }
-
-    /**
-     * Sets the local space properties for hierarchical transformations
-     * @param {Object} localSpace - Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
-     */
-    set localSpace({ position, rotation, scale }) {
-        this._localSpace = { position, rotation, scale };
-        const pointInWorld = this.transformPoint(x, y);
-        return pointInWorld;
-    }
-
-    /**
      * Gets whether matrix caching is enabled
      * @returns {boolean} True if matrix caching is enabled, false otherwise
      */
     get matrixCachingEnabled() {
-        return this._enableMatrixCaching;
+        return this.#enableMatrixCaching;
     }
 
     /**
@@ -85,9 +49,9 @@ class Transform2d extends TransformPart {
      * @param {boolean} enabled - Whether to enable matrix caching
      */
     set matrixCachingEnabled(enabled) {
-        this._enableMatrixCaching = enabled;
+        this.#enableMatrixCaching = enabled;
         if (enabled) {
-            this._updateTransformMatrix();
+            this.#updateTransformMatrix();
         }
     }
 
@@ -96,10 +60,10 @@ class Transform2d extends TransformPart {
      * @returns {Array} The transform matrix [[m00, m01, m02], [m10, m11, m12], [m20, m21, m22]]
      */
     get transformMatrix() {
-        if (!this._transformMatrix) {
-            this._updateTransformMatrix();
+        if (!this.#transformMatrix) {
+            this.#updateTransformMatrix();
         }
-        return this._transformMatrix;
+        return this.#transformMatrix;
     }
 
     /**
@@ -110,7 +74,7 @@ class Transform2d extends TransformPart {
      */
     set position([x, y]) {
         super.position = [x, y];
-        this._enableMatrixCaching && this._transformMatrix.update({position: [x, y]});
+        this.#enableMatrixCaching && this.#transformMatrix.update({position: [x, y]});
         
         // Notify any listeners if world provides that capability
         if (this.world && this.world.eventEngine) {
@@ -126,15 +90,26 @@ class Transform2d extends TransformPart {
     }
 
     /**
-     * Gets position with optional local/world coordinate specification
-     * 
-     * @param {string} [coordinateSpace='world'] - 'world' or 'local'
+     * Gets local position
      * @returns {Object} Position object
      */
-    get position(coordinateSpace = 'world') {
-        if (coordinateSpace === 'local') {
-            return this._localSpace.position;
-        }
+    get position() {
+        return this.localSpace.position;
+    }
+
+    get rotation() {
+        return super.rotation;
+    }
+
+    get scale() {
+        return super.scale;
+    }
+
+    /**
+     * Gets world position
+     * @returns {Object} Position object
+     */
+    get worldPosition() {
         return super.position;
     }
 
@@ -145,7 +120,7 @@ class Transform2d extends TransformPart {
      */
     set x(x) {
         this.position[0] = x;
-         this._enableMatrixCaching && this._transformMatrix.update({position: [x, this.position[1]]});
+        this.#enableMatrixCaching && this.#transformMatrix.update({position: [x, this.position[1]]});
         return this;
     }
 
@@ -156,7 +131,7 @@ class Transform2d extends TransformPart {
      */
     set y(y) {
         this.position[1] = y;
-        this._enableMatrixCaching && this._transformMatrix.update({position: [this.position[0], y]});
+        this.#enableMatrixCaching && this.#transformMatrix.update({position: [this.position[0], y]});
         return this;
     }
 
@@ -169,7 +144,7 @@ class Transform2d extends TransformPart {
         // Normalize rotation to 0-2π range for predictable behavior
         const normalized = rotation % (Math.PI * 2);
         super.rotation = normalized;
-        this._enableMatrixCaching && this._transformMatrix.update({rotation: normalized});
+        this.#enableMatrixCaching && this.#transformMatrix.update({rotation: normalized});
         
         // Notify listeners if world provides that capability
         if (this.world && this.world.eventEngine) {
@@ -190,7 +165,7 @@ class Transform2d extends TransformPart {
      */
     set scale(scale) {
         super.scale = !Array.isArray(scale) ? Math.max(0.01, scale) : [Math.max(0.01, scale[0]), Math.max(0.01, scale[1])]; // Prevent zero or negative scale
-        this._enableMatrixCaching && this._transformMatrix.update({scale: scale});
+        this.#enableMatrixCaching && this.#transformMatrix.update({scale: scale});
         
         if (this.world && this.world.eventEngine) {
             this.world.eventEngine.publish('scaleChanged', {
@@ -236,7 +211,7 @@ class Transform2d extends TransformPart {
         super.update(time, deltaTime, options);
 
         // Update transform matrix for rendering performance
-        this._updateTransformMatrix();
+        this.#updateTransformMatrix();
 
         return this;
     }
@@ -246,12 +221,12 @@ class Transform2d extends TransformPart {
      * 
      * @private
      */
-    _updateTransformMatrix() {
-        if (!this._enableMatrixCaching) {
+    #updateTransformMatrix() {
+        if (!this.#enableMatrixCaching) {
             return;
         }
         
-        this._transformMatrix.update({
+        this.#transformMatrix.update({
             scale: this.scale, 
             rotation: this.rotation, 
             position: this.position
@@ -267,7 +242,7 @@ class Transform2d extends TransformPart {
     addPosition(dx, dy) {
         this.position[0] += dx;
         this.position[1] += dy;
-        this._enableMatrixCaching && this._transformMatrix.update({
+        this.#enableMatrixCaching && this.#transformMatrix.update({
             position: [this.position[0], this.position[1]]
         });
         return this;
@@ -282,7 +257,7 @@ class Transform2d extends TransformPart {
         const current = this.rotation || 0;
         const normalized = (current + dRotation) % (Math.PI * 2);
         super.rotation = normalized;
-         this._enableMatrixCaching && this._transformMatrix.update({
+         this.#enableMatrixCaching && this.#transformMatrix.update({
             rotation: normalized
          });
         return this;
@@ -297,10 +272,7 @@ class Transform2d extends TransformPart {
      * @returns {Array} Transformed point with x and y elements [worldX, worldY]
      */
     transformPoint(localX, localY) {
-        const m = this._getTransformMatrix();
-        return [m[0] * localX + m[2] * localY + this.x,
-            m[1] * localX + m[3] * localY + this.y
-        ];
+        return this.#transformMatrix.mul(this.world.currentTransform);
     }
 
     /**
@@ -322,13 +294,14 @@ class Transform2d extends TransformPart {
      * @returns {Array} Local space coordinates with x and y elements [localX, localY]
      */
     inverseTransform(worldX, worldY) {
-        const m = this.transformMatrix;
-        const det = m[0] * m[3] - m[2] * m[1];
+        return this.#transformMatrix.invert().mul(this.world.currentTransform);
+
+        // const det = m[0] * m[3] - m[2] * m[1];
         
-        // Inverse matrix calculation for 2D affine transform
-        return [ ((m[3] * (worldX - this.x)) - (m[2] * (worldY - this.y))) / det,
-            (-(m[0] * (worldX - this.x)) + (m[1] * (worldY - this.y))) / det
-        ];
+        // // Inverse matrix calculation for 2D affine transform
+        // return [ ((m[3] * (worldX - this.x)) - (m[2] * (worldY - this.y))) / det,
+        //     (-(m[0] * (worldX - this.x)) + (m[1] * (worldY - this.y))) / det
+        // ];
     }
 
     deserialize(data) {
@@ -340,4 +313,4 @@ class Transform2d extends TransformPart {
 
 }
 
-export default Transform2d;
+export default Transform2dPart;

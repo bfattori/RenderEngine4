@@ -2,23 +2,24 @@ import Engine from '../../core/Engine.js';
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
 
-export default class VectorRenderer extends RenderPart {
+export default class VectorRendererPart extends RenderPart {
+    #instructions = [];
+    #api = {};
+    // the compiled shape object (if supported by the render context)
+    #compiledShape = null;
+    #formatting = {
+      bold: false,
+      italics: false,
+      underline: false
+    };
+    
     constructor(priority, name) {
         super(priority, name = 'VectorRenderer');
-        this.#instructions = [];
-        this.#api = {};
-
-        // the compiled shape object (if supported by the render context)
-        this.#compiledShape = null;
 
         // redirect the renderer's calls from the context's API 
         // methods to this component with this shape being the context of
         // the function call
-        this.context.API.forEach(fn => {
-            this.#api[fn.name] = (...args) => {
-                this.context.API[fn.name].apply(this, ...args);
-            }
-        });
+        this.#api = Engine.renderContext.getAPI.call(this);
     }
 
     get API() {
@@ -27,6 +28,10 @@ export default class VectorRenderer extends RenderPart {
 
     get instructions() {
         return [...this.#instructions];
+    }
+
+    get formatting() {
+        return this.#formatting;
     }
 
     /**

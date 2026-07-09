@@ -146,6 +146,24 @@ export class Matrix2d extends DOMMatrix {
     }
 
     /**
+     * Returns a Matrix2d from several different forms of input formats.
+     * @param {Array<number>|String|DOMMatrix|Matrix2d} other - An object to cast to a new {@link Matrix2d}
+     * @returns A new <code>Matrix2d</code> instance
+     * @throws {RenderEngineError} If the input is not a valid matrix type
+     * @static
+     */
+    static from(other) {
+        if (Array.isArray(other)) {
+            return Matrix2d.fromArray(other);
+        } else if (other instanceof DOMMatrix) {
+            return new Matrix2d(other);
+        } else if (typeof other === "string") {
+            return Matrix2d.fromArray(other.split(' ').map(e => parseFloat(e)));
+        }
+        throw new RenderEngineError('Invalid matrix type');
+    }
+
+    /**
      * Create a <code>Matrix2d</code> from 3 arrays of 3-element arrays.
      * A row-aligned matrix is in the form:
      * <pre>

@@ -11,7 +11,7 @@ RenderEngine.init({
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                true
+                false
             )
         ),
         dimensions: [800, 600],
@@ -28,8 +28,8 @@ RenderEngine.init({
 const context = RE4.world.renderContext;
 
 // chainable API for drawing shapes and text
-const q = context.API.quadratic;
-context.API
+const q = context.getAPI().quadratic;
+context.getAPI()
     .color("#0000ff").width(5)
     .line(100, 100, 300, 300)
     .fillColor("#8800cc")
@@ -39,16 +39,22 @@ context.API
     
     // the string "Inline Format" formatted 
     // with colors and font size changes
-    .cursor(50, 330)
+    .reset()
+    .translate(50, 330)
     .width(1)
     .text("{#00f}**I{#f00}n**{green}{+2}l{orange}~i~{#2e867f}{+}ne")
-    .cursor(50, 455)
-    .text("{+6}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
-    .cursor(100, 15)
+    .reset()
+    .translate(100, 445)
+    .text("{+2}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
+    .reset()
+    .translate(80, 15)
+    .resetFontSize()
     .text("Plain text, no formatting.", 
-        {color: "black", fontSize: 1.5, lineWidth: 1})
-    .cursor(120, 80)
-    .fontSize(4)
+        {color: "black", fontSize: 1, lineWidth: 1})
+    .reset()
+    .translate(210, 90)
+    .resetFontSize()
+    .fontSize(5)
     .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l")
     .color("blue")
     .curve(false, [60, 180], 

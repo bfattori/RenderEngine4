@@ -5,6 +5,7 @@
 import Console from '../../core/Console.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
+import TransformPart from '../../parts/transform/TransformPart.js';
 
 /**
  * Render context error class for rendering errors.
@@ -304,17 +305,17 @@ export default class RenderContext {
    * Returns the object containing the high-level API methods exposed by the sub-class.
    * @returns {Object}
    */
-  get API() {
+  getAPI() {
     throw new RenderContextError(this, 'render() must be implemented by the sub-class to expose a high-level API.');
   }
   
   /**
-   * Push the transformation onto the world stack.
-   * @param {Array[Matrix4]} transformationMatrix The matrix to push onto the transform stack
+   * Push a transformation onto the world stack.
+   * @param {Array[Matrix4]} transformationMatrix The matrix to push onto the transform stack, or null to push the current world transform
    */
-  pushTransform(transformationMatrix) {
+  pushTransform(transformationMatrix = null) {
     // multiply the new transform and store that
-    this.#world.pushTransformation(transformationMatrix);    
+    this.#world.pushTransformation(transformationMatrix !== null ? transformationMatrix : this.#world.currentTransform);    
   }
 
   /**
@@ -581,7 +582,7 @@ export default class RenderContext {
    * @returns {boolean} true if the object is within the visible area
    */
   isObjectVisible(object) {
-    const transform = object.getComponentsByType(TransformComponent);
+    const transform = object.getComponentsByType(TransformPart);
     if (transform.length != 0) {
       // assume the first transform component is the object's position
       const position = transform[0].position;

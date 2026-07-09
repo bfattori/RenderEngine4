@@ -74,6 +74,7 @@ export default class VectorRenderContext extends RenderContext {
   // Font size state
   #previousFontSize = [];
   #currentFontSize = VectorRenderContext.DEFAULT_FONT_SIZE;
+  #lastFontSize = 0; 
       
   // Shape state tracking for container instructions
   #activeShapeStack = [];  // Stack for LINESEG/RECTANGLE/etc. containers
@@ -144,7 +145,7 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   resetColor() {
-    this.#currentColor = renderContext.DEFAULT_COLOR;
+    this.#currentColor = this.DEFAULT_COLOR;
     this.#previousColor = [];
   }
 
@@ -173,7 +174,7 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   resetFillColor() {
-    this.#currentFillColor = renderContext.DEFAULT_COLOR;
+    this.#currentFillColor = this.DEFAULT_COLOR;
     this.#previousFillColor = [];
   }
 
@@ -202,8 +203,12 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   resetLineWidth() {
-    this.#currentWidth = renderContext.DEFAULT_LINE_WIDTH;
+    this.#currentWidth = this.DEFAULT_LINE_WIDTH;
     this.#previousWidth = [];
+  }
+
+  #deltaFontSize() {
+    return this.#lastFontSize - this.#currentFontSize;
   }
 
   get fontSize() {
@@ -212,27 +217,32 @@ export default class VectorRenderContext extends RenderContext {
 
   set fontSize(s) {
     if (s) {
+      this.#lastFontSize = this.#currentFontSize;
       this.#previousFontSize.push(this.#currentFontSize);
       this.#currentFontSize = s;
     } else {
       this.popFontSize;
     }
 
-    // Add width instruction
-    this.addInstruction(`${VECTOR_IL.FONTSIZE} ${this.fontSize}`);
+    // Add fontsize instruction
+    const delta = this.#deltaFontSize();
+    if (delta != 0) {
+      this.addInstruction(`${VECTOR_IL.FONTSIZE} ${delta}`);
+    }
   }
 
   get popFontSize() {
+    this.#lastFontSize = this.#currentFontSize;
     this.#currentFontSize = this.#previousFontSize.length > 0 ? this.#previousFontSize.pop() : VectorRenderContext.DEFAULT_FONT_SIZE;
 
-    // Add font size instruction
-    this.addInstruction(`${VECTOR_IL.FONTSIZE} ${this.fontSize}`);
+    this.addInstruction(`${VECTOR_IL.FONTSIZE} ${this.#deltaFontSize()}`);
     return undefined;
   }
 
   resetFontSize() {
-    this.#currentFontSize = renderContext.DEFAULT_FONT_SIZE;
+    this.#currentFontSize = this.DEFAULT_FONT_SIZE;
     this.#previousFontSize = [];
+    this.#lastFontSize = 4;
   }
   /**
    * Reset all render context state for a new frame
@@ -246,18 +256,21 @@ export default class VectorRenderContext extends RenderContext {
   }
   
   setCursorPosition(x, y) {
-    const starting = Matrix2d.identity();
-    starting.translate(x, y);
-    this.pushTransform(starting);
+    this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
   }
 
   /**
    * Push a transformation onto the stack and apply it to the context.
    * @param {Matrix2d} transformationMatrix 
    */
-  pushTransform(transformationMatrix) {
+  pushTransform(transformationMatrix = null) {
+    transformationMatrix = transformationMatrix || this.world.currentTransform;
     super.pushTransform(transformationMatrix);
-    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${transformationMatrix.toCanvas()}`);
+  }
+
+  popTransform() {
+    const xform = super.popTransform();
+    return xform;
   }
 
   /**
@@ -268,30 +281,133 @@ export default class VectorRenderContext extends RenderContext {
     this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${IdentityMatrix.toCanvas()}`);
   }
 
+  transform(matrix) {
+    matrix.mul(this.world.currentTransform);
+    this.addInstruction(`${VECTOR_IL.TRANSFORM} ${matrix.toCanvas()}`);
+  }
+
+  absTransform(matrix) {
+    this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${matrix.toCanvas()}`);
+  }
+
+  translate(x, y) {
+    this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+  }
+
+  rotate(angle) {
+    this.addInstruction(`${VECTOR_IL.ROTATE} ${angle}`);
+  }
+
+  scale(sX, sY) {
+    this.addInstruction(`${sX === sY ? VECTOR_IL.USCALE + ' ' + sX : VECTOR_IL.SCALE + ' ' + sX + ' ' + sY}`);
+  }
+
+  skew(sX, sY) {
+    this.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY}`);
+  }
+
   //--------------------------------------
   // HIGH-LEVEL VECTOR API
   //--------------------------------------
 
+  get API() {
+    return this.getAPI();
+  }
+
   /**
    * @returns {Object} Returns the high-level API methods for vector drawing.
    */
-  get API() {
-    const renderContext = this;
+  getAPI() {
+    const context = this;
     return {
       /**
-       * Push a transformation matrix onto the transform stack.
-       * @param {Matrix2d} transformationMatrix 
+       * Translate the current transform by X and Y
+       * @param {number} x 
+       * @param {number} y 
+       * @returns {Object} Returns this for chaining
        */
-      pushTransform: (transformationMatrix) => {
-        renderContext.pushTransform(transformationMatrix);
+      translate: (x, y) => {
+        context.translate(x, y);
+        return context.API;
       },
 
       /**
-       * Pop the last transform off the transform stack.
+       * Rotate the current transform by angle radians
+       * @param {number} angle - Rotation angle in radians
+       * @returns {Object} Returns this for chaining
+       */
+      rotate: (angle) => {
+        context.rotate(angle);
+        return context.API;
+      },
+
+      /**
+       * Scale the current transform by X and Y
+       * @param {number} x 
+       * @param {number} y 
+       * @returns {Object} Returns this for chaining
+       */
+      scale: (x, y) => {
+        context.scale(x, y);
+        return context.API;
+      },
+
+      /**
+       * Uniformly scale the transform by a scalar value
+       * @param {number} scalar 
+       * @returns {Object} Returns this for chaining
+       */
+      uniformScale: (scalar) => {
+        context.API.scale(scalar, scalar);
+        return context.API;
+      },
+
+      /**
+       * Skew the transform by sX and sY
+       * @param {number} sX 
+       * @param {number} sY 
+       * @returns {Object} Returns this for chaining
+       */
+      skew: (sX, sY) => {
+        context.skew(sX, sY);
+        return context.API;
+      },
+
+      /**
+       * Apply the transform in he matrix to the current world matrix.
+       * @param {Matrix2d} matrix 
+       * @returns {Object} Returns this for chaining
+       */
+      transform: (matrix) => {
+        context.transform(matrix);
+        return context.API;
+      },
+
+      /**
+       * Apply an absolute transform, ignoring the current world matrix.
+       * @param {Matrix2d} matrix 
+       * @returns {Object} Returns this for chaining
+       */
+      absTransform: (matrix) => {
+        context.absTransform(matrix);
+        return context.API;
+      },
+
+      /**
+       * Push the world transformation matrix onto the transform stack. This is useful for applying transformations to the entire scene.
+       * @param {Matrix2d} transformationMatrix - Optional matrix to push. If empty, the current world transform is pushed.
+       */
+      pushTransform: (transformationMatrix) => {
+        context.pushTransform(transformationMatrix);
+        return context.API;
+      },
+
+      /**
+       * Pop the last transformation matrix off the transform stack.
        * @returns {Matrix2d} The previous transform matrix
        */
       popTransform: () => {
-        return renderContext.popTransform();
+        return context.popTransform();
       },
 
       /**
@@ -299,14 +415,16 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Matrix2d} The top-most entry on the transform stack
        */
       peekTransform: () => {
-        return renderContext.peekTransform();
+        return context.peekTransform();
       },
 
       /**
        * Hard reset the transform to the Identity Matrix and empty the transform stack.
+       * @returns {Object} Returns this for chaining
        */
-      resetTransform: () => {
-        renderContext.resetTransform();
+      reset: () => {
+        context.resetTransforms();
+        return context.API;
       },
 
       /**
@@ -321,11 +439,11 @@ export default class VectorRenderContext extends RenderContext {
        */
       color: (r, g = null, b = null, { a = 1 } = {}) => {
         if (r || (r && g && b)) {
-          renderContext.lineColor = getColor(r, g, b, a);        
+          context.lineColor = getColor(r, g, b, a);        
         } else {
-          renderContext.lineColor = undefined;
+          context.lineColor = undefined;
         }
-        return renderContext.API;
+        return context.API;
       },
 
       /**
@@ -340,11 +458,11 @@ export default class VectorRenderContext extends RenderContext {
        */
       fillColor: (r, g = null, b = null, { a = 1 } = {}) => {
         if (r || (r && g && b)) {
-          renderContext.fillColor = getColor(r, g, b, a);
+          context.fillColor = getColor(r, g, b, a);
         } else {
-          renderContext.fillColor = undefined;
+          context.fillColor = undefined;
         }
-        return renderContext.API;
+        return context.API;
       },
       
       /**
@@ -352,8 +470,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetColor: () => {
-        renderContext.resetColor();
-        return renderContext.API;
+        context.resetColor();
+        return context.API;
       },
       
       /**
@@ -361,8 +479,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetFill: () => {
-        renderContext.resetFillColor();
-        return renderContext.API;
+        context.resetFillColor();
+        return context.API;
       },
 
       /**
@@ -371,8 +489,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       width: (w) => {
-        renderContext.lineWidth = w;        
-        return renderContext.API;
+        context.lineWidth = w;        
+        return context.API;
       },
       
       /**
@@ -380,8 +498,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetWidth: () => {
-        renderContext.resetLineWidth();
-        return renderContext.API;
+        context.resetLineWidth();
+        return context.API;
       },
       
       /**
@@ -390,8 +508,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       fontSize: (s) => {
-        renderContext.fontSize = s;
-        return renderContext.API;
+        context.fontSize = s;
+        return context.API;
       },
       
       /**
@@ -399,17 +517,17 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       resetFontSize: () => {
-        renderContext.resetFontSize();
-        return renderContext.API;
+        context.resetFontSize();
+        return context.API;
       },
       
       /**
        * Perform a "carriage return", advancing the cursor down one line and resetting the
-       * cursor back to the value in index 0 of `RenderContext.cursorLimits`.
+       * cursor back to the value in index 0 of `context.cursorLimits`.
        */
       carriageReturn: () => {
-        renderContext.carriageReturn();
-        return renderContext.API;
+        context.carriageReturn();
+        return context.API;
       },
 
       /**
@@ -417,8 +535,8 @@ export default class VectorRenderContext extends RenderContext {
        * @param {number} x - The cursor X position
        */
       cursorX: (x) => {
-        renderContext.cursorX = x;
-        return renderContext.API;
+        context.cursorX = x;
+        return context.API;
       },
 
       /**
@@ -426,8 +544,8 @@ export default class VectorRenderContext extends RenderContext {
        * @param {number} y - The cursor Y position
        */
       cursorY: (y) => {
-        renderContext.cursorY = y;
-        return renderContext.API;
+        context.cursorY = y;
+        return context.API;
       },
 
       /**
@@ -436,8 +554,8 @@ export default class VectorRenderContext extends RenderContext {
        * @param {number} y - Y coordinate in screen space
        */
       cursor: (x, y) => {
-        renderContext.cursor = [x, y];
-        return renderContext.API;
+        context.cursor = [x, y];
+        return context.API;
       },
 
       /**
@@ -446,9 +564,9 @@ export default class VectorRenderContext extends RenderContext {
        * @param {number} y - Relative Y to add to the cursor Y
        */
       cursorDelta: (deltaX, deltaY) => {
-        renderContext.cursorDeltaX = deltaX;
-        renderContext.cursorDeltaY = deltaY;
-        return renderContext.API;
+        context.cursorDeltaX = deltaX;
+        context.cursorDeltaY = deltaY;
+        return context.API;
       },
 
       /**
@@ -456,7 +574,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Array<number>} [x, y] - The X and Y position of the cursor
        */
       getCursor: () => {
-        return renderContext.cursor;
+        return context.cursor;
       },
 
       /**
@@ -471,8 +589,8 @@ export default class VectorRenderContext extends RenderContext {
         // Convert to screen coordinates if using world coordinates
         let screenPos = [x, y];
         
-        if (renderContext.enableCulling) {
-          const screenPosObj = renderContext.worldToScreen(x, y);
+        if (context.enableCulling) {
+          const screenPosObj = context.worldToScreen(x, y);
           if (screenPosObj && screenPosObj.screen) {
             screenPos = [screenPosObj.screen.x, screenPosObj.screen.y];
           } else {
@@ -496,8 +614,8 @@ export default class VectorRenderContext extends RenderContext {
         }
         
         const pointInst = [];
-        renderContext.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY}`);
-        return renderContext.API;
+        context.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY}`);
+        return context.API;
       },
       
       /**
@@ -513,21 +631,21 @@ export default class VectorRenderContext extends RenderContext {
         let startScreen = [x, y];
         let endScreen = [ex, ey];
         
-        if (renderContext.enableCulling) {
-          const startObj = renderContext.worldToScreen(x, y);
-          const endObj = renderContext.worldToScreen(ex, ey);
+        if (context.enableCulling) {
+          const startObj = context.worldToScreen(x, y);
+          const endObj = context.worldToScreen(ex, ey);
           
           if (startObj && endObj) {
             startScreen = startObj;
             endScreen = endObj;
           } else {
             // Start or end point outside view bounds - skip rendering
-            return renderContext.API;
+            return context.API;
           }
         }
         
-        renderContext.addInstruction(`${VECTOR_IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
-        return renderContext.API;
+        context.addInstruction(`${VECTOR_IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
+        return context.API;
       },
 
       /**
@@ -540,19 +658,19 @@ export default class VectorRenderContext extends RenderContext {
         // Convert to screen coordinates if using world coordinates
         let startScreen = [x, y];
         
-        if (renderContext.enableCulling) {
-          const startObj = renderContext.worldToScreen(x, y);
+        if (context.enableCulling) {
+          const startObj = context.worldToScreen(x, y);
           
           if (startObj) {
             startScreen = [startObj[0], startObj[1]];
           } else {
             // Start or end point outside view bounds - skip rendering
-            return renderContext.API;
+            return context.API;
           }
         }
 
-        renderContext.addInstruction(`${VECTOR_IL.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
-        return renderContext.API;
+        context.addInstruction(`${VECTOR_IL.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
+        return context.API;
       },
       
       /**
@@ -563,19 +681,19 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       lineSegment: (filled, [x1, y1], ... coords) => {
-        renderContext.addInstruction(`${VECTOR_IL.LINESEG} ${filled ? '1' : '0'}`);
+        context.addInstruction(`${VECTOR_IL.LINESEG} ${filled ? '1' : '0'}`);
         
         // first line of segment
         const lineTo = coords.shift();
-        renderContext.API.line(x1, y1, lineTo[0], lineTo[1]);
+        context.API.line(x1, y1, lineTo[0], lineTo[1]);
 
         // run out the remainder of the coordinates in the line segment
         for (let rel of coords) {
-          renderContext.API.lineRel(rel[0], rel[1]);
+          context.API.lineRel(rel[0], rel[1]);
         }
         
-        renderContext.addInstruction(`${VECTOR_IL.ENDSEG}`);
-        return renderContext.API;
+        context.addInstruction(`${VECTOR_IL.ENDSEG}`);
+        return context.API;
       },
 
       /**
@@ -615,21 +733,21 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns the API for chaining
        */
       curve: (filled, [x1, y1], ... coords) => {
-        renderContext.addInstruction(`${VECTOR_IL.CURVE} ${filled ? '1' : '0'} ${x1} ${y1}`);
+        context.addInstruction(`${VECTOR_IL.CURVE} ${filled ? '1' : '0'} ${x1} ${y1}`);
         
         // the rest of the coordinates need to be either 4 coordinates (quadratic) or 6 coordinates (bezier)
         for (let rel of coords) {
           if (rel.length === 4) {
-            renderContext.addInstruction(`${VECTOR_IL.QUAD} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]}`)
+            context.addInstruction(`${VECTOR_IL.QUAD} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]}`)
           } else if (rel.length === 6) {
-            renderContext.addInstruction(`${VECTOR_IL.BEZIER} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]} ${rel[4]} ${rel[5]} ${rel[6]}`);
+            context.addInstruction(`${VECTOR_IL.BEZIER} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]} ${rel[4]} ${rel[5]} ${rel[6]}`);
           } else {
             throw new RenderContextError(this, "Invalid number of coordinates for a curve (4 or 6)");
           }
         }
         
-        renderContext.addInstruction(`${VECTOR_IL.ENDCURVE}`);
-        return renderContext.API;
+        context.addInstruction(`${VECTOR_IL.ENDCURVE}`);
+        return context.API;
       },
       
       /**
@@ -646,19 +764,19 @@ export default class VectorRenderContext extends RenderContext {
       arc: (cx, cy, rX, rY, startAngle = 0, endAngle = twoPi, filled = false) => {
         let center = [cx, cy]; 
 
-        if (renderContext.enableCulling) {
-          const startObj = renderContext.worldToScreen(cx, cy);
+        if (context.enableCulling) {
+          const startObj = context.worldToScreen(cx, cy);
           
           if (startObj) {
             center = [startObj[0], startObj[1]];
           } else {
             // Center is outside the context
-            return renderContext.API;
+            return context.API;
           }
         }
 
-        renderContext.addInstruction(`${VECTOR_IL.ARC} ${cx} ${cy} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
-        return renderContext.API;
+        context.addInstruction(`${VECTOR_IL.ARC} ${cx} ${cy} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
+        return context.API;
       },
 
       /**
@@ -670,7 +788,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       ellipse: (cx, cy, rX, rY, filled) => {
-        return renderContext.API.arc(cx, cy, rX, rY, 0, twoPi, filled);
+        return context.API.arc(cx, cy, rX, rY, 0, twoPi, filled);
       },
 
       /**
@@ -681,7 +799,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       circle: (cx, cy, r, filled) => {
-        return renderContext.API.arc(cx, cy, r, r, 0, twoPi, filled);
+        return context.API.arc(cx, cy, r, r, 0, twoPi, filled);
       },
       
       /**
@@ -694,7 +812,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       rectangle: (x1, y1, x2, y2, filled) => {
         // Convert to absolute coordinates from top-left corner
-        renderContext.API.lineSegment(filled, 
+        context.API.lineSegment(filled, 
             [x1, y1],
             [x2, y1],
             [x2, y2],
@@ -702,7 +820,7 @@ export default class VectorRenderContext extends RenderContext {
             [x1, y1]
           );
 
-        return renderContext.API;
+        return context.API;
       },
       
       /**
@@ -713,7 +831,7 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Object} Returns this for chaining
        */
       square: (x, y, side, filled) => {
-        return renderContext.API.rectangle(x, y, x + side, y + side, filled);
+        return context.API.rectangle(x, y, x + side, y + side, filled);
       },
       
       /**
@@ -733,8 +851,8 @@ export default class VectorRenderContext extends RenderContext {
         restVertices.push(firstVertex);
 
         // Draw each edge of the polygon
-        renderContext.API.lineSegment(filled, firstVertex, ...restVertices);
-        return renderContext.API;
+        context.API.lineSegment(filled, firstVertex, ...restVertices);
+        return context.API;
       },
       
       /**
@@ -755,7 +873,7 @@ export default class VectorRenderContext extends RenderContext {
           vertices.push([x, y]);
         }
         
-        return renderContext.API.polygon(filled, ...vertices);
+        return context.API.polygon(filled, ...vertices);
       },
 
       /**
@@ -771,44 +889,43 @@ export default class VectorRenderContext extends RenderContext {
       text(text, options) {
         // Validate input
         if (typeof text !== 'string' || text.length === 0) {
-          return renderContext.API;
+          return context.API;
         }
 
         options = { ...{ formatting: { bold: false, italics: false, underline: false } }, ...options };
 
+        this.pushTransform();
+
         // Apply initial color if provided
-        if (options.color && options.color !== renderContext.lineColor) {
+        if (options.color && options.color !== context.lineColor) {
           if (typeof options.color === 'string') {
-            renderContext.lineColor = options.color;
+            context.lineColor = options.color;
           } else if (typeof options.color === 'number') {
             const r8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
             const g8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
             const b8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
-            renderContext.lineColor = `#${r8}${g8}${b8}`;
+            context.lineColor = `#${r8}${g8}${b8}`;
           }
         }
 
         // Apply initial font size if provided
-        if (options.fontSize !== undefined && options.fontSize !== renderContext.fontSize) {
-          renderContext.fontSize = options.fontSize;
-        }
-
-        if (options.lineWidth !== undefined && options.lineWidth !== renderContext.lineWidth) {
-          renderContext.lineWidth = options.lineWidth;
-        }
+        context.fontSize = options.fontSize || context.fontSize;
+        context.lineWidth = options.lineWidth || context.lineWidth;
 
         if (options.formatting.bold)
-            renderContext.addInstruction(`${VECTOR_IL.TOGGLE} BOLD\n`);
+            context.addInstruction(`${VECTOR_IL.TOGGLE} BOLD\n`);
 
         if (options.formatting.italics)
-            renderContext.addInstruction(`${VECTOR_IL.TOGGLE} ITALICS\n`);
+            context.addInstruction(`${VECTOR_IL.TOGGLE} ITALICS\n`);
         
         if (options.formatting.underline)
-            renderContext.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
+            context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
-        // Process text with markers and generate instructions
-        processText.call(renderContext, text);
-        return renderContext.API;
+        // Process text and generate instructions
+        processText.call(context, text);
+        this.popTransform();
+
+        return context.API;
       }
     };
   }

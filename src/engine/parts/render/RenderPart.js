@@ -2,15 +2,19 @@
 @fileoverview ComponentPart subclass for rendering functionality
 Provides a way for game objects to render to the context 
 */
-import { RENDER_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
 import Engine from '../../core/Engine.js';
 
 export default class RenderPart extends ComponentPart {
-    constructor(priority = RENDER_PRIORITY, name = 'RenderPart') {
-        super(RENDER_PRIORITY, name);
-        this.#context = Engine.getRenderContext();
-        this.#transformStackDepth = 0;
+    #context = null;
+    #transformStackDepth = 0;
+    #world = null;
+    
+    constructor(priority = Constants.RENDER_PRIORITY, name = 'RenderPart') {
+        super(priority, name);
+        this.#context = Engine.renderContext;
+        this.#world = Engine.world;
     }
 
     //--------------------------------
@@ -26,7 +30,15 @@ export default class RenderPart extends ComponentPart {
      * @returns {object} An object containing the render methods of the context
      */
     get context() {
-        return this.#context.render;
+        return this.#context;
+    }
+
+    get world() {
+        return this.#world;
+    }
+
+    get renderer() {
+        return this.context.renderer;
     }
 
     //-------------------------------
@@ -47,6 +59,18 @@ export default class RenderPart extends ComponentPart {
      * Compile a rendering component
      */
     compile() {}
+
+    /**
+     * Updates the transform based on current state and world bounds
+     * 
+     * @param {number} time - Current world time (Unix timestamp or frame count)
+     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
+     * @param {Object} [options] - Optional configuration for the update
+     */
+    update(time, deltaTime, options = {}) {
+        this.composeAndDraw(time, deltaTime);
+        return this;
+    }
 
     /**
      * Sets up the component for drawing to the Renderer then pops any 
@@ -75,5 +99,18 @@ export default class RenderPart extends ComponentPart {
     pushTransform(transformMatrix) {
         this.#transformStackDepth++;
         this.#context?.pushTransform(transformMatrix);
+    }
+
+    popTransform() {
+        this.#transformStackDepth--;
+        return this.#context?.popTransform();
+    }
+
+    /**
+     * Add a delta value to the X position of the cursor.
+     * @param {number} delta - The value to modify the X position by
+     */
+    set cursorDeltaX(delta) {
+        this.#context.cursorX += delta;
     }
 }

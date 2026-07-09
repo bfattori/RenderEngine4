@@ -10,13 +10,19 @@ const VECTOR_IL = {
   TOGGLE: 'TOGGLE',       // "TOGGLE BOLD" would toggle bold on/off
    
   // Transformation matrix Instructions (State Modifiers)
-  MOVETO: 'MOVETO',               // "MOVETO X Y" would move the cursor to X, Y
   TRANSFORM: 'TRANSFORM',         // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
   ABS_TRANSFORM: 'ABS_TRANSFORM', // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
-  PUSH: 'PUSH',                   // "PUSH" will save the current transformation matrix  
-  POP: 'POP',                     // "POP" will restore the previous transformation matrix
   IDENTITY: 'IDENTITY',           // "IDENTITY" will reset the transformation matrix to the identity matrix
-  
+  PUSH: 'PUSH',                   // "PUSH" will save the current renderer state
+  POP: 'POP',                     // "POP" will restore the previous renderer state 
+
+  // Atomic transform manipulation instructions
+  TRANSLATE: 'TRANSLATE',   // "TRANSLATE X Y" modifies the current transform by translating the current transform by X and Y
+  ROTATE: 'ROTATE',         // "ROTATE ANGLE" modifies the current transform by rotating the current transform by ANGLE degrees
+  SCALE: 'SCALE',           // "SCALE X Y" modifies the current transform by scaling the current transform by X and Y
+  USCALE: 'USCALE',         // "USCALE SCALAR" modifies the current transform by uniformly scaling the current transform by SCALAR
+  SKEW: 'SKEW',             // "SKEW ANGLE X Y" modifies the current transform by skewing the current transform by ANGLE degrees along the X and Y axes
+
   // Rendering Instructions (Imperative)
   POINT: 'POINT',         // "POINT X Y" will draw a point at X, Y
   LINESEG: 'LINESEG',     // "LINESEG FILLED" starts a line segment, FILLED is a boolean indicating whether the shape is filled or not
@@ -25,6 +31,7 @@ const VECTOR_IL = {
   ENDCURVE: 'ENDCURVE',   // "ENDCURVE" ends the current curve
   QUAD: 'QUAD',           // "QUAD CX1 CY1 X Y" is a quadratric curve through the control point to the end point
   BEZIER: 'BEZIER',       // "BEZIER CX1 CY1 CX2 XY2 X Y" is a Bezier curve through the control points to the end point
+  MOVETO: 'MOVETO',       // "MOVETO X Y" would move the start of the next draw operation at X, Y
   LINE: 'LINE',           // "LINE X1 Y1 X2 Y2" is a line from (X1, Y1) to (X2, Y2)
   LINEREL: 'LINEREL',     // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
   ARC: 'ARC',             // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
@@ -175,6 +182,22 @@ export default class VectorAssembler {
                 break;
             case vector.SHAPE:
                 return `this.renderCompiledShape(${args[0]}, time, deltaTime);`;
+                break;
+            case vector.TRANSLATE:
+                return `this.surface.translate(${args[0]}, ${args[1]});`;
+                break;
+            case vector.ROTATE:
+                return `this.surface.rotate(${args[0]});`;
+                break;
+            case vector.SCALE:
+                return `this.surface.scale(${args[0]}, ${args[1]});`;
+                break;
+            case vector.USCALE:
+                return `this.surface.scale(${args[0]}, ${args[0]});`;
+                break;
+            case vector.SKEW:
+                const txfm = Matrix2d.identity().skew(args[0], args[1] || 0);
+                return `this.surface.transform(${txfm.a}, ${txfm.b}, ${txfm.c}, ${txfm.d}, ${txfm.e}, ${txfm.f});`;
                 break;
             default:
                 throw new AssemblerError(this, `Unrecognized instruction: ${operand} w/(${args})`);

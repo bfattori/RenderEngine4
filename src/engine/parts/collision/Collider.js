@@ -3,7 +3,7 @@
  * This class provides the fundamental mechanism for interacting with the world collision model
  * that all collider component subclasses inherit from.
  */
-import { COLLIDER_PRIORITY } from '../../constants.js';
+import Constants from '../../Constants.js';
 import { ComponentPart, GameComponentError } from '../ComponentPart.js';
 
 /**
@@ -48,7 +48,7 @@ class ColliderPart extends ComponentPart {
    * @param {Engine|null} engine - Optional engine reference
    */
   constructor(name = 'ColliderPart', engine = null) {
-    super(COLLIDER_PRIORITY, name, engine);
+    super(Constants.COLLIDER_PRIORITY, name, engine);
     
     this.setEngine(engine);
     this.worldCollisionModel = null; // Will be set by the world when needed
