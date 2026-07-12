@@ -281,9 +281,9 @@ export default class TransformPart extends ComponentPart {
     //-------------------------------
     
     /**
-     * Event handler responds to {@link Constants#EVENT_INPUT_UPDATE} and {@link Constants#EVENT_COLLIDER_UPDATE}.
+     * Event handler responds to {@link InputEvent} and {@link ColliderEvent}.
      * The former occurs when user input is received from an input part. The latter is in response to a collision event containing
-     * any adjustments to the transform.
+     * any adjustments to apply to the transform.
      * 
      * @param {Event} eventObject - The event object
      */

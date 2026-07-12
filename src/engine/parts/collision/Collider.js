@@ -167,7 +167,14 @@ export default class ColliderPart extends ComponentPart {
   //-------------------------------
   // Event Handler
   //-------------------------------
-  onEvent(eventObject) {
+    
+  /**
+   * Event handler responds to {@link PreTransformEvent}.
+   * This occurs when the transform intended for rendering is updated, allowing this part to compensate.
+   * 
+   * @param {Event} eventObject - The event object
+   */
+ onEvent(eventObject) {
     switch (eventObject.type) {
       case PreTransformEvent:
         this.transformUpdated(eventObject);

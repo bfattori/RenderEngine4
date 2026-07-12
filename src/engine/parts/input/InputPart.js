@@ -33,23 +33,22 @@ export { InputEvent };
  * @constructs Input
  */
 class InputPart extends ComponentPart {
+    #inputState = null;
+    
     constructor(priority = Constants.INPUT_PRIORITY, name = 'Input') {
         super(priority, name);
-    
-        // Input state storage
-        this._inputState = null;
-    }
+     }
 
     //--------------------------------
     // Getters and Setters
     //--------------------------------
 
     set state(newState) {
-        this._inputState = newState;
+        this.#inputState = newState;
     }
 
     get state() {
-        return this._inputState;
+        return this.#inputState;
     }
 
     //-------------------------------

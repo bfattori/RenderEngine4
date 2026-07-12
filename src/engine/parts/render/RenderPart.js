@@ -85,7 +85,7 @@ export default class RenderPart extends ComponentPart {
     //-------------------------------
     
     /**
-     * Event handler responds to {@link Constants#EVENT_PRE_TRANSFORM} and {@link Constants#EVENT_TRANSFORM_UPDATE}.
+     * Event handler responds to {@link PreTransformEvent} and {@link TransformEvent}.
      * The former occurs when the transform intended for rendering is updated. The latter is a commit to use the newly calculated transform.
      * 
      * @param {Event} eventObject - The event object
