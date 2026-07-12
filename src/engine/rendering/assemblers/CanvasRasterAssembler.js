@@ -24,7 +24,7 @@ const RASTER_IL = {
 
 export { RASTER_IL };
 
-export default class RasterAssembler {
+export default class CanvasRasterAssembler {
 
     /**
      * Assemble the instruction into a renderer-appropriate function call.

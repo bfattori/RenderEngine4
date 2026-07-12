@@ -45,7 +45,7 @@ export {
   VECTOR_IL
 }
 
-export default class VectorAssembler {
+export default class CanvasVectorAssembler {
 
     /**
      * Assemble the instruction into a renderer-appropriate function call.

@@ -2,8 +2,8 @@ import Console from '../../core/Console.js';
 import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import VectorAssembler from '../assemblers/CanvasVectorAssembler.js';
-import RasterAssembler from '../assemblers/CanvasRasterAssembler.js';
+import CanvasVectorAssembler from '../assemblers/CanvasVectorAssembler.js';
+import CanvasRasterAssembler from '../assemblers/CanvasRasterAssembler.js';
 
 /**
  * Renderer error class for low-level rendering errors.
@@ -58,9 +58,9 @@ export default class Renderer {
     get assembler() {
         if (this.#assembler === null) {
             if (this.#renderContext.constructor.name === 'VectorRenderContext') {
-                this.#assembler = VectorAssembler;
+                this.#assembler = CanvasVectorAssembler;
             } else if (this.#renderContext.constructor.name === 'RasterRenderContext') {
-                this.#assembler = RasterAssembler;
+                this.#assembler = CanvasRasterAssembler;
             } else {
                 throw new RenderEngineError("Unsupported render context type");
             }
