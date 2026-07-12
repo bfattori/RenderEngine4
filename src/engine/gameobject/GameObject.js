@@ -130,6 +130,16 @@ export default class GameObject {
   //-------------------------------
 
   /**
+   * Add multiple component parts to the game object at once.
+   * @param  {...ComponentPart} parts - The parts to add to the game object.
+   */
+  addComponentParts(...parts) {
+    for (const part of parts) {
+      this.addComponentPart(part);
+    }
+  }
+
+  /**
    * Adds a component part to the game object
    * @param {ComponentPart} component - The component partto add
    * @returns {GameObject} - Returns this for chaining

@@ -29,24 +29,26 @@ RenderEngine.init({
     }
 });
 
-// game object
+// game object and component parts
 const gameObject = new GameObject();
 const txform = new Transform2dPart();
 const renderer = new VectorRendererPart();
 
-gameObject.addComponentPart(txform);
-gameObject.addComponentPart(renderer);
+// add the parts to the game object
+gameObject.addComponentParts(txform, renderer);
 
-// chainable API for drawing shapes and text
+// vector renderer draws out the word "Colorful"
 renderer.API
     .fontSize(4)
     .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l");
 renderer.compile();
 
+// set position, rotation, and scale
 txform.position = [400, 300];
 txform.rotation = Math.PI / 4;
 txform.scale = [2, 2];
 
+// add the object to the world
 RE4.world.addObject(gameObject);
 
 // Start the render loop   
