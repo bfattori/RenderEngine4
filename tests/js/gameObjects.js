@@ -16,31 +16,32 @@ RenderEngine.init({
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 true
-            )
+            ),
+            {
+                enableCulling: false
+            }
         ),
         dimensions: [800, 600],
         viewport: [0, 0, 800, 600]
     },
     hooks: {
-        onInit: () => { RenderEngine.console.log("onInit: Hello world!"); },
-        onBeforeFrame: () => { RenderEngine.console.log("onBeforeFrame: Rendering frame!"); },
-        onFrame: () => { RenderEngine.console.log("onFrame: Frame rendered!") }
+        onInit: () => { RenderEngine.console.log("onInit: Hello world!"); }
     }
 });
 
 // game object
 const gameObject = new GameObject();
 const txform = new Transform2dPart();
-const render = new VectorRendererPart();
+const renderer = new VectorRendererPart();
 
-gameObject.addComponent(txform);
-gameObject.addComponent(render);
+gameObject.addComponentPart(txform);
+gameObject.addComponentPart(renderer);
 
 // chainable API for drawing shapes and text
-render.API
+renderer.API
     .fontSize(4)
     .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l");
-render.compile();
+renderer.compile();
 
 txform.position = [400, 300];
 txform.rotation = Math.PI / 4;

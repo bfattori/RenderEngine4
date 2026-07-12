@@ -6,9 +6,17 @@ This component interfaces with the system's mouse event source and provides a un
 @extends Input */
 
 import Console from '../../core/Console.js';
-import InputPart from './InputPart.js';
+import { InputPart, InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
+
+class MouseEvent extends MouseEvent {
+    constructor(mouseState, gameObject, time, timeDelta) {
+        super(mouseState, gameObject, time, timeDelta);
+    }
+}
+
+export { MouseEvent };
 
 class MouseInput extends InputPart {
 

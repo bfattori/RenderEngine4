@@ -13,9 +13,31 @@
 
 import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
+import { ComponentPartEvent } from '../ComponentPart.js';
 import RenderPart from '../render/RenderPart.js';
 
-class TransformPart extends ComponentPart {
+import { ColliderEvent, CollisionData } from '../../parts/collision/Collider.js';
+
+class TransformEvent extends ComponentPartEvent {
+    #matrix = null;
+    constructor(gameObject, matrix, time, deltaTime) {
+        super(gameObject, time, deltaTime);
+        this.#matrix = matrix;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#matrix;
+    }
+}
+
+class PreTransformEvent extends TransformEvent {
+    // we just need your type ...
+}
+
+export { PreTransformEvent, TransformEvent };
+
+export default class TransformPart extends ComponentPart {
     #localSpace = null;
     #x = 0;
     #y = 0;
@@ -63,6 +85,10 @@ class TransformPart extends ComponentPart {
          */
         this.#worldWidth = 800; // Default world width
         this.#worldHeight = 600; // Default world height
+
+        // subscribe for input events
+        this.on(InputEvent);
+        this.on(ColliderEvent);
     }
 
     // -------------------------------
@@ -251,6 +277,43 @@ class TransformPart extends ComponentPart {
     }
 
     //-------------------------------
+    // Event handler
+    //-------------------------------
+    
+    /**
+     * Event handler responds to {@link Constants#EVENT_INPUT_UPDATE} and {@link Constants#EVENT_COLLIDER_UPDATE}.
+     * The former occurs when user input is received from an input part. The latter is in response to a collision event containing
+     * any adjustments to the transform.
+     * 
+     * @param {Event} eventObject - The event object
+     */
+    onEvent(eventObject) {
+        switch (eventObject.type) {
+            case InputEvent:
+                this.updateTransformFromInput(eventObject);
+                break;
+            case ColliderEvent:
+                this.reactToCollision(eventObject);
+                break;
+        }
+    }
+
+    /**
+     * Fired when the input parts receive input. This method should be overridden by subclasses to update the transform based on user input.
+     * @param {InputEvent} inputEvent - The input event
+     */
+    updateTransformFromInput(inputEvent) {
+    }
+
+    /**
+     * Fired when a collider part is updated. This method should be overridden by subclasses to react to the collision event.
+     * 
+     * @param {ColliderEvent} colliderEvent - The collision event
+     */
+    reactToCollision(colliderEvent) {
+    }
+
+    //-------------------------------
     // Properties
     //-------------------------------
 
@@ -284,7 +347,7 @@ class TransformPart extends ComponentPart {
         const events = options.events || [];
 
         // Update transform logic can be overridden by subclasses
-        this.#applyTransformLogic(deltaTime);
+        this.#applyTransformLogic(time, deltaTime);
 
         // Check boundaries if world is available
         if (this.world && this._worldWidth !== undefined && this._worldHeight !== undefined) {
@@ -295,15 +358,13 @@ class TransformPart extends ComponentPart {
     }
 
     /**
-     * Submits transform to the render components (if present)
+     * Emits an event to the internal queue that a transform has been updated
      * 
+     * @param {number} time - Current world time (Unix timestamp or frame count)
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
-    #applyTransformLogic(deltaTime) {
-        this.host.getComponentsByType(RenderPart)
-            .forEach(renderComponent => renderComponent.pushTransform(this.transformMatrix));
-
-        return this;
+    #applyTransformLogic(time, deltaTime) {
+        this.emit(new PreTransformEvent(this.host, this.transformMatrix, time, deltaTime));
     }
 
     /**
@@ -317,38 +378,38 @@ class TransformPart extends ComponentPart {
         // X-axis boundary check
         if (this.#x <= 0 && this.#worldWidth > 0) {
             this.#x = 0;
-            this.#emitBoundaryEvent(events, 'x', 'left', time);
+            this.#emitBoundaryEvent('x', 'left', time);
         } else if (this.#x >= this.#worldWidth - this.#scale[0] && this.#worldWidth > 0) {
             this.#x = this.#worldWidth - this.#scale[0];
-            this.#emitBoundaryEvent(events, 'x', 'right', time);
+            this.#emitBoundaryEvent('x', 'right', time);
         }
 
         // Y-axis boundary check
         if (this.#y <= 0 && this._worldHeight > 0) {
             this.#y = 0;
-            this.#emitBoundaryEvent(events, 'y', 'bottom', time);
+            this.#emitBoundaryEvent('y', 'bottom', time);
         } else if (this.#y >= this.#worldHeight - this.#scale[1] && this.#worldHeight > 0) {
             this.#y = this.#worldHeight - this.#scale[1];
-            this.#emitBoundaryEvent(events, 'y', 'top', time);
+            this.#emitBoundaryEvent( 'y', 'top', time);
         }
 
         // Corner collision check (diagonal boundaries)
         if (this.#x < 0 && this.#y < 0) {
             this.#x = 0;
             this.#y = 0;
-            this.#emitBoundaryEvent(events, 'corner', 'bottom-left', time);
+            this.#emitBoundaryEvent('corner', 'bottom-left', time);
         } else if (this.#x > this.#worldWidth - this.#scale[0] && this.#y < 0) {
             this.#x = this.#worldWidth - this.#scale[0];
             this.#y = 0;
-            this.#emitBoundaryEvent(events, 'corner', 'top-right', time);
+            this.#emitBoundaryEvent('corner', 'top-right', time);
         } else if (this.#x > this.#worldWidth - this.#scale[0] && this.#y > this.#worldHeight - this.#scale[1]) {
             this.#x = this.#worldWidth - this.#scale[0];
             this.#y = this.#worldHeight - this.#scale[1];
-            this.#emitBoundaryEvent(events, 'corner', 'top-right', time);
+            this.#emitBoundaryEvent('corner', 'top-right', time);
         } else if (this.#x < 0 && this.#y > this.#worldHeight - this.#scale[1]) {
             this.#x = 0;
             this.#y = this.#worldHeight - this.#scale[1];
-            this._emitBoundaryEvent(events, 'corner', 'bottom-left', time);
+            this._emitBoundaryEvent('corner', 'bottom-left', time);
         }
 
         return this;
@@ -357,25 +418,24 @@ class TransformPart extends ComponentPart {
     /**
      * Emits a boundary collision event
      * 
-     * @param {Array} events - Array of event objects to push collision data to
      * @param {string} axis - Axis of collision ('x' or 'y')
      * @param {string} side - Side of collision ('left', 'right', 'top', 'bottom', 'corner')
-     * @param {number} timestamp - Timestamp of the collision event
+     * @param {number} time - Time of the collision event
+     * @param {number} deltaTime - Delta since the last frame and current time
      */
-    #emitBoundaryEvent(events, axis, side, timestamp) {
-        const event = {
-            type: 'boundary',
-            timestamp: timestamp,
-            deltaTime: 0.016, // Default delta if not available
+    #emitBoundaryEvent(events, axis, side, time, deltaTime) {
+        const collisionData = new CollisionData({
+            initiator: this,
+            collidedWith: this.world,
+            collisionType: 'WorldBoundary',
             position: [this.#x, this.#y],
             rotation: this.#rotation,
             scale: this.#scale,
             axis: axis,
-            side: side,
-            collisionType: 'WorldBoundary'
-        };
+            side: side
+        });
 
-        events.push(event);
+        this.emit(new ColliderEvent(this.gameObject, collisionData, time, deltaTime));
     }
 
     /**
@@ -421,4 +481,3 @@ class TransformPart extends ComponentPart {
     }
 }
 
-export default TransformPart;

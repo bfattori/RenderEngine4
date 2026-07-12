@@ -10,7 +10,22 @@
 
 import Console from '../../core/Console.js';
 import Constants from '../../Constants.js';
-import { ComponentPart, GameComponentError } from '../ComponentPart.js';
+import { ComponentPart, ComponentPartEvent, GameComponentError } from '../ComponentPart.js';
+
+class InputEvent extends ComponentPartEvent {
+    #inputState = null;
+    constructor(inputState, gameObject, time, deltaTime) {
+        super(gameObject, time, deltaTime);
+        this.#inputState = inputState;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#inputState;
+    }
+}
+
+export { InputEvent };
 
 /**
  * Creates a new Input instance

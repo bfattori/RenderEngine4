@@ -6,11 +6,19 @@ This component interfaces with the system's keyboard event source and provides a
 @extends InputPart 
 */
 import Console from '../../core/Console.js';
-import InputPart from './InputPart.js';
+import { InputPart, InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 
-class KeyboardInput extends InputPart () {
+class KeyboardEvent extends InputEvent {
+    constructor(keyboardState, gameObject, time, timeDelta) {
+        super(keyboardState, gameObject, time, timeDelta);
+    }
+}
+
+export { KeyboardEvent };
+
+class KeyboardInput extends InputPart {
     
     /**
      * Constructor
@@ -121,6 +129,9 @@ class KeyboardInput extends InputPart () {
         
         // For desktop environments or custom input systems:
         // This is handled by the system's input management
+
+        // emit the event
+        this.emit(Constants.EVENT_INPUT_UPDATE, this.getState());
     }
 
     /**

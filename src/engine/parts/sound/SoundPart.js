@@ -5,7 +5,23 @@ Provides a way for game objects to playback sound effects with simple methods
 import Console from '../../core/Console.js';
 import { SOUND_PRIORITY } from '../../constants.js';
 import ComponentPart from '../ComponentPart.js';
+import { ComponentPartEvent } from '../ComponentPart.js';
 import SoundSystemError from '../../sound/SoundSystem.js';
+
+class SoundEvent extends ComponentPartEvent {
+    #source = null;
+    constructor(source, gameObject, time, deltaTime) {
+        super(gameObject, time, deltaTime);
+        this.#source = source;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#source;
+    }
+}
+
+export { SoundEvent };
 
 /**
  * @typedef {Object} AudioSource - Represents an active audio source

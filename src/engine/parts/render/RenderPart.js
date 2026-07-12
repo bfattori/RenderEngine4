@@ -4,17 +4,42 @@ Provides a way for game objects to render to the context
 */
 import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
+import { ComponentPartEvent } from '../ComponentPart.js';
 import Engine from '../../core/Engine.js';
+
+import { PreTransformEvent, TransformEvent } from '../../parts/transform/TransformPart.js';
+import { Matrix2d } from '../../core/Matrix.js';
+
+class RenderEvent extends ComponentPartEvent {
+    #frameTime = 0;
+    constructor(frameTime, gameObject, time, deltaTime) {
+        super(gameObject, time, deltaTime);
+        this.#frameTime = frameTime;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#frameTime;
+    }
+}
+
+export { RenderEvent };
 
 export default class RenderPart extends ComponentPart {
     #context = null;
     #transformStackDepth = 0;
     #world = null;
+    #cachedTransform = new Matrix2d();
+    #committed = false;
     
     constructor(priority = Constants.RENDER_PRIORITY, name = 'RenderPart') {
         super(priority, name);
         this.#context = Engine.renderContext;
         this.#world = Engine.world;
+
+        // listen for events
+        this.on(PreTransformEvent);
+        this.on(TransformEvent);
     }
 
     //--------------------------------
@@ -41,6 +66,10 @@ export default class RenderPart extends ComponentPart {
         return this.context.renderer;
     }
 
+    get cachedTransform() {
+        return this.#cachedTransform;
+    }
+
     //-------------------------------
     // Properties
     //-------------------------------
@@ -49,6 +78,52 @@ export default class RenderPart extends ComponentPart {
         return {...super.properties, ...{
             context: this.#context
         }};
+    }
+
+    //-------------------------------
+    // Event handler
+    //-------------------------------
+    
+    /**
+     * Event handler responds to {@link Constants#EVENT_PRE_TRANSFORM} and {@link Constants#EVENT_TRANSFORM_UPDATE}.
+     * The former occurs when the transform intended for rendering is updated. The latter is a commit to use the newly calculated transform.
+     * 
+     * @param {Event} eventObject - The event object
+     */
+    onEvent(eventObject) {
+        switch (eventObject.type) {
+            case PreTransformEvent:
+                this.transformModified(eventObject);
+                break;
+            case TransformEvent:
+                this.commitTransform(eventObject);
+                break;
+        }
+    }
+
+    /**
+     * This event is fired from the transform and collider parts that adjust the transform during their update.
+     * The last transform passed will be used when the render occurs. If the transform is committed, no further
+     * updates will be processed.
+     * @param {PreTransformEvent} transformEvent - A transformation event.
+     * @returns void
+     */
+    transformModified(transformEvent) {
+        if (this.#committed) return;
+        this.#cachedTransform = transformEvent.consume(this);
+    }
+
+    /**
+     * Commit the transform, or commit the transform passed in the event. This marks the last accepted transform
+     * for the object before rendering.
+     * @param {TransformEvent} transformEvent - (optional) An optional transformation event.
+     */
+    commitTransform(transformEvent) {
+        if (transformEvent) {
+            this.#cachedTransform = transformEvent.consume(this);
+        }
+        this.pushTransform(this.#cachedTransform);
+        this.#committed = true;    
     }
 
     //--------------------------------
@@ -69,6 +144,7 @@ export default class RenderPart extends ComponentPart {
      */
     update(time, deltaTime, options = {}) {
         this.composeAndDraw(time, deltaTime);
+        this.emit(new RenderEvent(performance.now() - time, this.gameObject, time, deltaTime));
         return this;
     }
 
@@ -83,6 +159,7 @@ export default class RenderPart extends ComponentPart {
         this.draw(time, deltaTime);
         while (this.#transformStackDepth-- > 0)
             this.#context?.popTransform();
+        this.#committed = false;
     }
 
     /**

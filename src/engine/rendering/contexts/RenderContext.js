@@ -6,6 +6,7 @@ import Console from '../../core/Console.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import TransformPart from '../../parts/transform/TransformPart.js';
+import RenderPart from '../../parts/render/RenderPart.js';
 
 /**
  * Render context error class for rendering errors.
@@ -357,16 +358,18 @@ export default class RenderContext {
       // pre-frame generation
       this.#renderer.preFrame();
 
+      const activeObjects = [];
+
       // Add all objects to active list
       for (const obj of objects) {
-        if (!this.#activeObjects.includes(obj)) {
-          this.#activeObjects.push(obj);
+        if (!activeObjects.includes(obj)) {
+          activeObjects.push(obj);
         }
       }
       
       // If culling is enabled, check visibility before rendering
       if (this.#enableCulling) {
-        const visibleObjects = this.#activeObjects.filter((obj) => this.isObjectVisible(obj));
+        const visibleObjects = activeObjects.filter((obj) => this.isObjectVisible(obj));
         
         // Assign objects to render planes based on their world positions
         // or use auto-sorting if no explicit assignment
@@ -382,21 +385,28 @@ export default class RenderContext {
             // Objects at larger world distances go to background planes
             // Objects closer to camera go to foreground planes
             plane = this.autoAssignToPlane(obj);
+            this.assignObjectToPlane(obj, plane);
           }
           
-          if (!this.#activeObjects.find((o) => o === obj)) {
-            const assignedObj = {...obj, assignedPlane: plane};
+          if (!this.#activeObjects.find((o) => o.object === obj)) {
+            const assignedObj = {object: obj, assignedPlane: plane};
             this.#activeObjects.push(assignedObj);
           }
         }
       } else {
         // No culling, use all active objects with plane assignments
-        for (const obj of this.#activeObjects) {
+        for (const obj of activeObjects) {
           const assignment = this.#objectPlaneAssignments.get(obj);
           if (!obj.assignedPlane && !assignment) {
             obj.assignedPlane = this.autoAssignToPlane(obj);
           } else if (assignment && !obj.assignedPlane) {
             obj.assignedPlane = assignment;
+          }
+          this.assignObjectToPlane(obj, obj.assignedPlane);
+
+          if (!this.#activeObjects.find((o) => o.object === obj)) {
+            const assignedObj = {object: obj, assignedPlane: obj.assignedPlane};
+            this.#activeObjects.push(assignedObj);
           }
         }
       }
@@ -406,7 +416,7 @@ export default class RenderContext {
 
       // render the objects to the renderer surface
       this.#activeObjects.forEach(object => {
-        object.getComponentsByType(RenderComponent).forEach(component => {
+        object.object.getComponentsByType(RenderPart).forEach(component => {
           component.composeAndDraw(time, deltaTime);
         });
       });
@@ -435,7 +445,7 @@ export default class RenderContext {
    */
   autoAssignToPlane(object) {
     const assignment = this.#objectPlaneAssignments.get(object);
-    if (assignment !== null) {
+    if (assignment) {
       return assignment;
     }
     
@@ -469,8 +479,8 @@ export default class RenderContext {
       return false;
     }
     
-    this.#objectPlaneAssignments.set(object, planeName);
     object.assignedPlane = planeName;
+    this.#objectPlaneAssignments.set(object, planeName);
     return true;
   }
   
@@ -521,25 +531,15 @@ export default class RenderContext {
     const planes = this.#renderPlanes.slice(0, this.#maxPlanes);
     
     // Clear active objects and rebuild with proper plane sorting
-    this.#activeObjects = [];
+    const activeObjects = [];
     
     // Render each plane in order from background to foreground
     for (const planeName of planes) {
       const planeObjects = this.getObjectsInPlane(planeName);
-      
-      for (const obj of planeObjects) {
-        // Add to active list with preserved properties
-        const filteredObj = {};
-        for (const key in obj) {
-          if (obj.hasOwnProperty(key)) {
-            filteredObj[key] = obj[key];
-          }
-        }
-        this.#activeObjects.push(filteredObj);
-      }
+      activeObjects.concat(planeObjects);
     }
     
-    return this.#activeObjects;
+    return activeObjects;
   }
   
   /**

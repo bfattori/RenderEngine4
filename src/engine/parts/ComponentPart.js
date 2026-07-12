@@ -5,6 +5,24 @@
 import Constants from '../Constants.js';
 import Engine from '../core/Engine.js';
 import RenderEngineError from '../core/RenderEngineError.js';
+import { Event } from '../core/EventEngine.js';
+
+class ComponentPartEvent extends Event {
+    #gameObject = null;
+    constructor(gameObject, time, deltaTime) {
+        super(time, deltaTime);
+        this.#gameObject = gameObject;
+    }
+
+    get gameObject() {
+      return this.#gameObject;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return null;
+    }
+}
 
 /**
  * ComponentPartError contains the {@link ComponentPart} related to the error.
@@ -21,12 +39,13 @@ class ComponentPartError extends RenderEngineError {
   }
 }
 
-export default class ComponentPart {
+class ComponentPart {
   #priority = 0;
   #name = null;
   #host = null;
   #type = null;
   #localEventContext = null;
+  #cachedEvents = [];
 
   /**
    * Creates a new ComponentPart instance
@@ -39,12 +58,6 @@ export default class ComponentPart {
     
     // Store the component type for identification
     this.#type = this.constructor.name;
-
-    /**
-     * Reference to EventEngine's global event system
-     * Components can publish/subscribe to global events through this interface
-     */
-    this.#localEventContext = Engine.eventEngine.createGameObjectContext(this);
   }
 
   //--------------------------------
@@ -73,6 +86,8 @@ export default class ComponentPart {
    */
   set host(gameObject) {
     this.#host = gameObject;
+    this.#localEventContext = this.host.eventContext;
+    this.#processCachedEvents();
   }
 
   /**
@@ -110,12 +125,70 @@ export default class ComponentPart {
     return this.#type;
   }
 
+  //-------------------------------
+  // Internal Event Queue
+  //-------------------------------
+
   /**
-   * Gets a reference to the event context object (for advanced use)
-   * @returns {Object|null} - The event context or null if not available
+   * Connect event handlers when the host has been set.
    */
-  get eventContext() {
-    return this.#localEventContext;
+  #processCachedEvents() {
+    while (this.#cachedEvents.length > 0) {
+      const eventClass = this.#cachedEvents.shift();
+      this.#localEventContext.on(eventClass, this.#eventHandler.bind(this));
+    }
+  }
+
+  /**
+   * Internal method to bubble events to the sub-classes.
+   * @param {String} eventName - The event name 
+   * @param {*} data - The event data
+   * @private
+   */
+  #eventHandler(eventObject) {
+    this.onEvent(eventObject);
+  }
+
+  /**
+   * Fired when a subscribed event is received by the component. 
+   * This method should be overridden in subclasses to handle specific events.
+   * @param {String} eventName - The name of the event that was received 
+   * @param {*} data - The related event data
+   */
+  onEvent(eventObject) {
+    throw new ComponentPartError(this, 'Component does not have an event handler!');
+  }
+
+  /**
+   * Subscribe to an event by class
+   * @param {Class} eventClass - The class of the event to listen for
+   */
+  on(eventClass) {
+    if (!this.#localEventContext) {
+      this.#cachedEvents.push(eventClass.name);
+    } else {
+      this.#localEventContext.on(eventClass.name, this.#eventHandler.bind(this));
+    }
+  }
+
+  /**
+   * Unsubscribe from an event by class
+   * @param {Class} eventClass - The class of the event to stop listening for
+   */
+  off(eventClass) {
+    if (!this.#localEventContext)
+      throw new ComponentPartError(this, "Component does not have a local event context! Cannot unbind event.");
+
+    this.#localEventContext.off(eventClass.name, this.#eventHandler);
+  }
+
+  /**
+   * Publish an event internally to the {@link GameObject} so other components can
+   * execute on state changes within the game object, free from the outside world (local events)
+   * @param {Event} eventObject - An event to publish to the internal event context.
+   */
+  emit(eventObject) {
+    return this.#localEventContext.emit(eventObject);
   }
 
   //-------------------------------
@@ -147,53 +220,6 @@ export default class ComponentPart {
   update(time, deltaTime) {
     // Base class does nothing. Subclasses should implement specific logic.
     throw new ComponentPartError(this, 'ComponentPart.update() must be implemented by subclasses');
-  }
-
-  /**
-   * Subscribe to an event within the component's GameObject context (local events)
-   * @param {string} eventName - The name of the event to subscribe to
-   * @param {Function} callback - Callback function when local event is published
-   * @returns {Function} - Unsubscribe function that can be called to stop listening
-   */
-  on(eventName, callback) {
-    return this.#localEventContext.on(eventName, callback);
-  }
-
-  /**
-   * Unsubscribe from a local event within the component's GameObject context
-   * @param {string} eventName - The name of the event to unsubscribe from
-   * @param {Function|null} callback - Callback function to remove (null removes all handlers for this event)
-   */
-  off(eventName, callback = null) {
-    this.#localEventContext.off(eventName, callback);
-  }
-
-  /**
-   * Publish an event to the component's GameObject context (local events)
-   * @param {string} eventName - The name of the event to publish
-   * @param {*} data - Data to pass along with the event
-   */
-  emit(eventName, data) {
-    return this.#localEventContext.publish(eventName, data);
-  }
-
-  /**
-   * Subscribe to a global event outside the component's GameObject context
-   * @param {string} eventName - The name of the global event to subscribe to
-   * @param {Function} callback - Callback function when global event is published
-   * @returns {Function} - Unsubscribe function that can be called to stop listening
-   */
-  subscribeGlobal(eventName, callback) {
-    return Engine.eventEngine.subscribe(eventName, callback);
-  }
-
-  /**
-   * Publish an event to the global EventEngine outside the component's GameObject context
-   * @param {string} eventName - The name of the global event to publish
-   * @param {*} data - Data to pass along with the event
-   */
-  emitGlobal(eventName, data) {
-    return Engine.eventEngine.emit(eventName, data);
   }
 
   //-------------------------------
@@ -233,6 +259,9 @@ export default class ComponentPart {
   }
 }
 
+export default ComponentPart;
+
 export { 
-  ComponentPartError
+  ComponentPartError,
+  ComponentPartEvent
 };

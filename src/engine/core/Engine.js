@@ -136,6 +136,12 @@ export default class Engine {
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
+
+    // special keyboard hook to allow shutdown of an out of control engine
+    window.addEventListener('keyup', (event) => {
+      if (event.key === 'F4')
+        primary.ENGINE.stop();
+    })
   }
 
     //---------------------------
@@ -443,6 +449,7 @@ export default class Engine {
 
     // call stop hook
     this.#ENGINE_OPTIONS.hooks.onStop();
+    Console.log('Stopped.');
   }
     
   /**

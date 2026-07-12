@@ -4,13 +4,27 @@
  * that all collider component subclasses inherit from.
  */
 import Constants from '../../Constants.js';
-import { ComponentPart, GameComponentError } from '../ComponentPart.js';
+import ComponentPart from '../ComponentPart.js';
+import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
+import { PreTransformEvent } from '../transform/TransformPart.js';
+
+class ColliderEvent extends ComponentPartEvent {
+    #collisionData = null;
+    constructor(gameObject, collisionData, time, deltaTime) {
+        super(gameObject, time, deltaTime);
+        this.#collisionData = collisionData;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#collisionData;
+    }
+}
 
 /**
  * @class CollisionData
  * The event information for when a collision occurs.
  * 
- * @param {number} timestamp - the world time the collision was detected at.
  * @param {GameObject} initiator - The GameObject that initiated the collision.
  * @param {GameObject} collidedWith - The GameObject that was collided with.
  * @param {number} separatingDistance - The distance between the two GameObjects at which they are separating.
@@ -24,15 +38,22 @@ import { ComponentPart, GameComponentError } from '../ComponentPart.js';
  * @returns {CollisionData} An object containing the collision data.
  */
 class CollisionData {
-  constructor({ timestamp, initiator, collidedWith, separatingDistance, backoffVector, backoffDistance, collisionType, colliderModel }) {
-    this.timestamp = timestamp;
+  constructor({ initiator, collidedWith, 
+                separatingDistance, backoffVector, backoffDistance, 
+                collisionType, colliderModel, position, rotation, 
+                scale, axis, side }) {
     this.initiator = initiator;
     this.collidedWith = collidedWith;
     this.separatingDistance = separatingDistance;  // Calculated by SAT in real implementation
     this.backoffVector = backoffVector; // Calculated by collision model
     this.backoffDistance = backoffDistance;    // Penetration depth
-    this.collisionType =  collisionType,
+    this.collisionType =  collisionType;
     this.colliderModel = colliderModel;
+    this.position = position;
+    this.rotation = rotation;
+    this.scale = scale;
+    this.axis = axis;
+    this.side = side;
   }
 };
 
@@ -41,37 +62,27 @@ class CollisionData {
  * @param {GameObject} gameObject - The game object this collider belongs to
  * @param {Engine|null} engine - Optional reference to the Engine for global event access
  */
-class ColliderPart extends ComponentPart {
+export default class ColliderPart extends ComponentPart {
+  #collided = false;
+  #collisions = [];
+  #worldCollisionModel = null;
+  #cachedTransform = null;
+  
   /**
    * Creates a ColliderPart with common collision detection functionality
    * @param {String} name - Optional name for this component
-   * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'ColliderPart', engine = null) {
-    super(Constants.COLLIDER_PRIORITY, name, engine);
-    
-    this.setEngine(engine);
-    this.worldCollisionModel = null; // Will be set by the world when needed
-        
-    /**
-     * Flag indicating if collisions have been detected in the current frame
-     * @type {boolean}
-     */
-    this._collided = false;
-    
-    /**
-     * Array to store collision data for this frame
-     * @type {Array}
-     */
-    this.collisions = [];
+  constructor(name = 'ColliderPart') {
+    super(Constants.COLLIDER_PRIORITY, name);
+    this.on(PreTransformEvent);
   }
 
   /**
    * Sets the world's collision model reference that this collider will use
    * @param {CollisionModel} collisionModel - The collision model from GameWorld
    */
-  setCollisionModel(collisionModel) {
-    this.worldCollisionModel = collisionModel;
+  set collisionModel(collisionModel) {
+    this.#worldCollisionModel = collisionModel;
   }
 
   /**
@@ -79,7 +90,24 @@ class ColliderPart extends ComponentPart {
    * @returns {CollisionModel|null} The active collision model or null if not set
    */
   get collisionModel() {
-    return this.worldCollisionModel;
+    return this.#worldCollisionModel;
+  }
+
+  /**
+   * Gets the collision shape for this game object
+   * Must be implemented by subclasses
+   * @returns {Object} The collision shape data (shape type and geometry)
+   */
+  get collisionShape() {
+    throw new ComponentPartError(this, `${this.constructor.name}: getCollisionShape() must be implemented by subclass`);
+  }
+
+  /**
+   * Returns a list of any collisions that have been detected by this part.
+   * @return {Array<CollisionData>} An array of Collision objects representing detected collisions
+   */
+  get collisions() {
+    return this.#collisions;
   }
 
   /**
@@ -90,9 +118,9 @@ class ColliderPart extends ComponentPart {
    */
   isCollided(state = null) {
     if (state != null)      
-      this._collided = state;
+      this.#collided = state;
     else
-      return this._collided;
+      return this.#collided;
   }
 
   /**
@@ -100,28 +128,20 @@ class ColliderPart extends ComponentPart {
    * Should be called at start of update or by derived classes
    */
   clearCollisions() {
-    this.collisions = [];
-    this._collided = false;
+    this.#collisions = [];
+    this.#collided = false;
   }
 
   /**
    * Records a collision event with detailed data
    * @param {CollisionData} collisionData - The collision data to record
    */
-  recordCollision(collisionData) {
-    this.collisions.push(collisionData);
-    this._collided = true;
+  recordCollision(time, deltaTime, collisionData) {
+    this.#collisions.push(collisionData);
+    this.#collided = true;
     
-    // Notify via local event if engine is available
-    if (this.engine && this.engine._localEventContext) {
-      const eventData = {
-        timestamp: Date.now(),
-        gameObject: this.getHost(),
-        collisionData: collisionData
-      };
-      
-      this.engine._localEventContext.emit('collision', eventData);
-    }
+    // Notify via local event
+    this.emit(new ColliderEvent(this.host, collisionData, time, deltaTime));
   }
 
   /**
@@ -130,74 +150,33 @@ class ColliderPart extends ComponentPart {
    * @returns {boolean} True if objects are colliding, false otherwise
    */
   checkCollision(otherObject) {
-    if (!this.worldCollisionModel) {
-      throw new GameComponentError(this, 'ColliderPart: world collision model not set');
+    if (!this.collisionModel) {
+      throw new ComponentPartError(this, 'ColliderPart: world collision model not set');
     }
     
     const thisShape = this.getCollisionShape();
-    const otherShape = otherObject.getComponent('Transform2d') ? 
-                        otherObject.getComponent('AABBCollider') : 
-                        otherObject.getComponent('Mover2d') || 
-                        otherObject.getComponent('GameObject');
+    const otherShape = otherObject.getCollisionShape();
     
     if (!thisShape || !otherShape) {
       return false;
     }
     
-    return this.worldCollisionModel.testCollision(thisShape, otherShape);
+    return this.collisionModel.testCollision(thisShape, otherShape);
   }
 
-  /**
-   * Gets the collision shape for this game object
-   * Must be implemented by subclasses
-   * @returns {Object} The collision shape data (shape type and geometry)
-   */
-  getCollisionShape() {
-    throw new GameComponentError(this, `${this.constructor.name}: getCollisionShape() must be implemented by subclass`);
-  }
-
-  /**
-   * Gets the position of this game object from its transform component
-   * @returns {Object|null} Position data or null if no transform component exists
-   */
-  getPosition() {
-    const transform = this.getHost().getComponent('Transform2d');
-    if (!transform) {
-      // Fall back to GameObject properties if available
-      return { x: 0, y: 0 };
+  //-------------------------------
+  // Event Handler
+  //-------------------------------
+  onEvent(eventObject) {
+    switch (eventObject.type) {
+      case PreTransformEvent:
+        this.transformUpdated(eventObject);
+        break;
     }
-    
-    return {
-      x: transform.x,
-      y: transform.y,
-      z: transform.z !== undefined ? transform.z : 0
-    };
   }
 
-  /**
-   * Gets the scale of this game object from its transform component
-   * @returns {Object|null} Scale data or null if no transform component exists
-   */
-  getScale() {
-    const transform = this.getHost().getComponent('Transform2d');
-    if (!transform) {
-      return { x: 1, y: 1, z: 1 };
-    }
-    
-    return {
-      x: transform.scaleX !== undefined ? transform.scaleX : 1,
-      y: transform.scaleY !== undefined ? transform.scaleY : 1,
-      z: transform.scaleZ !== undefined ? transform.scaleZ : 1
-    };
-  }
-
-  /**
-   * Gets the rotation of this game object from its transform component
-   * @returns {number|null} Rotation in radians or null if no transform component exists
-   */
-  getRotation() {
-    const transform = this.getHost().getComponent('Transform2d');
-    return transform ? (transform.rotation !== undefined ? transform.rotation : 0) : null;
+  transformUpdate(eventObject) {
+    this.#cachedTransform = eventObject.consume(this);
   }
 
   /**
@@ -210,22 +189,24 @@ class ColliderPart extends ComponentPart {
     this.clearCollisions();
     
     // Perform collision detection if collider model is set and we have a transform
-    if (this.collisionModel && this.getHost().getComponent('Transform2d')) {
-      const transform = this.getHost().getComponent('Transform2d');
+    if (this.collisionModel && this.host.getComponent('Transform2d')) {
+      const transform = this.#cachedTransform;
       
       // Check against all other objects in the world that are collidable
-      const otherObjects = this.worldCollisionModel.getCollidableObjects();
+      const otherObjects = this.collisionModel.getCollidableObjects();
       
       for (const otherObject of otherObjects) {
-        if (otherObject !== this.getHost()) {
+        if (otherObject !== this.host) {
           // Get or create a collider component for the other object
           let otherCollider;
           
           // Check if the other object already has a collider
-          const otherColliders = otherObject.getComponentsByType('ColliderPart');
+          const otherColliders = otherObject.getComponentsByType(ColliderPart);
           if (otherColliders.length > 0) {
             otherCollider = otherColliders[0];
-          } else if (otherCollider) {
+          }
+          
+          if (otherCollider) {
             // Use the other object's collider for detection
             const thisShape = this.getCollisionShape();
             const otherShape = otherCollider.getCollisionShape();
@@ -244,8 +225,7 @@ class ColliderPart extends ComponentPart {
                 collisionType = 'CenterAlignedBoundaryCircle';
               }
               
-              this.recordCollision(new CollisionData({
-                timestamp: time,
+              this.recordCollision(time, deltaTime, new CollisionData({
                 initiator: this.getHost(),
                 collidedWith: otherObject,
                 separatingDistance: 0, // Would be calculated by SAT in real implementation
@@ -261,14 +241,13 @@ class ColliderPart extends ComponentPart {
             }
           } else {
             // Create a temporary AABB for objects without dedicated colliders
-            const tempShape = this.worldCollisionModel.createAABB(otherObject);
+            const tempShape = this.collisionModel.createAABB(otherObject);
             
             // Check collision between our shape and the other object's bounding box
             if (this.collisionModel.testCollision(this.getCollisionShape(), tempShape)) {
               // Record collision with basic data
               const collisionType = 'BasicBoundingBox';
-              this.recordCollision(new CollisionData({
-                timestamp: time,
+              this.recordCollision(time, deltaTime, new CollisionData({
                 initiator: this.getHost(),
                 collidedWith: otherObject,
                 separatingDistance: 0,
@@ -287,15 +266,14 @@ class ColliderPart extends ComponentPart {
    * Removes this component from the game object
    */
   destroy() {
-    if (this.getHost()) {
-      this.getHost().removeComponent(this);
-      this._gameObject = null;
+    if (this.host) {
+      this.host.removeComponent(this);
       this.worldCollisionModel = null;
     }
   }
 }
 
-export default {
-  ColliderPart,
-  CollisionData
-};
+export {
+  CollisionData,
+  ColliderEvent
+}

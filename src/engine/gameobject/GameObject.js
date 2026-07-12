@@ -1,6 +1,7 @@
 import Console from '../core/Console.js'
 import RenderEngineError from '../core/RenderEngineError.js';
 import ComponentPart from '../parts/ComponentPart.js';
+import EventEngine from '../core/EventEngine.js';
 
 /**
  * GameObjectError contains the {@link GameObject} related to the error.
@@ -25,7 +26,7 @@ export default class GameObject {
   #name = 'GameObject';
   #components = [];
   #componentMap = new Map();
-  #eventHandlers = new Map();
+  #eventContext = null;
   #world = null;
 
   static #nextId = 0;
@@ -45,6 +46,7 @@ export default class GameObject {
     }
     
     this.#name = name;
+    this.#eventContext = EventEngine.getInstance().createGameObjectContext(this);
   }
 
   // -------------------------------
@@ -67,19 +69,27 @@ export default class GameObject {
     this.#world = world;
   }
 
+  /**
+   * Gets the reference to the GameWorld this object belongs to
+   * @returns {GameWorld} - The GameWorld instance this object belongs to
+   */
   get world() {
     return this.#world;
   }
 
-  get components() {
+  /**
+   * Gets the parts that are assigned to this host object, in no specific order.
+   * @returns {Array<ComponentPart>} - Array of components assigned to this host object
+   */
+  get componentParts() {
     return this.#components;
   }
 
   /**
-   * Gets all components in this GameObject (ordered by priority)
-   * @returns {Array<GameComponent>} - Array of components ordered by priority
+   * Returns a new array of {@link ComponentPart} objects in this GameObject, ordered by priority.
+   * @returns {Array<ComponentPart>} - Array of components ordered by priority
    */
-  get allComponents() {
+  get sortedComponentParts() {
     // Sort components by priority (highest first)
     return [...this.#components].sort((a, b) => {
       const aPriority = a.priority !== undefined ? a.priority : 0;
@@ -88,17 +98,30 @@ export default class GameObject {
     });
   }
 
+  /**
+   * The local event context for the GameObject. This is used to pass data between components and the GameObject itself.
+   * @returns {Object} - The event context for the GameObject
+   */
+  get eventContext() {
+    return this.#eventContext;
+  }
+
   //-------------------------------
   // Properties
   //-------------------------------
 
+  /**
+   * Get the set of properties associated with this GameObject.
+   * @returns {Object} - An object containing the name of the GameObject and an array of objects representing 
+   * each parts's properties.
+   */
   get properties() {
-    const componentProperties = this.allComponents.map(component => {
-      return { type: component.type, properties: component.properties };
+    const partProperties = this.sortedComponentParts.map(part => {
+      return { type: part.type, properties: part.properties };
     });
     return {
       name: this.#name,
-      components: componentProperties
+      parts: partProperties
     }
   }
 
@@ -107,18 +130,18 @@ export default class GameObject {
   //-------------------------------
 
   /**
-   * Adds a component to the game object
-   * @param {GameComponent} component - The component to add
+   * Adds a component part to the game object
+   * @param {ComponentPart} component - The component partto add
    * @returns {GameObject} - Returns this for chaining
    */
-  addComponent(component) {
+  addComponentPart(component) {
     // Validate that component is not null/undefined and has required methods
     if (!component || typeof component.update !== 'function') {
       throw new GameObjectError(this, `Invalid component: ${component.name} must have an update method`);
     }
 
     // Add to components array
-    this.components.push(component);
+    this.componentParts.push(component);
 
     // find the type that comes just before ComponentPart
     let baseType = component.__proto__;
@@ -135,22 +158,23 @@ export default class GameObject {
     this.#componentMap.get(componentType).push(component);
     
     component.host = this;
+    component.eventContext = this.#eventContext;
     return this;
   }
 
   /**
-   * Removes a component from the game object
-   * @param {GameComponent} component - The component to remove
+   * Removes a component part from the game object
+   * @param {ComponentPart} component - The component to remove
    * @returns {boolean} - True if component was removed, false otherwise
    */
-  removeComponent(component) {
-    const index = this.components.indexOf(component);
+  removeComponentPart(component) {
+    const index = this.componentParts.indexOf(component);
     if (index === -1) {
       return false;
     }
 
     // Remove from components array
-    this.components.splice(index, 1);
+    this.componentParts.splice(index, 1);
     
     // Remove from component map
     for (const [type, components] of this.#componentMap.entries()) {
@@ -166,9 +190,9 @@ export default class GameObject {
   }
 
   /**
-   * Gets all components of a specific type
-   * @param {Class} componentType - The constructor of the component type to retrieve
-   * @returns {Array<GameComponent>} - Array of components of the specified type
+   * Gets all component parts of a specific type
+   * @param {Class} componentType - The constructor of the component part types to retrieve
+   * @returns {Array<ComponentPart>} - Array of component parts of the specified type
    */
   getComponentsByType(componentType) {
     for (const type of this.#componentMap.keys()) {
@@ -186,7 +210,7 @@ export default class GameObject {
    */
   update(time, deltaTime) {
     // Update all components in priority order
-    const sortedComponents = this.allComponents;
+    const sortedComponents = this.sortedComponentParts;
     
     for (const component of sortedComponents) {
       if (typeof component.update === 'function') {
@@ -195,62 +219,6 @@ export default class GameObject {
         } catch (error) {
           Console.error(`Error updating component ${component.constructor.name}:`, error);
         }
-      }
-    }
-  }
-
-  /**
-   * Publishes an event to all components in this game object
-   * @param {string} eventName - The name of the event to publish
-   * @param {*} data - Data to pass along with the event
-   */
-  publish(eventName, data) {
-    // Get all handlers for this event
-    const handlers = this.#eventHandlers.get(eventName);
-    
-    if (handlers && handlers.length > 0) {
-      // Call each handler with the provided data
-      handlers.forEach(handler => {
-        try {
-          handler.call(this, data);
-        } catch (error) {
-          Console.error(`Error in event handler for ${eventName}:`, error);
-        }
-      });
-    }
-  }
-
-  /**
-   * Subscribes to an event from this game object's components
-   * @param {string} eventName - The name of the event to subscribe to
-   * @param {Function} callback - Callback function when event is published
-   */
-  on(eventName, callback) {
-    if (!this.#eventHandlers.has(eventName)) {
-      this.#eventHandlers.set(eventName, []);
-    }
-    
-    // Add handler to the list for this event
-    this.#eventHandlers.get(eventName).push(callback);
-  }
-
-  /**
-   * Removes an event subscription
-   * @param {string} eventName - The name of the event to unsubscribe from
-   * @param {Function} callback - Callback function to remove (if not provided, removes all handlers)
-   */
-  off(eventName, callback) {
-    if (!callback) {
-      // Remove all handlers for this event
-      this.#eventHandlers.delete(eventName);
-      return;
-    }
-    
-    const handlers = this.#eventHandlers.get(eventName);
-    if (handlers) {
-      const index = handlers.indexOf(callback);
-      if (index !== -1) {
-        handlers.splice(index, 1);
       }
     }
   }

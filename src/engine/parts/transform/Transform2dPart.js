@@ -74,18 +74,7 @@ class Transform2dPart extends TransformPart {
      */
     set position([x, y]) {
         super.position = [x, y];
-        this.#enableMatrixCaching && this.#transformMatrix.update({position: [x, y]});
-        
-        // Notify any listeners if world provides that capability
-        if (this.world && this.world.eventEngine) {
-            this.world.eventEngine.publish('positionChanged', {
-                x: this.x,
-                y: this.y,
-                timestamp: Date.now(),
-                deltaTime: 0.016 // default delta
-            });
-        }
-        
+        this.#updateTransformMatrix();
         return this;
     }
 
@@ -94,7 +83,7 @@ class Transform2dPart extends TransformPart {
      * @returns {Object} Position object
      */
     get position() {
-        return this.localSpace.position;
+        return super.position;
     }
 
     get rotation() {
@@ -110,7 +99,7 @@ class Transform2dPart extends TransformPart {
      * @returns {Object} Position object
      */
     get worldPosition() {
-        return super.position;
+        return super.worldPosition;
     }
 
     /**
@@ -120,7 +109,6 @@ class Transform2dPart extends TransformPart {
      */
     set x(x) {
         this.position[0] = x;
-        this.#enableMatrixCaching && this.#transformMatrix.update({position: [x, this.position[1]]});
         return this;
     }
 
@@ -131,7 +119,6 @@ class Transform2dPart extends TransformPart {
      */
     set y(y) {
         this.position[1] = y;
-        this.#enableMatrixCaching && this.#transformMatrix.update({position: [this.position[0], y]});
         return this;
     }
 
@@ -144,17 +131,7 @@ class Transform2dPart extends TransformPart {
         // Normalize rotation to 0-2π range for predictable behavior
         const normalized = rotation % (Math.PI * 2);
         super.rotation = normalized;
-        this.#enableMatrixCaching && this.#transformMatrix.update({rotation: normalized});
-        
-        // Notify listeners if world provides that capability
-        if (this.world && this.world.eventEngine) {
-            this.world.eventEngine.publish('rotationChanged', {
-                rotation: this.rotation,
-                timestamp: Date.now(),
-                deltaTime: 0.016
-            });
-        }
-        
+        this.#updateTransformMatrix();        
         return this;
     }
 
@@ -165,16 +142,7 @@ class Transform2dPart extends TransformPart {
      */
     set scale(scale) {
         super.scale = !Array.isArray(scale) ? Math.max(0.01, scale) : [Math.max(0.01, scale[0]), Math.max(0.01, scale[1])]; // Prevent zero or negative scale
-        this.#enableMatrixCaching && this.#transformMatrix.update({scale: scale});
-        
-        if (this.world && this.world.eventEngine) {
-            this.world.eventEngine.publish('scaleChanged', {
-                scale: this.scale,
-                timestamp: Date.now(),
-                deltaTime: 0.016
-            });
-        }
-        
+        this.#updateTransformMatrix();
         return this;
     }
 
@@ -240,11 +208,7 @@ class Transform2dPart extends TransformPart {
      * @param {number} dy - Delta Y to add
      */
     addPosition(dx, dy) {
-        this.position[0] += dx;
-        this.position[1] += dy;
-        this.#enableMatrixCaching && this.#transformMatrix.update({
-            position: [this.position[0], this.position[1]]
-        });
+        this.position = [this.x + dx, this.y + dy];
         return this;
     }
 
@@ -256,10 +220,7 @@ class Transform2dPart extends TransformPart {
     addRotation(dRotation) {
         const current = this.rotation || 0;
         const normalized = (current + dRotation) % (Math.PI * 2);
-        super.rotation = normalized;
-         this.#enableMatrixCaching && this.#transformMatrix.update({
-            rotation: normalized
-         });
+        this.rotation = normalized;
         return this;
     }
 
