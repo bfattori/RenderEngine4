@@ -1,6 +1,6 @@
 import Console from '../core/Console.js';
 import Constants from '../Constants.js';
-import { VECTOR_IL } from '../rendering/assemblers/VectorAssembler.js';
+import { VECTOR_IL } from '../rendering/assemblers/CanvasVectorAssembler.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 import { ShearingMatrix, Matrix2d } from '../core/Matrix.js';

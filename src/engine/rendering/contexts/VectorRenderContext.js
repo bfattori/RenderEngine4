@@ -8,7 +8,7 @@ import Console from '../../core/Console.js';
 import RenderContext from './RenderContext.js';
 import processText from '../../ui/VectorText.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
-import { VECTOR_IL } from '../assemblers/VectorAssembler.js';
+import { VECTOR_IL } from '../assemblers/CanvasVectorAssembler.js';
 
 const twoPi = 6.2831;   // approx. Math.PI * 2
 

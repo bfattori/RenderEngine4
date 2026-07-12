@@ -4,7 +4,7 @@ import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
-import { VECTOR_IL } from '../assemblers/VectorAssembler.js';
+import { VECTOR_IL } from '../assemblers/CanvasVectorAssembler.js';
 
 
 const POINT_SIZE = 4;

@@ -2,8 +2,8 @@ import Console from '../../core/Console.js';
 import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import VectorAssembler from '../assemblers/VectorAssembler.js';
-import RasterAssembler from '../assemblers/RasterAssembler.js';
+import VectorAssembler from '../assemblers/CanvasVectorAssembler.js';
+import RasterAssembler from '../assemblers/CanvasRasterAssembler.js';
 
 /**
  * Renderer error class for low-level rendering errors.
