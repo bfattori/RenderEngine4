@@ -37,12 +37,6 @@ const Constants = {
     // Compilation
     COMPILATION_FAILED: -1,
     COMPILATION_NOT_SUPPORTED: -2,
-
-    EVENT_INPUT_UPDATE: 'input',
-    EVENT_PRE_TRANSFORM: 'transform',
-    EVENT_TRANSFORM_UPDATE: 'commit',
-    EVENT_COLLIDER_UPDATE: 'collider',
-    EVENT_COLLISION: 'collision',
     
     // Default engine configuration options
     DEFAULT_ENGINE_OPTIONS: {
