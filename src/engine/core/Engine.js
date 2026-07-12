@@ -14,7 +14,7 @@ import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
 
-import AABBCollisionModel from './../collisions/models/AABB.js';
+import AABBCollisionModel from '../collisionModels/models/AABB.js';
 
 import Context from '../Context.js';
 
