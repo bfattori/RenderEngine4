@@ -2,7 +2,6 @@
 @fileoverview SpatialAudioSystem Implementation
 Advanced audio system with spatial positioning 
 */
-import Console from '../../core/Console.js';
 import SoundSystemError from '../SoundSystem.js';
 import WebAudioSystem from './WebAudioSystem.js';
 
@@ -117,7 +116,7 @@ class SpatialAudioSystem extends WebAudioSystem {
             this.activeSources.set(source, audioSourceInfo);
             return Promise.resolve(audioSourceInfo);
         } catch (error) {
-            Console.error('Error starting spatial audio source:', error);
+            console.error('Error starting spatial audio source:', error);
             return Promise.reject(new SoundSystemError(this, 'Error starting spatial audio source', error));
         }
     }
@@ -196,7 +195,7 @@ class SpatialAudioSystem extends WebAudioSystem {
         
         if (settings.ambientGain !== undefined) {
             // Update ambient gain if available
-            Console.log('Ambient gain set to:', settings.ambientGain);
+            console.log('Ambient gain set to:', settings.ambientGain);
         }
     }
 

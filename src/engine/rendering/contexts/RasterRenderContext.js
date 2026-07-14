@@ -4,7 +4,6 @@
  * 
  * @extends RenderContext
  */
-import Console from '../../core/Console.js';
 import RenderContext from './RenderContext.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 import { RASTER_IL } from '../assemblers/RasterAssembler.js';

@@ -1,5 +1,4 @@
 import Engine from './Engine.js';
-import Console from './Console.js';
 
 /**
  * Event base class from which all other events derive
@@ -181,7 +180,7 @@ export default class EventEngine {
             handler(eventObject);
           } catch (error) {
             // Don't crash the engine on a single listener error
-            Console.error('EventEngine: Error in event handler:', eventObject.type.name, error);
+            console.error('EventEngine: Error in event handler:', eventObject.type.name, error);
           }
         }
       },
@@ -258,7 +257,7 @@ export default class EventEngine {
         handler(eventObject);
       } catch (error) {
         // Don't crash the engine on a single listener error
-        Console.error('EventEngine: Error in event handler:', eventObject.type, error);
+        console.error('EventEngine: Error in event handler:', eventObject.type, error);
       }
     }
   }

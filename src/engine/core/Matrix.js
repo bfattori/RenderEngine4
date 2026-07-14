@@ -40,14 +40,25 @@ const radToDegrees = 0.01745;
  * @param {Number} options.m12 - The value at (1, 2).
  * @param {Number} options.m22 - The value at (2, 2).
  */
-export class Matrix2d extends DOMMatrix {
+export class Matrix2d {
     #props = {scale:[1,1],rotation:0,position:[0,0]};
+    #matrix = new DOMMatrix();
     
     constructor(m00, m10, m20, m01, m11, m21, m02, m12, m22) {
-        if (m00 instanceof DOMMatrix) {
-            super(m00);
+        if (m00 instanceof Matrix2d) {
+            this.#matrix.a = m00._mtx.a;
+            this.#matrix.b = m00._mtx.b;
+            this.#matrix.c = m00._mtx.c;
+            this.#matrix.d = m00._mtx.d;
+            this.#matrix.e = m00._mtx.e;
+            this.#matrix.f = m00._mtx.f;
         } else { 
-            super([m00, m10, m01, m11, m20, m21]);
+            this.#matrix.a = m00;
+            this.#matrix.b = m10;
+            this.#matrix.c = m01;
+            this.#matrix.d = m11;
+            this.#matrix.e = m20;
+            this.#matrix.f = m21;
         }
     }
 
@@ -63,16 +74,20 @@ export class Matrix2d extends DOMMatrix {
         return this.#props.scale;
     }
 
+    get _mtx() {
+        return this.#matrix;
+    }
+
     /**
      * Multiply this matrix with another matrix. Updates the source matrix.
      * @param {Matrix2d} matrix2d The matrix to multiply this matrix by. 
      * @returns This matrix
      */
     mul(matrix2d) {
-        if (!matrix2d.constructor instanceof DOMMatrix) {
+        if (!matrix2d.constructor instanceof Matrix2d) {
             throw new RenderEngineError('Invalid matrix type. Must be a Matrix2d or DOMMatrix.');
         }
-        return this.multiplySelf(matrix2d);
+        return this.#matrix.multiply(matrix2d);
     }
 
     rotate(angle) {
@@ -84,35 +99,37 @@ export class Matrix2d extends DOMMatrix {
             throw new RenderEngineError('Invalid angle type');
         }
         this.#props.rotation = angle;
-        return this.rotateSelf(angle);
+        this.#matrix = this.#matrix.rotate(angle);
+        
     }
 
     translate(x, y) {
         this.#props.position = [x, y];
-        return this.translateSelf(x, y);
+        this.#matrix = this.#matrix.translate(x, y);
     }
 
     scale(sx, sy, originX = 0, originY = 0) {
         this.#props.scale = [sx, sy];
-        return this.scaleSelf(sx, sy, 1, originX, originY);
+        this.#matrix = this.#matrix.scale(sx, sy, 1, originX, originY);
     }
 
     uniformScale(scale, originX = 0, originY = 0) {
         this.#props.scale = [scale, scale];
-        return this.scaleSelf(scale, scale, 1, originX, originY);
+        this.#matrix = this.#matrix.scale(scale, scale, 1, originX, originY);
     }
 
     skew(sx, sy = 0) {
         this.#props.skew = [sx, sy];
-        this.skewXSelf(sx);
+        this.#matrix = this.#matrix.skewX(sx);
         if (sy !== 0) {
-            this.skewYSelf(sy);
+            this.#matrix = this.#matrix.skewY(sy);
         }
         return this;
     }
 
     invert() {
-        return this.invertSelf();
+        this.#matrix = this.#matrix.inverse();
+        return this;
     }
 
     /**
@@ -142,7 +159,7 @@ export class Matrix2d extends DOMMatrix {
      * @returns The matrix as a string
      */
     toCanvas() {
-        return `${this.a} ${this.b} ${this.c} ${this.d} ${this.e} ${this.f}`;
+        return `${this.#matrix.a} ${this.#matrix.b} ${this.#matrix.c} ${this.#matrix.d} ${this.#matrix.e} ${this.#matrix.f}`;
     }
 
     /**
@@ -155,7 +172,7 @@ export class Matrix2d extends DOMMatrix {
     static from(other) {
         if (Array.isArray(other)) {
             return Matrix2d.fromArray(other);
-        } else if (other instanceof DOMMatrix) {
+        } else if (other instanceof Matrix2d) {
             return new Matrix2d(other);
         } else if (typeof other === "string") {
             return Matrix2d.fromArray(other.split(' ').map(e => parseFloat(e)));
@@ -198,7 +215,7 @@ export class Matrix2d extends DOMMatrix {
     static multiply(a, b) {
         a = Array.isArray(a) ? Matrix2d.fromArray(a) : a;
         b = Array.isArray(b) ? Matrix2d.fromArray(b) : b;
-        return a.multiply(b);
+        return a.mul(b);
     }
 
     static identity() {
@@ -215,7 +232,10 @@ const ShearingMatrix = new Matrix2d(_ShearingMatrix[0][0], _ShearingMatrix[1][0]
                                     _ShearingMatrix[0][1], _ShearingMatrix[1][1], _ShearingMatrix[2][1],
                                     _ShearingMatrix[0][2], _ShearingMatrix[1][2], _ShearingMatrix[2][2]);
 
+const NullMatrix = null;
+
 export {
     IdentityMatrix,
-    ShearingMatrix          // used to italicize text
+    ShearingMatrix,          // used to italicize text
+    NullMatrix
 };

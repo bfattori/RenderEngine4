@@ -2,7 +2,6 @@
  * RenderContext - Base class for all rendering contexts
  * Defines the common interface and capabilities for vector and raster rendering
  */
-import Console from '../../core/Console.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import TransformPart from '../../parts/transform/TransformPart.js';
@@ -47,6 +46,7 @@ export default class RenderContext {
   #objectPlaneAssignments = new Map();
   #lastUpdateTime = null;
   #instructionBuffer = [];
+  #lastFrame = [];
   #cursor = {x: 0, y: 0};
   #cursorLimits = {left: 0, top: 0, width: 800, height: 600};
   #lineHeight = 50;
@@ -261,6 +261,10 @@ export default class RenderContext {
     return this.#instructionBuffer;
   }
 
+  get lastFrameInstructions() {
+    return this.#lastFrame;
+  }
+
   /**
    * Set the cursor X back to the starting cursor position and
    * advance the line by the line height.
@@ -299,6 +303,7 @@ export default class RenderContext {
    * Clear the instruction buffer without resetting internal state
    */
   clearInstructionBuffer() {
+    this.#lastFrame = [...this.#instructionBuffer];
     this.#instructionBuffer = [];
   }
 
@@ -475,7 +480,7 @@ export default class RenderContext {
   assignObjectToPlane(object, planeName) {
     const validPlanes = this.#renderPlanes.slice(0, this.maxPlanes);
     if (!validPlanes.includes(planeName)) {
-      Console.warn(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.#renderPlanes.join(', ')}`);
+      console.warn(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.#renderPlanes.join(', ')}`);
       return false;
     }
     

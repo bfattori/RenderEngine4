@@ -68,6 +68,7 @@ export default class VectorRendererPart extends RenderPart {
      * @param {number} deltaTime 
      */
     draw(time, deltaTime) {
+        this.pushTransform(this.cachedTransform);
         if (this.#compiledShape !== null) {
             // TODO: This should trigger a draw in the Renderer
             this.context.renderCompiledShape(this.#compiledShape, time, deltaTime);

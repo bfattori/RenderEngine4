@@ -2,7 +2,6 @@
 @fileoverview SoundSystem Base Implementation
 Provides abstract audio playback functionality and common interface for audio systems 
 */
-import Console from '../core/Console.js';
 import RenderEngineError from '../core/RenderEngineError.js';
 
 /**
@@ -41,7 +40,7 @@ export default class SoundSystem {
      */
     async init() {
         // Base implementation - subclasses should override this
-        Console.warn('SoundSystem: init() not implemented by subclass');
+        console.warn('SoundSystem: init() not implemented by subclass');
         return Promise.resolve(false);
     }
 
@@ -51,7 +50,7 @@ export default class SoundSystem {
      */
     async initAudioContext() {
         // Base implementation - some systems (like BrowserAudioSystem) may not need this
-        Console.warn('SoundSystem: initAudioContext() not implemented by subclass');
+        console.warn('SoundSystem: initAudioContext() not implemented by subclass');
         return Promise.resolve(true);
     }
 
@@ -270,7 +269,7 @@ export default class SoundSystem {
             }
             return await response.arrayBuffer();
         } catch (error) {
-            Console.error(`Failed to load audio: ${source}`, error);
+            console.error(`Failed to load audio: ${source}`, error);
             throw error;
         }
     }
@@ -291,7 +290,7 @@ export default class SoundSystem {
                 return arrayBuffer;
             }
         } catch (error) {
-            Console.error(`Failed to decode audio buffer:`, error);
+            console.error(`Failed to decode audio buffer:`, error);
             throw new SoundSystemError(this, `Failed to load audio: ${source}`);
         }
     }

@@ -5,7 +5,6 @@ This component interfaces with the system's keyboard event source and provides a
 @class KeyboardInput
 @extends InputPart 
 */
-import Console from '../../core/Console.js';
 import { InputPart, InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
@@ -120,7 +119,7 @@ class KeyboardInput extends InputPart {
      * @method bindKeyboardEvents
      */
     bindKeyboardEvents() {
-        Console.log('KeyboardInput: Binding keyboard events');
+        console.log('KeyboardInput: Binding keyboard events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:

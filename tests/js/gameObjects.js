@@ -15,17 +15,15 @@ RenderEngine.init({
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                true
+                false
             ),
-            {
-                enableCulling: false
-            }
+            { enableCulling: false }
         ),
         dimensions: [800, 600],
         viewport: [0, 0, 800, 600]
     },
     hooks: {
-        onInit: () => { RenderEngine.console.log("onInit: Hello world!"); }
+        onInit: () => { console.log("onInit: Hello world!"); }
     }
 });
 
@@ -45,12 +43,12 @@ renderer.compile();
 
 // set position, rotation, and scale
 txform.position = [400, 300];
-txform.rotation = Math.PI / 4;
-txform.scale = [2, 2];
+txform.rotation = 0;
+txform.scale = [1,1];
 
 // add the object to the world
-RE4.world.addObject(gameObject);
+RenderEngine.world.addObject(gameObject);
 
 // Start the render loop   
-RE4.start();
+RenderEngine.start();
 

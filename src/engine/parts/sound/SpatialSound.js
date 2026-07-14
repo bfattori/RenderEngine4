@@ -2,7 +2,6 @@
 @fileoverview SpatialSound - Advanced spatialized sound component
 Uses position and orientation data for 3D audio positioning 
 */
-import Console from '../../core/Console.js';
 import SoundPart from './SoundPart.js';
 import { SOUND_PRIORITY } from '../../constants.js';
 
@@ -91,7 +90,7 @@ class SpatialSound extends SoundPart {
                     );
                 }
             } catch (error) {
-                Console.error('Error updating sound position:', error);
+                console.error('Error updating sound position:', error);
             }
         }
     }
@@ -179,7 +178,7 @@ class SpatialSound extends SoundPart {
                     this.audioSystem.updateOrientation(this.sourcePath, radians);
                 }
             } catch (error) {
-                Console.error('Error updating sound orientation:', error);
+                console.error('Error updating sound orientation:', error);
             }
         }
     }
@@ -254,7 +253,7 @@ class SpatialSound extends SoundPart {
                 Math.max(this.minDistance, distance)
             );
         } catch (error) {
-            Console.error('Error adjusting sound distance:', error);
+            console.error('Error adjusting sound distance:', error);
         }
     }
 
@@ -331,7 +330,7 @@ class SpatialSound extends SoundPart {
                     );
                 }
             } catch (error) {
-                Console.error('Error setting sound position:', error);
+                console.error('Error setting sound position:', error);
             }
         }
         

@@ -1,7 +1,6 @@
 /**
  * Render Engine 4 bootstrapper
  */
-import Console from './core/Console.js'
 import Engine from './core/Engine.js';
 
 // Render Engine 4 instance
@@ -27,7 +26,7 @@ const RenderEngine = {
             global.RenderEngine4 = RenderEngine.RE4;
         }
 
-        Console.info("Render Engine 4 initialized", engineOptions);
+        console.info("Render Engine 4 initialized", engineOptions);
     },
 
     /**
@@ -51,7 +50,7 @@ const RenderEngine = {
      */
     start(seedTime = 0) {
         RE4.start(engineOptions.world.fps, seedTime);
-        Console.info("Render Engine 4 started", Engine.engine.options, seedTime);
+        console.info("Started", RE4.engine.options, seedTime);
     },
 
     /**
@@ -59,7 +58,7 @@ const RenderEngine = {
      */
     pause() {
         RE4.stop();
-        Console.info("Render Engine 4 paused");
+        console.warn("Paused");
     },
 
     /**
@@ -67,7 +66,7 @@ const RenderEngine = {
      */
     stop() {
         RE4.reset();
-        Console.info("Render Engine 4 stopped");
+        console.error("Stopped");
     },
 
     /**
@@ -75,11 +74,32 @@ const RenderEngine = {
      */
     shutdown() {
         RE4.shutdown();
-        Console.info("Render Engine 4 shutdown");
+        Console.info("Shutdown");
     },
 
-    console: Console
-} 
+    get world() {
+        return RE4.world;
+    },
 
-Console.info("Bootstrapper loaded");
+    get eventEngine() {
+        return RE4.eventEngine;
+    },
+
+    get camera() {
+        return this.world.camera;
+    },
+
+    get renderContext() {
+        return this.world.renderContext;
+    }
+}
+
+// Reserved keyboard hook to allow shutdown 
+// of an out of control engine
+window.addEventListener('keyup', (event) => {
+    if (event.key === 'F9')
+        RenderEngine.stop();
+})
+
+console.info("Bootstrapper loaded");
 export default RenderEngine;

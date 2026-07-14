@@ -165,6 +165,7 @@ export default class TransformPart extends ComponentPart {
      * @param {Array} position - Position object with x and y elements
      */
     set position([x, y]) {
+        if (this.#x === x && this.#y === y) return;
         this.#x = x;
         this.#y = y;
     }
@@ -178,10 +179,12 @@ export default class TransformPart extends ComponentPart {
     }
 
     set x(X) {
+        if (this.#x === x) return;
         this.#x = X;
     }
 
     set y(Y) {
+        if (this.#y === y) return;
         this.#y = Y;
     }
 
@@ -200,6 +203,7 @@ export default class TransformPart extends ComponentPart {
      * @param {number} newRotation - New rotation in radians
      */
     set rotation(newRotation) {
+        if (this.#rotation === newRotation) return;
         this.#rotation = newRotation;
     }
 
@@ -227,6 +231,7 @@ export default class TransformPart extends ComponentPart {
      * @param {number} scaleX - New X scale factor
      */
     set scaleX(scaleX) {
+        if (this.#scale[0] === scaleX) return;
         this.#scale[0] = scaleX;
     }
 
@@ -244,6 +249,7 @@ export default class TransformPart extends ComponentPart {
      * @param {number} scaleY - New Y scale factor
      */
     set scaleY(scaleY) {
+        if (this.#scale[1] === scaleY) return;
         this.#scale[1] = scaleY;
     }
 
@@ -254,6 +260,7 @@ export default class TransformPart extends ComponentPart {
      */
     set scale(newScale) {
         Array.isArray(newScale) || (newScale = [newScale, newScale]);
+        if (this.#scale[0] === newScale[0] && this.#scale[1] === newScale[1]) return;
         this.#scale = newScale;
     }
 
@@ -263,6 +270,7 @@ export default class TransformPart extends ComponentPart {
      * @param {Array} scale - Scale factors as [scaleX, scaleY]
      */
     set nonUniformScale([scaleX, scaleY]) {
+        if (this.#scale[0] === scaleX && this.#scale[1] === scaleY) return;
         this.scale = [scaleX, scaleY];
     }
 
@@ -347,10 +355,10 @@ export default class TransformPart extends ComponentPart {
         const events = options.events || [];
 
         // Update transform logic can be overridden by subclasses
-        this.#applyTransformLogic(time, deltaTime);
+        this.applyTransformLogic(time, deltaTime);
 
         // Check boundaries if world is available
-        if (this.world && this._worldWidth !== undefined && this._worldHeight !== undefined) {
+        if (this.world && this.#worldWidth !== undefined && this.#worldHeight !== undefined) {
             this.#checkBoundaries(time, deltaTime, events);
         }
 
@@ -363,7 +371,7 @@ export default class TransformPart extends ComponentPart {
      * @param {number} time - Current world time (Unix timestamp or frame count)
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
-    #applyTransformLogic(time, deltaTime) {
+    applyTransformLogic(time, deltaTime) {
         this.emit(new PreTransformEvent(this.host, this.transformMatrix, time, deltaTime));
     }
 

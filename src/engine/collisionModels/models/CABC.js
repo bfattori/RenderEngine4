@@ -8,7 +8,6 @@
  * @module Collisions/models/CABC
  */
 
-import Console from '../../core/Console.js';
 import CollisionModel from '../CollisionModel.js';
 import CollisionShape from '../CollisionShape.js';
 

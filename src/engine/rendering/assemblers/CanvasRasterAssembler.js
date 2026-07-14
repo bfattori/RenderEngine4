@@ -1,3 +1,5 @@
+import AssemblerError from './AssemblerError.js';
+
 // Intermediate Language instruction types for raster rendering
 const RASTER_IL = {
   // Decorator Instructions (State Modifiers)

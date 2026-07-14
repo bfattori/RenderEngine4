@@ -6,7 +6,6 @@ Theorem (SAT). It provides the most precise collision detection for irregularly-
 objects but at a higher computational cost than AABB or CABC models.
 @module Collisions/models/ConvexHull 
 */
-import Console from '../../core/Console.js';
 import CollisionModel from '../CollisionModel.js';
 import CollisionShape from '../CollisionShape.js';
 

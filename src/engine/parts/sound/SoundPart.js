@@ -2,7 +2,6 @@
 @fileoverview ComponentPart subclass for Sound functionality
 Provides a way for game objects to playback sound effects with simple methods 
 */
-import Console from '../../core/Console.js';
 import { SOUND_PRIORITY } from '../../constants.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
@@ -58,7 +57,7 @@ class SoundPart extends ComponentPart {
      */
     get isReady() {
         if (!this._audioSystem) {
-            Console.warn('SoundComponent: Audio system not initialized');
+            console.warn('SoundComponent: Audio system not initialized');
             return false;
         }
         

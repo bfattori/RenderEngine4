@@ -4,7 +4,6 @@
  * 
  * @extends RenderContext
  */
-import Console from '../../core/Console.js';
 import RenderContext from './RenderContext.js';
 import processText from '../../ui/VectorText.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
@@ -251,7 +250,7 @@ export default class VectorRenderContext extends RenderContext {
     super.reset();
     this.clearInstructionBuffer();
     if (this.world?.stackDepth > 1) {
-      Console.warn('Stack depth is greater than 1 at frame reset.')
+      console.warn('Stack depth is greater than 1 at frame reset.')
     }
   }
   
@@ -266,10 +265,12 @@ export default class VectorRenderContext extends RenderContext {
   pushTransform(transformationMatrix = null) {
     transformationMatrix = transformationMatrix || this.world.currentTransform;
     super.pushTransform(transformationMatrix);
+    this.transform(transformationMatrix);
   }
 
   popTransform() {
     const xform = super.popTransform();
+    this.transform(xform);
     return xform;
   }
 
@@ -282,7 +283,6 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   transform(matrix) {
-    matrix.mul(this.world.currentTransform);
     this.addInstruction(`${VECTOR_IL.TRANSFORM} ${matrix.toCanvas()}`);
   }
 
@@ -894,6 +894,7 @@ export default class VectorRenderContext extends RenderContext {
 
         options = { ...{ formatting: { bold: false, italics: false, underline: false } }, ...options };
 
+        const oldCursor = this.cursor;
         this.pushTransform();
 
         // Apply initial color if provided
@@ -925,6 +926,7 @@ export default class VectorRenderContext extends RenderContext {
         processText.call(context, text);
         this.popTransform();
 
+        this.cursor = oldCursor;
         return context.API;
       }
     };

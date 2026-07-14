@@ -38,15 +38,19 @@ If research reveals major ambiguities or if you need to validate assumptions:
 - Surface discovered technical constraints or alternative approaches
 
 
-## 3. Design
+## 3. Ask for approval
+Step 3: Request for approval to proceed before moving onto the next task.
+- Use #tool:vscode/askQuestions to ask for approval to proceed.
 
-Step 3: Once approved, write the minimum viable code to fulfill the task. This should include:
+## 4. Design
+
+Step 4: Once approved, write the minimum viable code to fulfill the task. This should include:
 - A detailed explanation of how these instructions are generated based on user input
 
 
-## 4. Refinement
+## 5. Refinement
 
-Step 4: Holistically review your own work. Ensure error handling is robust, edge cases are covered, and performance is optimized. If you find any issues or need further clarification, ask me for help.
+Step 5: Holistically review your own work. Ensure error handling is robust, edge cases are covered, and performance is optimized. If you find any issues or need further clarification, ask me for help.
 If you find any issues or need further clarification:
 - Use #tool:vscode/askQuestions to clarify intent with the user.
 - Surface discovered technical constraints or alternative approaches

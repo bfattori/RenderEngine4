@@ -11,7 +11,6 @@
 
 import ColliderPart from './ColliderPart.js';
 import AABBShape from '../../collisions/CollisionModel.js'
-import Console from '../../core/Console.js'; // Import Console for warnings
 
 /**
  * Creates a new AABBCollider instance
@@ -101,7 +100,7 @@ class AABBCollider extends ColliderPart {
     
     // Validate that the collision model type matches the collider component type
     if (!this._validateCollisionModelCompatibility(model)) {
-      Console.warn(`AABBCollider: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
+      console.warn(`AABBCollider: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
       this.isCollided() = false;
     }
   }

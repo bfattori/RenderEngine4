@@ -2,7 +2,6 @@
 @fileoverview BrowserAudioSystem Implementation
 Uses browser's native HTML5 Audio API for audio playback 
 */
-import Console from '../../core/Console.js';
 import { SoundSystem, SoundSystemError } from '../SoundSystem.js';
 
 class BrowserAudioSystem extends SoundSystem {
@@ -154,7 +153,7 @@ class BrowserAudioSystem extends SoundSystem {
         if (audioObj) {
             // Note: Browser Audio API doesn't support panning without Web Audio API
             // This method will only work if using WebAudioSystem for panning
-            Console.warn('BrowserAudioSystem does not support panning - use WebAudioSystem for audio spatialization');
+            console.warn('BrowserAudioSystem does not support panning - use WebAudioSystem for audio spatialization');
             audioObj.pan = value; // Store pan info for future reference
         }
     }
@@ -242,7 +241,7 @@ class BrowserAudioSystem extends SoundSystem {
                 audioObj.element.removeEventListener('ended', this.handleEnded);
             }
         } else if (eventType === 'error') {
-            Console.error(`Audio error for source ${source.sourcePath}:`, event);
+            console.error(`Audio error for source ${source.sourcePath}:`, event);
             // Optionally auto-stop on error
             audioObj.isPaused = true;
         }
@@ -335,7 +334,7 @@ class BrowserAudioSystem extends SoundSystem {
             }, { once: true });
 
             element.addEventListener('error', (event) => {
-                Console.error(`Failed to load audio: ${source}`, event);
+                console.error(`Failed to load audio: ${source}`, event);
                 reject(new SoundSystemError(this, `Failed to load audio: ${source}`));
             }, { once: true });
 
@@ -359,7 +358,7 @@ class BrowserAudioSystem extends SoundSystem {
             }, { once: true });
 
             element.addEventListener('error', (event) => {
-                Console.error(`Failed to load audio: ${source}`, event);
+                console.error(`Failed to load audio: ${source}`, event);
                 reject(new SoundSystemError(this, `Failed to load audio: ${source}`));
             }, { once: true });
 

@@ -8,7 +8,6 @@
  * @extends GameComponent
  */
 
-import Console from '../../core/Console.js';
 import Constants from '../../Constants.js';
 import { ComponentPart, ComponentPartEvent, GameComponentError } from '../ComponentPart.js';
 

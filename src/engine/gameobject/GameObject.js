@@ -1,4 +1,3 @@
-import Console from '../core/Console.js'
 import RenderEngineError from '../core/RenderEngineError.js';
 import ComponentPart from '../parts/ComponentPart.js';
 import EventEngine from '../core/EventEngine.js';
@@ -227,7 +226,7 @@ export default class GameObject {
         try {
           component.update(time, deltaTime);
         } catch (error) {
-          Console.error(`Error updating component ${component.constructor.name}:`, error);
+          console.error(`Error updating component ${component.constructor.name}:`, error);
         }
       }
     }

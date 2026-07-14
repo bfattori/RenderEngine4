@@ -1,6 +1,5 @@
-import Console from './Console.js';
 import GameObjectError from '../gameobject/GameObject.js';
-import { Matrix2d, IdentityMatrix } from './Matrix.js';
+import { Matrix2d, NullMatrix } from './Matrix.js';
 
 /**
  * GameWorld - Static class to contain game objects and manage their interactions
@@ -9,12 +8,13 @@ class GameWorld {
   #objects = [];
   #width = 0;
   #height = 0;
-  #transformStack = [IdentityMatrix];
+  #transformStack = [];
   #worldCollisionModel = null;
   #collisionEvents = [];
   #engine = null;
   #camera = null;
   #renderContext = null;
+  #currentMatrix = null;
 
   /**
    * Creates a new GameWorld instance
@@ -34,6 +34,7 @@ class GameWorld {
     this.#engine = engine;
     this.#camera = camera;
     this.#renderContext = renderContext;
+    this.#currentMatrix = new Matrix2d(camera.transformMatrix);
   }
   
   //--------------------------------
@@ -164,7 +165,7 @@ class GameWorld {
    * Returns the current transform applied to the world
    */
   get currentTransform() {
-    return this.peekTransformation();
+    return this.#currentMatrix;
   }
 
   //--------------------------------
@@ -180,6 +181,9 @@ class GameWorld {
     // Clear previous collision events
     this.#collisionEvents = [];
     
+    this.resetTransforms();
+    this.renderContext.pushTransform(this.camera.transformMatrix);
+
     // Update each GameObject in the world
     for (const object of this.#objects) {
       try {
@@ -187,7 +191,7 @@ class GameWorld {
           object.update(currentTime, deltaTime);
         }
       } catch (error) {
-        Console.error('GameWorld: Error updating GameObject:', object.id || 'unnamed', error);
+        console.error('GameWorld: Error updating GameObject:', object.id || 'unnamed', error);
       }
     }
     
@@ -264,7 +268,7 @@ class GameWorld {
         try {
           event.handler(event);
         } catch (error) {
-          Console.error('GameWorld: Error in collision handler:', error);
+          console.error('GameWorld: Error in collision handler:', error);
         }
       }
     }
@@ -283,7 +287,8 @@ class GameWorld {
    * Reset world transformations (clears transform stack)
    */
   resetTransforms() {
-    this.#transformStack = [IdentityMatrix];
+    this.#transformStack = [];
+    this.#currentMatrix = new Matrix2d(this.camera.transformMatrix);
   }
   
   /**
@@ -291,7 +296,10 @@ class GameWorld {
    * @param {Matrix2d} transformation - The transformation to push
    */
   pushTransformation(transformation) {
-    this.#transformStack.push(transformation);
+    if (transformation) {
+      this.#transformStack.push(new Matrix2d(transformation));
+      this.#currentMatrix = transformation;
+    }
   }
   
   /**
@@ -300,7 +308,8 @@ class GameWorld {
    */
   popTransformation() {
     if (this.#transformStack.length === 0) throw new RenderEngineError('Cannot pop from an empty transform stack');
-    return new Matrix2d(this.#transformStack.pop());
+    this.#currentMatrix = this.#transformStack.pop();
+    return this.#currentMatrix;
   }
 
   /**
@@ -309,10 +318,10 @@ class GameWorld {
    */
   peekTransformation() {
     if (this.#transformStack.length === 0) {
-      Console.error('Transform stack is empty!');
-      return IdentityMatrix;
+      console.error('Transform stack is empty!');
+      return NullMatrix;
     }
-    return new Matrix2d(this.#transformStack[this.#transformStack.length - 1]);
+    return this.#currentMatrix;
   }
 
 }

@@ -1,7 +1,6 @@
  /**
 @fileoverview WebAudioSystem Implementation
 Uses Web Audio API for advanced audio processing and spatialization */
-import Console from '../../core/Console.js';
 import { SoundSystem, SoundSystemError } from '../SoundSystem.js';
 
 class WebAudioSystem extends SoundSystem {
@@ -27,7 +26,7 @@ class WebAudioSystem extends SoundSystem {
             
             return Promise.resolve(true);
         } catch (error) {
-            Console.error('Web Audio API not supported:', error);
+            console.error('Web Audio API not supported:', error);
             throw new SoundSystemError(this, 'Web Audio API is not supported in this browser', error);
         }
     }
@@ -89,7 +88,7 @@ class WebAudioSystem extends SoundSystem {
             
             return Promise.resolve(audioSourceInfo);
         } catch (error) {
-            Console.error('Error starting audio source:', error);
+            console.error('Error starting audio source:', error);
             return Promise.reject(new SoundSystemError(this, 'Error starting audio source', error));
         }
     }
@@ -294,7 +293,7 @@ class WebAudioSystem extends SoundSystem {
                 // Auto-loop logic can be added here
             }
         } else if (eventType === 'error') {
-            Console.error(`Audio error for source ${source}:`, event);
+            console.error(`Audio error for source ${source}:`, event);
             audioInfo.isPaused = true;
         }
     }
@@ -349,7 +348,7 @@ class WebAudioSystem extends SoundSystem {
             try {
                 panner.disconnect();
             } catch (e) {
-                Console.error('Error disconnecting panner:', e);
+                console.error('Error disconnecting panner:', e);
             }
         });
         
@@ -388,7 +387,7 @@ class WebAudioSystem extends SoundSystem {
             const response = await fetch(source);
             return await response.arrayBuffer();
         } catch (error) {
-            Console.error(`Failed to load audio: ${source}`, error);
+            console.error(`Failed to load audio: ${source}`, error);
             throw new SoundSystemError(this, `Failed to load audio: ${source}`, error);
         }
     }
@@ -406,7 +405,7 @@ class WebAudioSystem extends SoundSystem {
             const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
             return audioBuffer;
         } catch (error) {
-            Console.error(`Failed to decode audio buffer:`, error);
+            console.error(`Failed to decode audio buffer:`, error);
             throw new SoundSystemError(this, `Failed to load audio: ${source}`, error);
         }
     }

@@ -1,4 +1,3 @@
-import Console from '../core/Console.js';
 import Constants from '../Constants.js';
 import { VECTOR_IL } from '../rendering/assemblers/CanvasVectorAssembler.js';
 import CHARACTER_MAP from './vector_character_set.js';
@@ -87,8 +86,8 @@ export default function processText(text, spaceWidth = 45) {
             let markerType = '';
             
             if (nextChar === '!') {
-                // Reset to previous/default color
-                this.lineColor = undefined;
+                // pop to the last color
+                this.addInstruction(VECTOR_IL.COLOR);
                 i += 3;
             } else if (nextChar === '+' || nextChar === '-') {
                 const scalar = nextChar === '+' ? 1 : -1;
@@ -96,19 +95,16 @@ export default function processText(text, spaceWidth = 45) {
                 let nextNext = text[i + 2];
                 if (nextNext === '}') {
                     // pop to the last font size
-                    this.popFontSize;
+                    this.addInstruction(VECTOR_IL.FONTSIZE);
                     i += 3;
                 } else {
-                    // get the value and apply the delta to font size
+                    // get the font size
                     let j = i + 2;
                     let foundBracket = false;
                     while (j < text.length && !foundBracket) {
                         if (text[j] === '}') {
                             const fontSizeValue = parseFloat(text.substring(i + 2, j).trim());
-                            
-                            this.fontSize = (fontSizeValue * scalar);
-                            spaceWidth *= fontSizeValue * 0.47;
-                            foundBracket = true;
+                            this.addInstruction(`${VECTOR_IL.FONT_SIZE} ${fontSizeValue}`);
                             break;
                         }
                         j++;
@@ -119,12 +115,12 @@ export default function processText(text, spaceWidth = 45) {
             } else if (nextChar === '#') {
                 // Color name - hex color
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-                this.lineColor = colorName;
+                this.addInstruction(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             } else if (nextChar !== undefined) {
                 // Color name - remove the { - may need to remove the training } as well??
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-                this.lineColor = colorName;
+                this.addInstruction(`${VECTOR_IL.COLOR} ${colorName}`);
                 i += colorName.length + 2;
             }
             continue;
@@ -225,7 +221,7 @@ function characterInstruction(char, width) {
         });
     }
     context.addInstruction(`${VECTOR_IL.TRANSLATE} ${ci.width} 0`);
-    context.cursorDeltaX = ci.width;
+    //context.cursorDeltaX = ci.width;
 }
 
 /**

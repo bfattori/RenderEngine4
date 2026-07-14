@@ -10,9 +10,6 @@
  * @module Collisions/CollisionModel
  */
 
-import Console from '../core/Console.js';
-// import { AABBShape, AABBCollisionModel } from './models/AABB.js';
-// import CABCCollisionModel from './models/CABC.js';
 import RenderEngineError from '../core/RenderEngineError.js';
 
 /**

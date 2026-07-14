@@ -11,7 +11,6 @@
 
 import ColliderPart from './ColliderPart.js';
 import CABCShape from '../../collisions/models/CABC.js';
-import Console from '../../core/Console.js';
 
 /**
  * Creates a new CABBCollider instance
@@ -61,7 +60,7 @@ class CABCCollider extends ColliderPart {
     
     // Validate that the collision model type matches the collider component type
     if (collisionModel && collisionModel.type !== 'CABC') {
-      Console.warn(
+      console.warn(
         `CABCCollider: Incompatible collision model detected. ` +
         `Expected CABCCollisionModel, got ${collisionModel.type || 'unknown'}.` +
         `This may cause unexpected collision behavior.`
@@ -147,7 +146,7 @@ class CABCCollider extends ColliderPart {
       this.isCollided(this.cabccollisionModel.testCollision(thisShape, otherShape));
       return this.isCollided();
     } catch (error) {
-      Console.error(
+      console.error(
         `CABCCollider: Error during collision detection. ` +
         `This may be due to incompatible collision model.`
       );
@@ -182,7 +181,7 @@ class CABCCollider extends ColliderPart {
     try {
       return collisionModel.calculateSeparatingAxis(thisShape, otherShape);
     } catch (error) {
-      Console.error(
+      console.error(
         `CABCCollider: Error calculating collision info.` +
         `This may be due to incompatible collision model.`
       );

@@ -1,4 +1,3 @@
-import Console from '../../core/Console.js';
 import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
@@ -166,7 +165,7 @@ export default class Renderer {
      */
     compile(instructions) {
         if (instructions.length === 0) {
-           Console.warn('Compiling an empty shape!');
+           console.warn('Compiling an empty shape!');
            return Constants.COMPILATION_FAILED;
         }
     }

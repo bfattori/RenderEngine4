@@ -10,7 +10,6 @@
  */
 
 import ColliderPart from './ColliderPart.js';
-import Console from '../../core/Console.js';
 import ConvexHullCollisionModel from '../../collisions/models/ConvexHull.js';
 
 /**
@@ -66,7 +65,7 @@ class ConvexHullCollider extends ColliderPart {
     
     // Validate that the collision model type matches the collider component type
     if (collisionModel && collisionModel.type !== 'ConvexHull') {
-      Console.warn(
+      console.warn(
         `ConvexHullCollider: Incompatible collision model detected. ` +
         `Expected ConvexHullCollisionModel, got ${collisionModel.type || 'unknown'}.` +
         `This may cause unexpected collision behavior.`
@@ -226,7 +225,7 @@ class ConvexHullCollider extends ColliderPart {
       this.isCollided(collisionModel.testCollision(thisShape, otherShape));
       return this.isCollided();
     } catch (error) {
-      Console.error(
+      console.error(
         `ConvexHullCollider: Error during collision detection. ` +
         `This may be due to incompatible collision model.`
       );
@@ -261,7 +260,7 @@ class ConvexHullCollider extends ColliderPart {
     try {
       return collisionModel.calculateSeparatingAxis(thisShape, otherShape);
     } catch (error) {
-      Console.error(
+      console.error(
         `ConvexHullCollider: Error calculating collision info.` +
         `This may be due to incompatible collision model.`
       );

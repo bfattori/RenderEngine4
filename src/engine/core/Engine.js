@@ -3,20 +3,17 @@
  * Implements simple rendering loop and game object management system
  */
 import Constants from '../Constants.js';
-
-import Console from './Console.js'
+import Context from '../Context.js';
+import Console from './console.js'
 import RenderEngineError from './RenderEngineError.js';
 
-import EventEngine from './EventEngine.js'
 import GameWorld from './GameWorld.js'
+import EventEngine from './EventEngine.js'
 import RenderContext from '../rendering/contexts/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
-
 import AABBCollisionModel from '../collisionModels/models/AABB.js';
-
-import Context from '../Context.js';
 
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
@@ -136,12 +133,6 @@ export default class Engine {
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
-
-    // special keyboard hook to allow shutdown of an out of control engine
-    window.addEventListener('keyup', (event) => {
-      if (event.key === 'F4')
-        primary.ENGINE.stop();
-    })
   }
 
     //---------------------------
@@ -349,16 +340,20 @@ export default class Engine {
     this.time = currentTime;
     this.lastTime = this.lastTime === 0 ? currentTime : this.lastTime;
     this.deltaTime = currentTime - this.lastTime;
-    
-    // Update the world with time and delta
-    this.world.update(currentTime, deltaTime);
-    
-    // If render context exists, update its state
-    if (this.world.renderContext && this.world.renderContext.update) {
-      this.world.renderContext.update(currentTime, deltaTime);
+      
+    try {
+      // Update the world with time and delta
+      this.world.update(currentTime, deltaTime);
+      
+      // If render context exists, update its state
+      if (this.world.renderContext && this.world.renderContext.update) {
+        this.world.renderContext.update(currentTime, deltaTime);
+      }
+    } catch (ex) {
+      // if any exception occurs during the update cycle, throw the exception and stop the engine
+      this.options.hooks.onError(ex, "An error occurred in the render loop!");
+      this.stop();
     }
-    
-    return this;
   }
   
   /**
@@ -377,7 +372,7 @@ export default class Engine {
       
       return result !== false;
     } catch (error) {
-      Console.error('Engine: Error during rendering:', error);
+      console.error('Engine: Error during rendering:', error);
       return false;
     }
   }
@@ -449,7 +444,7 @@ export default class Engine {
 
     // call stop hook
     this.#ENGINE_OPTIONS.hooks.onStop();
-    Console.log('Stopped.');
+    console.log('Stopped.');
   }
     
   /**

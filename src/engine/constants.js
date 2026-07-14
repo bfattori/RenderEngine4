@@ -1,7 +1,5 @@
-import Console from './core/Console.js';
-
 function NOP() {};
-function ENGINE_ERRORS(error, ...args) { Console.error(error, ...args) }
+function ENGINE_ERRORS(error, ...args) { console.error(error, ...args) }
 
 /**
  * Constants used throughout the RenderEngine4 engine

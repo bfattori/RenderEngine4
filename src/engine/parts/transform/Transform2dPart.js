@@ -51,7 +51,7 @@ class Transform2dPart extends TransformPart {
     set matrixCachingEnabled(enabled) {
         this.#enableMatrixCaching = enabled;
         if (enabled) {
-            this.#updateTransformMatrix();
+            this.applyTransformLogic();
         }
     }
 
@@ -61,7 +61,7 @@ class Transform2dPart extends TransformPart {
      */
     get transformMatrix() {
         if (!this.#transformMatrix) {
-            this.#updateTransformMatrix();
+            this.applyTransformLogic();
         }
         return this.#transformMatrix;
     }
@@ -74,7 +74,6 @@ class Transform2dPart extends TransformPart {
      */
     set position([x, y]) {
         super.position = [x, y];
-        this.#updateTransformMatrix();
         return this;
     }
 
@@ -131,7 +130,6 @@ class Transform2dPart extends TransformPart {
         // Normalize rotation to 0-2π range for predictable behavior
         const normalized = rotation % (Math.PI * 2);
         super.rotation = normalized;
-        this.#updateTransformMatrix();        
         return this;
     }
 
@@ -142,7 +140,6 @@ class Transform2dPart extends TransformPart {
      */
     set scale(scale) {
         super.scale = !Array.isArray(scale) ? Math.max(0.01, scale) : [Math.max(0.01, scale[0]), Math.max(0.01, scale[1])]; // Prevent zero or negative scale
-        this.#updateTransformMatrix();
         return this;
     }
 
@@ -168,37 +165,21 @@ class Transform2dPart extends TransformPart {
     //-------------------------------
 
     /**
-     * Override update to include matrix caching logic
-     * 
-     * @param {number} time - Current world time
-     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
-     * @param {Object} [options] - Optional configuration
-     * @param {Array} [options.events=[]] - Array to push collision events to
-     */
-    update(time, deltaTime, options = {}) {
-        super.update(time, deltaTime, options);
-
-        // Update transform matrix for rendering performance
-        this.#updateTransformMatrix();
-
-        return this;
-    }
-
-    /**
      * Updates the cached transform matrix based on current properties
      * 
      * @private
      */
-    #updateTransformMatrix() {
+    applyTransformLogic() {
         if (!this.#enableMatrixCaching) {
             return;
         }
-        
+
         this.#transformMatrix.update({
             scale: this.scale, 
             rotation: this.rotation, 
             position: this.position
         });
+        super.applyTransformLogic();
     }
 
     /**

@@ -5,7 +5,6 @@ This component interfaces with the system's mouse event source and provides a un
 @class MouseInput
 @extends Input */
 
-import Console from '../../core/Console.js';
 import { InputPart, InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
@@ -162,7 +161,7 @@ class MouseInput extends InputPart {
      * @method bindMouseEvents
      */
     bindMouseEvents() {
-        Console.log('MouseInput: Binding mouse events');
+        console.log('MouseInput: Binding mouse events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:
