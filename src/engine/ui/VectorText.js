@@ -152,9 +152,9 @@ export default function processText(text, spaceWidth = 45) {
             this.formatting.italics = !this.formatting.italics;
             if (ctx.debug) this.addInstruction(`// format: italics (${this.formatting.italics})`);
             if (this.formatting.italics) {
-                this.API.transform(ITALICS_MATRIX);
+                this.API.skew(-12);
             } else {
-                this.API.popTransform();
+                this.API.skew(0);
             }
             i++;
             continue;
@@ -244,6 +244,7 @@ function characterInstruction(char, width) {
     }
     context.API.translate(ci.width + context.letterSpacing, 0);
     context.API.cursorDelta(ci.width + context.letterSpacing, 0);
+
 }
 
 /**

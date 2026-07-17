@@ -69,13 +69,25 @@ export class Matrix2d extends DOMMatrix {
     /**
      * Multiply this matrix with another matrix. Updates the source matrix.
      * @param {Matrix2d} matrix2d The matrix to multiply this matrix by. 
-     * @returns This matrix
+     * @returns {Matrix2d} This matrix
      */
     mul(matrix2d) {
         if (!matrix2d.constructor instanceof Matrix2d) {
             throw new RenderEngineError('Invalid matrix type. Must be a Matrix2d or DOMMatrix.');
         }
-        return this.multiply(matrix2d);
+        return this.multiplySelf(matrix2d);
+    }
+
+    /**
+     * Multiply this matrix with another matrix. Returns a new matrix.
+     * @param {Matrix2d} matrix2d The matrix to multiply this matrix by. 
+     * @returns {Matrix2d} A new matrix
+     */
+    multiply(matrix2d) {
+        if (!matrix2d.constructor instanceof Matrix2d) {
+            throw new RenderEngineError('Invalid matrix type. Must be a Matrix2d or DOMMatrix.');
+        }
+        return new Matrix2d(super.multiply(matrix2d));
     }
 
     #rotateMatrix(angle, method) {
@@ -137,21 +149,22 @@ export class Matrix2d extends DOMMatrix {
         this.#scaleMatrix(scale, scale, 1, originX, originY, 'scaleSelf');
     }
 
-    #skew(sx, sy = 0, method) {
+    absSkew(sx, sy) {
         this.#props.skew = [sx, sy];
-        this[method + 'X'](sx);
+        this.skewX(sx);
         if (sy !== 0) {
-            this[method + 'Y'](sy);
+            this.skewY(sy);
         }
         return this;
     }
 
-    absSkew(sx, sy) {
-        return this.#skew(sx, sy, 'skew');
-    }
-
     skew(sx, sy) {
-        return this.#skew(sx, sy, 'skewSelf');
+        this.#props.skew = [sx, sy];
+        this.skewXSelf(sx);
+        if (sy !== 0) {
+            this.skewYSelf(sy);
+        }
+        return this;
     }
 
     #invertMatrix(method) {
@@ -229,6 +242,10 @@ export class Matrix2d extends DOMMatrix {
             return Matrix2d.fromArray(other.split(' ').map(e => parseFloat(e)));
         }
         throw new RenderEngineError('Invalid matrix type');
+    }
+
+    static fromMatrix(matrix) {
+        return new Matrix2d(matrix);
     }
 
     /**

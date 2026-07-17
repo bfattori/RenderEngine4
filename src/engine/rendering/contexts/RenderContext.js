@@ -49,7 +49,7 @@ export default class RenderContext {
   #lastFrame = [];
   #cursor = {x: 0, y: 0};
   #cursorLimits = {left: 0, top: 0, width: 800, height: 600};
-  #lineHeight = 50;
+  #lineHeight = 15;
   #letterSpacing = 2;
   #immediateMode = false;
   #formatting = {

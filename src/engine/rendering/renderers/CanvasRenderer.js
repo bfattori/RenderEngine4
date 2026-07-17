@@ -294,8 +294,7 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.scale(args[0], args[0]);
                 break;
             case vector.SKEW:
-                const txfm = Matrix2d.identity().skew(args[0], args[1] || 0);
-                this.surface.transform(txfm.a, txfm.b, txfm.c, txfm.d, txfm.e, txfm.f);
+                this.surface.setTransform(this.surface.getTransform().skewXSelf(args[0]));
                 break;
             case vector.FONTSIZE:
                 const current = args[0] / Constants.MAX_VECTOR_FONT_SIZE;

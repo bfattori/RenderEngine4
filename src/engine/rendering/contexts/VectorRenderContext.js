@@ -117,8 +117,9 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   popTransform() {
-    super.popTransform();
+    const xfm = super.popTransform();
     this.addInstruction(`${VECTOR_IL.POP}`);
+    return xfm;
   }
 
   resetTransforms() {
@@ -164,10 +165,14 @@ export default class VectorRenderContext extends RenderContext {
       previousFillColor: [],
       currentFillColor: VectorRenderContext.DEFAULT_FILL_COLOR,
 
-      transform: null,
+      currentTransform: new Matrix2d(IdentityMatrix),
       cursor: {
         x: 0,
         y: 0
+      },
+      limits: {
+        left: 0,
+        right: 0
       }
     };
     return {
@@ -179,6 +184,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       translate: (x, y) => {
         context.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+        state.currentTransform.translate(x, y);
         return context.API;
       },
 
@@ -189,6 +195,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       rotate: (angle) => {
         context.addInstruction(`${VECTOR_IL.ROTATE} ${angle}`);
+        state.currentTransform.rotate(angle);
         return context.API;
       },
 
@@ -200,6 +207,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       scale: (x, y) => {
         context.addInstruction(`${x === y ? VECTOR_IL.USCALE + ' ' + x : VECTOR_IL.SCALE + ' ' + x + ' ' + y}`);
+        state.currentTransform.scale(x, y);
         return context.API;
       },
 
@@ -210,6 +218,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       uniformScale: (scalar) => {
         context.addInstruction(`${VECTOR_IL.USCALE} ${scalar}`);
+        state.currentTransform.uniformScale(scalar);
         return context.API;
       },
 
@@ -221,6 +230,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       skew: (sX, sY) => {
         context.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY}`);
+        state.currentTransform.skew(sX, sY);
         return context.API;
       },
 
@@ -252,6 +262,10 @@ export default class VectorRenderContext extends RenderContext {
        */
       pushTransform: (transform) => {
         context.pushTransform(transform);
+        if (transform) 
+          state.currentTransform = transform;
+        else
+          state.currentTransform = Matrix2d.identity();
         return context.API;
       },
 
@@ -260,8 +274,8 @@ export default class VectorRenderContext extends RenderContext {
        * @returns {Matrix2d|null} The previous transform matrix, or <code>null</code>
        */
       popTransform: () => {
-        context.popTransform();
-        return context.API;
+        state.currentTransform = context.popTransform();
+        return state.currentTransform;
       },
 
       /**
@@ -278,6 +292,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       resetTransforms: () => {
         context.resetTransforms();
+        state.currentTransform = new Matrix2d(IdentityMatrix);
         return context.API;
       },
 
@@ -432,7 +447,7 @@ export default class VectorRenderContext extends RenderContext {
        */
       carriageReturn: () => {
         const oldC = context.API.getCursor()
-        const newC = {x: 0, y: state.cursor.y + context.lineHeight};
+        const newC = {x: state.limits.left, y: state.cursor.y + context.lineHeight};
         context.API.translate(newC.x - oldC.x, newC.y - oldC.y);
         return context.API;
       },
@@ -457,13 +472,24 @@ export default class VectorRenderContext extends RenderContext {
 
       /**
        * Sets the cursor X & Y simultaneously
-       * @param {number} x - X coordinate in screen space
-       * @param {number} y - Y coordinate in screen space
+       * @param {Object} coordinates 
+       * @param {number} coordinates.x - X coordinate in screen space
+       * @param {number} coordinates.y - Y coordinate in screen space
        */
       cursor: ({x, y}) => {
         state.cursor.x = x;
         state.cursor.y = y;
         return context.API;
+      },
+
+      /**
+       * Sets the cursor margins
+       * @param {number} left 
+       * @param {number} right 
+       */
+      setCursorMargins: (left, right) => {
+        state.limits.left = left;
+        state.limits.right = right;
       },
 
       /**
@@ -804,8 +830,11 @@ export default class VectorRenderContext extends RenderContext {
 
         context.API.resetFontSize();
 
-        const oldCursor = context.cursor;
-        context.pushTransform();
+        // set the cursor position
+        const currentWorldTransform = context.world.peekTransformation();
+        context.API.cursorX(currentWorldTransform.e);
+        context.API.cursorY(currentWorldTransform.f);
+        context.API.setCursorMargins(currentWorldTransform.e, 1000);
 
         // Apply initial color if provided
         if (options.color && options.color !== context.lineColor) {
@@ -833,12 +862,29 @@ export default class VectorRenderContext extends RenderContext {
             context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
         // Process text and generate instructions
+        context.pushTransform();
         processText.call(context, text);
-        context.cursor = oldCursor;
         context.popTransform();
         context.API.resetFontSize();
 
         return context.API;
+      },
+
+      /**
+       * Retrieves the current transformational state from the rendering context.
+       * @returns {Matrix2d} The current transformational state
+       * @private
+       */
+      getRenderTransform() {
+        return new Matrix2d(context.renderer.surface.getTransform());
+      },
+
+      /**
+       * Get the internal state of the API context
+       * @private
+       */
+      get state() {
+        return state;
       }
     };
   }

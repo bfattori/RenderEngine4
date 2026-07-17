@@ -38,6 +38,10 @@ export default class VectorRendererPart extends RenderPart {
         return this.context.letterSpacing;
     }
 
+    get renderer() {
+        return this.host.world.renderContext;
+    }
+
     /**
      * Adds a rendering instruction to the shape.
      * @param {String} inst - Instruction from the render method 

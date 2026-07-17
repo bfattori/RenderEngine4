@@ -28,8 +28,9 @@ RenderEngine.init({
 const context = RE4.world.renderContext;
 
 // chainable API for drawing shapes and text
-const q = context.getAPI().quadratic;
-context.getAPI()
+const api = context.getAPI();
+const q = api.quadratic;
+api
     .color("#0000ff").width(5)
     .line(100, 100, 300, 300)
     .fillColor("#8800cc")
@@ -39,28 +40,37 @@ context.getAPI()
     
     // the string "Inline Format" formatted 
     // with colors and font size changes
+api
     .pushTransform()
     .translate(50, 330)
     .width(1)
     .text("{15}{#00f}**I{#f00}n**{green}{+12}l{orange}~i~{gold}{-2}n{mediumvioletred}e")
-    .popTransform()
+    .popTransform();
+
+api
     .pushTransform()
     .translate(100, 400)
     .text("{60}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
-    .popTransform()
+    .popTransform();
+
+api    
     .pushTransform()
     .translate(80, 15)
     .text("Plain text, no formatting.", 
         {color: "black", lineWidth: 1})
-    .popTransform()
+    .popTransform();
+
+api
     .pushTransform()
     .translate(210, 90)
     .fontSize(30)
-    .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l")
+    .text("_{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l_")
     .color("royalblue")
     .translate(-60, 40)
     .text("**{10}Absolute\n{5}Sizing**")
-    .popTransform()
+    .popTransform();
+
+api    
     .color("blue")
     .width(2)
     .curve(false, [60, 180], 
