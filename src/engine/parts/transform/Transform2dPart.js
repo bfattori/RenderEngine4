@@ -12,7 +12,7 @@ import Constants from '../../Constants.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 class Transform2dPart extends TransformPart {
-    #transformMatrix = Matrix2d.identity();
+    #transformMatrix = null;
     #enableMatrixCaching = true;
     
     /**
@@ -169,17 +169,17 @@ class Transform2dPart extends TransformPart {
      * 
      * @private
      */
-    applyTransformLogic() {
+    updateTransformLogic() {
         if (!this.#enableMatrixCaching) {
             return;
         }
 
-        this.#transformMatrix.update({
+        this.#transformMatrix = this.host.transformMatrix.update({
             scale: this.scale, 
             rotation: this.rotation, 
             position: this.position
         });
-        super.applyTransformLogic();
+        super.updateTransformLogic();
     }
 
     /**
@@ -253,6 +253,10 @@ class Transform2dPart extends TransformPart {
         this.matrixCachingEnabled = data.matrixCachingEnabled;
     }
 
+    destroy() {
+        this.#transformMatrix = null;
+        super.destroy();
+    }
 }
 
 export default Transform2dPart;

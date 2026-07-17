@@ -8,7 +8,7 @@
  * @class AABBCollider
  * @extends ColliderPart
  */
-
+import Constants from '../../Constants.js';
 import ColliderPart from './ColliderPart.js';
 import AABBShape from '../../collisions/CollisionModel.js'
 
@@ -23,11 +23,11 @@ class AABBCollider extends ColliderPart {
    * bounding boxes (AABB) that ignore rotation from TransformComponent.
    * 
    * @constructor
-   * @param {GameObject} gameObject - The parent game object
-   * @param {Engine|null} engine - Optional engine reference
+   * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
+   * @param {String} name - An optional name for the component part
    */
-  constructor(name = 'AABBCollider', engine = null) {
-    super(name, engine);
+  constructor(priority = Constants.COLLIDER_PRIORITY, name = 'AABBCollider') {
+    super(priority, name);
         
     /**
      * Store the collision shape for use with the world's collision model

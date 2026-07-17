@@ -1,51 +1,90 @@
+import Constants from '../../Constants.js';
 import AssemblerError from './AssemblerError.js';
+import { VECTOR_IL } from './IntermediateLanguages.js';
 
-// Intermediate Language instruction types for vector rendering
-const VECTOR_IL = {
-  // Decorator Instructions (State Modifiers)
-  COLOR: 'COLOR',         // "COLOR #ff0000" would be a red color
-  FONTSIZE: 'FONTSIZE',   // "FONTSIZE 12" would be a font size of 12
-  FILL: 'FILL',           // "FILL #ff0000" would be a red fill color
-  WIDTH: 'WIDTH',         // "WIDTH 5" would be a line width of 5
-  TOGGLE: 'TOGGLE',       // "TOGGLE BOLD" would toggle bold on/off
-   
-  // Transformation matrix Instructions (State Modifiers)
-  TRANSFORM: 'TRANSFORM',         // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
-  ABS_TRANSFORM: 'ABS_TRANSFORM', // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
-  IDENTITY: 'IDENTITY',           // "IDENTITY" will reset the transformation matrix to the identity matrix
-  PUSH: 'PUSH',                   // "PUSH" will save the current renderer state
-  POP: 'POP',                     // "POP" will restore the previous renderer state 
+const compiledShapes = new Map();
+let opaqueShapeId = 100;
 
-  // Atomic transform manipulation instructions
-  TRANSLATE: 'TRANSLATE',   // "TRANSLATE X Y" modifies the current transform by translating the current transform by X and Y
-  ROTATE: 'ROTATE',         // "ROTATE ANGLE" modifies the current transform by rotating the current transform by ANGLE degrees
-  SCALE: 'SCALE',           // "SCALE X Y" modifies the current transform by scaling the current transform by X and Y
-  USCALE: 'USCALE',         // "USCALE SCALAR" modifies the current transform by uniformly scaling the current transform by SCALAR
-  SKEW: 'SKEW',             // "SKEW ANGLE X Y" modifies the current transform by skewing the current transform by ANGLE degrees along the X and Y axes
-
-  // Rendering Instructions (Imperative)
-  POINT: 'POINT',         // "POINT X Y" will draw a point at X, Y
-  LINESEG: 'LINESEG',     // "LINESEG FILLED" starts a line segment, FILLED is a boolean indicating whether the shape is filled or not
-  ENDSEG: 'ENDSEG',       // "ENDSEG" ends the current line segment
-  CURVE: 'CURVE',         // "CURVE FILLED" draws a cubic Bezier curve, FILLED is a boolean indicating whether the shape is filled or not
-  ENDCURVE: 'ENDCURVE',   // "ENDCURVE" ends the current curve
-  QUAD: 'QUAD',           // "QUAD CX1 CY1 X Y" is a quadratric curve through the control point to the end point
-  BEZIER: 'BEZIER',       // "BEZIER CX1 CY1 CX2 XY2 X Y" is a Bezier curve through the control points to the end point
-  MOVETO: 'MOVETO',       // "MOVETO X Y" would move the start of the next draw operation at X, Y
-  LINE: 'LINE',           // "LINE X1 Y1 X2 Y2" is a line from (X1, Y1) to (X2, Y2)
-  LINEREL: 'LINEREL',     // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
-  ARC: 'ARC',             // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
-
-  // Shapes
-  SHAPE: 'SHAPE',         // "SHAPE ID" draws a compiled shape with the given shape Id
-};
-
-// Export the Vector itermediate language instructions
-export {
-  VECTOR_IL
+function nextShapeId() {
+    return opaqueShapeId++;
 }
 
 export default class CanvasVectorAssembler {
+    static #instance = null;
+    
+    static get instance() {
+        if (!this.#instance) {
+            CanvasVectorAssembler.#instance = new CanvasVectorAssembler();
+        }
+        return CanvasVectorAssembler.#instance;
+    }
+
+
+    getCompiledShape(opaqueId) {
+        return compiledShapes.get(opaqueId);
+    }
+
+    destroyCompiledShape(opaqueId) {
+        compiledShapes.delete(opaqueId);
+    }
+
+    getCompiledShapes() {
+        return compiledShapes;
+    }
+    
+    /**
+     * Compile a set of intermediate drawing instructions into a function that, when called, executes the
+     * instructions to the canvas' surface. Further references are to the opaque id, deferring rendering into
+     * the renderer's scope.
+     * 
+     * @param {String[]} instructions - The instructions to compile.
+     * @returns {number} The opaque reference to the function that will render the shape.
+     */
+    compileShape(renderer, instructions, tag = null) {
+        if (instructions.length === 0) {
+           console.warn('Compiling an empty shape?');
+           return Constants.COMPILATION_FAILED;
+        }
+        
+        // generate the re-usable function
+        const shapeContext = new Map();
+        shapeContext.set('paths', []);
+        shapeContext.set('assembled', []);
+
+        // assemble the instructions
+        instructions.forEach(i => {
+            i = i.trim();
+            if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
+                // ignore comments
+                const assembled = this.assemble(renderer, i, shapeContext);
+                if (assembled !== null) {
+                    shapeContext.get('assembled').push(assembled);
+                }
+            }
+        });
+
+        // assemble the function with its drawing context
+        const functionBody = ['const surface = this.surface;']
+            .concat(shapeContext.get('assembled')).join("\n");
+
+        // the assmbled function
+        const shapeFn = Function("shapeContext", "time", "deltaTime", functionBody);
+        const opaqueId = nextShapeId();
+        
+        // wrap the function to capture: renderer, shapeContext, time, and deltaTime
+        const storedProcedure = function procName(time, deltaTime) {
+            shapeFn.call(renderer, shapeContext, time, deltaTime);
+        }
+        
+        // allows identification of stored procedures
+        if (tag !== null) {
+            storedProcedure.tag = tag;
+        }
+
+        // store the procedure that will run the instructions
+        compiledShapes.set(opaqueId, storedProcedure);
+        return opaqueId;
+    }
 
     /**
      * Assemble the instruction into a renderer-appropriate function call.
@@ -56,7 +95,7 @@ export default class CanvasVectorAssembler {
      * @returns {String} The configured instruction to invoke in the renderer
      * @private
      */
-    static assemble(renderer, instruction, shapeContext) {
+    assemble(renderer, instruction, shapeContext) {
         const vector = VECTOR_IL;
         const parts = instruction.split(' ');
         const {operand, args} = {operand: parts.shift(), args: parts};
@@ -71,50 +110,61 @@ export default class CanvasVectorAssembler {
 
                 // Bold thickens the line width
                 if (args[0] === 'BOLD' && renderer.localFormat.get('b')) {
-                    return `this.surface.lineWidth = ${ renderer.lineWidth * 3 };`;
+                    return `surface.lineWidth = ${ Constants.VECTOR_TEXT_BOLD };`;
                 } else if (!renderer.localFormat.get('b')) {
-                    return `this.surface.lineWidth = ${ renderer.lineWidth };`;
+                    return `surface.lineWidth = ${ renderer.lineWidth };`;
                 }
 
                 // italics applies a shearing transform matrix
                 if (args[0] === 'ITALICS' && renderer.localFormat.get('i')) {
-                    return `this.surface.transform(${ShearingMatrix[0,0]}, ${ShearingMatrix[0,1]}, ${ShearingMatrix[1,0]}, ${ShearingMatrix[1,1]}, ${ShearingMatix[2,0]}, ${ShearingMatrix[2,1]});` +
-                        'this.surface.save();';
+                    return `surface.transform(${ShearingMatrix[0,0]}, ${ShearingMatrix[0,1]}, ${ShearingMatrix[1,0]}, ${ShearingMatrix[1,1]}, ${ShearingMatix[2,0]}, ${ShearingMatrix[2,1]});` +
+                        'surface.save();';
                 } else if (!renderer.localFormat.get('i')) {
                     // pop the shearing matrix off the internal state stack
-                    return 'this.surface.restore();';
+                    return 'surface.restore();';
                 }
                 break;
             case vector.COLOR:
-                return `this.surface.strokeStyle = "${args[0]}";`;
+                return `surface.strokeStyle = "${args[0]}";`;
                 break;
             case vector.FILL:
-                return `this.surface.fillStyle = "${args[0]}";`;
+                return `surface.fillStyle = "${args[0]}";`;
                 break;
             case vector.WIDTH:
-                return `this.surface.lineWidth = ${width};`;
+                return `surface.lineWidth = ${args[0]};`;
+                break;
+            case vector.FONTSIZE:
+                const current = args[0];
+                const last = args[1];
+                const delta = current - last;
+                // calculate a scaling factor for the delta
+                return `this.surface.scale(${current}, ${current});`;
                 break;
             case vector.TRANSFORM:
-                return `this.surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
+                return `surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
                 break;
             case vector.ABS_TRANSFORM:
-                return `this.surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
+                return `surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
                 break;
             case vector.PUSH:
-                return 'this.surface.save();';
+                _instruction = 'surface.save();';
+                if (args.length === 6) {
+                    _instruction += ` surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`
+                }
+                return _instruction;
                 break;    
             case vector.POP:
-                return 'this.surface.restore();';
+                return 'surface.restore();';
                 break;
-            case vector.IDENTITY:
-                return `this.surface.resetTransform();`;
+            case vector.XFORM_RESET:
+                return `surface.resetTransform();`;
                 break;
             case vector.POINT:
-                return `this.surface.fillRect(${parseInt(args[0]) - HALF_P}, ${parseInt(args[1]) - HALF_P}, ${POINT_SIZE}, ${POINT_SIZE});`;
+                return `surface.fillRect(${parseInt(args[0]) - HALF_P}, ${parseInt(args[1]) - HALF_P}, ${POINT_SIZE}, ${POINT_SIZE});`;
                 break;
             case vector.CURVE:
                 pathInfo = { path: new Path2D(), fill: args[0], points: [[args[1], args[2]]], controls: [] };
-                _instruction = operand === vector.CURVE ? `this.surface.moveTo(${args[1]}, ${args[2]});` : null;
+                _instruction = operand === vector.CURVE ? `surface.moveTo(${args[1]}, ${args[2]});` : null;
             case vector.LINESEG:
                 pathInfo = pathInfo || { path: new Path2D(), fill: args[0], points: [] };
                 shapeContext.get('paths').push(pathInfo);
@@ -125,9 +175,9 @@ export default class CanvasVectorAssembler {
             case vector.ENDSEG:
                 _instruction = '';
                 if (shapeContext.get('paths')[renderer.pathId].fill === "1") {
-                    _instruction = `this.surface.fill(shapeContext.get('paths')[${renderer.pathId}].path);`;
+                    _instruction = `surface.fill(shapeContext.get('paths')[${renderer.pathId}].path);`;
                 } else {
-                    _instruction = `this.surface.stroke(shapeContext.get('paths')[${renderer.pathId}].path);`;
+                    _instruction = `surface.stroke(shapeContext.get('paths')[${renderer.pathId}].path);`;
                 }
                 renderer.pathId = null;
                 return _instruction;
@@ -146,12 +196,12 @@ export default class CanvasVectorAssembler {
                     }
                     return null;
                 } else if (args.length === 4) {
-                    return `this.surface.moveTo(${args[0]}, ${args[1]});` +
-                        `this.surface.lineTo(${args[2]}, ${args[3]});` +
-                        'this.surface.stroke();';
+                    return `surface.moveTo(${args[0]}, ${args[1]});` +
+                        `surface.lineTo(${args[2]}, ${args[3]});` +
+                        'surface.stroke();';
                 } else {
-                    return `this.surface.moveTo(${args[0]}, ${args[1]});` +
-                        'this.surface.stroke();';
+                    return `surface.moveTo(${args[0]}, ${args[1]});` +
+                        'surface.stroke();';
                 }
                 break;
             case vector.QUAD:
@@ -167,37 +217,37 @@ export default class CanvasVectorAssembler {
                     }
                     return null;
                 } else if (args.length === 4) {
-                    return 'this.surface.quadraticCurveTo(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})';
+                    return 'surface.quadraticCurveTo(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})';
                 } else {
-                    return 'this.surface.bezierCurveTo(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]})';
+                    return 'surface.bezierCurveTo(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]})';
                 }
                 break;
             case vector.ARC:
-                return 'this.surface.beginPath();' +
-                    `this.surface.ellipse(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});` +
-                    args[6] === 1 ? 'this.surface.fill();' : 'this.surface.stroke();';
+                return 'surface.beginPath();' +
+                    `surface.ellipse(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});` +
+                    args[6] === 1 ? 'surface.fill();' : 'surface.stroke();';
                 break;
             case vector.MOVETO:
-                return `this.surface.moveTo(${args[0]}, ${args[1]});`
+                return `surface.moveTo(${args[0]}, ${args[1]});`
                 break;
             case vector.SHAPE:
                 return `this.renderCompiledShape(${args[0]}, time, deltaTime);`;
                 break;
             case vector.TRANSLATE:
-                return `this.surface.translate(${args[0]}, ${args[1]});`;
+                return `surface.translate(${args[0]}, ${args[1]});`;
                 break;
             case vector.ROTATE:
-                return `this.surface.rotate(${args[0]});`;
+                return `surface.rotate(${args[0]});`;
                 break;
             case vector.SCALE:
-                return `this.surface.scale(${args[0]}, ${args[1]});`;
+                return `surface.scale(${args[0]}, ${args[1]});`;
                 break;
             case vector.USCALE:
-                return `this.surface.scale(${args[0]}, ${args[0]});`;
+                return `surface.scale(${args[0]}, ${args[0]});`;
                 break;
             case vector.SKEW:
                 const txfm = Matrix2d.identity().skew(args[0], args[1] || 0);
-                return `this.surface.transform(${txfm.a}, ${txfm.b}, ${txfm.c}, ${txfm.d}, ${txfm.e}, ${txfm.f});`;
+                return `surface.transform(${txfm.a}, ${txfm.b}, ${txfm.c}, ${txfm.d}, ${txfm.e}, ${txfm.f});`;
                 break;
             default:
                 throw new AssemblerError(this, `Unrecognized instruction: ${operand} w/(${args})`);

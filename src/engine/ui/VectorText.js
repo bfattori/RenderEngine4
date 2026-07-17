@@ -1,5 +1,5 @@
 import Constants from '../Constants.js';
-import { VECTOR_IL } from '../rendering/assemblers/CanvasVectorAssembler.js';
+import { VECTOR_IL } from '../rendering/assemblers/IntermediateLanguages.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 import { ShearingMatrix, Matrix2d } from '../core/Matrix.js';
@@ -32,14 +32,17 @@ function getWord(text, idx) {
  * @returns {Array} Array of IL instructions
  */
 export default function processText(text, spaceWidth = 45) {
-    // get the current font size of the render context
-    let fontSize = this.fontSize;
-
     // Parse and process each character in the text
     let i = 0;
     while (i < text.length) {
         const char = text[i];
         
+        if (char === '\n') {
+            this.API.carriageReturn();
+            i += 1;
+            continue;
+        }
+
         // Handle escape sequences
         if (char === '\\') {
             const nextChar = text[i + 1];
@@ -86,25 +89,43 @@ export default function processText(text, spaceWidth = 45) {
             let markerType = '';
             
             if (nextChar === '!') {
-                // pop to the last color
-                this.addInstruction(VECTOR_IL.COLOR);
-                i += 3;
-            } else if (nextChar === '+' || nextChar === '-') {
-                const scalar = nextChar === '+' ? 1 : -1;
+                let op = text[i + 2];
+                let reset = false;
+                if (op === '!') {
+                    reset = true;
+                    op = text[i + 3];
+                }
+                switch (op) {
+                    case 'z': 
+                        reset ? this.API.resetFontSize() : this.API.fontSize();
+                        break;
+                    case 'f':
+                        reset ? this.API.resetFillColor() : this.API.fillColor();
+                        break;
+                    case 'c':
+                        reset ? this.API.resetColor() : this.API.color();
+                        break;
+                    case 'w':
+                        reset ? this.API.resetWidth() : this.API.width();
+                        break;
+                }
+                i += reset ? 5 : 4;
+            } else if (nextChar !== '#' && ((isNaN(nextChar) && (nextChar === '+' || nextChar === '-')) || !isNaN(nextChar))) {
+                const sign = nextChar === '+' ? 1 : nextChar === '-' ? -1 : 0;
                 // Font size marker - next character
-                let nextNext = text[i + 2];
-                if (nextNext === '}') {
+                if (nextChar === '}') {
                     // pop to the last font size
-                    this.addInstruction(VECTOR_IL.FONTSIZE);
-                    i += 3;
+                    this.API.fontSize();
+                    i += 2;
                 } else {
                     // get the font size
+                    const currentSize = this.API.getFontSize();
                     let j = i + 2;
                     let foundBracket = false;
                     while (j < text.length && !foundBracket) {
                         if (text[j] === '}') {
-                            const fontSizeValue = parseFloat(text.substring(i + 2, j).trim());
-                            this.addInstruction(`${VECTOR_IL.FONT_SIZE} ${fontSizeValue}`);
+                            const scalar = parseFloat(text.substring(i + (sign !== 0 ? 2 : 1), j).trim()) || 0;
+                            this.API.fontSize(sign === 0 ? scalar : currentSize + (scalar * sign));
                             break;
                         }
                         j++;
@@ -114,13 +135,13 @@ export default function processText(text, spaceWidth = 45) {
                 continue;
             } else if (nextChar === '#') {
                 // Color name - hex color
-                const colorName = getWord.call(this, text, i).substr(1).trim();
-                this.addInstruction(`${VECTOR_IL.COLOR} ${colorName}`);
-                i += colorName.length + 2;
+                const colorHex = getWord.call(this, text, i).substr(1).trim();
+                this.API.color(colorHex);
+                i += colorHex.length + 2;
             } else if (nextChar !== undefined) {
                 // Color name - remove the { - may need to remove the training } as well??
                 const colorName = getWord.call(this, text, i).substr(1).trim();
-                this.addInstruction(`${VECTOR_IL.COLOR} ${colorName}`);
+                this.API.color(colorName);
                 i += colorName.length + 2;
             }
             continue;
@@ -131,10 +152,9 @@ export default function processText(text, spaceWidth = 45) {
             this.formatting.italics = !this.formatting.italics;
             if (ctx.debug) this.addInstruction(`// format: italics (${this.formatting.italics})`);
             if (this.formatting.italics) {
-                this.addInstruction(`${VECTOR_IL.PUSH}`);
-                this.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${ITALICS_MATRIX.toCanvas()}`);
+                this.API.transform(ITALICS_MATRIX);
             } else {
-                this.addInstruction(`${VECTOR_IL.POP}`)
+                this.API.popTransform();
             }
             i++;
             continue;
@@ -143,11 +163,12 @@ export default function processText(text, spaceWidth = 45) {
         // Handle bold marker
         if (char === '*' && text[i + 1] === '*') {
             this.formatting.bold = !this.formatting.bold;
+            let oldWidth = this.API.getWidth();
             if (ctx.debug) this.addInstruction(`// format: bold (${this.formatting.bold})`);
             if (this.formatting.bold) {
-                this.addInstruction(`${VECTOR_IL.WIDTH} 3`);
+                this.API.width(Constants.VECTOR_TEXT_BOLD);
             } else {
-                this.addInstruction(`${VECTOR_IL.WIDTH} 1`);
+                this.API.width(oldWidth);
             }
             i += 2;
             continue;
@@ -156,14 +177,15 @@ export default function processText(text, spaceWidth = 45) {
         // Handle underline marker
         if (char === '~') {
             this.formatting.underline = !this.formatting.underline;
-            this.startUnderline = this.formatting.underline ? this.cursor[0] : this.startUnderline;
+            this.__underline = this.formatting.underline ? this.cursor[0] : this.__underline;
             if (!this.formatting.underline && this.startUnderline !== null) {
                 // Draw underline from startUnderline to current cursor position
-                if (ctx.debug) this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.startUnderline} - ${this.cursor[0]})`);
-                this.addInstruction(`${VECTOR_IL.WIDTH} 2`);
-                this.addInstruction(`${VECTOR_IL.LINE} ${this.startUnderline} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))} ${this.cursor[0]} ${this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14))}`);
-                this.addInstruction(`${VECTOR_IL.WIDTH} ${this.lineWidth}`);
-                this.startUnderline = null;
+                //if (ctx.debug) this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.__underline} - ${this.API.cursor[0]})`);
+                // const oldWidth = this.lineWidth;
+                // this.API.width(2);
+                // this.API.line(this.startUnderline, this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14)), this.cursor[0], this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14)));
+                // this.API.width(oldWidth);
+                // this.__underline = null;
             }
             i++;
             continue;
@@ -220,8 +242,8 @@ function characterInstruction(char, width) {
             context.addInstruction(inst);
         });
     }
-    context.addInstruction(`${VECTOR_IL.TRANSLATE} ${ci.width} 0`);
-    //context.cursorDeltaX = ci.width;
+    context.API.translate(ci.width + context.letterSpacing, 0);
+    context.API.cursorDelta(ci.width + context.letterSpacing, 0);
 }
 
 /**
@@ -300,11 +322,11 @@ function getCharacterInstructions(char) {
             }
 
 
-            const [x, y] = [point[0], point[1]];
+            const [x, y] = [halfWidth + point[0], halfHeight + point[1]];
             
             if (first) {                
                 // Add first 2 points with initial line instruction
-                const [ex, ey] = next != null ? [next[0], next[1]] : [0,0];
+                const [ex, ey] = next != null ? [next[0] + halfWidth, next[1] + halfHeight] : [0,0];
                 instructions.push(`${VECTOR_IL.LINE} ${x} ${y} ${ex} ${ey}`); // Invert Y for screen coordinates
                 first = false;
                 j++;

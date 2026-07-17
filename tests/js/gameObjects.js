@@ -49,6 +49,10 @@ txform.scale = [1,1];
 // add the object to the world
 RenderEngine.world.addObject(gameObject);
 
+setInterval(() => {
+    txform.rotation += 0.1;
+}, 10);
+
 // Start the render loop   
 RenderEngine.start();
 

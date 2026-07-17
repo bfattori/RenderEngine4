@@ -9,8 +9,8 @@ import SoundSystemError from '../../sound/SoundSystem.js';
 
 class SoundEvent extends ComponentPartEvent {
     #source = null;
-    constructor(source, gameObject, time, deltaTime) {
-        super(gameObject, time, deltaTime);
+    constructor(part, source, time, deltaTime) {
+        super(part, time, deltaTime);
         this.#source = source;
     }
 

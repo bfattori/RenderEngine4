@@ -6,7 +6,7 @@
  */
 import RenderContext from './RenderContext.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
-import { RASTER_IL } from '../assemblers/RasterAssembler.js';
+import { RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 
 export default class RasterRenderContext extends RenderContext {
     constructor(renderer) {

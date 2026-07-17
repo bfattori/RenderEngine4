@@ -50,6 +50,7 @@ export default class RenderContext {
   #cursor = {x: 0, y: 0};
   #cursorLimits = {left: 0, top: 0, width: 800, height: 600};
   #lineHeight = 50;
+  #letterSpacing = 2;
   #immediateMode = false;
   #formatting = {
       bold: false,
@@ -65,6 +66,7 @@ export default class RenderContext {
    * @param {number} [options.worldDimensions=[800, 600]] - The world dimensions
    * @param {number} [options.maxPlanes=3] - Maximum number of render planes to support
    * @param {number} [options.lineHeight=40] - The line height for characters rendered
+   * @param {number} [options.letterSpacing=3] - The spacing between characters
    * @param {Array<string>} [options.planeNames] - Names of render planes (default: background, middle, foreground)
    */
   constructor(renderer, options = {}) {
@@ -84,6 +86,8 @@ export default class RenderContext {
       this.#worldDimensions.width = options.worldDimensions[0];
       this.#worldDimensions.height = options.worldDimensions[1];
     }
+
+    this.#letterSpacing = options.letterSpacing ? options.letterSpacing : this.#letterSpacing;
 
     // Flag to control whether culling is enabled
     this.#enableCulling = options.enableCulling !== false || this.#enableCulling;
@@ -115,6 +119,14 @@ export default class RenderContext {
    */
   set lineHeight(height) {
     this.#lineHeight = height;
+  }
+
+  get letterSpacing() {
+    return this.#letterSpacing;
+  }
+
+  set letterSpacing(s) {
+    this.#letterSpacing = s; 
   }
 
   /**
@@ -202,11 +214,11 @@ export default class RenderContext {
   // compiled shapes
   //----------------------------
   
-  getCompiledShape(instructions) {
-    return this.#renderer.getCompiledShape(instructions);
+  getCompiledShape(instructions, tag) {
+    return this.#renderer.getCompiledShape(instructions, tag);
   }
 
-  destroyCompiledShapre(opaqueId) {
+  destroyCompiledShape(opaqueId) {
     this.#renderer.destroyCompiledShape(opaqueId);
   }
 
@@ -266,14 +278,6 @@ export default class RenderContext {
   }
 
   /**
-   * Set the cursor X back to the starting cursor position and
-   * advance the line by the line height.
-   */
-  carriageReturn() {
-    this.#cursor = {x: 0, y: this.#cursor.y + this.#lineHeight};
-  }
-
-  /**
    * Updates the rendering state based on current world time and delta
    * @param {number} currentTime - Current game time in milliseconds
    * @param {number} deltaTime - Time since last update in milliseconds
@@ -321,7 +325,7 @@ export default class RenderContext {
    */
   pushTransform(transformationMatrix = null) {
     // multiply the new transform and store that
-    this.#world.pushTransformation(transformationMatrix !== null ? transformationMatrix : this.#world.currentTransform);    
+    this.#world.pushTransformation(transformationMatrix);    
   }
 
   /**
@@ -419,13 +423,6 @@ export default class RenderContext {
       // Sort objects into their respective planes
       this.sortObjectsByPlanes();
 
-      // render the objects to the renderer surface
-      this.#activeObjects.forEach(object => {
-        object.object.getComponentsByType(RenderPart).forEach(component => {
-          component.composeAndDraw(time, deltaTime);
-        });
-      });
-
       // play out any pending instructions
       this.#instructionBuffer.forEach(instruction => {
         this.#renderer.render(instruction, time, deltaTime);
@@ -434,6 +431,9 @@ export default class RenderContext {
 
       // post-frame generation
       this.#renderer.postFrame();
+
+      // clean up 
+      this.clearInstructionBuffer();
     }
     return true;
   }

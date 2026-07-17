@@ -8,7 +8,7 @@
  * @class ConvexHullCollider
  * @extends ColliderPart
  */
-
+import Constants from '../../Constants.js';
 import ColliderPart from './ColliderPart.js';
 import ConvexHullCollisionModel from '../../collisions/models/ConvexHull.js';
 
@@ -23,10 +23,10 @@ class ConvexHullCollider extends ColliderPart {
    * For vector objects, hull is based on points. For raster objects, hull is based on pixels.
    * 
    * @constructor
+   * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
    * @param {String|null} name - The optional name of the collider component
-   * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'ConvexHullCollider', engine = null) {
+  constructor(priority = Constants.COLLIDER_PRIORITY, name = 'ConvexHullCollider') {
     super(name, engine);
     
     /**

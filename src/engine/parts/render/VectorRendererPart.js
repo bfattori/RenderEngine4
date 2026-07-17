@@ -34,6 +34,10 @@ export default class VectorRendererPart extends RenderPart {
         return this.#formatting;
     }
 
+    get letterSpacing() {
+        return this.context.letterSpacing;
+    }
+
     /**
      * Adds a rendering instruction to the shape.
      * @param {String} inst - Instruction from the render method 
@@ -55,7 +59,7 @@ export default class VectorRendererPart extends RenderPart {
      */
     compile() {
         if (!this.#compiledShape) {
-            this.#compiledShape = this.context.getCompiledShape(this.instructions);
+            this.#compiledShape = this.context.getCompiledShape(this.instructions, this.name);
         } else {
             throw new GameComponentError(this, 'Attempt recompile an already compiled shape!');
         }
@@ -68,7 +72,6 @@ export default class VectorRendererPart extends RenderPart {
      * @param {number} deltaTime 
      */
     draw(time, deltaTime) {
-        this.pushTransform(this.cachedTransform);
         if (this.#compiledShape !== null) {
             // TODO: This should trigger a draw in the Renderer
             this.context.renderCompiledShape(this.#compiledShape, time, deltaTime);
@@ -77,5 +80,10 @@ export default class VectorRendererPart extends RenderPart {
                 this.context.render(instruction);
             });
         }
+    }
+
+    destroy() {
+        this.context.destroyCompiledShape(this.#compiledShape);
+        super.destroy();
     }
 }

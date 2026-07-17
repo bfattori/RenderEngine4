@@ -15,13 +15,14 @@ import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
 import RenderPart from '../render/RenderPart.js';
+import { Matrix2d } from '../../core/Matrix.js';
 
 import { ColliderEvent, CollisionData } from '../../parts/collision/Collider.js';
 
 class TransformEvent extends ComponentPartEvent {
     #matrix = null;
-    constructor(gameObject, matrix, time, deltaTime) {
-        super(gameObject, time, deltaTime);
+    constructor(part, matrix, time, deltaTime) {
+        super(part, time, deltaTime);
         this.#matrix = matrix;
     }
 
@@ -31,14 +32,14 @@ class TransformEvent extends ComponentPartEvent {
     }
 }
 
-class PreTransformEvent extends TransformEvent {
+class CommitTransformEvent extends TransformEvent {
     // we just need your type ...
 }
 
-export { PreTransformEvent, TransformEvent };
+export { CommitTransformEvent, TransformEvent };
 
 export default class TransformPart extends ComponentPart {
-    #localSpace = null;
+    #localTransform = Matrix2d.identity();
     #x = 0;
     #y = 0;
     #rotation = 0;
@@ -67,12 +68,6 @@ export default class TransformPart extends ComponentPart {
     constructor(priority = Constants.TRANSFORM_PRIORITY, name = 'TransformPart', options = {}) {
         super(priority, name);
         
-        this.#localSpace = {
-            position: [0,0],
-            rotation: 0,
-            scale: [1,1]
-        };
-
         this.#x = options?.position?.[0] || this.#x;
         this.#y = options?.position?.[1] || this.#y;
         this.#rotation = options?.rotation || 0;
@@ -99,18 +94,16 @@ export default class TransformPart extends ComponentPart {
      * Gets the local space properties for hierarchical transformations
      * @returns {Object} Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
      */
-    get localSpace() {
-        return this.#localSpace;
+    get localTransform() {
+        return this.#localTransform;
     }
 
     /**
      * Sets the local space properties for hierarchical transformations
-     * @param {Object} localSpace - Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
+     * @param {Matrix2d} localSpace - Local space properties: { position: [x, y], rotation: radians, scale: [scaleX, scaleY] }
      */
-    set localSpace({ position, rotation, scale }) {
-        this.#localSpace = { position, rotation, scale };
-        const pointInWorld = this.transformPoint(x, y);
-        return pointInWorld;
+    set localTransform(matrix) {
+        this.#localTransform = matrix;
     }
 
     /**
@@ -168,6 +161,8 @@ export default class TransformPart extends ComponentPart {
         if (this.#x === x && this.#y === y) return;
         this.#x = x;
         this.#y = y;
+        this.localTransform.e = x;
+        this.localTransform.f = y;
     }
 
     get x() {
@@ -178,14 +173,16 @@ export default class TransformPart extends ComponentPart {
         return this.#y;
     }
 
-    set x(X) {
+    set x(x) {
         if (this.#x === x) return;
-        this.#x = X;
+        this.#x = x;
+        this.localTransform.e = x;
     }
 
-    set y(Y) {
+    set y(y) {
         if (this.#y === y) return;
-        this.#y = Y;
+        this.#y = y;
+        this.localTransform.f = y;
     }
 
     /**
@@ -205,6 +202,7 @@ export default class TransformPart extends ComponentPart {
     set rotation(newRotation) {
         if (this.#rotation === newRotation) return;
         this.#rotation = newRotation;
+        this.localTransform.rotateSelf(newRotation);
     }
 
     /**
@@ -233,6 +231,7 @@ export default class TransformPart extends ComponentPart {
     set scaleX(scaleX) {
         if (this.#scale[0] === scaleX) return;
         this.#scale[0] = scaleX;
+        this.localTransform.scaleSelf(scaleX, this.scaleY);
     }
 
     /**
@@ -251,6 +250,7 @@ export default class TransformPart extends ComponentPart {
     set scaleY(scaleY) {
         if (this.#scale[1] === scaleY) return;
         this.#scale[1] = scaleY;
+        this.localTransform.scaleSelf(this.scaleX, scaleY);
     }
 
     /**
@@ -262,6 +262,7 @@ export default class TransformPart extends ComponentPart {
         Array.isArray(newScale) || (newScale = [newScale, newScale]);
         if (this.#scale[0] === newScale[0] && this.#scale[1] === newScale[1]) return;
         this.#scale = newScale;
+        this.localTransform.scaleSelf(newScale[0], newScale[1])
     }
 
     /**
@@ -274,16 +275,6 @@ export default class TransformPart extends ComponentPart {
         this.scale = [scaleX, scaleY];
     }
 
-    /**
-     * Gets the 2d transformation matrix for this component. Subclasses should override this to provide actual matrix math.
-     * 
-     * @returns {Array|null} 3x3 transformation matrix as and array of 3 rows (each an array of 3 elements), or null if not implemented
-     */
-    get transformMatrix() {
-        // Base TransformPart does not implement matrix math - subclasses should override
-        return null;
-    }
-
     //-------------------------------
     // Event handler
     //-------------------------------
@@ -293,9 +284,10 @@ export default class TransformPart extends ComponentPart {
      * The former occurs when user input is received from an input part. The latter is in response to a collision event containing
      * any adjustments to apply to the transform.
      * 
-     * @param {Event} eventObject - The event object
+     * @param {ComponentPartEvent} eventObject - The event object
      */
     onEvent(eventObject) {
+        if (super.onEvent(eventObject)) return;
         switch (eventObject.type) {
             case InputEvent:
                 this.updateTransformFromInput(eventObject);
@@ -345,7 +337,8 @@ export default class TransformPart extends ComponentPart {
 
     /**
      * Updates the transform based on current state and world bounds
-     * 
+     * Emits an event to the internal queue that a transform has been updated
+     *
      * @param {number} time - Current world time (Unix timestamp or frame count)
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      * @param {Object} [options] - Optional configuration for the update
@@ -355,116 +348,9 @@ export default class TransformPart extends ComponentPart {
         const events = options.events || [];
 
         // Update transform logic can be overridden by subclasses
-        this.applyTransformLogic(time, deltaTime);
-
-        // Check boundaries if world is available
-        if (this.world && this.#worldWidth !== undefined && this.#worldHeight !== undefined) {
-            this.#checkBoundaries(time, deltaTime, events);
-        }
+        this.emit(new TransformEvent(this, this.localTransform, time, deltaTime));
 
         return this;
-    }
-
-    /**
-     * Emits an event to the internal queue that a transform has been updated
-     * 
-     * @param {number} time - Current world time (Unix timestamp or frame count)
-     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
-     */
-    applyTransformLogic(time, deltaTime) {
-        this.emit(new PreTransformEvent(this.host, this.transformMatrix, time, deltaTime));
-    }
-
-    /**
-     * Checks boundaries and handles boundary collisions
-     * 
-     * @param {number} time - Current world time
-     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
-     * @param {Array} events - Array to push collision events to
-     */
-    #checkBoundaries(time, deltaTime, events) {
-        // X-axis boundary check
-        if (this.#x <= 0 && this.#worldWidth > 0) {
-            this.#x = 0;
-            this.#emitBoundaryEvent('x', 'left', time);
-        } else if (this.#x >= this.#worldWidth - this.#scale[0] && this.#worldWidth > 0) {
-            this.#x = this.#worldWidth - this.#scale[0];
-            this.#emitBoundaryEvent('x', 'right', time);
-        }
-
-        // Y-axis boundary check
-        if (this.#y <= 0 && this._worldHeight > 0) {
-            this.#y = 0;
-            this.#emitBoundaryEvent('y', 'bottom', time);
-        } else if (this.#y >= this.#worldHeight - this.#scale[1] && this.#worldHeight > 0) {
-            this.#y = this.#worldHeight - this.#scale[1];
-            this.#emitBoundaryEvent( 'y', 'top', time);
-        }
-
-        // Corner collision check (diagonal boundaries)
-        if (this.#x < 0 && this.#y < 0) {
-            this.#x = 0;
-            this.#y = 0;
-            this.#emitBoundaryEvent('corner', 'bottom-left', time);
-        } else if (this.#x > this.#worldWidth - this.#scale[0] && this.#y < 0) {
-            this.#x = this.#worldWidth - this.#scale[0];
-            this.#y = 0;
-            this.#emitBoundaryEvent('corner', 'top-right', time);
-        } else if (this.#x > this.#worldWidth - this.#scale[0] && this.#y > this.#worldHeight - this.#scale[1]) {
-            this.#x = this.#worldWidth - this.#scale[0];
-            this.#y = this.#worldHeight - this.#scale[1];
-            this.#emitBoundaryEvent('corner', 'top-right', time);
-        } else if (this.#x < 0 && this.#y > this.#worldHeight - this.#scale[1]) {
-            this.#x = 0;
-            this.#y = this.#worldHeight - this.#scale[1];
-            this._emitBoundaryEvent('corner', 'bottom-left', time);
-        }
-
-        return this;
-    }
-
-    /**
-     * Emits a boundary collision event
-     * 
-     * @param {string} axis - Axis of collision ('x' or 'y')
-     * @param {string} side - Side of collision ('left', 'right', 'top', 'bottom', 'corner')
-     * @param {number} time - Time of the collision event
-     * @param {number} deltaTime - Delta since the last frame and current time
-     */
-    #emitBoundaryEvent(events, axis, side, time, deltaTime) {
-        const collisionData = new CollisionData({
-            initiator: this,
-            collidedWith: this.world,
-            collisionType: 'WorldBoundary',
-            position: [this.#x, this.#y],
-            rotation: this.#rotation,
-            scale: this.#scale,
-            axis: axis,
-            side: side
-        });
-
-        this.emit(new ColliderEvent(this.gameObject, collisionData, time, deltaTime));
-    }
-
-    /**
-     * Checks if the object is within world boundaries
-     * 
-     * @returns {boolean} True if within bounds, false otherwise
-     */
-    isInBounds() {
-        if (!this.world || !this.#worldWidth || !this.#worldHeight) {
-            return true; // No bounds to check
-        }
-
-        const width = this.#scale[0];
-        const height = this.#scale[1];
-
-        return (
-            this.#x >= 0 &&
-            this.#x + width <= this.#worldWidth &&
-            this.#y >= 0 &&
-            this.#y + height <= this.#worldHeight
-        );
     }
 
     /**
@@ -486,6 +372,13 @@ export default class TransformPart extends ComponentPart {
         if (data.scale !== undefined) {
             this.scale = data.scale;
         }
+    }
+
+    destroy() {
+        this.#localTransform = null;
+        this.#colliderModel = null;
+        this.#world = null;
+        super.destroy();
     }
 }
 

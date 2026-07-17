@@ -13,8 +13,8 @@ import { ComponentPart, ComponentPartEvent, GameComponentError } from '../Compon
 
 class InputEvent extends ComponentPartEvent {
     #inputState = null;
-    constructor(inputState, gameObject, time, deltaTime) {
-        super(gameObject, time, deltaTime);
+    constructor(part, inputState, time, deltaTime) {
+        super(part, time, deltaTime);
         this.#inputState = inputState;
     }
 
@@ -34,6 +34,21 @@ export { InputEvent };
 class InputPart extends ComponentPart {
     #inputState = null;
     
+    /**
+     * Input event type constants
+     */
+    static INPUT_EVENTS = {
+        KEY_PRESSED: 'keypress',
+        KEY_DOWN: 'keydown',
+        KEY_UP: 'keyup',
+        KEY_HELD: 'keyheld',
+        KEY_ESCAPE: 'escape',
+        MOUSE_DOWN: 'mousedown',
+        MOUSE_UP: 'mouseup',
+        MOUSE_MOVE: 'mousemove',
+        WHEEL: 'wheel'
+    }
+
     constructor(priority = Constants.INPUT_PRIORITY, name = 'Input') {
         super(priority, name);
      }
@@ -103,19 +118,9 @@ class InputPart extends ComponentPart {
         // Implementation depends on subclass input handling
     }
 
-    /**
-     * Input event type constants
-     */
-    static INPUT_EVENTS = {
-        KEY_PRESSED: 'keypress',
-        KEY_DOWN: 'keydown',
-        KEY_UP: 'keyup',
-        KEY_HELD: 'keyheld',
-        KEY_ESCAPE: 'escape',
-        MOUSE_DOWN: 'mousedown',
-        MOUSE_UP: 'mouseup',
-        MOUSE_MOVE: 'mousemove',
-        WHEEL: 'wheel'
+    destroy() {
+        this.#inputState = null;
+        super.destroy();
     }
 
 }

@@ -40,29 +40,21 @@ const radToDegrees = 0.01745;
  * @param {Number} options.m12 - The value at (1, 2).
  * @param {Number} options.m22 - The value at (2, 2).
  */
-export class Matrix2d {
+export class Matrix2d extends DOMMatrix {
     #props = {scale:[1,1],rotation:0,position:[0,0]};
-    #matrix = new DOMMatrix();
     
-    constructor(m00, m10, m20, m01, m11, m21, m02, m12, m22) {
-        if (m00 instanceof Matrix2d) {
-            this.#matrix.a = m00._mtx.a;
-            this.#matrix.b = m00._mtx.b;
-            this.#matrix.c = m00._mtx.c;
-            this.#matrix.d = m00._mtx.d;
-            this.#matrix.e = m00._mtx.e;
-            this.#matrix.f = m00._mtx.f;
-        } else { 
-            this.#matrix.a = m00;
-            this.#matrix.b = m10;
-            this.#matrix.c = m01;
-            this.#matrix.d = m11;
-            this.#matrix.e = m20;
-            this.#matrix.f = m21;
+    constructor(...mtxArgs) {
+        if (mtxArgs[0] instanceof DOMMatrix) {
+            super(mtxArgs[0]);
+        } else if (mtxArgs.length > 1) { 
+            // a 2d array
+            super([mtxArgs[0], mtxArgs[3], mtxArgs[1], mtxArgs[4], mtxArgs[2], mtxArgs[5]]);
+        } else {
+            super();
         }
     }
 
-    get translation() {
+    get position() {
         return this.#props.position;
     }
 
@@ -74,10 +66,6 @@ export class Matrix2d {
         return this.#props.scale;
     }
 
-    get _mtx() {
-        return this.#matrix;
-    }
-
     /**
      * Multiply this matrix with another matrix. Updates the source matrix.
      * @param {Matrix2d} matrix2d The matrix to multiply this matrix by. 
@@ -87,10 +75,10 @@ export class Matrix2d {
         if (!matrix2d.constructor instanceof Matrix2d) {
             throw new RenderEngineError('Invalid matrix type. Must be a Matrix2d or DOMMatrix.');
         }
-        return this.#matrix.multiply(matrix2d);
+        return this.multiply(matrix2d);
     }
 
-    rotate(angle) {
+    #rotateMatrix(angle, method) {
         if (typeof angle === 'number') {
             angle = angle * radToDegrees;
         } else if (Array.isArray(angle)) {
@@ -99,41 +87,102 @@ export class Matrix2d {
             throw new RenderEngineError('Invalid angle type');
         }
         this.#props.rotation = angle;
-        this.#matrix = this.#matrix.rotate(angle);
-        
+        this[method](angle);
+        return this;
+    }
+
+    absRotate(angle) {
+        return this.#rotateMatrix(angle, 'rotate');
+    }
+
+    rotate(angle) {
+        return this.#rotateMatrix(angle, 'rotateSelf');
+    }
+
+    #translateMatrix(x, y, method) {
+       this.#props.position = [x, y];
+       this[method](x, y);
+       return this;
+    }
+
+    absTranslate(x, y) {
+        return this.#translateMatrix(x, y, 'translate');
     }
 
     translate(x, y) {
-        this.#props.position = [x, y];
-        this.#matrix = this.#matrix.translate(x, y);
+        return this.#translateMatrix(x, y, 'translateSelf');
     }
 
-    scale(sx, sy, originX = 0, originY = 0) {
+    #scaleMatrix(sx, sy, ox = 0, oy = 0, method) {
         this.#props.scale = [sx, sy];
-        this.#matrix = this.#matrix.scale(sx, sy, 1, originX, originY);
+        this[method](sx, sy, 1, ox, oy);
+        return this;
     }
 
-    uniformScale(scale, originX = 0, originY = 0) {
+    absScale(sx, sy, originX, originY) {
+        return this.#scaleMatrix(sx, sy, originX, originY, 'scale');
+    }
+
+    scale(sx, sy, originX, originY) {
+        return this.#scaleMatrix(sx, sy, originX, originY, 'scaleSelf');
+    }
+
+    absUniformScale(scale, originX, originY) {
         this.#props.scale = [scale, scale];
-        this.#matrix = this.#matrix.scale(scale, scale, 1, originX, originY);
+        this.#scaleMatrix(scale, scale, 1, originX, originY, 'scale');
     }
 
-    skew(sx, sy = 0) {
+    uniformScale(scale, originX, originY) {
+        this.#props.scale = [scale, scale];
+        this.#scaleMatrix(scale, scale, 1, originX, originY, 'scaleSelf');
+    }
+
+    #skew(sx, sy = 0, method) {
         this.#props.skew = [sx, sy];
-        this.#matrix = this.#matrix.skewX(sx);
+        this[method + 'X'](sx);
         if (sy !== 0) {
-            this.#matrix = this.#matrix.skewY(sy);
+            this[method + 'Y'](sy);
         }
         return this;
     }
 
+    absSkew(sx, sy) {
+        return this.#skew(sx, sy, 'skew');
+    }
+
+    skew(sx, sy) {
+        return this.#skew(sx, sy, 'skewSelf');
+    }
+
+    #invertMatrix(method) {
+        this[method]();
+    }
+
+    absInvert() {
+        return this.#invertMatrix('inverse');
+    }
+
     invert() {
-        this.#matrix = this.#matrix.inverse();
+        return this.#invertMatrix('invertSelf');
+    }
+
+    #modify({position, rotation, scale}, self = false) {
+        scale ? Array.isArray(scale) || (scale = [scale, scale]) : undefined;
+        if (scale) {
+            this[`scale${self?'Self':''}`](scale[0], scale[1]);
+        }
+        if (rotation !== undefined) {
+            this[`rotate${self?'Self':''}`](rotation);
+        }
+        if (position) {
+            this[`translate${self?'Self':''}`](position[0], position[1]);
+        }
         return this;
+
     }
 
     /**
-     * Update the matrix with new scaling, rotation, or position values
+     * Update the matrix scaling, rotation, or position values
      * at the same time, or one at a time. 
      * @param {Number[]} scale The [x, y] scale to apply (or the current scale)
      * @param {Number} rotation The rotation to apply (or the current rotation)
@@ -141,17 +190,19 @@ export class Matrix2d {
      * @return This matrix
      */
     update({position, rotation, scale}) {
-        scale ? Array.isArray(scale) || (scale = [scale, scale]) : undefined;
-        if (scale) {
-            this.scale(scale[0], scale[1]);
-        }
-        if (rotation !== undefined) {
-            this.rotate(rotation);
-        }
-        if (position) {
-            this.translate(position[0], position[1]);
-        }
-        return this;
+        return this.#modify({position, rotation, scale}, true);
+    }
+
+    /**
+     * Set the matrix scaling, rotation, or position values directly
+     * at the same time, or one at a time. 
+     * @param {Number[]} scale The [x, y] scale to apply (or the current scale)
+     * @param {Number} rotation The rotation to apply (or the current rotation)
+     * @param {Number[]} position The [x, y] position to apply (or the current position)
+     * @return This matrix
+     */
+    setTo({position, rotation, scale}) {
+        return this.#modify({position, rotation, scale});
     }
 
     /**
@@ -159,7 +210,7 @@ export class Matrix2d {
      * @returns The matrix as a string
      */
     toCanvas() {
-        return `${this.#matrix.a} ${this.#matrix.b} ${this.#matrix.c} ${this.#matrix.d} ${this.#matrix.e} ${this.#matrix.f}`;
+        return `${this.a} ${this.b} ${this.c} ${this.d} ${this.e} ${this.f}`;
     }
 
     /**
@@ -172,7 +223,7 @@ export class Matrix2d {
     static from(other) {
         if (Array.isArray(other)) {
             return Matrix2d.fromArray(other);
-        } else if (other instanceof Matrix2d) {
+        } else if (other instanceof DOMMatrix) {
             return new Matrix2d(other);
         } else if (typeof other === "string") {
             return Matrix2d.fromArray(other.split(' ').map(e => parseFloat(e)));

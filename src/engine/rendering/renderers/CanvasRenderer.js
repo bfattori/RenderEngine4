@@ -3,8 +3,9 @@ import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
-import { VECTOR_IL } from '../assemblers/CanvasVectorAssembler.js';
-
+import CanvasVectorAssembler from '../assemblers/CanvasVectorAssembler.js';
+import CanvasRasterAssembler from '../assemblers/CanvasRasterAssembler.js';
+import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 
 const POINT_SIZE = 4;
 const HALF_P = Math.floor(POINT_SIZE * 0.5);
@@ -42,6 +43,20 @@ export default class CanvasRenderer extends Renderer {
 
     get blitter() {
         return this.#blit;
+    }
+
+    get assembler() {
+        if (!super.assembler) {
+            if (this.renderContext.constructor.name === 'VectorRenderContext') {
+                super.assembler = CanvasVectorAssembler.instance;
+            } else if (this.renderContext.constructor.name === 'RasterRenderContext') {
+                super.assembler = CanvasRasterAssembler.instance;
+            } else {
+                throw new RenderEngineError("Unsupported render context type");
+            }
+        }
+
+        return super.assembler;
     }
 
     /**
@@ -107,56 +122,8 @@ export default class CanvasRenderer extends Renderer {
         }
     }
 
-    /**
-     * Compile a set of intermediate drawing instructions into a function that, when called, executes the
-     * instructions to the canvas' surface. Further references are to the opaque id, deferring rendering into
-     * the renderer's scope.
-     * 
-     * @param {String[]} instructions - The instructions to compile.
-     * @returns {number} The opaque reference to the function that will render the shape.
-     */
-    compile(instructions, tag = null) {
-        if (super.compile(instructions) === Constants.COMPILATION_FAILED) {
-            return Constants.COMPILATION_FAILED;
-        }
-        
-        // generate the re-usable function
-        const renderer = this;
-        const shapeContext = new Map();
-        shapeContext.set('paths', []);
-        shapeContext.set('assembled', []);
+    compile() {
 
-        // assemble the instructions
-        instructions.forEach(i => {
-            i = i.trim();
-            if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
-                // ignore comments
-                const assembled = renderer.assembler.assemble(renderer, i, shapeContext);
-                if (assembled !== null) {
-                    shapeContext.get('assembled').push(assembled);
-                }
-            }
-        });
-        
-        // assemble the function with its drawing context
-        const instructionSet = shapeContext.get('assembled').join("\n");
-
-        // the function that will be executed each frame to render the shape.
-        const shapeFn = Function("shapeContext", "time", "deltaTime", instructionSet);
-        const opaqueId = this.nextShapeId;
-        
-        // the stored procedure captures the shape context and the shape function, 
-        // and executes the shape function using the current engine time and delta time.
-        const storedProcedure = function(time, deltaTime) {
-            shapeFn.call(this, shapeContext, time, deltaTime);
-        }
-        if (tag !== null) {
-            storedProcedure.tag = tag;
-        }
-
-        // store the procedure that will run the instructions
-        this.compiledShapes[opaqueId] = storedProcedure;
-        return opaqueId;
     }
 
     /**
@@ -166,7 +133,7 @@ export default class CanvasRenderer extends Renderer {
      * @param {number} deltaTime - The time past since the last frame
      */
     renderCompiledShape(opaqueId, time, deltaTime) {
-        const drawShape = this.compiledShapes[opaqueId];
+        const drawShape = this.assembler.getCompiledShape(parseInt(opaqueId));
         if (drawShape) {
             drawShape.call(this, time, deltaTime);
         } else {
@@ -208,9 +175,9 @@ export default class CanvasRenderer extends Renderer {
 
                 // Bold thickens the line width
                 if (args[0] === 'BOLD' && this.localFormat.get('b')) {
-                    return `this.surface.lineWidth = ${ renderer.lineWidth * 3 };`;
+                    this.surface.lineWidth = Constants.VECTOR_TEXT_BOLD;
                 } else if (!this.localFormat.get('b')) {
-                    return `this.surface.lineWidth = ${ renderer.lineWidth };`;
+                    this.surface.lineWidth = renderer.lineWidth;
                 }
 
                 // italics applies a shearing transform matrix
@@ -233,20 +200,20 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.lineWidth = args[0];
                 break;
             case vector.TRANSFORM:
-                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                this.surface.transform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.ABS_TRANSFORM:
                 this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.PUSH:
                 this.surface.save();
-                //this.pushTransform(Matrix2d.from(this.surface.getTransform()));
+                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.POP:
                 this.surface.restore();
                 break;
-            case vector.IDENTITY:
-                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+            case vector.XFORM_RESET:
+                this.surface.resetTransform();
                 break;
             case vector.POINT:
                 this.surface.rect(args[0], args[1], 2, 2);
@@ -331,7 +298,11 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.transform(txfm.a, txfm.b, txfm.c, txfm.d, txfm.e, txfm.f);
                 break;
             case vector.FONTSIZE:
-                this.surface.scale(args[0], args[0]);
+                const current = args[0] / Constants.MAX_VECTOR_FONT_SIZE;
+                const last = args[1] / Constants.MAX_VECTOR_FONT_SIZE;
+                const delta = current / last;
+                // calculate a scaling factor for the delta
+                this.surface.scale(delta, delta);
                 break;
 
             // eat these in immediate mode
@@ -342,5 +313,14 @@ export default class CanvasRenderer extends Renderer {
             default:
                 throw new RendererError(this, `Unrecognized instruction: ${operand} w/(${args})`);
         }
+    }
+
+    destroy() {
+        this.#blit = null;
+        this.#htmlElement = null;
+        this.#canvas = null;
+        this.#offscreen = null;
+        this.#localFormat = null;
+        super.destroy();
     }
 }

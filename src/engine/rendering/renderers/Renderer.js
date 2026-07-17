@@ -1,8 +1,6 @@
 import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import CanvasVectorAssembler from '../assemblers/CanvasVectorAssembler.js';
-import CanvasRasterAssembler from '../assemblers/CanvasRasterAssembler.js';
 
 /**
  * Renderer error class for low-level rendering errors.
@@ -26,12 +24,10 @@ export default class Renderer {
     #renderContext = null;
     #surface = null;
     #hasCompiler = false;
-    #compiledShapes = {};
-    #opaqueShapeId = 100;
     #assembler = null;
 
     // when compiling shapes, this is the index to the path id 
-    // currently being updated in tha shape's drawing context
+    // currently being updated in the shape's drawing context
     #pathId = null;
     #path = null;
 
@@ -55,17 +51,11 @@ export default class Renderer {
     }
 
     get assembler() {
-        if (this.#assembler === null) {
-            if (this.#renderContext.constructor.name === 'VectorRenderContext') {
-                this.#assembler = CanvasVectorAssembler;
-            } else if (this.#renderContext.constructor.name === 'RasterRenderContext') {
-                this.#assembler = CanvasRasterAssembler;
-            } else {
-                throw new RenderEngineError("Unsupported render context type");
-            }
-        }
-
         return this.#assembler;
+    }
+
+    set assembler(assembler) {
+        this.#assembler = assembler;
     }
 
     /**
@@ -119,11 +109,8 @@ export default class Renderer {
     }
 
     get compiledShapes() {
-        return this.#compiledShapes;
-    }
-
-    get nextShapeId() {
-        return this.#opaqueShapeId++;
+        if (!this.#hasCompiler) return;
+        return this.assembler.getCompiledShapes();
     }
 
     /**
@@ -163,11 +150,9 @@ export default class Renderer {
      * @returns {number} An opaque Id that references the compiled shape.
      * @private
      */
-    compile(instructions) {
-        if (instructions.length === 0) {
-           console.warn('Compiling an empty shape!');
-           return Constants.COMPILATION_FAILED;
-        }
+    compile(instructions, tag) {
+        if (!this.#hasCompiler) return;
+        return this.assembler.compileShape(instructions, tag);
     }
 
     /**
@@ -191,7 +176,7 @@ export default class Renderer {
      */
     getCompiledShape(instructions, tag) {
         if (!this.#hasCompiler) { return Constants.COMPILATION_NOT_SUPPORTED; }
-        return this.compile(instructions, tag);
+        return this.assembler.compileShape(this, instructions, tag);
     }
 
     /**
@@ -202,8 +187,14 @@ export default class Renderer {
      */
     destroyCompiledShape(opaqueId) {
         if (!this.#hasCompiler) { return; }
-        this.#compiledShapes[opaqueId].destroy();
-        delete this.#compiledShapes[opaqueId];
+        this.assembler.destroyShape(opaqueId);
     }
 
+    destroy() {
+        this.#assembler = null;
+        this.#renderContext = null;
+        this.#surface = null;
+        this.#path = null;
+        super.destroy();
+    }
 }

@@ -1,5 +1,6 @@
 import GameObjectError from '../gameobject/GameObject.js';
-import { Matrix2d, NullMatrix } from './Matrix.js';
+import { Matrix2d, IdentityMatrix, NullMatrix } from './Matrix.js';
+import RenderEngineError from '../core/RenderEngineError.js';
 
 /**
  * GameWorld - Static class to contain game objects and manage their interactions
@@ -14,7 +15,7 @@ class GameWorld {
   #engine = null;
   #camera = null;
   #renderContext = null;
-  #currentMatrix = null;
+  #currentTransform = new Matrix2d(IdentityMatrix);
 
   /**
    * Creates a new GameWorld instance
@@ -34,7 +35,6 @@ class GameWorld {
     this.#engine = engine;
     this.#camera = camera;
     this.#renderContext = renderContext;
-    this.#currentMatrix = new Matrix2d(camera.transformMatrix);
   }
   
   //--------------------------------
@@ -165,7 +165,7 @@ class GameWorld {
    * Returns the current transform applied to the world
    */
   get currentTransform() {
-    return this.#currentMatrix;
+    return this.#currentTransform;
   }
 
   //--------------------------------
@@ -181,8 +181,11 @@ class GameWorld {
     // Clear previous collision events
     this.#collisionEvents = [];
     
+    //starting fresh
     this.resetTransforms();
-    this.renderContext.pushTransform(this.camera.transformMatrix);
+
+    // push the camera transform
+    this.pushTransformation(this.camera.worldTransform);
 
     // Update each GameObject in the world
     for (const object of this.#objects) {
@@ -193,6 +196,14 @@ class GameWorld {
       } catch (error) {
         console.error('GameWorld: Error updating GameObject:', object.id || 'unnamed', error);
       }
+    }
+    
+    // pop the camera transformation
+    this.popTransformation();
+
+    // should only be left with the world transformation (identity)
+    if (this.#transformStack.length > 1) {
+      throw new RenderEngineError('Transform stack is not empty at world update completion!');
     }
     
     // Process collision events
@@ -287,8 +298,8 @@ class GameWorld {
    * Reset world transformations (clears transform stack)
    */
   resetTransforms() {
-    this.#transformStack = [];
-    this.#currentMatrix = new Matrix2d(this.camera.transformMatrix);
+    this.#currentTransform = new Matrix2d(IdentityMatrix);
+    this.#transformStack = [this.#currentTransform];
   }
   
   /**
@@ -296,9 +307,9 @@ class GameWorld {
    * @param {Matrix2d} transformation - The transformation to push
    */
   pushTransformation(transformation) {
+    this.#transformStack.push(transformation);
     if (transformation) {
-      this.#transformStack.push(new Matrix2d(transformation));
-      this.#currentMatrix = transformation;
+      this.#currentTransform = transformation;
     }
   }
   
@@ -308,8 +319,11 @@ class GameWorld {
    */
   popTransformation() {
     if (this.#transformStack.length === 0) throw new RenderEngineError('Cannot pop from an empty transform stack');
-    this.#currentMatrix = this.#transformStack.pop();
-    return this.#currentMatrix;
+    const lastTransform = this.#transformStack.pop();
+    if (lastTransform !== null) {
+      this.#currentTransform = lastTransform;
+    }
+    return this.#currentTransform;
   }
 
   /**
@@ -321,7 +335,7 @@ class GameWorld {
       console.error('Transform stack is empty!');
       return NullMatrix;
     }
-    return this.#currentMatrix;
+    return this.#currentTransform;
   }
 
 }

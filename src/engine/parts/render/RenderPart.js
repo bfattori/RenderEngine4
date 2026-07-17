@@ -7,13 +7,13 @@ import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
 import Engine from '../../core/Engine.js';
 
-import { PreTransformEvent, TransformEvent } from '../../parts/transform/TransformPart.js';
+import { CommitTransformEvent, TransformEvent } from '../../parts/transform/TransformPart.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 class RenderEvent extends ComponentPartEvent {
     #frameTime = 0;
-    constructor(frameTime, gameObject, time, deltaTime) {
-        super(gameObject, time, deltaTime);
+    constructor(part, frameTime, time, deltaTime) {
+        super(part, time, deltaTime);
         this.#frameTime = frameTime;
     }
 
@@ -38,8 +38,8 @@ export default class RenderPart extends ComponentPart {
         this.#world = Engine.world;
 
         // listen for events
-        this.on(PreTransformEvent);
         this.on(TransformEvent);
+        this.on(CommitTransformEvent);
     }
 
     //--------------------------------
@@ -88,14 +88,15 @@ export default class RenderPart extends ComponentPart {
      * Event handler responds to {@link PreTransformEvent} and {@link TransformEvent}.
      * The former occurs when the transform intended for rendering is updated. The latter is a commit to use the newly calculated transform.
      * 
-     * @param {Event} eventObject - The event object
+     * @param {ComponentPartEvent} eventObject - The event object
      */
     onEvent(eventObject) {
+        if (super.onEvent(eventObject)) return;
         switch (eventObject.type) {
-            case PreTransformEvent:
-                this.transformModified(eventObject);
-                break;
             case TransformEvent:
+                this.modifyTransform(eventObject);
+                break;
+            case CommitTransformEvent:
                 this.commitTransform(eventObject);
                 break;
         }
@@ -108,7 +109,7 @@ export default class RenderPart extends ComponentPart {
      * @param {PreTransformEvent} transformEvent - A transformation event.
      * @returns void
      */
-    transformModified(transformEvent) {
+    modifyTransform(transformEvent) {
         if (this.#committed) return;
         this.#cachedTransform = transformEvent.consume(this);
     }
@@ -119,10 +120,9 @@ export default class RenderPart extends ComponentPart {
      * @param {TransformEvent} transformEvent - (optional) An optional transformation event.
      */
     commitTransform(transformEvent) {
-        if (transformEvent) {
+        if (!this.#committed && transformEvent) {
             this.#cachedTransform = transformEvent.consume(this);
         }
-        this.pushTransform(this.#cachedTransform);
         this.#committed = true;    
     }
 
@@ -144,7 +144,7 @@ export default class RenderPart extends ComponentPart {
      */
     update(time, deltaTime, options = {}) {
         this.composeAndDraw(time, deltaTime);
-        this.emit(new RenderEvent(performance.now() - time, this.gameObject, time, deltaTime));
+        this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
         return this;
     }
 
@@ -156,9 +156,9 @@ export default class RenderPart extends ComponentPart {
      * @returns {void}
      */
     composeAndDraw(time, deltaTime) {
+        this.context.pushTransform(this.#cachedTransform);
         this.draw(time, deltaTime);
-        while (this.#transformStackDepth-- > 0)
-            this.#context?.popTransform();
+        this.context.popTransform();
         this.#committed = false;
     }
 
@@ -170,24 +170,28 @@ export default class RenderPart extends ComponentPart {
     draw(time, deltaTime) {}
 
     /**
-     * Pushes a transform into the render context's transformation stack
-     * @param {Number[Number[]]} transformMatrix The Transformation matrix to apply to the render context.
-     */
-    pushTransform(transformMatrix) {
-        this.#transformStackDepth++;
-        this.#context?.pushTransform(transformMatrix);
-    }
-
-    popTransform() {
-        this.#transformStackDepth--;
-        return this.#context?.popTransform();
-    }
-
-    /**
      * Add a delta value to the X position of the cursor.
      * @param {number} delta - The value to modify the X position by
      */
     set cursorDeltaX(delta) {
         this.#context.cursorX += delta;
+    }
+
+    pushTransform(transform) {
+        this.context.pushTransform(transform);
+    }
+
+    popTransform() {
+        this.context.popTransform();
+    }
+
+    resetTransforms() {
+        this.context.resetTransforms();
+    }
+
+    destroy() {
+        this.off(TransformEvent);
+        this.off(CommitTransformEvent);
+        super.destroy();
     }
 }

@@ -8,7 +8,7 @@
  * @class CABCCollider
  * @extends ColliderPart
  */
-
+import Constants from '../../Constants.js';
 import ColliderPart from './ColliderPart.js';
 import CABCShape from '../../collisions/models/CABC.js';
 
@@ -24,11 +24,11 @@ class CABCCollider extends ColliderPart {
    * radius to define the collision circle.
    * 
    * @constructor
+   * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
    * @param {String} name - Optional name for this component
-   * @param {Engine|null} engine - Optional engine reference
    */
-  constructor(name = 'CABCCollider', engine = null) {
-    super(name, engine);
+  constructor(priority = Constants.COLLIDER_PRIORITY, name = 'CABCCollider') {
+    super(priority, name);
     
     /**
      * Radius of the bounding circle for collision detection

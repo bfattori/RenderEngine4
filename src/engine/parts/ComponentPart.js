@@ -8,14 +8,18 @@ import RenderEngineError from '../core/RenderEngineError.js';
 import { Event } from '../core/EventEngine.js';
 
 class ComponentPartEvent extends Event {
-    #gameObject = null;
-    constructor(gameObject, time, deltaTime) {
+    #part = null;
+    constructor(part, time, deltaTime) {
         super(time, deltaTime);
-        this.#gameObject = gameObject;
+        this.#part = part;
     }
 
-    get gameObject() {
-      return this.#gameObject;
+    get part() {
+      return this.#part;
+    }
+
+    get priority() {
+      return this.#part.priority;
     }
 
     consume(consumer) {
@@ -49,7 +53,7 @@ class ComponentPart {
 
   /**
    * Creates a new ComponentPart instance
-   * @param {number} priority - Priority of execution (0.0 to 1.0, with 1.0 being highest)
+   * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
    * @param {string} name - Optional name for this component
    */
   constructor(priority = Constants.defaultPriority, name = '') {
@@ -96,6 +100,10 @@ class ComponentPart {
    */
   get host() {
     return this.#host;
+  }
+
+  get world() {
+    return this.#host.world;
   }
 
   /**
@@ -156,7 +164,7 @@ class ComponentPart {
    * @param {*} data - The related event data
    */
   onEvent(eventObject) {
-    throw new ComponentPartError(this, 'Component does not have an event handler!');
+    return eventObject.priority > this.priority;
   }
 
   /**
@@ -256,6 +264,14 @@ class ComponentPart {
       if (data.host !== undefined) this.host = data.host;
       if (data.name !== undefined) this.name = data.name;
       if (data.priority !== undefined) this.priority = data.priority;
+  }
+
+  destroy() {
+    if (this.host) {
+      this.host.removeComponent(this);
+    }
+    this.#type = null;
+    this.#localEventContext = null;
   }
 }
 

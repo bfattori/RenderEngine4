@@ -9,28 +9,36 @@ const Constants = {
     defaultPriority: 0.5,
     
     // InputComponent priority - highest priority for immediate response
-    INPUT_PRIORITY: 1.0,
+    INPUT_PRIORITY: 0.0,
     
     // TransformComponent priority - updated each frame before rendering
-    TRANSFORM_PRIORITY: 0.8,
+    TRANSFORM_PRIORITY: 0.5,
     
     // ColliderComponent priority - runs at mid-cycle
-    COLLIDER_PRIORITY: 0.5,
+    COLLIDER_PRIORITY: 0.8,
     
     // RenderComponent priority - renders after updates complete
-    RENDER_PRIORITY: 0.0,
+    RENDER_PRIORITY: 1.0,
     
     // SoundComponent priority - handles audio playback independently
-    SOUND_PRIORITY: 0.15,
+    SOUND_PRIORITY: 0.92,
     
     // Particle rendering priority
-    PARTICLE_RENDER_PRIORITY: 0.13,
+    PARTICLE_RENDER_PRIORITY: 0.98,
 
     // No operation
     NOOP: NOP,
     
     // Console error logging
     ERROR_LOGGER: ENGINE_ERRORS,
+
+    DEFAULT_VECTOR_LINE_COLOR: '#00000000',
+    DEFAULT_VECTOR_FILL_COLOR: '#00000000',
+    DEFAULT_VECTOR_LINE_WIDTH: 1,
+    DEFAULT_VECTOR_FONT_SIZE: 10,
+    MAX_VECTOR_FONT_SIZE: 100,
+
+    VECTOR_TEXT_BOLD: 2,
 
     // Compilation
     COMPILATION_FAILED: -1,

@@ -1,6 +1,9 @@
 import RenderEngineError from '../core/RenderEngineError.js';
 import ComponentPart from '../parts/ComponentPart.js';
 import EventEngine from '../core/EventEngine.js';
+import { Matrix2d, IdentityMatrix } from '../core/Matrix.js';
+import TransformPart from '../parts/transform/TransformPart.js';
+import Engine from '../core/Engine.js';
 
 /**
  * GameObjectError contains the {@link GameObject} related to the error.
@@ -27,6 +30,7 @@ export default class GameObject {
   #componentMap = new Map();
   #eventContext = null;
   #world = null;
+  #objectTransform = null;
 
   static #nextId = 0;
   static get nextId() {
@@ -168,6 +172,7 @@ export default class GameObject {
     
     component.host = this;
     component.eventContext = this.#eventContext;
+
     return this;
   }
 
@@ -217,10 +222,11 @@ export default class GameObject {
    * @param {number} time - Current world time
    * @param {number} deltaTime - Time elapsed since last update
    */
-  update(time, deltaTime) {
+  update(time, deltaTime, cameraMatrix) {
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
     
+    // Find the first transform component - this affects the object
     for (const component of sortedComponents) {
       if (typeof component.update === 'function') {
         try {

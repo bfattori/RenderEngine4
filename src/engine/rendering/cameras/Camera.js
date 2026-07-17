@@ -52,7 +52,7 @@ export default class Camera {
      * Get the camera transform
      * @return {Matrix2d} The camera transform matrix
      */
-    get transformMatrix() {
+    get worldTransform() {
         return this.#matrix;
     }
 
@@ -60,7 +60,7 @@ export default class Camera {
      * Set the camera transform
      * @param {Matrix2d} matrix - The camera transformation matrix
      */
-    set transformMatrix(matrix) {
+    set worldTransform(matrix) {
         if (!matrix.constructor instanceof DOMMatrix)
             throw new RenderEngineError('Input matrix must be Matrix2d or DOMMatrix');
         this.#matrix = matrix;

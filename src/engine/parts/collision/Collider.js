@@ -6,12 +6,12 @@
 import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
-import { PreTransformEvent } from '../transform/TransformPart.js';
+import { TransformEvent } from '../transform/TransformPart.js';
 
 class ColliderEvent extends ComponentPartEvent {
     #collisionData = null;
-    constructor(gameObject, collisionData, time, deltaTime) {
-        super(gameObject, time, deltaTime);
+    constructor(part, collisionData, time, deltaTime) {
+        super(part, time, deltaTime);
         this.#collisionData = collisionData;
     }
 
@@ -70,11 +70,12 @@ export default class ColliderPart extends ComponentPart {
   
   /**
    * Creates a ColliderPart with common collision detection functionality
+   * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
    * @param {String} name - Optional name for this component
    */
-  constructor(name = 'ColliderPart') {
-    super(Constants.COLLIDER_PRIORITY, name);
-    this.on(PreTransformEvent);
+  constructor(priority = Constants.COLLIDER_PRIORITY, name = 'ColliderPart') {
+    super(priority, name);
+    this.on(TransformEvent);
   }
 
   /**
@@ -110,6 +111,10 @@ export default class ColliderPart extends ComponentPart {
     return this.#collisions;
   }
 
+  get cachedTransform() {
+    return this.#cachedTransform;
+  }
+
   /**
    * Gets whether collisions have been detected in the current frame.
    * Can also be used to set the collision state for this frame.
@@ -141,7 +146,7 @@ export default class ColliderPart extends ComponentPart {
     this.#collided = true;
     
     // Notify via local event
-    this.emit(new ColliderEvent(this.host, collisionData, time, deltaTime));
+    this.emit(new ColliderEvent(this, collisionData, time, deltaTime));
   }
 
   /**
@@ -175,8 +180,9 @@ export default class ColliderPart extends ComponentPart {
    * @param {Event} eventObject - The event object
    */
  onEvent(eventObject) {
+    if (super.onEvent(eventObject)) return;
     switch (eventObject.type) {
-      case PreTransformEvent:
+      case LocalTransformEvent:
         this.transformUpdated(eventObject);
         break;
     }
@@ -273,10 +279,10 @@ export default class ColliderPart extends ComponentPart {
    * Removes this component from the game object
    */
   destroy() {
-    if (this.host) {
-      this.host.removeComponent(this);
+      this.#collisions = null;
       this.worldCollisionModel = null;
-    }
+      this.#cachedTransform = null;
+      super.destroy();
   }
 }
 

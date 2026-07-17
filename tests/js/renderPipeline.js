@@ -18,9 +18,9 @@ RenderEngine.init({
         viewport: [0, 0, 800, 600]
     },
     hooks: {
-        onInit: () => { RenderEngine.console.log("onInit: Hello world!"); },
-        onBeforeFrame: () => { RenderEngine.console.log("onBeforeFrame: Rendering frame!"); },
-        onFrame: () => { RenderEngine.console.log("onFrame: Frame rendered!") }
+        onInit: () => { console.log("onInit: Hello world!"); },
+        onBeforeFrame: () => { console.log("onBeforeFrame: Rendering frame!"); },
+        onFrame: () => { console.log("onFrame: Frame rendered!") }
     }
 });
 
@@ -39,24 +39,30 @@ context.getAPI()
     
     // the string "Inline Format" formatted 
     // with colors and font size changes
-    .reset()
+    .pushTransform()
     .translate(50, 330)
     .width(1)
-    .text("{#00f}**I{#f00}n**{green}{+2}l{orange}~i~{#2e867f}{+}ne")
-    .reset()
-    .translate(100, 445)
-    .text("{+2}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
-    .reset()
+    .text("{15}{#00f}**I{#f00}n**{green}{+12}l{orange}~i~{gold}{-2}n{mediumvioletred}e")
+    .popTransform()
+    .pushTransform()
+    .translate(100, 400)
+    .text("{60}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
+    .popTransform()
+    .pushTransform()
     .translate(80, 15)
-    .resetFontSize()
     .text("Plain text, no formatting.", 
-        {color: "black", fontSize: 1, lineWidth: 1})
-    .reset()
+        {color: "black", lineWidth: 1})
+    .popTransform()
+    .pushTransform()
     .translate(210, 90)
-    .resetFontSize()
-    .fontSize(5)
+    .fontSize(30)
     .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l")
+    .color("royalblue")
+    .translate(-60, 40)
+    .text("**{10}Absolute\n{5}Sizing**")
+    .popTransform()
     .color("blue")
+    .width(2)
     .curve(false, [60, 180], 
         q(90, 160, 100, 50), 
         q(140, 100, 200, 44));
