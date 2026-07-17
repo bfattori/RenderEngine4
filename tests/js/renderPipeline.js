@@ -24,12 +24,13 @@ RenderEngine.init({
     }
 });
 
-// draw some shapes and text
 const context = RE4.world.renderContext;
 
 // chainable API for drawing shapes and text
 const api = context.getAPI();
 const q = api.quadratic;
+
+// draw some shapes
 api
     .color("#0000ff").width(5)
     .line(100, 100, 300, 300)
@@ -38,8 +39,8 @@ api
     .color("#ff9100").width(10)
     .circle(100, 100, 50, false)
     
-    // the string "Inline Format" formatted 
-    // with colors and font size changes
+// the string "Inline" formatted 
+// with colors and font size changes
 api
     .pushTransform()
     .translate(50, 330)
@@ -47,12 +48,15 @@ api
     .text("{15}{#00f}**I{#f00}n**{green}{+12}l{orange}~i~{gold}{-2}n{mediumvioletred}e")
     .popTransform();
 
+// the string "Format" formatted 
+// font size changes
 api
     .pushTransform()
     .translate(100, 400)
     .text("{60}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
     .popTransform();
 
+// basic vector text rendering    
 api    
     .pushTransform()
     .translate(80, 15)
@@ -60,6 +64,7 @@ api
         {color: "black", lineWidth: 1})
     .popTransform();
 
+// italics, colorful
 api
     .pushTransform()
     .translate(210, 90)
@@ -70,6 +75,7 @@ api
     .text("**{10}Absolute\n{5}Sizing**")
     .popTransform();
 
+// testing curves
 api    
     .color("blue")
     .width(2)
