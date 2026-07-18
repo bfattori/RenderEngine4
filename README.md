@@ -1,23 +1,23 @@
-# RenderEngine4 🚀
-*High-performance, modular graphics engine for the modern web.*
+# RenderEngine4
+*A High-performance, modular graphics engine for the modern web.*
 
-## 📝 Overview
+## Overview
 RenderEngine4 is a sophisticated, high-performance graphics engine built for the web. It provides a modular, component-based architecture designed to empower developers to create complex 2D and 3D environments with ease. By leveraging a robust system of "Parts" and "Systems," it solves the complexity of manual engine management, allowing you to focus on creating unique game mechanics and interactive experiences.
 
-## ✨ Features
+## Features
 *   **Modular Component Architecture**: Compose complex behaviors using a flexible system of Parts (Input, Render, Sound, Transform).
 *   **Multi-Renderer Support**: Seamlessly switch between Canvas and WebGL rendering contexts.
 *   **Advanced Physics & Collision**: Integrated support for AABB, CABC, and Convex Hull collision models.
 *   **Dynamic Particle System**: High-performance particle emitters and effects for explosions, sprays, and more.
 *   **Robust Event System**: A centralized `EventEngine` to handle game logic and state changes efficiently.
 
-## 🛠️ Tech Stack
+## Tech Stack
 *   **Languages**: JavaScript (ESM)
 *   **Graphics APIs**: WebGL, Canvas API
 *   **Styling**: CSS3
 *   **Markup**: HTML5
 
-## ⚙️ Getting Started
+## Getting Started
 ### Prerequisites
 *   A modern web browser (Chrome, Firefox, Edge, or Safari)
 *   A basic understanding of JavaScript
@@ -34,7 +34,7 @@ Since this project is a client-side engine, no complex installation is required.
     cd RenderEngine4
     ```
 
-## 🚀 Usage
+## Usage
 To get started quickly, you can use the provided test pages or integrate the engine into your own HTML file.
 
 ### Quick Start with Test Page
@@ -52,11 +52,11 @@ const engineOptions = {
 renderEngine4(engineOptions);
 ```
 
-## 🤝 Contributing
+## Contributing
 Contributions are welcome! To contribute:
 1.  Fork the repository.
 2.  Create a feature branch.
 3.  Submit a Pull Request with a clear description of your changes.
 
-## 📄 License
-This project is licensed under the MIT License - see LICENSE.md for details.
+## License
+This project is licensed under the GNU General Public License 3.0 - see `LICENSE.md` for details.
