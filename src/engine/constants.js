@@ -32,17 +32,22 @@ const Constants = {
     // Console error logging
     ERROR_LOGGER: ENGINE_ERRORS,
 
-    DEFAULT_VECTOR_LINE_COLOR: '#00000000',
-    DEFAULT_VECTOR_FILL_COLOR: '#00000000',
-    DEFAULT_VECTOR_LINE_WIDTH: 1,
-    DEFAULT_VECTOR_FONT_SIZE: 10,
-    MAX_VECTOR_FONT_SIZE: 100,
-
-    VECTOR_TEXT_BOLD: 2,
+    VECTOR_DEFAULTS: {
+        LINE_HEIGHT: 15,
+        LINE_COLOR: '#00000000',
+        FILL_COLOR: '#00000000',
+        LINE_WIDTH: 1,
+        FONT_SIZE: 10,
+        
+        MAX_FONT_SIZE: 100,
+        TEXT_BOLD: 2
+    },
 
     // Compilation
-    COMPILATION_FAILED: -1,
-    COMPILATION_NOT_SUPPORTED: -2,
+    COMPILATION: {
+        FAILED: -1,
+        NOT_SUPPORTED: -2
+    },
     
     // Default engine configuration options
     DEFAULT_ENGINE_OPTIONS: {

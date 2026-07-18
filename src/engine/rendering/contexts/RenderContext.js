@@ -223,7 +223,6 @@ export default class RenderContext {
   }
 
   renderCompiledShape(opaqueId, time, deltaTime) {
-    this.#renderer.renderCompiledShape(opaqueId, time, deltaTime);
   }
 
   //-----------------------------

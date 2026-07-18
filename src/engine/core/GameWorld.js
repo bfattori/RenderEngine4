@@ -1,4 +1,4 @@
-import GameObjectError from '../gameobject/GameObject.js';
+import { GameObjectError } from '../gameobject/GameObject.js';
 import { Matrix2d, IdentityMatrix, NullMatrix } from './Matrix.js';
 import RenderEngineError from '../core/RenderEngineError.js';
 
@@ -35,6 +35,9 @@ class GameWorld {
     this.#engine = engine;
     this.#camera = camera;
     this.#renderContext = renderContext;
+
+    // start with the camera transform
+    this.pushTransformation(camera.worldTransform);
   }
   
   //--------------------------------
@@ -194,7 +197,7 @@ class GameWorld {
           object.update(currentTime, deltaTime);
         }
       } catch (error) {
-        console.error('GameWorld: Error updating GameObject:', object.id || 'unnamed', error);
+        console.error('GameWorld: Error updating GameObject:', object.name || 'unnamed', error);
       }
     }
     
@@ -229,7 +232,7 @@ class GameWorld {
         object.world = this;        
         return object;
     }
-    throw new GameObjectError(object, `GameObject ${object.id || 'unnamed'} already exists in world`);
+    throw new GameObjectError(object, `GameObject "${object.name || 'unnamed'}" already exists in world`);
   }
 
   /**

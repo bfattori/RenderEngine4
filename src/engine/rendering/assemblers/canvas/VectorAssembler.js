@@ -1,6 +1,6 @@
-import Constants from '../../Constants.js';
-import AssemblerError from './AssemblerError.js';
-import { VECTOR_IL } from './IntermediateLanguages.js';
+import Constants from '../../../Constants.js';
+import AssemblerError from '../AssemblerError.js';
+import { VECTOR_IL } from '../IntermediateLanguages.js';
 
 const compiledShapes = new Map();
 let opaqueShapeId = 100;
@@ -134,11 +134,11 @@ export default class CanvasVectorAssembler {
                 return `surface.lineWidth = ${args[0]};`;
                 break;
             case vector.FONTSIZE:
-                const current = args[0];
-                const last = args[1];
-                const delta = current - last;
+                const current = args[0] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
+                const last = args[1] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
+                const delta = current / last;
                 // calculate a scaling factor for the delta
-                return `this.surface.scale(${current}, ${current});`;
+                return `this.surface.scale(${delta}, ${delta});`;
                 break;
             case vector.TRANSFORM:
                 return `surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;

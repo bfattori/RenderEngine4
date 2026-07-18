@@ -35,10 +35,14 @@ const renderer = new VectorRendererPart();
 // add the parts to the game object
 gameObject.addComponentParts(txform, renderer);
 
+// add the object to the world
+// before making any modifications to it
+RenderEngine.world.addObject(gameObject);
+
 // vector renderer draws out the word "Colorful"
 renderer.API
-    .fontSize(4)
-    .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l");
+    .fontSize(20)
+    .text("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l");
 renderer.compile();
 
 // set position, rotation, and scale
@@ -46,12 +50,10 @@ txform.position = [400, 300];
 txform.rotation = 0;
 txform.scale = [1,1];
 
-// add the object to the world
-RenderEngine.world.addObject(gameObject);
 
 setInterval(() => {
     txform.rotation += 0.1;
-}, 10);
+}, 100);
 
 // Start the render loop   
 RenderEngine.start();

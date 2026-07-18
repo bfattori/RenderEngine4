@@ -32,6 +32,9 @@ export default class GameObject {
   #world = null;
   #objectTransform = null;
 
+  #fullSort = null;
+  #sorted = false;
+
   static #nextId = 0;
   static get nextId() {
     return GameObject.#nextId++;
@@ -43,7 +46,7 @@ export default class GameObject {
    */
   constructor(name) {
     // Generate default name if none provided
-    if (!name || name.trim() === '') {
+    if (!name || (name && name.trim() === '')) {
       const count = GameObject.nextId;
       name = `GameObject${count}`;
     }
@@ -94,11 +97,14 @@ export default class GameObject {
    */
   get sortedComponentParts() {
     // Sort components by priority (highest first)
-    return [...this.#components].sort((a, b) => {
+    if (this.#sorted) return this.#fullSort;
+    this.#fullSort = [...this.#components].sort((a, b) => {
       const aPriority = a.priority !== undefined ? a.priority : 0;
       const bPriority = b.priority !== undefined ? b.priority : 0;
-      return bPriority - aPriority;
+      return aPriority - bPriority;
     });
+    this.#sorted = true;
+    return this.#fullSort;
   }
 
   /**
@@ -172,6 +178,9 @@ export default class GameObject {
     
     component.host = this;
     component.eventContext = this.#eventContext;
+
+    this.#sorted = false;
+    this.#fullSort = null;
 
     return this;
   }

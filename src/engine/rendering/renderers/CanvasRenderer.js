@@ -3,8 +3,8 @@ import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
-import CanvasVectorAssembler from '../assemblers/CanvasVectorAssembler.js';
-import CanvasRasterAssembler from '../assemblers/CanvasRasterAssembler.js';
+import VectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
+import RasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
 import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 
 const POINT_SIZE = 4;
@@ -48,9 +48,9 @@ export default class CanvasRenderer extends Renderer {
     get assembler() {
         if (!super.assembler) {
             if (this.renderContext.constructor.name === 'VectorRenderContext') {
-                super.assembler = CanvasVectorAssembler.instance;
+                super.assembler = VectorAssembler.instance;
             } else if (this.renderContext.constructor.name === 'RasterRenderContext') {
-                super.assembler = CanvasRasterAssembler.instance;
+                super.assembler = RasterAssembler.instance;
             } else {
                 throw new RenderEngineError("Unsupported render context type");
             }
@@ -297,8 +297,8 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.setTransform(this.surface.getTransform().skewXSelf(args[0]));
                 break;
             case vector.FONTSIZE:
-                const current = args[0] / Constants.MAX_VECTOR_FONT_SIZE;
-                const last = args[1] / Constants.MAX_VECTOR_FONT_SIZE;
+                const current = args[0] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
+                const last = args[1] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
                 const delta = current / last;
                 // calculate a scaling factor for the delta
                 this.surface.scale(delta, delta);

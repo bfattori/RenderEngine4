@@ -1,10 +1,13 @@
+import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
+import { VECTOR_IL } from '../../rendering/assemblers/IntermediateLanguages.js';
+import getAPI from '../../rendering/contexts/api/VectorAPI.js';
 
 export default class VectorRendererPart extends RenderPart {
     #instructions = [];
-    #api = {};
+    #api = null;
     // the compiled shape object (if supported by the render context)
     #compiledShape = null;
     #formatting = {
@@ -13,17 +16,11 @@ export default class VectorRendererPart extends RenderPart {
       underline: false
     };
     
-    constructor(priority, name) {
-        super(priority, name = 'VectorRenderer');
+    constructor(priority = Constants.RENDER_PRIORITY, name = 'VectorRenderer') {
+        super(priority, name);
 
-        // redirect the renderer's calls from the context's API 
-        // methods to this component with this shape being the context of
-        // the function call
-        this.#api = Engine.renderContext.getAPI.call(this);
-    }
-
-    get API() {
-        return this.#api;
+        // retrieve an API context
+        this.#api = getAPI.call(this);
     }
 
     get instructions() {
@@ -38,6 +35,10 @@ export default class VectorRendererPart extends RenderPart {
         return this.context.letterSpacing;
     }
 
+    get API() {
+        return this.#api;
+    }
+
     get renderer() {
         return this.host.world.renderContext;
     }
@@ -48,6 +49,26 @@ export default class VectorRendererPart extends RenderPart {
      */
     addInstruction(inst) {
         this.#instructions.push(inst);
+    }
+
+    pushTransform(transform) {
+        super.pushTransform(transform);
+        this.addInstruction(`${VECTOR_IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
+    }
+
+    popTransform() {
+        const txfm = super.popTransform();
+        this.addInstruction(`${VECTOR_IL.POP}`);
+        return txfm;
+    }
+
+    resetTransforms() {
+        super.resetTransforms();
+        this.addInstruction(`${VECTOR_IL.XFORM_RESET}`);
+    }
+
+    setCursorPosition(x, y) {
+        this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
     }
 
     /**
@@ -77,8 +98,7 @@ export default class VectorRendererPart extends RenderPart {
      */
     draw(time, deltaTime) {
         if (this.#compiledShape !== null) {
-            // TODO: This should trigger a draw in the Renderer
-            this.context.renderCompiledShape(this.#compiledShape, time, deltaTime);
+            this.context.renderCompiledShape(this.#compiledShape);
         } else {
             this.instructions.forEach(instruction => {
                 this.context.render(instruction);

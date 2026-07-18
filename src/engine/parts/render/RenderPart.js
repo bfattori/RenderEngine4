@@ -27,15 +27,15 @@ export { RenderEvent };
 
 export default class RenderPart extends ComponentPart {
     #context = null;
-    #transformStackDepth = 0;
+    #localTransformStack = [];
     #world = null;
-    #cachedTransform = new Matrix2d();
     #committed = false;
+    
+    #lineHeight = Constants.VECTOR_DEFAULTS.LINE_HEIGHT;
     
     constructor(priority = Constants.RENDER_PRIORITY, name = 'RenderPart') {
         super(priority, name);
         this.#context = Engine.renderContext;
-        this.#world = Engine.world;
 
         // listen for events
         this.on(TransformEvent);
@@ -58,17 +58,26 @@ export default class RenderPart extends ComponentPart {
         return this.#context;
     }
 
-    get world() {
-        return this.#world;
-    }
-
     get renderer() {
         return this.context.renderer;
     }
 
-    get cachedTransform() {
-        return this.#cachedTransform;
+    get renderTransform() {
+        return this.peekTransform();
     }
+
+    get lineHeight() {
+        return this.#lineHeight;
+    }
+
+    /**
+     * Add a delta value to the X position of the cursor.
+     * @param {number} delta - The value to modify the X position by
+     */
+    set cursorDeltaX(delta) {
+        this.#context.cursorX += delta;
+    }
+
 
     //-------------------------------
     // Properties
@@ -78,6 +87,27 @@ export default class RenderPart extends ComponentPart {
         return {...super.properties, ...{
             context: this.#context
         }};
+    }
+
+    //------------------------------
+    // Local Transforms
+    //------------------------------
+
+    pushTransform(transform) {
+        this.#localTransformStack.push(transform);
+        
+    }
+
+    popTransform() {
+        return this.#localTransformStack.pop();
+    }
+
+    resetTransforms() {
+        this.#localTransformStack = [];
+    }
+
+    peekTransform() {
+        return this.#localTransformStack[this.#localTransformStack.length - 1];
     }
 
     //-------------------------------
@@ -111,7 +141,7 @@ export default class RenderPart extends ComponentPart {
      */
     modifyTransform(transformEvent) {
         if (this.#committed) return;
-        this.#cachedTransform = transformEvent.consume(this);
+        this.pushTransform(transformEvent.consume(this));
     }
 
     /**
@@ -121,7 +151,7 @@ export default class RenderPart extends ComponentPart {
      */
     commitTransform(transformEvent) {
         if (!this.#committed && transformEvent) {
-            this.#cachedTransform = transformEvent.consume(this);
+            this.pushTransform(transformEvent.consume(this));
         }
         this.#committed = true;    
     }
@@ -145,6 +175,7 @@ export default class RenderPart extends ComponentPart {
     update(time, deltaTime, options = {}) {
         this.composeAndDraw(time, deltaTime);
         this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
+        this.resetTransforms();
         return this;
     }
 
@@ -156,7 +187,7 @@ export default class RenderPart extends ComponentPart {
      * @returns {void}
      */
     composeAndDraw(time, deltaTime) {
-        this.context.pushTransform(this.#cachedTransform);
+        this.context.pushTransform(this.peekTransform());
         this.draw(time, deltaTime);
         this.context.popTransform();
         this.#committed = false;
@@ -168,26 +199,6 @@ export default class RenderPart extends ComponentPart {
      * @param {number} deltaTime 
      */
     draw(time, deltaTime) {}
-
-    /**
-     * Add a delta value to the X position of the cursor.
-     * @param {number} delta - The value to modify the X position by
-     */
-    set cursorDeltaX(delta) {
-        this.#context.cursorX += delta;
-    }
-
-    pushTransform(transform) {
-        this.context.pushTransform(transform);
-    }
-
-    popTransform() {
-        this.context.popTransform();
-    }
-
-    resetTransforms() {
-        this.context.resetTransforms();
-    }
 
     destroy() {
         this.off(TransformEvent);

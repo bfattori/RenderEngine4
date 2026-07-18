@@ -1,5 +1,5 @@
-import AssemblerError from './AssemblerError.js';
-import { RASTER_IL } from './IntermediateLanguages.js'; 
+import AssemblerError from '../AssemblerError.js';
+import { RASTER_IL } from '../IntermediateLanguages.js'; 
 
 export default class CanvasRasterAssembler {
     static #instance = null;

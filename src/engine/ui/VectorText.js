@@ -166,7 +166,7 @@ export default function processText(text, spaceWidth = 45) {
             let oldWidth = this.API.getWidth();
             if (ctx.debug) this.addInstruction(`// format: bold (${this.formatting.bold})`);
             if (this.formatting.bold) {
-                this.API.width(Constants.VECTOR_TEXT_BOLD);
+                this.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
             } else {
                 this.API.width(oldWidth);
             }
@@ -230,7 +230,7 @@ function characterInstruction(char, width) {
         if (!shapeCache.has(char)) {
             // Compile the character shape and store in cache
             const shapeId = context.renderer.getCompiledShape(ci.instructions, `CHAR '${char}'`);
-            if (shapeId !== Constants.COMPILATION_FAILED) {
+            if (shapeId !== Constants.COMPILATION.FAILED) {
                 shapeCache.set(char, shapeId);
                 context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
             }
