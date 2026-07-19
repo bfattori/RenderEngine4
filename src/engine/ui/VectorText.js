@@ -289,7 +289,9 @@ function getCharacterInstructions(char) {
         return {
             instructions: [],
             width: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
-            height: Constants.VECTOR_DEFAULTS.SPACE_WIDTH
+            height: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+            charWidth: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+            charHeight: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
         };    
     }
 

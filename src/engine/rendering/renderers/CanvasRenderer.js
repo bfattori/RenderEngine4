@@ -136,7 +136,7 @@ export default class CanvasRenderer extends Renderer {
         const drawShape = this.assembler.getCompiledShape(parseInt(opaqueId));
         if (drawShape) {
             drawShape.call(this, time, deltaTime);
-        } else {
+        } else if (opaqueId !== "undefined") {
             console.warn(`No compiled shape found for opaqueId: ${opaqueId}`);
         }
     }
