@@ -7,7 +7,7 @@ import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
 import Engine from '../../core/Engine.js';
 
-import { CommitTransformEvent, TransformEvent } from '../../parts/transform/TransformPart.js';
+import { CommitTransformEvent, TransformEvent } from '../../parts/transform/Transform2dPart.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 class RenderEvent extends ComponentPartEvent {
@@ -141,7 +141,7 @@ export default class RenderPart extends ComponentPart {
      */
     modifyTransform(transformEvent) {
         if (this.#committed) return;
-        this.pushTransform(transformEvent.consume(this));
+        this.pushTransform(this.host.worldTransform.multiply(transformEvent.consume(this)));
     }
 
     /**

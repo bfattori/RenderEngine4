@@ -5,7 +5,6 @@ const VECTOR_IL = {
   FONTSIZE: 'FONTSIZE',   // "FONTSIZE 12" would be a font size of 12
   FILL: 'FILL',           // "FILL #ff0000" would be a red fill color
   WIDTH: 'WIDTH',         // "WIDTH 5" would be a line width of 5
-  TOGGLE: 'TOGGLE',       // "TOGGLE BOLD" would toggle bold on/off
    
   // Transformation matrix Instructions (State Modifiers)
   TRANSFORM: 'TRANSFORM',         // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix

@@ -727,13 +727,14 @@ export default function getAPI() {
          * Text rendering method - generates IL instructions for text content with formatting
          * @param {string} text - Text content to render
          * @param {Object} options - Configuration options
+         * @param {Array<number>} textSize - After the text is processed this array will be populated with the overall size of the text rendered.
          * @param {string|number} [options.color] - Initial color (hex string or RGB values) (Default: '#000000')
          * @param {number} [options.lineWidth] - Initial line width (default: 1)
          * @param {number} [options.fontsize] - Initial font size (Default: 12)
          * @param {Object} [options.formatting] - Initial formatting states: {bold, italics, underline}
          * @returns {Object} Returns this for chaining
          */
-        text(text, options) {
+        text(text, options, textSize = [0, 0]) {
             // Validate input
             if (typeof text !== 'string' || text.length === 0) {
                 return context.API;
@@ -743,11 +744,11 @@ export default function getAPI() {
 
             context.API.resetFontSize();
 
-            // set the cursor position
-            const currentWorldTransform = context.world.peekTransformation();
+            // set the cursor position from world transform
+            const currentWorldTransform = Matrix2d.identity();
             context.API.cursorX(currentWorldTransform.e);
             context.API.cursorY(currentWorldTransform.f);
-            context.API.setCursorMargins(currentWorldTransform.e, 1000);
+            context.API.setCursorMargins(currentWorldTransform.e, context.world.width - currentWorldTransform.e);
 
             // Apply initial color if provided
             if (options.color && options.color !== context.lineColor) {
@@ -766,17 +767,19 @@ export default function getAPI() {
             context.API.width(options.lineWidth || context.API.getWidth());
 
             if (options.formatting.bold)
-                context.addInstruction(`${VECTOR_IL.TOGGLE} BOLD\n`);
+                context.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
 
             if (options.formatting.italics)
-                context.addInstruction(`${VECTOR_IL.TOGGLE} ITALICS\n`);
-            
-            if (options.formatting.underline)
-                context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
+                this.API.skew(-12);
+
+            // if (options.formatting.underline)
+            //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text and generate instructions
             context.pushTransform();
-            processText.call(context, text);
+            const result = processText.call(context, text);
+            textSize[0] = result.width;
+            textSize[1] = result.height;
             context.popTransform();
             context.API.resetFontSize();
 

@@ -1,24 +1,47 @@
 /**
- * Transform2d - 2D transform component with matrix math support
+ * Transform2dPart - 2D transform component with matrix math support
  * 
  * Extends TransformPart to provide 2D Cartesian coordinate system support
  * including rotation, scale operations, and matrix-based transformations for improved performance.
  * 
- * @class Transform2d
- * @extends TransformPart
+ * @class Transform2dPart
  */
-import TransformPart from './TransformPart.js';
 import Constants from '../../Constants.js';
+import ComponentPart from '../ComponentPart.js';
+import { ComponentPartEvent } from '../ComponentPart.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
-class Transform2dPart extends TransformPart {
-    #transformMatrix = null;
-    #enableMatrixCaching = true;
-    
+import { ColliderEvent, CollisionData } from '../../parts/collision/Collider.js';
+
+class TransformEvent extends ComponentPartEvent {
+    #matrix = null;
+    constructor(part, matrix, time, deltaTime) {
+        super(part, time, deltaTime);
+        this.#matrix = matrix;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#matrix;
+    }
+}
+
+class CommitTransformEvent extends TransformEvent {
+    // we just need your type ...
+}
+
+export { CommitTransformEvent, TransformEvent };
+
+class Transform2dPart extends ComponentPart {
+    #localTransform = Matrix2d.identity();
+    #localOrigin = [0, 0];
+
     /**
-     * Creates a new Transform2d instance
+     * Creates a new Transform2dPart instance
      * 
      * @constructor
+     * @param {String} name - The name of the part
+     * @param {number} priority - Optional execution priority (default: Constants.TRANSFORM_PRIORITY)
      * @param {Object} options - Configuration options
      * @param {Array} [options.position] - Coordinate in world space
      * @param {number} [options.position[0]=0] - X coordinate in world space
@@ -28,8 +51,17 @@ class Transform2dPart extends TransformPart {
      * @param {number} [options.scale[0]=1] - Scale factor for X axis
      * @param {number} [options.scale[1]=1] - Scale factor for Y axis
      */
-    constructor(priority = Constants.TRANSFORM_PRIORITY, name = 'Transform2dPart', options = {}) {
-        super(priority, name, options);
+    constructor(name = 'Transform2dPart', options = {}, priority = Constants.TRANSFORM_PRIORITY) {
+        super(name, priority);
+        
+        this.x = options.position ? options.position[0] : 0;
+        this.y = options.position ? options.position[1] : 0;
+        this.rotation = options?.rotation || 0;
+        this.scale = options?.scale !== undefined ? Array.isArray(options.scale) ? options.scale : [options.scale, options.scale] : [1, 1];
+
+        // subscribe for events
+        this.on(InputEvent);
+        this.on(ColliderEvent);
     }
 
     //-------------------------------
@@ -37,68 +69,76 @@ class Transform2dPart extends TransformPart {
     //-------------------------------
 
     /**
-     * Gets whether matrix caching is enabled
-     * @returns {boolean} True if matrix caching is enabled, false otherwise
-     */
-    get matrixCachingEnabled() {
-        return this.#enableMatrixCaching;
-    }
-
-    /**
-     * Enables or disables matrix caching for optimized rendering
-     * @param {boolean} enabled - Whether to enable matrix caching
-     */
-    set matrixCachingEnabled(enabled) {
-        this.#enableMatrixCaching = enabled;
-        if (enabled) {
-            this.applyTransformLogic();
-        }
-    }
-
-    /**
      * Gets the current transform matrix
-     * @returns {Array} The transform matrix [[m00, m01, m02], [m10, m11, m12], [m20, m21, m22]]
+     * @returns {Matrix2d} The transform matrix
      */
-    get transformMatrix() {
-        if (!this.#transformMatrix) {
-            this.applyTransformLogic();
-        }
-        return this.#transformMatrix;
+    get localTransform() {
+        return this.#localTransform;
     }
 
     /**
-     * Sets position in world space (direct assignment - overrides velocity/acceleration)
+     * Sets the local transform matrix
+     * @param {Matrix2d} transform - New transform matrix
+     */
+    set localTransform(transform) {
+        this.#localTransform = transform;
+    }
+
+    /**
+     * Sets position in local space
      * 
      * @param {number} x - New X coordinate
      * @param {number} y - New Y coordinate
      */
     set position([x, y]) {
-        super.position = [x, y];
+        this.#localTransform.translateSelf(x, y);
         return this;
     }
 
     /**
      * Gets local position
-     * @returns {Object} Position object
+     * @returns {Array<number>} Position coodinates, x and y
      */
     get position() {
-        return super.position;
-    }
-
-    get rotation() {
-        return super.rotation;
-    }
-
-    get scale() {
-        return super.scale;
+        return this.#localTransform.position;
     }
 
     /**
-     * Gets world position
-     * @returns {Object} Position object
+     * Set the rotation angle
+     * @param {number} angle - New rotation angle in degrees
      */
-    get worldPosition() {
-        return super.worldPosition;
+    set rotation(angle) {
+        this.#localTransform.rotateSelf(angle);
+    }
+
+    /**
+     * Get the rotation angle
+     * @returns {number} Rotation angle in degrees
+     */
+    get rotation() {
+        return this.#localTransform.rotation;
+    }
+
+    /**
+     * Sets scale factor (uniform or non-uniform depending on argument)
+     * 
+     * @param {number|Number[]} scale - A uniform scaling factor if a single number, non-uniform if an array
+     */
+    set scale(scale) {
+        if (Array.isArray(scale)) {
+            this.#localTransform.scaleSelf(scale[0], scale[1]);
+        } else {
+            this.#localTransform.uniformScaleSelf(scale);
+        }
+        return this;
+    }
+
+    /**
+     * Gets scale factor
+     * @returns {Number[]} Scale factors as an array [x, y]
+     */
+    get scale() {
+        return this.#localTransform.scaling;
     }
 
     /**
@@ -107,7 +147,7 @@ class Transform2dPart extends TransformPart {
      * @param {number} x - New X coordinate
      */
     set x(x) {
-        this.position[0] = x;
+        this.#localTransform.e = x;
         return this;
     }
 
@@ -117,30 +157,118 @@ class Transform2dPart extends TransformPart {
      * @param {number} y - New Y coordinate
      */
     set y(y) {
-        this.position[1] = y;
+        this.#localTransform.f = y;
         return this;
     }
 
     /**
-     * Sets rotation in radians (positive values rotate clockwise)
-     * 
-     * @param {number} rotation - New rotation angle in radians
+     * An immutable copy of the world transform for the host {@link GameObject}
+     * @returns {Matrix2d} The game object's world transform
      */
-    set rotation(rotation) {
-        // Normalize rotation to 0-2π range for predictable behavior
-        const normalized = rotation % (Math.PI * 2);
-        super.rotation = normalized;
+    get worldTransform() {
+        return Matrix2d.from(this?.host.worldTransform);
+    }
+
+    /**
+     * Returns the origin offset for this {@link GameObject}. This is a vector that represents the offset of the GameObject
+     * relative to its world coordinates.
+     * @returns {Array<number>} - The origin point of the GameObject
+     */
+    get origin() {
+        return this.#localOrigin;
+    }
+
+    /**
+     * Set the origin point for this {@link GameObject}. This is a vector that represents the position offset of the GameObject
+     * relative to its world coordinates.
+     * @param {Array<number>} [x, y] - The new origin point for the GameObject
+     */
+    set origin([x, y]) {
+        this.#localOrigin = [x, y];
+    }
+
+    //-------------------------------
+    // Event handler
+    //-------------------------------
+    
+    /**
+     * Event handler responds to {@link InputEvent} and {@link ColliderEvent}.
+     * The former occurs when user input is received from an input part. The latter is in response to a collision event containing
+     * any adjustments to apply to the transform.
+     * 
+     * @param {ComponentPartEvent} eventObject - The event object
+     */
+    onEvent(eventObject) {
+        if (super.onEvent(eventObject)) return;
+        switch (eventObject.type) {
+            case InputEvent:
+                this.updateTransformFromInput(eventObject);
+                break;
+            case ColliderEvent:
+                this.reactToCollision(eventObject);
+                break;
+        }
+    }
+
+    /**
+     * Fired when the input parts receive input. This method should be overridden by subclasses to update the transform based on user input.
+     * @param {InputEvent} inputEvent - The input event
+     */
+    updateTransformFromInput(inputEvent) {
+    }
+
+    /**
+     * Fired when a collider part is updated. This method should be overridden by subclasses to react to the collision event.
+     * 
+     * @param {ColliderEvent} colliderEvent - The collision event
+     */
+    reactToCollision(colliderEvent) {
+    }
+
+     // -------------------------------
+    // Update and Event Handling
+    // -------------------------------
+
+    /**
+     * Updates the transform based on current state and world bounds
+     * Emits an event to the internal queue that a transform has been updated
+     *
+     * @param {number} time - Current world time (Unix timestamp or frame count)
+     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
+     */
+    update(time, deltaTime) {
+        // Emit the computed local transform
+        const emitTransform = Matrix2d.from(this.localTransform)
+        emitTransform.e -= this.origin[0];
+        emitTransform.f -= this.origin[1];
+        this.emit(new TransformEvent(this, emitTransform, time, deltaTime));
         return this;
     }
 
     /**
-     * Sets scale factor (uniform or non-uniform depending on argument)
+     * Deserializes transform data and updates the component state. Subclasses should override this to handle specific properties.
      * 
-     * @param {number|Number[]} scale - A uniform scaling factor if a single number, non-uniform if an array
+     * @param {Object} data - Serialized transform data to restore from
+     * @param {Array} data.position - Position array [x, y]
+     * @param {number} data.rotation - Rotation in radians
+     * @param {number} data.scale - Scale value [x, y] only X for uniform scaling (Y is ignored)
      */
-    set scale(scale) {
-        super.scale = !Array.isArray(scale) ? Math.max(0.01, scale) : [Math.max(0.01, scale[0]), Math.max(0.01, scale[1])]; // Prevent zero or negative scale
-        return this;
+    deserialize(data) {
+        super.deserialize(data);
+        if (data.position) {
+            this.position = data.position;
+        }
+        if (data.rotation !== undefined) {
+            this.rotation = data.rotation;
+        }
+        if (data.scale !== undefined) {
+            this.scale = data.scale;
+        }
+    }
+
+    destroy() {
+        this.#localTransform = null;
+        super.destroy();
     }
 
     //-------------------------------
@@ -154,33 +282,13 @@ class Transform2dPart extends TransformPart {
     get properties() {
         const properties = super.properties;
         return { ...properties, ...{
-            localSpace: this.localSpace,
-            matrixCachingEnabled: this.matrixCachingEnabled,
-            _transformMatrix: this.transformMatrix
+            localTransform: this.#localTransform
         }};
     }
 
     //-------------------------------
     // Lifecycle Methods
     //-------------------------------
-
-    /**
-     * Updates the cached transform matrix based on current properties
-     * 
-     * @private
-     */
-    updateTransformLogic() {
-        if (!this.#enableMatrixCaching) {
-            return;
-        }
-
-        this.#transformMatrix = this.host.transformMatrix.update({
-            scale: this.scale, 
-            rotation: this.rotation, 
-            position: this.position
-        });
-        super.updateTransformLogic();
-    }
 
     /**
      * Adds delta to position (used for smooth movement)
@@ -214,7 +322,7 @@ class Transform2dPart extends TransformPart {
      * @returns {Array} Transformed point with x and y elements [worldX, worldY]
      */
     transformPoint(localX, localY) {
-        return this.#transformMatrix.mul(this.world.currentTransform);
+        return this.#localTransform.mul(this.world.currentTransform);
     }
 
     /**
@@ -236,7 +344,7 @@ class Transform2dPart extends TransformPart {
      * @returns {Array} Local space coordinates with x and y elements [localX, localY]
      */
     inverseTransform(worldX, worldY) {
-        return this.#transformMatrix.invert().mul(this.world.currentTransform);
+        return this.#localTransform.invert().mul(this.world.currentTransform);
 
         // const det = m[0] * m[3] - m[2] * m[1];
         
@@ -254,7 +362,7 @@ class Transform2dPart extends TransformPart {
     }
 
     destroy() {
-        this.#transformMatrix = null;
+        this.#localTransform = null;
         super.destroy();
     }
 }

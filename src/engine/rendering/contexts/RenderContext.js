@@ -4,7 +4,6 @@
  */
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import TransformPart from '../../parts/transform/TransformPart.js';
 import RenderPart from '../../parts/render/RenderPart.js';
 
 /**
@@ -586,13 +585,8 @@ export default class RenderContext {
    * @returns {boolean} true if the object is within the visible area
    */
   isObjectVisible(object) {
-    const transform = object.getComponentsByType(TransformPart);
-    if (transform.length != 0) {
-      // assume the first transform component is the object's position
-      const position = transform[0].position;
-      return this.worldToScreen(position.x, position.y) !== null;
-    }
-    return true; 
+    const transform = object.worldTransform;
+    return this.worldToScreen(transform.position[0], transform.position[1]) !== null;
   }
   
   /**

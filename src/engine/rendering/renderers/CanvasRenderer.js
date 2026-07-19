@@ -1,5 +1,5 @@
 import Constants from '../../Constants.js';
-import { IdentityMatrix, ShearingMatrix } from '../../core/Matrix.js';
+import { IdentityMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
@@ -168,28 +168,6 @@ export default class CanvasRenderer extends Renderer {
         const parts = instruction.trim().split(' ');
         const {operand, args} = {operand: parts.shift(), args: parts};
         switch (operand) {
-            case vector.TOGGLE:
-                args[0] === 'BOLD' && (this.localFormat.set('b', !this.localFormat.get('b')));
-                args[0] === 'ITALICS' && (this.localFormat.set('i', !this.localFormat.get('i')));
-                args[0] === 'UNDERLINE' && (this.localFormat.set('u', !this.localFormat.get('u')));
-
-                // Bold thickens the line width
-                if (args[0] === 'BOLD' && this.localFormat.get('b')) {
-                    this.surface.lineWidth = Constants.VECTOR_TEXT_BOLD;
-                } else if (!this.localFormat.get('b')) {
-                    this.surface.lineWidth = renderer.lineWidth;
-                }
-
-                // italics applies a shearing transform matrix
-                if (args[0] === 'ITALICS' && this.localFormat.get('i')) {
-                    return `this.surface.transform(${ShearingMatrix[0,0]}, ${ShearingMatrix[0,1]}, ${ShearingMatrix[1,0]}, ${ShearingMatrix[1,1]}, ${ShearingMatix[2,0]}, ${ShearingMatrix[2,1]});` +
-                        'this.surface.save();';
-                } else if (!this.localFormat.get('i')) {
-                    // pop the shearing matrix off the internal state stack
-                    return 'this.surface.restore();';
-                }
-
-                break;
             case vector.COLOR:
                 this.surface.strokeStyle = args[0];
                 break;

@@ -56,7 +56,7 @@ class ComponentPart {
    * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
    * @param {string} name - Optional name for this component
    */
-  constructor(priority = Constants.defaultPriority, name = '') {
+  constructor(name = '', priority = Constants.defaultPriority) {
     this.#priority = priority;
     this.#name = name;
     

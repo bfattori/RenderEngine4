@@ -40,7 +40,9 @@ const Constants = {
         FONT_SIZE: 10,
         
         MAX_FONT_SIZE: 100,
-        TEXT_BOLD: 2
+        TEXT_BOLD: 2,
+        SPACE_WIDTH: 10,
+        CHAR_SPACING: 3
     },
 
     // Compilation

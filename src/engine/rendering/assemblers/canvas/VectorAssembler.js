@@ -103,27 +103,6 @@ export default class CanvasVectorAssembler {
         let _instruction;
 
         switch (operand) {
-            case vector.TOGGLE:
-                args[0] === 'BOLD' && (renderer.localFormat.set('b', !renderer.localFormat.get('b')));
-                args[0] === 'ITALICS' && (renderer.localFormat.set('i', !renderer.localFormat.get('i')));
-                args[0] === 'UNDERLINE' && (renderer.localFormat.set('u', !renderer.localFormat.get('u')));
-
-                // Bold thickens the line width
-                if (args[0] === 'BOLD' && renderer.localFormat.get('b')) {
-                    return `surface.lineWidth = ${ Constants.VECTOR_TEXT_BOLD };`;
-                } else if (!renderer.localFormat.get('b')) {
-                    return `surface.lineWidth = ${ renderer.lineWidth };`;
-                }
-
-                // italics applies a shearing transform matrix
-                if (args[0] === 'ITALICS' && renderer.localFormat.get('i')) {
-                    return `surface.transform(${ShearingMatrix[0,0]}, ${ShearingMatrix[0,1]}, ${ShearingMatrix[1,0]}, ${ShearingMatrix[1,1]}, ${ShearingMatix[2,0]}, ${ShearingMatrix[2,1]});` +
-                        'surface.save();';
-                } else if (!renderer.localFormat.get('i')) {
-                    // pop the shearing matrix off the internal state stack
-                    return 'surface.restore();';
-                }
-                break;
             case vector.COLOR:
                 return `surface.strokeStyle = "${args[0]}";`;
                 break;

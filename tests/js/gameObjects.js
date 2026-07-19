@@ -6,6 +6,8 @@ import GameObject from '../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../src/engine/parts/transform/Transform2dPart.js';
 import VectorRendererPart from '../../src/engine/parts/render/VectorRendererPart.js';
 
+import { Matrix2d } from '../../src/engine/core/Matrix.js';
+
 // create a double-buffered canvas renderer
 RenderEngine.init({
     flags: {
@@ -15,7 +17,7 @@ RenderEngine.init({
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                false
+                true
             ),
             { enableCulling: false }
         ),
@@ -28,32 +30,35 @@ RenderEngine.init({
 });
 
 // game object and component parts
+// - set world position, rotation, and scale
 const gameObject = new GameObject();
-const txform = new Transform2dPart();
-const renderer = new VectorRendererPart();
+gameObject
+    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
+    .worldTransform = Matrix2d.identity().update({
+        position: [400, 300],
+        rotation: 0,
+        scale: [1, 1]
+    });
 
-// add the parts to the game object
-gameObject.addComponentParts(txform, renderer);
-
-// add the object to the world
-// before making any modifications to it
+// add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
 
 // vector renderer draws out the word "Colorful"
+// capture the text sizing to set the origin
+let textBox = [0,0];
+const renderer = gameObject.getComponentByName("renderer");
 renderer.API
     .fontSize(20)
-    .text("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l");
+    .text("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l", {}, textBox);
 renderer.compile();
 
-// set position, rotation, and scale
-txform.position = [400, 300];
-txform.rotation = 0;
-txform.scale = [1,1];
-
+// set the origin at the center of the text
+gameObject.getComponentByName("transform").origin = [textBox[0] / 2, textBox[1] / 2];
 
 setInterval(() => {
-    txform.rotation += 0.1;
-}, 100);
+    // update the object's rotation every 10ms
+    gameObject.worldTransform.rotateSelf(0.5);
+}, 10);
 
 // Start the render loop   
 RenderEngine.start();

@@ -6,7 +6,7 @@
 import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
-import { TransformEvent } from '../transform/TransformPart.js';
+import { TransformEvent } from '../transform/Transform2dPart.js';
 
 class ColliderEvent extends ComponentPartEvent {
     #collisionData = null;

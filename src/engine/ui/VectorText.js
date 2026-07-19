@@ -2,15 +2,12 @@ import Constants from '../Constants.js';
 import { VECTOR_IL } from '../rendering/assemblers/IntermediateLanguages.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
-import { ShearingMatrix, Matrix2d } from '../core/Matrix.js';
+import { Matrix2d } from '../core/Matrix.js';
 import Context from '../Context.js';
-
-
-const ITALICS_MATRIX = ShearingMatrix;
-const shapeCache = new Map();
 
 // get the engine context
 const ctx = Context.getInstance();
+const glyphCache = new Map();
 
 function getWord(text, idx) {
     let check = text.substring(idx);
@@ -31,7 +28,10 @@ function getWord(text, idx) {
  * @param {number} spaceWidth - The size of a space character (default: 45);
  * @returns {Array} Array of IL instructions
  */
-export default function processText(text, spaceWidth = 45) {
+export default function processText(text) {
+    let textWidth = 0, totalTextWidth = 0;
+    let lineHeight = 0, totalTextHeight = 0;
+
     // Parse and process each character in the text
     let i = 0;
     while (i < text.length) {
@@ -39,9 +39,18 @@ export default function processText(text, spaceWidth = 45) {
         
         if (char === '\n') {
             this.API.carriageReturn();
+            if (textWidth > totalTextWidth) {
+                totalTextWidth = textWidth;
+            }
+            textWidth = 0;
+            totalTextHeight += lineHeight;
+            lineHeight = 0;
             i += 1;
             continue;
         }
+
+        // char instruction for calculating text width
+        let ci = null;
 
         // Handle escape sequences
         if (char === '\\') {
@@ -49,34 +58,34 @@ export default function processText(text, spaceWidth = 45) {
             if (nextChar !== undefined) {
                 switch (nextChar) {
                 case '*':
-                    characterInstruction.call(this, '*', spaceWidth);
+                    ci = characterInstruction.call(this, '*');
                     i += 2;
                     break;
                 case '{':
-                    characterInstruction.call(this, '{', spaceWidth);
+                    ci = characterInstruction.call(this, '{');
                     i += 2;
                     break;
                 case '_':
-                    characterInstruction.call(this, '_', spaceWidth);
+                    ci = characterInstruction.call(this, '_');
                     i += 2;
                     break;
                 case '~':
-                    characterInstruction.call(this, '~', spaceWidth);
+                    ci = characterInstruction.call(this, '~');
                     i += 2;
                     break;
                 case '\\':
-                    characterInstruction.call(this, '\\', spaceWidth);
+                    ci = characterInstruction.call(this, '\\');
                     i += 2;
                     break;
                 default:
                     // Not an escape sequence, treat as regular character
-                    characterInstruction.call(this, char, spaceWidth);
+                    ci = characterInstruction.call(this, char);
                     i++;
                     break;
                 }
             } else {
                 // Trailing backslash, treat as regular character
-                characterInstruction.call(this, '\\', spaceWidth);
+                ci = characterInstruction.call(this, '\\');
                 i++;
             }
             
@@ -192,9 +201,17 @@ export default function processText(text, spaceWidth = 45) {
         }
             
         // Regular character - emit instruction
-        characterInstruction.call(this, char, spaceWidth);
+        ci = characterInstruction.call(this, char);
+
+        // Calculate overall width and height
+        textWidth += ci.width;
+        lineHeight = Math.max(lineHeight, ci.height);
         i++;
     }
+    return { 
+        width: totalTextWidth !== 0 ? totalTextWidth : textWidth, 
+        height: totalTextHeight !== 0 ? totalTextHeight : lineHeight 
+    };
 }
 
 /**
@@ -227,24 +244,24 @@ function characterInstruction(char, width) {
     }
 
     if (context.renderer.hasCompiler) {
-        if (!shapeCache.has(char)) {
+        if (!glyphCache.has(char)) {
             // Compile the character shape and store in cache
             const shapeId = context.renderer.getCompiledShape(ci.instructions, `CHAR '${char}'`);
             if (shapeId !== Constants.COMPILATION.FAILED) {
-                shapeCache.set(char, shapeId);
+                glyphCache.set(char, shapeId);
                 context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
             }
         } else {
-            context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeCache.get(char)}`);
+            context.addInstruction(`${VECTOR_IL.SHAPE} ${glyphCache.get(char)}`);
         }
     } else {
         ci.instructions.forEach(inst => {
             context.addInstruction(inst);
         });
     }
-    context.API.translate(ci.width + context.letterSpacing, 0);
-    context.API.cursorDelta(ci.width + context.letterSpacing, 0);
-
+    context.API.translate(ci.charWidth + context.letterSpacing, 0);
+    context.API.cursorDelta(ci.charWidth + context.letterSpacing, 0);
+    return ci;
 }
 
 /**
@@ -271,8 +288,8 @@ function getCharacterInstructions(char) {
     if (ascii === 32) {
         return {
             instructions: [],
-            width: 21,
-            height: 21
+            width: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+            height: Constants.VECTOR_DEFAULTS.SPACE_WIDTH
         };    
     }
 
@@ -339,8 +356,10 @@ function getCharacterInstructions(char) {
 
         return {
             instructions: instructions,
-            width: charWidth + 3,
-            height: charHeight,
+            charWidth: charWidth + Constants.VECTOR_DEFAULTS.CHAR_SPACING,
+            width: charWidth + Constants.VECTOR_DEFAULTS.CHAR_SPACING * this.API.state.currentFontSize,
+            charHeight: charHeight,
+            height: charHeight * this.API.state.currentFontSize,
             halfWidth: halfWidth,
             halfHeight: halfHeight
         };

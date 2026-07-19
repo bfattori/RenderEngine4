@@ -7,6 +7,7 @@ import Engine from './core/Engine.js';
 let engineOptions = null;
 const RenderEngine = {
     RE4: null,
+    paused: false,
 
     /**
      * Initialize the Render Engine 4.
@@ -51,14 +52,16 @@ const RenderEngine = {
     start(seedTime = 0) {
         RE4.start(engineOptions.world.fps, seedTime);
         console.info("Started", RE4.engine.options, seedTime);
+        RenderEngine.paused = false;
     },
 
     /**
      * Pause the engine
      */
     pause() {
+        console.warn("Pausing...");
         RE4.stop();
-        console.warn("Paused");
+        RenderEngine.paused = true;
     },
 
     /**
@@ -94,12 +97,23 @@ const RenderEngine = {
     }
 }
 
-// Reserved keyboard hook to allow shutdown 
-// of an out of control engine
+// Reserved keyboard hook to shutdown the engine
 window.addEventListener('keyup', (event) => {
     if (event.key === 'F9')
         RenderEngine.stop();
-})
+    return false;
+});
+
+// Reserved keyboard hook to pause the engine
+window.addEventListener('keyup', (event) => {
+    if (event.key === 'F2')
+        if (RenderEngine.paused) {
+            console.warn("Resuming...");
+            RenderEngine.start();
+        } else
+            RenderEngine.pause();
+    return false;
+});
 
 console.info("Bootstrapper loaded");
 export default RenderEngine;

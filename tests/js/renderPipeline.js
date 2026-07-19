@@ -60,7 +60,7 @@ api
 api    
     .pushTransform()
     .translate(80, 15)
-    .text("Plain text, no formatting.", 
+    .text("Simple text, plain formatting.", 
         {color: "black", lineWidth: 1})
     .popTransform();
 

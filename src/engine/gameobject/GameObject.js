@@ -2,7 +2,6 @@ import RenderEngineError from '../core/RenderEngineError.js';
 import ComponentPart from '../parts/ComponentPart.js';
 import EventEngine from '../core/EventEngine.js';
 import { Matrix2d, IdentityMatrix } from '../core/Matrix.js';
-import TransformPart from '../parts/transform/TransformPart.js';
 import Engine from '../core/Engine.js';
 
 /**
@@ -30,7 +29,8 @@ export default class GameObject {
   #componentMap = new Map();
   #eventContext = null;
   #world = null;
-  #objectTransform = null;
+  #localTransform = new Matrix2d(IdentityMatrix);
+  #worldTransform = null;
 
   #fullSort = null;
   #sorted = false;
@@ -44,14 +44,17 @@ export default class GameObject {
    * Creates a new GameObject instance
    * @param {string} name - The name of the game object (defaults to "GameObject###" with ### being the creation index)
    */
-  constructor(name) {
+  constructor(name, worldTransform = null) {
     // Generate default name if none provided
     if (!name || (name && name.trim() === '')) {
       const count = GameObject.nextId;
       name = `GameObject${count}`;
     }
     
+    this.#worldTransform = worldTransform;
     this.#name = name;
+
+    // internal event context for this game object
     this.#eventContext = EventEngine.getInstance().createGameObjectContext(this);
   }
 
@@ -83,6 +86,52 @@ export default class GameObject {
     return this.#world;
   }
 
+   /**
+   * The event context for this {@link GameObject}. This private context is used to publish events amongst
+   * component parts. The parts suscribe to listen for events to update their internal state, separate of their
+   * <code>update</code> cycle.
+   * @returns {Object} - The event context for the GameObject
+   */
+  get eventContext() {
+    return this.#eventContext;
+  }
+
+  /**
+   * The local transform for this {@link GameObject}. This is a matrix that represents the position, rotation, and scale
+   * of the GameObject in its own coordinate system. It is used to update the world transform of the GameObject.
+   * @returns {Matrix2d} - The local transform of the GameObject
+   */
+  get localTransform() {
+    return this.#localTransform;
+  }
+
+  /**
+   * Set the local transform for this {@link GameObject}. This is a matrix that represents the position, rotation, and scale
+   * of the GameObject in its own coordinate system. It is used to update the world transform of the GameObject.
+   * @param {Matrix2d} transform - The new local transform for the GameObject
+   */
+  set localTransform(transform) {
+    this.#localTransform = transform;
+  }
+
+  /**
+   * The world transform for this {@link GameObject}. This is a matrix that represents the position, rotation, and scale
+   * of the GameObject in its parent coordinate system. It is used to update the local transform of the GameObject.
+   * @returns {Matrix2d} - The world transform of the GameObject
+   */
+  get worldTransform() {
+    return this.#worldTransform;
+  }
+
+  /**
+   * Set the world transform for this {@link GameObject}. This is a matrix that represents the position, rotation, and scale
+   * of the GameObject in its parent coordinate system. It is used to update the local transform of the GameObject.
+   * @param {Matrix2d} transform - The new world transform for the GameObject
+   */
+  set worldTransform(transform) {
+    this.#worldTransform = transform;
+  }
+
   /**
    * Gets the parts that are assigned to this host object, in no specific order.
    * @returns {Array<ComponentPart>} - Array of components assigned to this host object
@@ -107,33 +156,6 @@ export default class GameObject {
     return this.#fullSort;
   }
 
-  /**
-   * The local event context for the GameObject. This is used to pass data between components and the GameObject itself.
-   * @returns {Object} - The event context for the GameObject
-   */
-  get eventContext() {
-    return this.#eventContext;
-  }
-
-  //-------------------------------
-  // Properties
-  //-------------------------------
-
-  /**
-   * Get the set of properties associated with this GameObject.
-   * @returns {Object} - An object containing the name of the GameObject and an array of objects representing 
-   * each parts's properties.
-   */
-  get properties() {
-    const partProperties = this.sortedComponentParts.map(part => {
-      return { type: part.type, properties: part.properties };
-    });
-    return {
-      name: this.#name,
-      parts: partProperties
-    }
-  }
-
   //-------------------------------
   // Lifecycle Methods
   //-------------------------------
@@ -146,6 +168,7 @@ export default class GameObject {
     for (const part of parts) {
       this.addComponentPart(part);
     }
+    return this;
   }
 
   /**
@@ -227,6 +250,16 @@ export default class GameObject {
   }
 
   /**
+   * Retrieve a component from the {@link GameObject} by its name
+   * @param {String} name - The name of the {@link ComponentPart}
+   * @returns {ComponentPart|null} The named component part, or null if not found
+   */
+  getComponentByName(name) {
+    const componentByName = this.#components.filter(part => part.name === name); 
+    return componentByName === null ? null : componentByName[0]; 
+  }
+
+  /**
    * Updates the state of this game object based on time and delta time
    * @param {number} time - Current world time
    * @param {number} deltaTime - Time elapsed since last update
@@ -244,6 +277,25 @@ export default class GameObject {
           console.error(`Error updating component ${component.constructor.name}:`, error);
         }
       }
+    }
+  }
+
+  //-------------------------------
+  // Properties
+  //-------------------------------
+
+  /**
+   * Get the set of properties associated with this GameObject.
+   * @returns {Object} - An object containing the name of the GameObject and an array of objects representing 
+   * each parts's properties.
+   */
+  get properties() {
+    const partProperties = this.sortedComponentParts.map(part => {
+      return { type: part.type, properties: part.properties };
+    });
+    return {
+      name: this.#name,
+      parts: partProperties
     }
   }
 

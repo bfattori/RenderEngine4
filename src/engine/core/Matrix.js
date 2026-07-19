@@ -7,16 +7,6 @@ const _IdentityMatrix = [
   [0, 0, 1]
 ];
 
-// Canonical shearing matrix
-const _ShearingMatrix = [ 
-    [1, 0.267, 0],              // 15-degree slant (tan(15) = 0.26794919243) , alternative is 12-degree slant (tan(12) = 0.21255656167)
-    [0, 1, 0],
-    [0, 0, 1]
-];
-
-const degreesToRad = 57.29536;
-const radToDegrees = 0.01745;
-
 /**
  * A 2d matrix class to simplify the several manipulations around the engine in row-major order. Initialized to the identity
  * matrix if no parameters passed.
@@ -41,8 +31,6 @@ const radToDegrees = 0.01745;
  * @param {Number} options.m22 - The value at (2, 2).
  */
 export class Matrix2d extends DOMMatrix {
-    #props = {scale:[1,1],rotation:0,position:[0,0]};
-    
     constructor(...mtxArgs) {
         if (mtxArgs[0] instanceof DOMMatrix) {
             super(mtxArgs[0]);
@@ -54,28 +42,30 @@ export class Matrix2d extends DOMMatrix {
         }
     }
 
+    /**
+     * Get the current position of this matrix.
+     * @returns {Array<number>} The position of this matrix as an array [x, y]. 
+     */
     get position() {
-        return this.#props.position;
-    }
-
-    get rotation() {
-        return this.#props.rotation;
-    }
-
-    get scaling() {
-        return this.#props.scale;
+        return [this.e, this.f];
     }
 
     /**
-     * Multiply this matrix with another matrix. Updates the source matrix.
-     * @param {Matrix2d} matrix2d The matrix to multiply this matrix by. 
-     * @returns {Matrix2d} This matrix
+     * Get the rotation of this matrix, in degrees
+     * @returns {number} The rotation of the matrix in degrees. 
      */
-    mul(matrix2d) {
-        if (!matrix2d.constructor instanceof Matrix2d) {
-            throw new RenderEngineError('Invalid matrix type. Must be a Matrix2d or DOMMatrix.');
-        }
-        return this.multiplySelf(matrix2d);
+    get rotation() {
+        return Math.atan2(-this.c, this.a) * 180 / Math.PI;
+    }
+
+    /**
+     * Get the scaling factors along the X and Y coordinates
+     * @returns {Array<number>} [sX, sY] where sx is the scaling factor along the X axis and sy is the scaling factor along the Y axis. 
+     */
+    get scaling() {
+        const sX = Math.sqrt((this.a ** 2) + (this.c ** 2));
+        const sY = Math.sqrt((this.b ** 2) + (this.d ** 2));
+        return [sX, sY];
     }
 
     /**
@@ -84,101 +74,92 @@ export class Matrix2d extends DOMMatrix {
      * @returns {Matrix2d} A new matrix
      */
     multiply(matrix2d) {
-        if (!matrix2d.constructor instanceof Matrix2d) {
-            throw new RenderEngineError('Invalid matrix type. Must be a Matrix2d or DOMMatrix.');
-        }
-        return new Matrix2d(super.multiply(matrix2d));
+        return Matrix2d.from(super.multiply(matrix2d));
     }
 
-    #rotateMatrix(angle, method) {
-        if (typeof angle === 'number') {
-            angle = angle * radToDegrees;
-        } else if (Array.isArray(angle)) {
-            angle = angle.map(a => a * radToDegrees);
-        } else {
-            throw new RenderEngineError('Invalid angle type');
-        }
-        this.#props.rotation = angle;
-        this[method](angle);
-        return this;
-    }
-
-    absRotate(angle) {
-        return this.#rotateMatrix(angle, 'rotate');
-    }
-
+    /**
+     * Rotate the matrix by the angle provided, returning a new matrix.
+     * @param {number} angle - The rotation angle in degrees
+     * @returns {Matrix2d}
+     */
     rotate(angle) {
-        return this.#rotateMatrix(angle, 'rotateSelf');
+        return Matrix2d.from(super.rotate(angle));
     }
 
-    #translateMatrix(x, y, method) {
-       this.#props.position = [x, y];
-       this[method](x, y);
-       return this;
-    }
-
-    absTranslate(x, y) {
-        return this.#translateMatrix(x, y, 'translate');
-    }
-
+    /**
+     * Translate the matrix by the given coordinates
+     * @param {number} x 
+     * @param {number} y 
+     * @returns {Matrix2d}
+     */
     translate(x, y) {
-        return this.#translateMatrix(x, y, 'translateSelf');
+        return Matrix2d.from(super.translate(x, y));
     }
 
-    #scaleMatrix(sx, sy, ox = 0, oy = 0, method) {
-        this.#props.scale = [sx, sy];
-        this[method](sx, sy, 1, ox, oy);
-        return this;
+    /**
+     * Scale matrix by given amounts. Returns a new matrix
+     * @param {number} sx 
+     * @param {number} sy 
+     * @param {number} originX 
+     * @param {number} originY 
+     * @returns {Matrix2d}
+     */
+    scale(sx, sy, originX = 0, originY = 0) {
+        return Matrix2d.from(super.scale(sx, sy, 1, originX, originY));
     }
 
-    absScale(sx, sy, originX, originY) {
-        return this.#scaleMatrix(sx, sy, originX, originY, 'scale');
+    /**
+     * Unformly scale the matrix, returning a new matrix.
+     * @param {number} scalar 
+     * @param {number} originX 
+     * @param {number} originY 
+     * @returns {Matrix2d}
+     */
+    uniformScale(scalar, originX, originY) {
+        return Matrix2d.from(super.scale(scalar, scalar, 1, originX, originY));
     }
 
-    scale(sx, sy, originX, originY) {
-        return this.#scaleMatrix(sx, sy, originX, originY, 'scaleSelf');
+    /**
+     * Uniformly scale this matrix.
+     * @param {number} scalar 
+     * @param {number} originX 
+     * @param {number} originY 
+     * @returns This matrix
+     */
+    uniformScaleSelf(scalar, originX, originY) {
+        return super.scale(scalar, scalar, originX, originY);
     }
 
-    absUniformScale(scale, originX, originY) {
-        this.#props.scale = [scale, scale];
-        this.#scaleMatrix(scale, scale, 1, originX, originY, 'scale');
+    /**
+     * Skew the matrix by the values of sx and sy.
+     * @param {number} sx 
+     * @param {number} sy 
+     * @returns 
+     */
+    skew(sx, sy = 0) {
+        const first = super.skewX(sx);
+        return sy === 0 ? first : Matrix2d.from(first.skewY(sy));
     }
 
-    uniformScale(scale, originX, originY) {
-        this.#props.scale = [scale, scale];
-        this.#scaleMatrix(scale, scale, 1, originX, originY, 'scaleSelf');
+    skewSelf(sx, sy = 0) {
+        const first = super.skewXSelf(sx);
+        return sy === 0 ? first : first.skewYSelf(sy);
     }
 
-    absSkew(sx, sy) {
-        this.#props.skew = [sx, sy];
-        this.skewX(sx);
-        if (sy !== 0) {
-            this.skewY(sy);
-        }
-        return this;
-    }
-
-    skew(sx, sy) {
-        this.#props.skew = [sx, sy];
-        this.skewXSelf(sx);
-        if (sy !== 0) {
-            this.skewYSelf(sy);
-        }
-        return this;
-    }
-
-    #invertMatrix(method) {
-        this[method]();
-    }
-
-    absInvert() {
-        return this.#invertMatrix('inverse');
-    }
-
+    /**
+     * Invert the matrix, returning a new matrix.
+     * @returns {Matrix2d}
+     */
     invert() {
-        return this.#invertMatrix('invertSelf');
+        return Matrix2d.from(super.inverse());
     }
 
+    /**
+     * Modify the values in the matrix directly
+     * @param {object} param0 
+     * @param {boolean} self 
+     * @returns 
+     */
     #modify({position, rotation, scale}, self = false) {
         scale ? Array.isArray(scale) || (scale = [scale, scale]) : undefined;
         if (scale) {
@@ -208,14 +189,14 @@ export class Matrix2d extends DOMMatrix {
 
     /**
      * Set the matrix scaling, rotation, or position values directly
-     * at the same time, or one at a time. 
+     * at the same time, or one at a time. Returns a new matrix;
      * @param {Number[]} scale The [x, y] scale to apply (or the current scale)
      * @param {Number} rotation The rotation to apply (or the current rotation)
      * @param {Number[]} position The [x, y] position to apply (or the current position)
-     * @return This matrix
+     * @return {Matrix2d}
      */
     setTo({position, rotation, scale}) {
-        return this.#modify({position, rotation, scale});
+        return Matrix2d.from(this.#modify({position, rotation, scale}));
     }
 
     /**
@@ -244,6 +225,11 @@ export class Matrix2d extends DOMMatrix {
         throw new RenderEngineError('Invalid matrix type');
     }
 
+    /**
+     * Returns a new Matrix2d from the given matrix
+     * @param {Matrix2d|DOMMatrix} matrix 
+     * @returns 
+     */
     static fromMatrix(matrix) {
         return new Matrix2d(matrix);
     }
@@ -283,9 +269,13 @@ export class Matrix2d extends DOMMatrix {
     static multiply(a, b) {
         a = Array.isArray(a) ? Matrix2d.fromArray(a) : a;
         b = Array.isArray(b) ? Matrix2d.fromArray(b) : b;
-        return a.mul(b);
+        return a.multiply(b);
     }
 
+    /**
+     * The identity matrix.
+     * @returns {Matrix2d} A new matrix representing the identity matrix.
+     */
     static identity() {
         return new Matrix2d(IdentityMatrix);
     }
@@ -296,14 +286,9 @@ const IdentityMatrix = new Matrix2d(_IdentityMatrix[0][0], _IdentityMatrix[1][0]
                                     _IdentityMatrix[0][1], _IdentityMatrix[1][1], _IdentityMatrix[2][1],
                                     _IdentityMatrix[0][2], _IdentityMatrix[1][2], _IdentityMatrix[2][2]);
 
-const ShearingMatrix = new Matrix2d(_ShearingMatrix[0][0], _ShearingMatrix[1][0], _ShearingMatrix[2][0], 
-                                    _ShearingMatrix[0][1], _ShearingMatrix[1][1], _ShearingMatrix[2][1],
-                                    _ShearingMatrix[0][2], _ShearingMatrix[1][2], _ShearingMatrix[2][2]);
-
 const NullMatrix = null;
 
 export {
     IdentityMatrix,
-    ShearingMatrix,          // used to italicize text
     NullMatrix
 };
