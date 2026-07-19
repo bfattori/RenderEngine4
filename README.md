@@ -45,7 +45,7 @@ You can play with the test pages by supplying a configuration argument to Chrome
 Then you can open any of the test index pages.
 
 ### Using Python
-You can use Python to run a simple webserver from the root folder to access the text pages:
+You can use Python to run a simple webserver from the root folder to access the tests:
 ```
 python -m http.server 8080
 ```
