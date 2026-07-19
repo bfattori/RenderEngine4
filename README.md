@@ -37,8 +37,21 @@ Since this project is a client-side engine, no complex installation is required.
 ## Usage
 To get started quickly, you can use the provided test pages or integrate the engine into your own HTML file.
 
-### Quick Start with Test Page
-Open index.html in your browser to see a basic demonstration of the engine in action.
+### Using Chrome
+You can play with the test pages by supplying a configuration argument to Chrome to allow local file access:
+```
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --allow-file-access-from-files
+```
+Then you can open any of the test index pages.
+
+### Using Python
+You can use Python to run a simple webserver from the root folder to access the text pages:
+```
+python -m http.server 8080
+```
+Then you can navigate to `http://localhost:8080/` to see the test pages in action.
+
+
 
 ### Basic Integration
 Import the core engine into your project:
