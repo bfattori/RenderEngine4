@@ -120,9 +120,9 @@ export default class RemoteRenderContext {
     async #sendResponse(destination, taskType, data) {
         const packet = { task: taskType, ... data };
         if (this.#streaming) {
-            return destination.write(packet);
+            return await destination.write(packet);
         } else {
-            this.#socket.send({ task:taskType, ...data });
+            return this.#socket.send(packet);
         }
     }
 }
