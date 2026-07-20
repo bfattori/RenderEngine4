@@ -53,6 +53,7 @@ renderer.compile();
 // set the origin at the center of the text
 gameObject.getComponentByName("transform").origin = [textBox[0] / 2, textBox[1] / 2];
 
+// fires before each update of the object
 gameObject.onBeforeUpdate = (time, deltaTime) => {
     gameObject.worldTransform.rotateSelf(1);
 };

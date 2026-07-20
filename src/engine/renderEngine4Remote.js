@@ -1,8 +1,8 @@
 /**
  * Render Engine 4 bootstrapper
  */
-import RemoteRenderContext from '../engine/rendering/remote/RemoteRenderContext.js';
-import CanvasRenderer from '../engine/rendering/renderers/CanvasRenderer.js';
+import RemoteRenderContext from './rendering/remote/RemoteRenderContext.js';
+import CanvasRenderer from './rendering/renderers/CanvasRenderer.js';
 
 let remoteOptions = null;
 const RenderEngine = {
