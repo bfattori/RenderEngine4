@@ -72,6 +72,7 @@ export default class RenderContext {
     // the renderer which will be targeted by the context
     this.#renderer = renderer;
     this.#renderer.renderContext = this;
+    this.#configOptions = options;
 
     // Screen coordinate boundaries (top, left, right, bottom)
     // These define the visible world within the render context
@@ -421,11 +422,8 @@ export default class RenderContext {
       // Sort objects into their respective planes
       this.sortObjectsByPlanes();
 
-      // play out any pending instructions
-      this.#instructionBuffer.forEach(instruction => {
-        this.#renderer.render(instruction, time, deltaTime);
-      });
-
+      // render any pending instructions
+      this.renderInstructions(time, deltaTime);
 
       // post-frame generation
       this.#renderer.postFrame();
@@ -436,6 +434,13 @@ export default class RenderContext {
     return true;
   }
   
+  renderInstructions(time, deltaTime) {
+      // play out any pending instructions
+      this.#instructionBuffer.forEach(instruction => {
+        this.#renderer.render(instruction, time, deltaTime);
+      });
+  }
+
   //-------------------------------
   // Multi-plane rendering support
   //-------------------------------

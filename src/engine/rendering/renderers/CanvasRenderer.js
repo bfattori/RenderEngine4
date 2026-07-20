@@ -12,14 +12,13 @@ const HALF_P = Math.floor(POINT_SIZE * 0.5);
 
 let built = false;
 export default class CanvasRenderer extends Renderer {
-        #buffered = false;
-        #blit = null;
-        #htmlElement = null;
-        #canvas = null;
-        #offscreen = null;
-            
-        #localFormat = new Map();
-
+    #buffered = false;
+    #blit = null;
+    #htmlElement = null;
+    #canvas = null;
+    #offscreen = null;
+        
+    #localFormat = new Map();
 
     constructor(htmlElement, buffered) {
         super();
