@@ -56,6 +56,7 @@ export default class RenderContext {
       italics: false,
       underline: false
     };
+  #configOptions = null;
 
   /**
    * Creates a new RenderContext instance

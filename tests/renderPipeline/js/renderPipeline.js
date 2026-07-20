@@ -1,6 +1,6 @@
-import RenderEngine from '../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../src/engine/rendering/contexts/VectorRenderContext.js';
-import CanvasRenderer from '../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../../src/engine/renderEngine4.js';
+import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
 // create a double-buffered canvas renderer
 RenderEngine.init({

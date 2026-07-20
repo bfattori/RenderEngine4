@@ -1,12 +1,12 @@
-import RenderEngine from '../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../src/engine/rendering/contexts/VectorRenderContext.js';
-import CanvasRenderer from '../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../../src/engine/renderEngine4.js';
+import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
-import GameObject from '../../src/engine/gameobject/GameObject.js';
-import Transform2dPart from '../../src/engine/parts/transform/Transform2dPart.js';
-import VectorRendererPart from '../../src/engine/parts/render/VectorRendererPart.js';
+import GameObject from '../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
+import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
 
-import { Matrix2d } from '../../src/engine/core/Matrix.js';
+import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 
 // create a double-buffered canvas renderer
 RenderEngine.init({
@@ -23,9 +23,6 @@ RenderEngine.init({
         ),
         dimensions: [800, 600],
         viewport: [0, 0, 800, 600]
-    },
-    hooks: {
-        onInit: () => { console.log("onInit: Hello world!"); }
     }
 });
 

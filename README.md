@@ -36,20 +36,24 @@ Since this project is a client-side engine, no complex installation is required.
 
 ## Usage
 To get started quickly, you can use the provided test pages or integrate the engine into your own HTML file.
+Either method results in `http://localhost:8080/` pointing to the root of the game engine. You can then navigate to `http://localhost:8080/tests` to see the various tests and learn how the engine works.
 
-### Using Chrome
-You can play with the test pages by supplying a configuration argument to Chrome to allow local file access:
+### NodeJS & npm
+You can try the tests by installing the `http-server` NodeJS package:
 ```
-"C:\Program Files\Google\Chrome\Application\chrome.exe" --allow-file-access-from-files
+npm i -g http-server
 ```
-Then you can open any of the test index pages.
+Then you start a webserver in the root of the game engine.
+```
+cd RenderEngine4
+http-server
+```
 
 ### Using Python
-You can use Python to run a simple webserver from the root folder to access the tests:
+An alternative is to use Python to run a simple webserver from the root folder to access the tests:
 ```
 python -m http.server 8080
 ```
-Then you can navigate to `http://localhost:8080/` to see the test pages in action.
 
 
 
