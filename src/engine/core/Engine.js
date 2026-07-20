@@ -89,7 +89,7 @@ export default class Engine {
   #fpsCounter = null;
   #updateCounter = null;
   #renderCounter = null;
-  
+
   #tickers = {
     total: {
       index: 0,
@@ -486,8 +486,8 @@ export default class Engine {
         const renderFPS = ((1 / (this.#tickers.render.sum / MAXSAMPLES)) * MAXSAMPLES).toFixed(0);
 
         this.#fpsCounter.textContent = `Total: ${totalFPS} fps`;
-        this.#updateCounter.textContent = `Update: ${updateFPS} fps (${(updateFPS/totalFPS).toFixed(0)}%)`;
-        this.#renderCounter.textContent = `Render: ${renderFPS} fps (${(renderFPS/totalFPS).toFixed(0)}%)`;
+        this.#updateCounter.textContent = `Update: ${(updateFPS/totalFPS).toFixed(0)}%`;
+        this.#renderCounter.textContent = `Render: ${(renderFPS/totalFPS).toFixed(0)}%`;
       }
 
       // one frame generated
