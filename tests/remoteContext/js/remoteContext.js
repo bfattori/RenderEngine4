@@ -1,4 +1,5 @@
 import RenderEngine from '../../../src/engine/renderEngine4.js';
+import RenderContextProjector from '../../../src/engine/rendering/remote/RenderContextProjector.js';
 import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
@@ -11,16 +12,17 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 // create a double-buffered canvas renderer
 RenderEngine.init({
     flags: {
-        debugMode: false,
-        showFps: true
+        debugMode: false
     },
     world: {
-        renderContext: new VectorRenderContext(
-            CanvasRenderer.build(
-                document.getElementById("context"), 
-                true
-            ),
-            { enableCulling: false }
+        renderContext: new RenderContextProjector(
+            new VectorRenderContext(
+                CanvasRenderer.build(
+                    document.getElementById("context"), 
+                    true
+                ),
+                { enableCulling: false }
+            )
         ),
         dimensions: [800, 600],
         viewport: [0, 0, 800, 600]
@@ -53,9 +55,10 @@ renderer.compile();
 // set the origin at the center of the text
 gameObject.getComponentByName("transform").origin = [textBox[0] / 2, textBox[1] / 2];
 
-gameObject.onBeforeUpdate = (time, deltaTime) => {
-    gameObject.worldTransform.rotateSelf(1);
-};
+setInterval(() => {
+    // update the object's rotation every 10ms
+    gameObject.worldTransform.rotateSelf(0.5);
+}, 10);
 
 // Start the render loop   
 RenderEngine.start();

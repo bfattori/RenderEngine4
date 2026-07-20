@@ -5,12 +5,13 @@ export default class RemoteRenderContext {
     #renderer = null;
     #streaming = false;
 
-    constructor(connectionId, client) {
-        this.#connectionId = connectionId;
-        this.#client = client;
-        
-        // create the connection
-        this.#setup();
+    constructor(clientId, wsEndpoint) {
+        this.#connectionId = clientId;
+        this.#setup(wsEndpoint);
+    }
+
+    set renderer(renderer) {
+        this.#renderer = renderer;
     }
 
     #setup(wsEndpoint) {
@@ -44,9 +45,12 @@ export default class RemoteRenderContext {
 
             await this.#processOperation(operation, writer);
         }
+
+        // prepared
+        return this.#sendResponse(writer, "ready", {clientId: this.#connectionId });
     }
 
-    #instrumentSocket() {
+    async #instrumentSocket() {
         this.#socket.addEventListener("open", (event) => {
             socket.send("Hello Server!");
         });
@@ -63,6 +67,9 @@ export default class RemoteRenderContext {
         this.#socket.addEventListener("error", (event) => {
             console.log("Connection error");
         })
+
+        // prepared
+        return this.#sendResponse(null, "ready", { clientId: this.#connectionId });
     }
 
     async #processOperation(operation, destination) {

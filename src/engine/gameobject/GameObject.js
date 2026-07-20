@@ -35,6 +35,18 @@ export default class GameObject {
   #fullSort = null;
   #sorted = false;
 
+  /**
+   * Hooks are methods to allow custom operation before and after lifecycle updates.
+   */
+  #hooks = {
+    onBeforeUpdate: () => {},
+    onBeforeUpdatePart: () => {},
+    onAfterUpdatePart: () => {},
+    onAfterUpdate: () => {},
+    onPartAdded: () => {},
+    onPartRemoved: () => {}
+  };
+
   static #nextId = 0;
   static get nextId() {
     return GameObject.#nextId++;
@@ -156,6 +168,62 @@ export default class GameObject {
     return this.#fullSort;
   }
 
+  //------------------------------------------
+  // Utility Methods
+  //------------------------------------------
+
+  /**
+   * Gets all component parts of a specific type
+   * @param {Class} componentType - The constructor of the component part types to retrieve
+   * @returns {Array<ComponentPart>} - Array of component parts of the specified type
+   */
+  getComponentsByType(componentType) {
+    for (const type of this.#componentMap.keys()) {
+      if (type === componentType || type.isPrototypeOf(componentType)) {
+        return this.#componentMap.get(type);
+      }
+    }
+    return []; 
+  }
+
+  /**
+   * Retrieve a component from the {@link GameObject} by its name
+   * @param {String} name - The name of the {@link ComponentPart}
+   * @returns {ComponentPart|null} The named component part, or null if not found
+   */
+  getComponentByName(name) {
+    const componentByName = this.#components.filter(part => part.name === name); 
+    return componentByName === null ? null : componentByName[0]; 
+  }
+
+  //------------------------------
+  // Lifecycle Hooks
+  //------------------------------
+
+  set onBeforeUpdate(hook) {
+    this.#hooks.onBeforeUpdate = hook;
+  }
+
+  set onAfterUpdate(hook) {
+    this.#hooks.onAfterUpdate = hook;
+  }
+
+  set onBeforeUpdatePart(hook) {
+    this.#hooks.onBeforeUpdatePart = hook;
+  }
+
+  set onAfterUpdatePart(hook) {
+    this.#hooks.onAfterUpdatePart = hook;
+  }
+
+  set onPartAdded(hook) {
+    this.#hooks.onPartAdded = hook;
+  }
+
+  set onPartRemoved(hook) {
+    this.#hooks.onPartRemoved = hook;
+  }
+
   //-------------------------------
   // Lifecycle Methods
   //-------------------------------
@@ -181,6 +249,8 @@ export default class GameObject {
     if (!component || typeof component.update !== 'function') {
       throw new GameObjectError(this, `Invalid component: ${component.name} must have an update method`);
     }
+
+    this.#hooks.onPartAdded(component);
 
     // Add to components array
     this.componentParts.push(component);
@@ -232,31 +302,8 @@ export default class GameObject {
     }
 
     component.host = null;
+    this.#hooks.onPartRemoved(component);
     return true;
-  }
-
-  /**
-   * Gets all component parts of a specific type
-   * @param {Class} componentType - The constructor of the component part types to retrieve
-   * @returns {Array<ComponentPart>} - Array of component parts of the specified type
-   */
-  getComponentsByType(componentType) {
-    for (const type of this.#componentMap.keys()) {
-      if (type === componentType || type.isPrototypeOf(componentType)) {
-        return this.#componentMap.get(type);
-      }
-    }
-    return []; 
-  }
-
-  /**
-   * Retrieve a component from the {@link GameObject} by its name
-   * @param {String} name - The name of the {@link ComponentPart}
-   * @returns {ComponentPart|null} The named component part, or null if not found
-   */
-  getComponentByName(name) {
-    const componentByName = this.#components.filter(part => part.name === name); 
-    return componentByName === null ? null : componentByName[0]; 
   }
 
   /**
@@ -265,6 +312,8 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   update(time, deltaTime, cameraMatrix) {
+    this.#hooks.onBeforeUpdate(time, deltaTime, cameraMatrix);
+
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
     
@@ -272,12 +321,16 @@ export default class GameObject {
     for (const component of sortedComponents) {
       if (typeof component.update === 'function') {
         try {
+          this.#hooks.onBeforeUpdatePart(component, time, deltaTime);
           component.update(time, deltaTime);
+          this.#hooks.onAfterUpdatePart(component, time, deltaTime);
         } catch (error) {
           console.error(`Error updating component ${component.constructor.name}:`, error);
         }
       }
     }
+
+    this.#hooks.onAfterUpdate.call(time, deltaTime);
   }
 
   //-------------------------------

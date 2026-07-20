@@ -197,4 +197,26 @@ export default class Renderer {
         this.#path = null;
         super.destroy();
     }
+
+    //-------------------------------
+      // Serialization Methods
+      //-------------------------------
+      
+      /**
+       * Serializes a game component's properties into a plain object. Subclasses should override this to include specific properties.
+       * 
+       * @param {...string} ignoreKeys - Optional list of property keys to ignore during serialization
+       * @returns {Object} Serialized representation of the component's properties, excluding any specified keys
+       * @example
+       * // In a subclass, you might implement serialize like this:
+       * serialize() {
+       *     return {
+       *         ...super.serialize('temporaryState'), // Ignore 'temporaryState' from base properties
+       *         customProperty: this.customProperty
+       *     };
+       * }
+       */
+      serialize(...ignoreKeys) {
+          return Engine.engine.serialize.call(this, ['surface', 'assembler', 'path', ...ignoreKeys]);
+      }
 }

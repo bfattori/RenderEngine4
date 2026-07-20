@@ -29,27 +29,6 @@ export default class RenderContextProjector extends RenderContext {
     }
  
     /**
-     * Set the Url that clients will connect to, which will be used to connect clients
-     * to the server. Presents a dialog in the client's browser to choose available slots.
-     * 
-     * @param {String} url - The url to listen for new connections
-     */
-    set connectUrl(url) {
-        this.#connectUrl = url;
-
-        // start the listener for client connections. connecting to this endpoint
-        // presents an offer to accept a client connection slot.
-    }
-
-    /**
-     * The endpoint for new client connections.
-     * @returns {String}
-     */
-    get connectUrl() {
-        return this.#connectUrl;
-    }
-
-    /**
      * This is the endpoint where clients communicate with the server.
      * @param {String} url - Client communication endpoint
      */
@@ -63,23 +42,6 @@ export default class RenderContextProjector extends RenderContext {
      */
     get serveUrl() {
         return this.#serveUrl;
-    }
-
-    /**
-     * The url where the client requests are accepted. They are moved to
-     * a websocket channel for direct communications.
-     * @param {String} url - The accept connection Url
-     */
-    set acceptUrl(url) {
-        this.#acceptUrl = url;
-    }
-
-    /**
-     * The endpoint where client connections are accepted.
-     * @returns {String}
-     */
-    get acceptUrl() {
-        return this.#acceptUrl;
     }
 
     /**
@@ -119,6 +81,11 @@ export default class RenderContextProjector extends RenderContext {
      */
     #instrumentContext() {
         const rc = this.#rerouteContext;
+
+        const rendererInfo = {
+            clazz: rc.renderer.constructor.name,
+            config: rc.renderer.serialize()
+        };
 
         //-----------------------------
         // compiled shapes
@@ -164,9 +131,14 @@ export default class RenderContextProjector extends RenderContext {
             // play out any pending instructions
             const response = await this.#submitTask("renderFrame", { instructions: this.#instructionBuffer, time: time, deltaTime: deltaTime });
         }
+
+        // send the config info
+        this.#submitTask('init', rendererInfo);
     }
 
     async #submitTask(taskType, operation) {
         // send out a request over the line, await a response...
+        
+
     }
 }
