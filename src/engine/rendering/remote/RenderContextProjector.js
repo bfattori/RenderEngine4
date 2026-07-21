@@ -1,12 +1,11 @@
 import RenderContext from '../contexts/RenderContext.js';
 import Constants from '../../Constants.js';
 
+import { RenderContextError } from '../contexts/RenderContext.js';
+
 export default class RenderContextProjector extends RenderContext {
     #rerouteContext = null;
-
-    #connectUrl = null;
-    #serveUrl = null;
-    #acceptUrl = null;
+    #serveWSS = null;
 
     #connections = new Map(); // Map of connection IDs to RemoteRenderConnection objects
     #connectionIdCounter = 0; // Counter for generating unique connection IDs
@@ -21,27 +20,28 @@ export default class RenderContextProjector extends RenderContext {
      * @param {RenderContext} renderContext - The render context to reroute
      * @param {Object} options - Configuration options
      */
-    constructor(renderer, renderContext, options={ maxConnections: 10 }) {
+    constructor(renderer, renderContext, options={ serverSocket: null, maxConnections: 10 }) {
         super(renderer, options);
         this.#rerouteContext = renderContext;
+        this.#serveWSS = options.serverSocket;
         this.#maxConnections = options.maxConnections; // Maximum number of connections allowed
         this.#instrumentContext();
     }
  
     /**
-     * This is the endpoint where clients communicate with the server.
-     * @param {String} url - Client communication endpoint
+     * This is the channed where clients communicate with the server.
+     * @param {String} socket - Client communication channel
      */
-    set serveUrl(url) {
-        this.#serveUrl = url;
+    set serveWS(socket) {
+        this.#serveWS = socket;
     }
 
     /**
      * The endpoint for serving clients.
      * @returns {String}
      */
-    get serveUrl() {
-        return this.#serveUrl;
+    get serveWS() {
+        return this.#serveWS;
     }
 
     /**
@@ -54,8 +54,8 @@ export default class RenderContextProjector extends RenderContext {
             this.#noMoreConnectionsAvailable(client);
 
         const connectionId = this.#connectionIdCounter++;
-        const connection = new RemoteRenderConnection(connectionId, client);
-        this.#addConnection(connectionId, connection);
+        client.__id = connectionId;
+        this.#addConnection(connectionId, client);
     }
 
     /**
@@ -64,7 +64,7 @@ export default class RenderContextProjector extends RenderContext {
      */
     #noMoreConnectionsAvailable(client) {
         // inform the client that there are no more open connections
-
+        this.#submitTask(client, 0, 'refused', { message: 'No more connections!' });
     }
 
     /**
@@ -74,29 +74,68 @@ export default class RenderContextProjector extends RenderContext {
      */
     #addConnection(connectionId, connection) {
         this.#connections.set(connectionId, connection);
+        this.#submitTask(connection, 0, 'hello', { id: connectionId });
     }
 
     /**
-     * Make modifications to the context to project rendering methods to the {@link RemoteRenderContext}
+     * Handle inbound data from client connections
+     * @param {WebSocket} client - Client connection
+     * @param {Object} data - Data received from the client
+     */
+    #handleClientMessage(client, data) {
+        const clientId = client.__id;
+        switch (data.task) {
+            case 'hello': // client tells us their client Id
+                break;
+            case 'compiled': // map the remote opaque Id to the local opaque Id for the client Id
+                this.#connectionShapeMap.set(clientId, { remoteOpaqueId: data.opaqueId })
+                break;
+            case 'destroyed': // the shape was destroyed on the client
+                break;
+            case 'input': // input received from the client
+                break;
+        }
+    }
+
+    /**
+     * Modifiy the context to project rendering 
+     * methods to the {@link RemoteRenderContext} over a WebSocket
      */
     #instrumentContext() {
+        if (this.#serveWSS === null) {
+            throw new RenderContextError(this, "No websocket connection provided - cannot start!");
+        }
+
+        // the context we're rerouting its methods to pass to the remote client
         const rc = this.#rerouteContext;
 
-        const rendererInfo = {
-            clazz: rc.renderer.constructor.name,
-            config: rc.renderer.serialize()
-        };
+        // we don't need the renderer on the server
+        if (rc.renderer)
+            rc.renderer.destroy();
+
+        // set up the client connection listener
+        this.#serveWSS.on('connection', (conn) => {
+            conn.on('message', (data) => {
+                this.#handleClientMessage(conn, data);
+            });
+            conn.on('error', console.error);
+            this.#acceptClientConnection(conn);
+        });
 
         //-----------------------------
         // compiled shapes
         //----------------------------
         
-        rc.prototype.getCompiledShape = (instructions, tag) => {
-            const response = await this.#submitTask("compile", { instructions: instructions, tag: tag });
+        rc.getCompiledShape = (instructions, tag) => {
+            this.#submitTask(++requestId, "compile", { instructions: instructions, tag: tag });
         }
 
-        rc.prototype.destroyCompiledShape = (opaqueId) => {
-            const response = await this.#submitTask("destroy", { opaqueId: opaqueId });
+        rc.destroyCompiledShape = (opaqueId) => {
+            this.#submitTask(++requestId, "destroy", { opaqueId: opaqueId });
+        }
+
+        rc.renderCompiledShape = (opaqueId) => {
+            this.#submitTask(++requestId, "renderShape", {opaqueId: opaqueId});    
         }
 
         //---------------------------
@@ -109,7 +148,7 @@ export default class RenderContextProjector extends RenderContext {
          * @param {number} deltaTime - Time since last update in milliseconds
          * @returns {boolean} true if update was successful
          */
-        rc.prototype.update = (currentTime, deltaTime) => {
+        rc.update = (currentTime, deltaTime) => {
             super.update(currentTime, deltaTime);
             return true;
         }
@@ -119,26 +158,29 @@ export default class RenderContextProjector extends RenderContext {
          * drawn to the renderer as soon as it is received.
          * @param  {String} instruction A rendering instruction
          */
-        rc.prototype.addInstruction = (instruction) => {
+        rc.addInstruction = (instruction) => {
             if (this.immediateMode) {
-                const response = await this.#submitTask("render", { instruction: instruction });
+                this.#submitTask(++requestId, "render", { instruction: instruction });
             } else {
                 super.addInstruction(instruction);
             }
         }
 
-        rc.prototype.renderInstructions = (time, deltaTime) => {
+        rc.renderInstructions = (time, deltaTime) => {
             // play out any pending instructions
-            const response = await this.#submitTask("renderFrame", { instructions: this.#instructionBuffer, time: time, deltaTime: deltaTime });
+            this.#submitTask(++requestId, "renderFrame", { instructions: this.#instructionBuffer, time: time, deltaTime: deltaTime });
         }
-
-        // send the config info
-        this.#submitTask('init', rendererInfo);
     }
 
-    async #submitTask(taskType, operation) {
+    /**
+     * Transmit a task to the client for execution
+     * @param {WebSocket} client - The client socket
+     * @param {number} requestId - Request Id for request/response matching
+     * @param {String} taskType - The type of task to execute on the client
+     * @param {Object} operation - The object containing task-specific information
+     */
+    #submitTask(client, requestId, taskType, operation) {
         // send out a request over the line, await a response...
-        
-
+        client.send(JSON.stringify({ id: requestId, task: taskType, operation: operation }));
     }
 }

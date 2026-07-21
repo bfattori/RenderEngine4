@@ -1,7 +1,7 @@
 export default class RemoteRenderContext {
     #socket = null;
     #connectionId = null;
-    #client = null;
+    #clientId = -1;
     #renderer = null;
     #streaming = false;
 
@@ -32,6 +32,10 @@ export default class RemoteRenderContext {
         }
     }
 
+    //------------------------------------
+    // Underlying socket
+    //------------------------------------
+
     async #instrumentStreaming() {
         const { readable, writable, extensions, protocol } = await this.#socket.opened;
         const reader = readable.getReader();
@@ -47,12 +51,11 @@ export default class RemoteRenderContext {
         }
 
         // prepared
-        return this.#sendResponse(writer, "ready", {clientId: this.#connectionId });
+        this.#sendResponse(writer, "hello", {clientId: this.#connectionId });
     }
 
-    async #instrumentSocket() {
+    #instrumentSocket() {
         this.#socket.addEventListener("open", (event) => {
-            socket.send("Hello Server!");
         });
 
         // Listen for messages
@@ -69,39 +72,38 @@ export default class RemoteRenderContext {
         })
 
         // prepared
-        return this.#sendResponse(null, "ready", { clientId: this.#connectionId });
+        this.#sendResponse(null, "hello", { clientId: this.#connectionId });
     }
+
+    //-------------------------------------------
+    // Handle operations sent from the server
+    //-------------------------------------------
 
     async #processOperation(operation, destination) {
         switch(operation.task) {
-            case "init":
-                this.#configure(operation);
+            case "hello":
+                this.#acknowledgeConnection(operation);
                 break;
             case "compile":
                 const opaqueId = this.#compileShape(operation);
-                await this.#sendResponse(destination, "compiled", {opaqueId: opaqueId})
+                await this.#sendResponse(destination, "compiled", {clientId: this.#clientId, opaqueId: opaqueId});
                 break;
             case "destroy":
                 this.#destroyShape(operation);
-                await this.#sendResponse(destination, "destroyed", {opaqueId: operation.opaqueId});
+                await this.#sendResponse(destination, "destroyed", {clientId: this.#clientId, opaqueId: operation.opaqueId});
             case "render":
                 this.#renderInstruction(operation);
                 // no acknowledgment for immediate instruction rendering
                 break;
             case "renderFrame":
                 this.#renderFrame(operation);
-                await this.#sendResponse(destination, "rendered", {});
+                await this.#sendResponse(destination, "rendered", {clientId: this.#clientId });
                 break;
         }
     }
 
-    async #configure(operation) {
-        const rendererClass = operation.rendererClass;
-        if (typeof global !== "undefined") {
-            this.#renderer = new global[rendererClass](this);
-        } else {
-            this.#renderer = new window[rendererClass](this);
-        }
+    #acknowledgeConnection(operation) {
+        this.#clientId = operation.id;
     }
 
     #compileShape(operation) {

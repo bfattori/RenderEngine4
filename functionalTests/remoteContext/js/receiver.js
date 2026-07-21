@@ -4,22 +4,25 @@ import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRender
 
 import RemoteRenderContext from '../../../src/engine/rendering/remote/RemoteRenderContext.js';
 
-// create a double-buffered canvas renderer
-RenderEngine.init({
-    flags: {
-        debugMode: false
-    },
-    world: {
-        renderContext: new RemoteRenderContext(
-            new VectorRenderContext(
+export function connect(playerSlot, socketEndpoint) {
+    // create a remote render context that
+    RenderEngine.init({
+        flags: {
+            debugMode: false
+        },
+        world: {
+            renderContext: new VectorRenderContext(
                 CanvasRenderer.build(
                     document.getElementById("context"), 
                     true
                 ),
                 { enableCulling: false }
-            )
-        ),
-        dimensions: [800, 600],
-        viewport: [0, 0, 800, 600]
-    }
-});
+            ),
+            dimensions: [800, 600],
+            viewport: [0, 0, 800, 600]
+        }
+    });
+
+    new RemoteRenderContext(playerSlot, socketEndpoint);
+}
+

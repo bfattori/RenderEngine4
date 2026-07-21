@@ -72,7 +72,7 @@ export default class RenderContext {
   constructor(renderer, options = {}) {
     // the renderer which will be targeted by the context
     this.#renderer = renderer;
-    this.#renderer.renderContext = this;
+    this.#renderer !== null ? (this.#renderer.renderContext = this) : null;
     this.#configOptions = options;
 
     // Screen coordinate boundaries (top, left, right, bottom)

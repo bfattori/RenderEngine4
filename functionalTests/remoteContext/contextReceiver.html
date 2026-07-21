@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Context Receiver</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <script src="./js/reciever.js" type="module"></script>
+    </head>
+    <body>
+        <div id="context"></div>
+        <script>
+            // get the player number and start the receiver
+            const player = window.location.searchParams.get('player');
+            const socketEndpoint = window.location.searchParams.get('ws');
+            connect(player, socketEndpoint);
+        </script>
+    </body>
+</html>

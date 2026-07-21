@@ -1,13 +1,15 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
-import RenderContextProjector from '../../../src/engine/rendering/remote/RenderContextProjector.js';
-import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../src/engine/renderEngine4.js';
+import RenderContextProjector from '../../src/engine/rendering/remote/RenderContextProjector.js';
+import VectorRenderContext from '../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../src/engine/rendering/renderers/CanvasRenderer.js';
 
-import GameObject from '../../../src/engine/gameobject/GameObject.js';
-import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
+import GameObject from '../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../src/engine/parts/transform/Transform2dPart.js';
+import VectorRendererPart from '../../src/engine/parts/render/VectorRendererPart.js';
 
-import { Matrix2d } from '../../../src/engine/core/Matrix.js';
+import { StartupEvent } from './js/events.js';
+
+import { Matrix2d } from '../../src/engine/core/Matrix.js';
 
 // create a double-buffered canvas renderer
 RenderEngine.init({
@@ -16,13 +18,7 @@ RenderEngine.init({
     },
     world: {
         renderContext: new RenderContextProjector(
-            new VectorRenderContext(
-                CanvasRenderer.build(
-                    document.getElementById("context"), 
-                    true
-                ),
-                { enableCulling: false }
-            )
+            new VectorRenderContext(null, { enableCulling: false })
         ),
         dimensions: [800, 600],
         viewport: [0, 0, 800, 600]
@@ -55,11 +51,9 @@ renderer.compile();
 // set the origin at the center of the text
 gameObject.getComponentByName("transform").origin = [textBox[0] / 2, textBox[1] / 2];
 
-setInterval(() => {
-    // update the object's rotation every 10ms
-    gameObject.worldTransform.rotateSelf(0.5);
-}, 10);
+// fires before each update of the object
+gameObject.onBeforeUpdate = (time, deltaTime) => {
+    gameObject.worldTransform.rotateSelf(1);
+};
 
-// Start the render loop   
 RenderEngine.start();
-
