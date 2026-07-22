@@ -592,7 +592,16 @@ export default class Engine {
    */
   serialize(...ignoreKeys) {
       let serialize = structuredClone(this);
-      // Remove any keys that should be ignored
+      const props = Object.getOwnPropertyNames(this);
+
+      // remove any functions
+      for (const p of props) {
+        if (typeof serialize[p] === 'function') {
+          delete serialize[p];
+        }
+      }
+
+      // Remove any properties that should be ignored
       ignoreKeys.forEach(key => {
           delete serialize[key];
       });
