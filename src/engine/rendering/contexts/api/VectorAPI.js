@@ -753,18 +753,22 @@ export default function getAPI() {
             // Apply initial color if provided
             if (options.color && options.color !== context.lineColor) {
                 if (typeof options.color === 'string') {
-                context.API.color(options.color);
+                    context.API.color(options.color);
                 } else if (typeof options.color === 'number') {
-                const r8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
-                const g8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
-                const b8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
-                context.API.color(`#${r8}${g8}${b8}`);
+                    const r8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
+                    const g8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
+                    const b8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
+                    context.API.color(`#${r8}${g8}${b8}`);
                 }
             }
 
             // Apply initial font size if provided
-            context.API.fontSize(options.fontSize || context.API.getFontSize(), context.API.getFontSize());
-            context.API.width(options.lineWidth || context.API.getWidth());
+            if (options.fontSize) {
+                context.API.fontSize(options.fontSize, context.API.getFontSize());
+            }
+            if (options.lineWidth) {
+                context.API.width(options.lineWidth || context.API.getWidth());
+            }
 
             if (options.formatting.bold)
                 context.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
@@ -776,12 +780,9 @@ export default function getAPI() {
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text and generate instructions
-            context.pushTransform();
             const result = processText.call(context, text);
             textSize[0] = result.width;
             textSize[1] = result.height;
-            context.popTransform();
-            context.API.resetFontSize();
 
             return context.API;
         },

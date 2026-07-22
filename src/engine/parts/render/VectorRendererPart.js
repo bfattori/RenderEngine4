@@ -2,6 +2,7 @@ import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
+import { Matrix2d } from '../../core/Matrix.js';
 import { VECTOR_IL } from '../../rendering/assemblers/IntermediateLanguages.js';
 import getAPI from '../../rendering/contexts/api/VectorAPI.js';
 
@@ -15,6 +16,7 @@ export default class VectorRendererPart extends RenderPart {
       italics: false,
       underline: false
     };
+    #localTransform = Matrix2d.identity();
     
     constructor(priority = Constants.RENDER_PRIORITY, name = 'VectorRenderer') {
         super(priority, name);
@@ -52,19 +54,23 @@ export default class VectorRendererPart extends RenderPart {
     }
 
     pushTransform(transform) {
-        super.pushTransform(transform);
-        this.addInstruction(`${VECTOR_IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
+        super.pushTransform(Matrix2d.from(this.#localTransform));
+        this.#localTransform.multiplySelf(transform);
     }
 
     popTransform() {
         const txfm = super.popTransform();
-        this.addInstruction(`${VECTOR_IL.POP}`);
+        this.#localTransform.fromMatrix(txfm);
         return txfm;
+    }
+
+    peekTransform() {
+        return this.#localTransform;
     }
 
     resetTransforms() {
         super.resetTransforms();
-        this.addInstruction(`${VECTOR_IL.XFORM_RESET}`);
+        this.#localTransform = Matrix2d.identity();
     }
 
     setCursorPosition(x, y) {
@@ -85,6 +91,9 @@ export default class VectorRendererPart extends RenderPart {
     compile() {
         if (!this.#compiledShape) {
             this.#compiledShape = this.context.getCompiledShape(this.instructions, this.name);
+            if (this.#compiledShape === Constants.COMPILATION.NOT_SUPPORTED) {
+                this.#compiledShape = null;
+            }
         } else {
             throw new GameComponentError(this, 'Attempt recompile an already compiled shape!');
         }
@@ -100,14 +109,16 @@ export default class VectorRendererPart extends RenderPart {
         if (this.#compiledShape !== null) {
             this.context.renderCompiledShape(this.#compiledShape);
         } else {
-            this.instructions.forEach(instruction => {
-                this.context.render(instruction);
-            });
+            for (const inst of this.instructions) {
+                this.context.addInstruction(inst);
+            }
         }
     }
 
     destroy() {
-        this.context.destroyCompiledShape(this.#compiledShape);
+        if (this.#compiledShape !== null) {
+            this.context.destroyCompiledShape(this.#compiledShape);
+        }
         super.destroy();
     }
 }

@@ -95,7 +95,6 @@ export default class RenderPart extends ComponentPart {
 
     pushTransform(transform) {
         this.#localTransformStack.push(transform);
-        
     }
 
     popTransform() {
@@ -141,7 +140,7 @@ export default class RenderPart extends ComponentPart {
      */
     modifyTransform(transformEvent) {
         if (this.#committed) return;
-        this.pushTransform(this.host.worldTransform.multiply(transformEvent.consume(this)));
+        this.pushTransform(transformEvent.consume(this));
     }
 
     /**
@@ -151,8 +150,9 @@ export default class RenderPart extends ComponentPart {
      */
     commitTransform(transformEvent) {
         if (!this.#committed && transformEvent) {
-            this.pushTransform(transformEvent.consume(this));
+            this.modifyTransform(transformEvent);
         }
+        
         this.#committed = true;    
     }
 
@@ -187,7 +187,7 @@ export default class RenderPart extends ComponentPart {
      * @returns {void}
      */
     composeAndDraw(time, deltaTime) {
-        this.context.pushTransform(this.peekTransform());
+        this.context.pushTransform(this.host.worldTransform.multiply(this.peekTransform()));
         this.draw(time, deltaTime);
         this.context.popTransform();
         this.#committed = false;

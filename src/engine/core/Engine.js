@@ -15,6 +15,8 @@ import ParticleEngine from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
 import AABBCollisionModel from '../collisionModels/models/AABB.js';
 
+import FPSCounter from '../ui/FPSCounter.js'
+
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
  * @type {Object} primary - Namespace object containing references to Engine, EventEngine, World, and RenderContext.
@@ -24,7 +26,6 @@ const primary = {
   PARTICLE_ENGINE: null
 };
 
-const MAXSAMPLES = 100;
 const ctx = Context.getInstance();
 let waitInit = false;
 
@@ -85,28 +86,7 @@ export default class Engine {
   #animationFrameId = null;
   #lifecycleTiming = 0;
   #collisionModel = null;
-  #fpsDisplay = null;
-  #fpsCounter = null;
-  #updateCounter = null;
-  #renderCounter = null;
-
-  #tickers = {
-    total: {
-      index: 0,
-      sum: 0,
-      samples: new Array(MAXSAMPLES).fill(0)
-    },
-    update: {
-      index: 0,
-      sum: 0,
-      samples: new Array(MAXSAMPLES).fill(0)
-    },
-    render: {
-      index: 0,
-      sum: 0,
-      samples: new Array(MAXSAMPLES).fill(0)
-    }
-  }
+  #fpsCounter = null
 
   constructor(options) {
     if (!waitInit) {
@@ -155,22 +135,14 @@ export default class Engine {
     this.#ENGINE_OPTIONS.world.collisionModel = collisionModel;
 
     if (this.#ENGINE_OPTIONS.flags.showFps) {
-      this.#fpsDisplay = document.createElement('div');
-      this.#fpsDisplay.classList.add('fpsCounter');
-      this.#fpsCounter = document.createElement('div');
-      this.#updateCounter = document.createElement('div');
-      this.#renderCounter = document.createElement('div');
-      this.#fpsDisplay.appendChild(this.#fpsCounter);
-      this.#fpsDisplay.appendChild(this.#updateCounter);
-      this.#fpsDisplay.appendChild(this.#renderCounter);
-      document.body.appendChild(this.#fpsDisplay);
+      this.#fpsCounter = new FPSCounter();
     }
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
   }
 
-    //---------------------------
+  //---------------------------
   // Primary engine components
   //---------------------------
 
@@ -455,47 +427,18 @@ export default class Engine {
       const renderEnd = performance.now();
       lifecycleHooks?.onRender(renderEnd - frameStart, renderEnd - renderStart);
 
-      if (this.#ENGINE_OPTIONS.flags.showFps) {
-        const updateTick = updateEnd - updateStart;
-        const renderTick = renderEnd - renderStart;
-        const totalTick = renderEnd - frameStart;
-        
-        this.#tickers.update.sum -= this.#tickers.update.samples[this.#tickers.update.index];
-        this.#tickers.render.sum -= this.#tickers.render.samples[this.#tickers.render.index];
-        this.#tickers.total.sum -= this.#tickers.total.samples[this.#tickers.total.index];
-
-        this.#tickers.update.sum += updateTick;
-        this.#tickers.render.sum += renderTick;
-        this.#tickers.total.sum += totalTick;
-
-        this.#tickers.update.samples[this.#tickers.update.index] = updateTick;
-        this.#tickers.render.samples[this.#tickers.render.index] = renderTick;
-        this.#tickers.total.samples[this.#tickers.total.index] = totalTick;
-
-        if(++this.#tickers.update.index===MAXSAMPLES)    /* inc buffer index */
-          this.#tickers.update.index=0;
-
-        if(++this.#tickers.render.index===MAXSAMPLES)    /* inc buffer index */
-          this.#tickers.render.index=0;
-
-        if(++this.#tickers.total.index===MAXSAMPLES)    /* inc buffer index */
-          this.#tickers.total.index=0;
-
-        const totalFPS = ((1 / (this.#tickers.total.sum / MAXSAMPLES)) * MAXSAMPLES).toFixed(0);
-        const updateFPS = ((1 / (this.#tickers.update.sum / MAXSAMPLES)) * MAXSAMPLES).toFixed(0);
-        const renderFPS = ((1 / (this.#tickers.render.sum / MAXSAMPLES)) * MAXSAMPLES).toFixed(0);
-
-        this.#fpsCounter.textContent = `Total: ${totalFPS} fps`;
-        this.#updateCounter.textContent = `Update: ${(updateFPS/totalFPS).toFixed(0)}%`;
-        this.#renderCounter.textContent = `Render: ${(renderFPS/totalFPS).toFixed(0)}%`;
-      }
-
       // one frame generated
       lifecycleHooks.onFrame(performance.now() - frameStart);
+      const frameEnd = performance.now();
 
       if (this.isRunning) {
         this.#animationFrameId = requestAnimationFrame(loop);
       }
+
+      if (this.options.flags.showFps) {
+        this.#fpsCounter.update(frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
+      }
+
     };
     
     this.#animationFrameId = requestAnimationFrame(loop);

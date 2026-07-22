@@ -20,7 +20,7 @@ export default class CanvasRenderer extends Renderer {
         
     #localFormat = new Map();
 
-    constructor(htmlElement, buffered) {
+    constructor(htmlElement, buffered, useCompiler = true) {
         super();
         if (!built) {
             throw new RendererError(this, "CanvasRenderer must be built using CanvasRenderer.build()!");
@@ -30,7 +30,7 @@ export default class CanvasRenderer extends Renderer {
         this.#htmlElement = htmlElement;
 
         // Let the context know the renderer can compile shapes
-        this.hasCompiler = true;
+        this.hasCompiler = useCompiler;
         this.#localFormat.set('b', false);
         this.#localFormat.set('i', false);
         this.#localFormat.set('u', false);
@@ -65,9 +65,9 @@ export default class CanvasRenderer extends Renderer {
      * @param {boolean} buffered - If true, the renderer will use a double-buffered canvas for rendering.
      * @returns {CanvasRenderer} - The initialized CanvasRenderer instance.
      */
-    static build(htmlElement, buffered) {
+    static build(htmlElement, buffered, useCompiler) {
         built = true;
-        return new CanvasRenderer(htmlElement, buffered);
+        return new CanvasRenderer(htmlElement, buffered, useCompiler);
     }
 
      /**
@@ -196,10 +196,13 @@ export default class CanvasRenderer extends Renderer {
                 this.surface.rect(args[0], args[1], 2, 2);
                 this.surface.fill();
                 break;
+            case vector.LINESEG:
+                this.path = new Path2D;
+                fillSeg = args[0];
+                break;
             case vector.CURVE:
                 this.path = new Path2D;
                 this.path.moveTo(args[1], args[2]);
-            case vector.LINESEG:
                 fillSeg = args[0];
                 break;
             case vector.ENDCURVE:

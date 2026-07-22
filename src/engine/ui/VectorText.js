@@ -237,9 +237,6 @@ function characterInstruction(char, width) {
     const context = this;
     if (ctx.debug) {
         context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
-    }
-    
-    if (ctx.debug) {
         context.API.color("#000").width(1).rectangle(-ci.halfWidth, -ci.halfHeight, ci.width - ci.halfWidth, ci.height - ci.halfHeight).color().width();
     }
 

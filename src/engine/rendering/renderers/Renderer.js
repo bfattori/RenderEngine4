@@ -151,7 +151,7 @@ export default class Renderer {
      * @private
      */
     compile(instructions, tag) {
-        if (!this.#hasCompiler) return;
+        if (!this.#hasCompiler) { return Constants.COMPILATION.NOT_SUPPORTED; }
         return this.assembler.compileShape(instructions, tag);
     }
 
@@ -175,7 +175,7 @@ export default class Renderer {
      *                   the renderer does not support pre-compilation of renderable objects.
      */
     getCompiledShape(instructions, tag) {
-        if (!this.#hasCompiler) { return Constants.COMPILATION_NOT_SUPPORTED; }
+        if (!this.#hasCompiler) { return Constants.COMPILATION.NOT_SUPPORTED; }
         return this.assembler.compileShape(this, instructions, tag);
     }
 

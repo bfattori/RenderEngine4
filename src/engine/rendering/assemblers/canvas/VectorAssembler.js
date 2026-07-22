@@ -43,7 +43,7 @@ export default class CanvasVectorAssembler {
     compileShape(renderer, instructions, tag = null) {
         if (instructions.length === 0) {
            console.warn('Compiling an empty shape?');
-           return Constants.COMPILATION_FAILED;
+           return Constants.COMPILATION.FAILED;
         }
         
         // generate the re-usable function
