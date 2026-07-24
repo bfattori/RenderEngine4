@@ -5,9 +5,244 @@ import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 import { Matrix2d } from '../core/Matrix.js';
 import Context from '../Context.js';
 
-// get the engine context
 const ctx = Context.getInstance();
 const glyphCache = new Map();
+const CHARACTER_SPACE = {
+    instructions: [],
+    width: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+    height: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+    charWidth: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+    charHeight: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
+};
+const spaceWidth = Constants.VECTOR_DEFAULTS.SPACE_WIDTH + Constants.VECTOR_DEFAULTS.CHAR_SPACING;
+const tabSize = spaceWidth * 2;
+
+/**
+ * Class with a static method to parse formatted text and populate the context's
+ * rendering instructions for the characters. The context may be bound to either {@link VectorRenderContext} or {@link VectorRenderPart}.
+ * If the renderer supports compilation, the text renderer will produce a {@link CompiledShape} for each glyph.
+ * @example VectorTextParser.parse.call(renderContext, text);
+ * @param {string} text - Text content to process
+ * @returns {Array<String>} Array of IL instructions
+ */
+export default class VectorTextParser {
+
+    /**
+     * Parse text with formatting into rendering instructions.
+     * 
+     * @param {string} text - Text content to process
+     * @returns {Array<String>} Array of IL instructions
+     */
+    parse(text) {
+        let textWidth = 0, totalTextWidth = 0;
+        let lineHeight = 0, totalTextHeight = 0;
+
+        // Parse and process each character in the text
+        let i = 0;
+        while (i < text.length) {
+            const char = text[i];
+
+            // space
+            if (char === ' ') {
+                // including this space, how many more are there trailing this?
+                // reduces the number of times we emit TRANSLATE instructions
+                let consecutiveTrailingSpaces = 1;
+                if (text[i + 1] === ' ') {
+                    consecutiveTrailingSpaces += /( +)/.exec(text.substring(i + 1))[0].length;
+                }
+                this.API.translate(consecutiveTrailingSpaces * spaceWidth, 0);
+                i += consecutiveTrailingSpaces;
+                textWidth += consecutiveTrailingSpaces * spaceWidth;
+                continue;
+            }
+
+            // newline
+            if (char === '\n') {
+                this.API.carriageReturn();
+                if (textWidth > totalTextWidth) {
+                    totalTextWidth = textWidth;
+                }
+                textWidth = 0;
+                totalTextHeight += lineHeight;
+                lineHeight = 0;
+                i++;
+                continue;
+            }
+
+            // tab
+            if (char === '\t') {
+                this.API.translate(tabSize, 0);
+                textWidth += tabSize;
+                i++;
+                continue;
+            }
+
+            // char instruction for calculating text width
+            let ci = null;
+
+            // Handle escape sequences
+            if (char === '\\') {
+                const nextChar = text[i + 1];
+                if (nextChar !== undefined) {
+                    switch (nextChar) {
+                        case '*':
+                            ci = characterInstruction.call(this, '*', text, i + 2);
+                            i += 2 + ci.trailingSpaces;
+                            break;
+                        case '{':
+                            ci = characterInstruction.call(this, '{', text, i + 2);
+                            i += 2 + ci.trailingSpaces;
+                            break;
+                        case '_':
+                            ci = characterInstruction.call(this, '_', text, i + 2);
+                            i += 2 + ci.trailingSpaces;
+                            break;
+                        case '~':
+                            ci = characterInstruction.call(this, '~', text, i + 2);
+                            i += 2 + ci.trailingSpaces;
+                            break;
+                        case '\\':
+                            ci = characterInstruction.call(this, '\\', text, i + 2);
+                            i += 2 + ci.trailingSpaces;
+                            break;
+                        default:
+                            // Not an escape sequence, treat as regular character
+                            ci = characterInstruction.call(this, char, text, i + 1);
+                            i += 1 + ci.trailingSpaces;
+                            break;
+                    }
+                } else {
+                    // Trailing backslash, treat as regular character
+                    ci = characterInstruction.call(this, '\\', text, i + 1);
+                    i += 1 + ci.trailingSpaces;
+                }
+
+                continue;
+            }
+
+            // Handle formatting markers
+            if (char === '{') {
+                const nextChar = text[i + 1];
+                let markerType = '';
+
+                if (nextChar === '!') {
+                    let op = text[i + 2];
+                    let reset = false;
+                    if (op === '!') {
+                        reset = true;
+                        op = text[i + 3];
+                    }
+                    switch (op) {
+                        case 'z':
+                            reset ? this.API.resetFontSize() : this.API.fontSize();
+                            break;
+                        case 'f':
+                            reset ? this.API.resetFillColor() : this.API.fillColor();
+                            break;
+                        case 'c':
+                            reset ? this.API.resetColor() : this.API.color();
+                            break;
+                        case 'w':
+                            reset ? this.API.resetWidth() : this.API.width();
+                            break;
+                    }
+                    i += reset ? 5 : 4;
+                } else if (nextChar !== '#' && ((isNaN(nextChar) && (nextChar === '+' || nextChar === '-')) || !isNaN(nextChar))) {
+                    const sign = nextChar === '+' ? 1 : nextChar === '-' ? -1 : 0;
+                    // Font size marker - next character
+                    if (nextChar === '}') {
+                        // pop to the last font size
+                        this.API.fontSize();
+                        i += 2;
+                    } else {
+                        // get the font size
+                        const currentSize = this.API.getFontSize();
+                        let j = i + 2;
+                        let foundBracket = false;
+                        while (j < text.length && !foundBracket) {
+                            if (text[j] === '}') {
+                                const scalar = parseFloat(text.substring(i + (sign !== 0 ? 2 : 1), j).trim()) || 0;
+                                this.API.fontSize(sign === 0 ? scalar : currentSize + (scalar * sign));
+                                break;
+                            }
+                            j++;
+                        }
+                        i = j + 1;
+                    }
+                    continue;
+                } else if (nextChar === '#') {
+                    // Color name - hex color
+                    const colorHex = getWord.call(this, text, i).substr(1).trim();
+                    this.API.color(colorHex);
+                    i += colorHex.length + 2;
+                } else if (nextChar !== undefined) {
+                    // Color name - remove the { - may need to remove the training } as well??
+                    const colorName = getWord.call(this, text, i).substr(1).trim();
+                    this.API.color(colorName);
+                    i += colorName.length + 2;
+                }
+                continue;
+            }
+
+            // Handle italic marker (single underscore)
+            if (char === '_') {
+                this.formatting.italics = !this.formatting.italics;
+                if (ctx.debug) this.addInstruction(`// format: italics (${this.formatting.italics})`);
+                if (this.formatting.italics) {
+                    this.API.skew(-12);
+                } else {
+                    this.API.skew(12);
+                }
+                i++;
+                continue;
+            }
+
+            // Handle bold marker
+            if (char === '*' && text[i + 1] === '*') {
+                this.formatting.bold = !this.formatting.bold;
+                if (ctx.debug) this.addInstruction(`// format: bold (${this.formatting.bold})`);
+                if (this.formatting.bold) {
+                    this.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
+                } else {
+                    this.API.width();
+                }
+                i += 2;
+                continue;
+            }
+
+            // Handle underline marker
+            if (char === '~') {
+                this.formatting.underline = !this.formatting.underline;
+                this.__underline = this.formatting.underline ? this.cursor[0] : this.__underline;
+                if (!this.formatting.underline && this.startUnderline !== null) {
+                    // Draw underline from startUnderline to current cursor position
+                    //if (ctx.debug) this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.__underline} - ${this.API.cursor[0]})`);
+                    // const oldWidth = this.lineWidth;
+                    // this.API.width(2);
+                    // this.API.line(this.startUnderline, this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14)), this.cursor[0], this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14)));
+                    // this.API.width(oldWidth);
+                    // this.__underline = null;
+                }
+                i++;
+                continue;
+            }
+
+            // Regular character - emit instruction
+            ci = characterInstruction.call(this, char, text, i + 1);
+
+            // Calculate overall width and height
+            textWidth += ci.width;
+            lineHeight = Math.max(lineHeight, ci.height);
+
+            // advance cursor
+            i += 1 + ci.trailingSpaces;
+        }
+        return {
+            width: totalTextWidth !== 0 ? totalTextWidth : textWidth,
+            height: totalTextHeight !== 0 ? totalTextHeight : lineHeight
+        };
+    }
+}
 
 function getWord(text, idx) {
     let check = text.substring(idx);
@@ -23,241 +258,78 @@ function getWord(text, idx) {
 }
 
 /**
- * Method to process text content with formatting markers into rendering instructions.
- * @param {string} text - Text content to process
- * @param {number} spaceWidth - The size of a space character (default: 45);
- * @returns {Array} Array of IL instructions
- */
-export default function processText(text) {
-    let textWidth = 0, totalTextWidth = 0;
-    let lineHeight = 0, totalTextHeight = 0;
-
-    // Parse and process each character in the text
-    let i = 0;
-    while (i < text.length) {
-        const char = text[i];
-        
-        if (char === '\n') {
-            this.API.carriageReturn();
-            if (textWidth > totalTextWidth) {
-                totalTextWidth = textWidth;
-            }
-            textWidth = 0;
-            totalTextHeight += lineHeight;
-            lineHeight = 0;
-            i += 1;
-            continue;
-        }
-
-        // char instruction for calculating text width
-        let ci = null;
-
-        // Handle escape sequences
-        if (char === '\\') {
-            const nextChar = text[i + 1];
-            if (nextChar !== undefined) {
-                switch (nextChar) {
-                case '*':
-                    ci = characterInstruction.call(this, '*');
-                    i += 2;
-                    break;
-                case '{':
-                    ci = characterInstruction.call(this, '{');
-                    i += 2;
-                    break;
-                case '_':
-                    ci = characterInstruction.call(this, '_');
-                    i += 2;
-                    break;
-                case '~':
-                    ci = characterInstruction.call(this, '~');
-                    i += 2;
-                    break;
-                case '\\':
-                    ci = characterInstruction.call(this, '\\');
-                    i += 2;
-                    break;
-                default:
-                    // Not an escape sequence, treat as regular character
-                    ci = characterInstruction.call(this, char);
-                    i++;
-                    break;
-                }
-            } else {
-                // Trailing backslash, treat as regular character
-                ci = characterInstruction.call(this, '\\');
-                i++;
-            }
-            
-            continue;
-        }
-
-        // Handle formatting markers
-        if (char === '{') {
-            const nextChar = text[i + 1];
-            let markerType = '';
-            
-            if (nextChar === '!') {
-                let op = text[i + 2];
-                let reset = false;
-                if (op === '!') {
-                    reset = true;
-                    op = text[i + 3];
-                }
-                switch (op) {
-                    case 'z': 
-                        reset ? this.API.resetFontSize() : this.API.fontSize();
-                        break;
-                    case 'f':
-                        reset ? this.API.resetFillColor() : this.API.fillColor();
-                        break;
-                    case 'c':
-                        reset ? this.API.resetColor() : this.API.color();
-                        break;
-                    case 'w':
-                        reset ? this.API.resetWidth() : this.API.width();
-                        break;
-                }
-                i += reset ? 5 : 4;
-            } else if (nextChar !== '#' && ((isNaN(nextChar) && (nextChar === '+' || nextChar === '-')) || !isNaN(nextChar))) {
-                const sign = nextChar === '+' ? 1 : nextChar === '-' ? -1 : 0;
-                // Font size marker - next character
-                if (nextChar === '}') {
-                    // pop to the last font size
-                    this.API.fontSize();
-                    i += 2;
-                } else {
-                    // get the font size
-                    const currentSize = this.API.getFontSize();
-                    let j = i + 2;
-                    let foundBracket = false;
-                    while (j < text.length && !foundBracket) {
-                        if (text[j] === '}') {
-                            const scalar = parseFloat(text.substring(i + (sign !== 0 ? 2 : 1), j).trim()) || 0;
-                            this.API.fontSize(sign === 0 ? scalar : currentSize + (scalar * sign));
-                            break;
-                        }
-                        j++;
-                    }
-                    i = j + 1;
-                }
-                continue;
-            } else if (nextChar === '#') {
-                // Color name - hex color
-                const colorHex = getWord.call(this, text, i).substr(1).trim();
-                this.API.color(colorHex);
-                i += colorHex.length + 2;
-            } else if (nextChar !== undefined) {
-                // Color name - remove the { - may need to remove the training } as well??
-                const colorName = getWord.call(this, text, i).substr(1).trim();
-                this.API.color(colorName);
-                i += colorName.length + 2;
-            }
-            continue;
-        }
-
-        // Handle italic marker (single underscore)
-        if (char === '_') {
-            this.formatting.italics = !this.formatting.italics;
-            if (ctx.debug) this.addInstruction(`// format: italics (${this.formatting.italics})`);
-            if (this.formatting.italics) {
-                this.API.skew(-12);
-            } else {
-                this.API.skew(0);
-            }
-            i++;
-            continue;
-        }
-        
-        // Handle bold marker
-        if (char === '*' && text[i + 1] === '*') {
-            this.formatting.bold = !this.formatting.bold;
-            let oldWidth = this.API.getWidth();
-            if (ctx.debug) this.addInstruction(`// format: bold (${this.formatting.bold})`);
-            if (this.formatting.bold) {
-                this.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
-            } else {
-                this.API.width(oldWidth);
-            }
-            i += 2;
-            continue;
-        }
-        
-        // Handle underline marker
-        if (char === '~') {
-            this.formatting.underline = !this.formatting.underline;
-            this.__underline = this.formatting.underline ? this.cursor[0] : this.__underline;
-            if (!this.formatting.underline && this.startUnderline !== null) {
-                // Draw underline from startUnderline to current cursor position
-                //if (ctx.debug) this.addInstruction(`// format: underline ${!this.formatting.underline} (${this.__underline} - ${this.API.cursor[0]})`);
-                // const oldWidth = this.lineWidth;
-                // this.API.width(2);
-                // this.API.line(this.startUnderline, this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14)), this.cursor[0], this.cursor[1] + (this.lineHeight * (this.fontSize * 0.14)));
-                // this.API.width(oldWidth);
-                // this.__underline = null;
-            }
-            i++;
-            continue;
-        }
-            
-        // Regular character - emit instruction
-        ci = characterInstruction.call(this, char);
-
-        // Calculate overall width and height
-        textWidth += ci.width;
-        lineHeight = Math.max(lineHeight, ci.height);
-        i++;
-    }
-    return { 
-        width: totalTextWidth !== 0 ? totalTextWidth : textWidth, 
-        height: totalTextHeight !== 0 ? totalTextHeight : lineHeight 
-    };
-}
-
-/**
  * Generate instruction for a single character
  * @param {string} char - Character to render
- * @param {number} width - Cursor advancement width
+ * @param {string} text - Full text being examined, starting at `char`
+ * @param {string} index - The index following `char`
  * @returns {Array} Array of IL instructions for this character
  * @private
  */
-function characterInstruction(char, width) {
+function characterInstruction(char, text, index) {
+    const context = this;
+
+    // determine if there are trailing spaces, and how many
+    // to reduce the number of times we emit TRANSLATE instructions
+    let consecutiveTrailingSpaces = 0;
+    if (text[index] === ' ') {
+        consecutiveTrailingSpaces = /( +)/.exec(text.substring(index))[0].length;
+    }
+    
     // until we have lowercase characters
     char = char.toUpperCase();
     
     // Get character instructions from vector.js
-    const ci = getCharacterInstructions.call(this, char);
+    let ci = getCharacterInstructions.call(this, char);
 
-    if (!ci || !ci.instructions) {
+    if (!ci) {
         // Character not in set (e.g., lowercase letters), skip or use fallback
         return;
     }
 
     // Add character instructions
-    const context = this;
     if (ctx.debug) {
-        context.addInstruction(`// CHAR: ${char === ' ' ? 'SPACE' : char}`);
-        context.API.color("#000").width(1).rectangle(-ci.halfWidth, -ci.halfHeight, ci.width - ci.halfWidth, ci.height - ci.halfHeight).color().width();
+        context.addInstruction(`// CHAR: "${char === ' ' ? '[SPACE]' : char}"`);
+        // context.API
+        //     .color("#000")
+        //     .width(1)
+        //     .rectangle(-ci.halfWidth, -ci.halfHeight, 
+        //                 ci.width - ci.halfWidth, ci.height - ci.halfHeight)
+        //     .color()
+        //     .width();
     }
 
-    if (context.renderer.hasCompiler) {
-        if (!glyphCache.has(char)) {
-            // Compile the character shape and store in cache
-            const shapeId = context.renderer.getCompiledShape(ci.instructions, `CHAR '${char}'`);
-            if (shapeId !== Constants.COMPILATION.FAILED) {
-                glyphCache.set(char, shapeId);
-                context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
+    if (char !== ' ') {
+        if (context.renderer.hasCompiler) {
+            if (!glyphCache.has(char)) {
+                // Compile the character shape and store in cache
+                if (char !== ' ') {
+                    const shapeId = context.renderer.getCompiledShape(ci.instructions, `CHAR '${char}'`);
+                    glyphCache.set(char, shapeId);
+                    context.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
+                }
+            } else {
+                context.addInstruction(`${VECTOR_IL.SHAPE} ${glyphCache.get(char)}`);
             }
         } else {
-            context.addInstruction(`${VECTOR_IL.SHAPE} ${glyphCache.get(char)}`);
+            ci.instructions.forEach(inst => {
+                context.addInstruction(inst);
+            });
         }
     } else {
-        ci.instructions.forEach(inst => {
-            context.addInstruction(inst);
-        });
+        consecutiveTrailingSpaces = 1;
     }
-    context.API.translate(ci.charWidth + context.letterSpacing, 0);
-    context.API.cursorDelta(ci.charWidth + context.letterSpacing, 0);
+
+    // bundle consecutive trailing spaces as one giant leap
+    context.API.translate(ci.charWidth + (consecutiveTrailingSpaces * spaceWidth) + context.letterSpacing, 0);
+    context.API.cursorDelta(ci.charWidth + (consecutiveTrailingSpaces * spaceWidth) + context.letterSpacing, 0);
+
+    // keep this immutable
+    if (ci === CHARACTER_SPACE) {
+        ci = { ...CHARACTER_SPACE };
+    }
+    
+    // number of trailing spaces to jump ahead in the parser
+    ci.trailingSpaces = consecutiveTrailingSpaces;
     return ci;
 }
 
@@ -283,13 +355,7 @@ function getCharacterInstructions(char) {
     }
 
     if (ascii === 32) {
-        return {
-            instructions: [],
-            width: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
-            height: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
-            charWidth: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
-            charHeight: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
-        };    
+        return CHARACTER_SPACE;    
     }
 
     // Check character set array
@@ -315,14 +381,14 @@ function getCharacterInstructions(char) {
         }
 
         // make positive for width and height calculations
-        minMax[1] = minMax[0] < 0 ? Math.abs(minMax[0]) + minMax[1] : minMax[1];
-        minMax[3] = minMax[2] < 0 ? Math.abs(minMax[2]) + minMax[3] : minMax[3];
-        minMax[0] = minMax[0] < 0 ? 0 : minMax[0];
-        minMax[2] = minMax[2] < 0 ? 0 : minMax[2];
+        minMax[0] += 5;
+        minMax[1] += 5;
+        minMax[2] += 5;
+        minMax[3] += 5;
 
-        const charWidth = minMax[1];
+        const charWidth = minMax[1] - minMax[0];
         const halfWidth = Math.round(charWidth * 0.5);
-        const charHeight = minMax[3];
+        const charHeight = minMax[3] - minMax[2];
         const halfHeight = Math.round(charHeight * 0.5);
 
         instructions.push(`${VECTOR_IL.LINESEG} 0`);
@@ -366,3 +432,4 @@ function getCharacterInstructions(char) {
 
     return null;
 }
+

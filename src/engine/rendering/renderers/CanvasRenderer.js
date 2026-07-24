@@ -153,7 +153,7 @@ export default class CanvasRenderer extends Renderer {
     }
        
     /**
-     * Renders the instruction to the surface as soon as it is received.
+     * Renders the instruction to the surface immediately.
      * <b>Immediate Mode</b>
      * @param {String} instruction - The instruction to render 
      * @param {Number} time - The current time in seconds
@@ -161,12 +161,16 @@ export default class CanvasRenderer extends Renderer {
      * @returns {void}
      */
     #immediate(instruction, time, deltaTime) {
+
         // render the drawing instruction
         let fillSeg = "0";
         const vector = VECTOR_IL;
         const parts = instruction.trim().split(' ');
         const {operand, args} = {operand: parts.shift(), args: parts};
         switch (operand) {
+            //-----------------------------------
+            // State modifiers
+
             case vector.COLOR:
                 this.surface.strokeStyle = args[0];
                 break;
@@ -176,22 +180,17 @@ export default class CanvasRenderer extends Renderer {
             case vector.WIDTH:
                 this.surface.lineWidth = args[0];
                 break;
-            case vector.TRANSFORM:
-                this.surface.transform(args[0], args[1], args[2], args[3], args[4], args[5]);
+            case vector.FONTSIZE:
+                const current = args[0] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
+                const last = args[1] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
+                const delta = (current / last);
+                // calculate a scaling factor for the delta
+                this.surface.scale(delta, delta);
                 break;
-            case vector.ABS_TRANSFORM:
-                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
-                break;
-            case vector.PUSH:
-                this.surface.save();
-                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
-                break;
-            case vector.POP:
-                this.surface.restore();
-                break;
-            case vector.XFORM_RESET:
-                this.surface.resetTransform();
-                break;
+
+            //--------------------------------
+            // Imperative Drawing
+
             case vector.POINT:
                 this.surface.rect(args[0], args[1], 2, 2);
                 this.surface.fill();
@@ -255,11 +254,36 @@ export default class CanvasRenderer extends Renderer {
                     this.surface.stroke();
                 }
                 break;
-            case vector.MOVETO:
-                this.surface.moveTo(args[0], args[1]);
-                break;
+
+            //-----------------------------
+            // Shape Drawing
+
             case vector.SHAPE:
                 this.renderCompiledShape(args[0], time, deltaTime);
+                break;
+
+            //--------------------------------------------
+            // Transformations
+
+            case vector.TRANSFORM:
+                this.surface.transform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+            case vector.ABS_TRANSFORM:
+                this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+            case vector.PUSH:
+                this.surface.save();
+                if (args.length === 6)
+                    this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                break;
+            case vector.POP:
+                this.surface.restore();
+                break;
+            case vector.XFORM_RESET:
+                this.surface.resetTransform();
+                break;                
+            case vector.MOVETO:
+                this.surface.moveTo(args[0], args[1]);
                 break;
             case vector.TRANSLATE:
                 this.surface.translate(args[0], args[1]);
@@ -275,13 +299,6 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.SKEW:
                 this.surface.setTransform(this.surface.getTransform().skewXSelf(args[0]));
-                break;
-            case vector.FONTSIZE:
-                const current = args[0] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
-                const last = args[1] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
-                const delta = current / last;
-                // calculate a scaling factor for the delta
-                this.surface.scale(delta, delta);
                 break;
 
             // eat these in immediate mode

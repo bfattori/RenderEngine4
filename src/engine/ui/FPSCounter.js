@@ -98,7 +98,7 @@ export default class FPSCounter {
         const updatePct = (updateFPS/totalFPS).toFixed(0);
         const renderPct = (renderFPS/totalFPS).toFixed(0);
 
-        this.#fpsCounter.textContent = `${totalFPS} fps`;
+        this.#fpsCounter.textContent = `${(totalFPS / 10).toFixed(1)} fps`;
 
         this.#updateCounter.textContent = `${updatePct}%`;
         this.#updateBarText.textContent = `${updatePct}%`;

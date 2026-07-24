@@ -37,15 +37,16 @@ api
     .fillColor("#8800cc")
     .circle(100, 100, 50, true)
     .color("#ff9100").width(10)
-    .circle(100, 100, 50, false)
+    .circle(100, 100, 50, false).resetWidth();
     
 // the string "Inline" formatted 
 // with colors and font size changes
 api
     .pushTransform()
     .translate(50, 330)
-    .width(1)
+    .width(2)
     .text("{15}{#00f}**I{#f00}n**{green}{+12}l{orange}~i~{gold}{-2}n{mediumvioletred}e")
+    .resetFontSize()
     .popTransform();
 
 // the string "Format" formatted 
@@ -53,14 +54,16 @@ api
 api
     .pushTransform()
     .translate(100, 400)
-    .text("{60}{#808}**~F{-1}o{-1}r{-1}m{-1}a{-1}t~**")
+    .width(5)
+    .text("{50}{#808}**F{-5}o{-5}r{-5}m{-5}a{-5}t**")
+    .resetFontSize()
     .popTransform();
 
 // basic vector text rendering    
 api    
     .pushTransform()
     .translate(80, 15)
-    .text("Simple text, plain formatting.", 
+    .text("Simple text,\tplain formatting.", 
         {color: "black", lineWidth: 1})
     .popTransform();
 
@@ -68,12 +71,19 @@ api
 api
     .pushTransform()
     .translate(210, 90)
-    .fontSize(30)
-    .text("_{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l_")
+    .text("{20}_{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l_{!f}")
+    .resetFontSize()
+    .popTransform()
+
+api
+    .pushTransform()
     .color("royalblue")
-    .translate(-60, 40)
-    .text("**{10}Absolute\n{5}Sizing**")
+    .translate(270, 180)
+    .text("**{30}_Absolute_\n{10}    Sizing**")
     .popTransform();
+
+api.popTransform()
+
 
 // testing curves
 api    

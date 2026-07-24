@@ -270,7 +270,7 @@ export default class RenderContext {
   /**
    * Returns the instructions for rendering.
    */
-  get renderInstructions() {
+  get renderingInstructions() {
     return this.#instructionBuffer;
   }
 

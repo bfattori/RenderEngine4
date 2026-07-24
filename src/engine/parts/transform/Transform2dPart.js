@@ -34,7 +34,6 @@ export { CommitTransformEvent, TransformEvent };
 
 class Transform2dPart extends ComponentPart {
     #localTransform = Matrix2d.identity();
-    #localOrigin = [0, 0];
 
     /**
      * Creates a new Transform2dPart instance
@@ -169,24 +168,6 @@ class Transform2dPart extends ComponentPart {
         return Matrix2d.from(this?.host.worldTransform);
     }
 
-    /**
-     * Returns the origin offset for this {@link GameObject}. This is a vector that represents the offset of the GameObject
-     * relative to its world coordinates.
-     * @returns {Array<number>} - The origin point of the GameObject
-     */
-    get origin() {
-        return this.#localOrigin;
-    }
-
-    /**
-     * Set the origin point for this {@link GameObject}. This is a vector that represents the position offset of the GameObject
-     * relative to its world coordinates.
-     * @param {Array<number>} [x, y] - The new origin point for the GameObject
-     */
-    set origin([x, y]) {
-        this.#localOrigin = [x, y];
-    }
-
     //-------------------------------
     // Event handler
     //-------------------------------
@@ -239,8 +220,6 @@ class Transform2dPart extends ComponentPart {
     update(time, deltaTime) {
         // Emit the computed local transform
         const emitTransform = Matrix2d.from(this.localTransform)
-        emitTransform.e -= this.origin[0];
-        emitTransform.f -= this.origin[1];
         this.emit(new TransformEvent(this, emitTransform, time, deltaTime));
         return this;
     }

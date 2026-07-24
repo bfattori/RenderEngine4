@@ -133,6 +133,22 @@ class ComponentPart {
     return this.#type;
   }
 
+  /**
+   * Get the event context shared across all component parts.
+   * @returns {Object} The local event context
+   */
+  get eventContext() {
+    return this.#localEventContext;
+  }
+
+  /**
+   * Set the event context shared within the host {@link GameObject}
+   * @param {Object} context - The new event context
+   */
+  set eventContext(context) {
+    this.#localEventContext = context;
+  }
+
   //-------------------------------
   // Internal Event Queue
   //-------------------------------

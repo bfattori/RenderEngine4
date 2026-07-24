@@ -1,7 +1,7 @@
 import Constants from '../../../Constants.js';
 import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
 import { VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
-import processText from '../../../ui/VectorText.js';
+import VectorTextParser from '../../../ui/VectorText.js';
 
 const twoPi = 6.2831;   // approx. Math.PI * 2
 
@@ -27,6 +27,8 @@ function getColor(r, g, b, a) {
  */
 export default function getAPI() {
     const context = this;
+    const textParser = new VectorTextParser;
+
     const state = {
         // Color state - RGB values (0-1 range) with optional alpha
         previousColor: [],
@@ -117,7 +119,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         skew: (sX, sY) => {
-            context.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY}`);
+            context.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY || 0}`);
             state.currentTransform.skew(sX, sY);
             return context.API;
         },
@@ -199,14 +201,18 @@ export default function getAPI() {
          */
         color: (r, g = null, b = null, { a = 1 } = {}) => {
             const c = getColor(r, g, b, a);
+            let same = false;
             if (c) {
+                if (c === state.currentColor) same = true;
                 state.previousColor.push(state.currentColor);
                 state.currentColor = c;
             } else {
                 state.currentColor = state.previousColor.length > 0 ? state.previousColor.pop() : Constants.VECTOR_DEFAULTS.LINE_COLOR;
             }
             // Add color instruction
-            context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`);
+            if (!same)
+                context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`);
+            
             return context.API;
         },
 
@@ -216,6 +222,15 @@ export default function getAPI() {
          */
         getColor: () => {
             return state.currentColor;
+        },
+
+        setColor: (r, g = null, b = null, { a = 1 } = {}) => {
+            const c = getColor(r, g, b, a);
+            if (c !== state.currentColor) {
+                state.currentColor = c;
+                context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`)
+            }
+            return context.API;
         },
 
         /**
@@ -241,14 +256,18 @@ export default function getAPI() {
          */
         fillColor: (r, g = null, b = null, { a = 1 } = {}) => {
             const f = getColor(r, g, b, a);
+            let same = false;
             if (f) {
+                if (f === state.currentFillColor) same = true;
                 state.previousFillColor.push(state.currentFillColor);
                 state.currentFillColor = f;
-            } else {
+            } else if (!f) {
                 state.currentFillColor = state.previousFillColor.length > 0 ? state.previousFillColor.pop() : Constants.VECTOR_DEFAULTS.DEFAULT_FILL_COLOR;
             }
 
-            context.addInstruction(`${VECTOR_IL.FILL} ${state.currentFillColor}`);
+            if (!same)
+                context.addInstruction(`${VECTOR_IL.FILL} ${state.currentFillColor}`);
+            
             return context.API;
         },
         
@@ -258,6 +277,15 @@ export default function getAPI() {
          */
         getFillColor: () => {
             return state.currentFillColor;
+        },
+
+        setFillColor: (r, g = null, b = null, { a = 1 } = {}) => {
+            const f = getColor(r, g, b, a);
+            if (f !== state.currenrFillColor) {
+                state.currentFillColor = f;
+                context.addInstruction(`${VECTOR_IL.FILL} ${f}`);
+            }
+            return context.API;
         },
         
         /**
@@ -277,15 +305,19 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         width: (w) => {
+            let same = false;
             if (w) {
+                if (w === state.currentWidth) same = true;
                 state.previousWidth.push(state.currentWidth);
                 state.currentWidth = w;
-            } else {
+            } else if (!w) {
                 state.currentWidth = state.previousWidth.length > 0 ? state.previousWidth.pop() : Constants.VECTOR_DEFAULTS.LINE_WIDTH;
             }
 
             // Add width instruction
-            context.addInstruction(`${VECTOR_IL.WIDTH} ${state.currentWidth}`);
+            if (!same)
+                context.addInstruction(`${VECTOR_IL.WIDTH} ${state.currentWidth}`);
+            
             return context.API;
         },
 
@@ -295,6 +327,14 @@ export default function getAPI() {
          */
         getWidth: () => {
             return state.currentWidth;
+        },
+
+        setWidth: (w) => {
+            if (w !== state.currenWidth) {
+                state.currentWidth = w;
+                context.addInstruction(`${VECTOR_IL.WIDTH} ${w}`);
+            }
+            return context.API;
         },
         
         /**
@@ -313,18 +353,24 @@ export default function getAPI() {
          * @param {number} s - Font size in pixels. If empty, pops the last font size off the stack
          * @returns {Object} Returns this for chaining
          */
-        fontSize: (s, delta = true) => {
+        fontSize: (s) => {
+            let same = false;
             let last = state.currentFontSize;
             let next = Math.max(0, Math.min(s, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
             if (s && s > 0 && s <= Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE) {
+                if (s === state.currentFontSize) same = true;
                 state.previousFontSize.push(state.currentFontSize);
                 next = s;
+                state.currentFontSize = next;
             } else if (!s) {
                 next = state.previousFontSize.length > 0 ? state.previousFontSize.pop() : Constants.VECTOR_DEFAULTS.FONT_SIZE;
+                state.currentFontSize = next;
             }
 
             // Add fontsize instruction
-            context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+            if (!same) {
+                context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+            }
             return context.API;
         },
 
@@ -335,13 +381,22 @@ export default function getAPI() {
         getFontSize: () => {
             return state.currentFontSize;
         },
+
+        setFontSize: (s) => {
+            let last = state.currentFontSize;
+            let next = Math.max(0, Math.min(s, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
+            if (next !== state.currentFontSize) {
+                context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+            }
+            return context.API;
+        },
         
         /**
          * Reset font size to defailt size and reset memory stack.
          * @returns {Object} Returns this for chaining
          */
         resetFontSize: () => {
-            const prev = state.currentFontSize || Constants.VECTOR_DEFAULTS.FONT_SIZE;
+            const prev = state.currentFontSize;
             state.currentFontSize = Constants.VECTOR_DEFAULTS.FONT_SIZE;
             state.previousFontSize = [];
             context.addInstruction(`${VECTOR_IL.FONTSIZE} ${state.currentFontSize} ${prev}`);
@@ -720,7 +775,13 @@ export default function getAPI() {
                 vertices.push([x, y]);
             }
             
-            return context.API.polygon(filled, ...vertices);
+            context.API.polygon(filled, ...vertices)
+            return context.API;
+        },
+
+        shape: (opaqueId) => {
+            context.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+            return context.API;
         },
 
         /**
@@ -730,7 +791,7 @@ export default function getAPI() {
          * @param {Array<number>} textSize - After the text is processed this array will be populated with the overall size of the text rendered.
          * @param {string|number} [options.color] - Initial color (hex string or RGB values) (Default: '#000000')
          * @param {number} [options.lineWidth] - Initial line width (default: 1)
-         * @param {number} [options.fontsize] - Initial font size (Default: 12)
+         * @param {number} [options.fontsize] - Initial font size (Default: 10)
          * @param {Object} [options.formatting] - Initial formatting states: {bold, italics, underline}
          * @returns {Object} Returns this for chaining
          */
@@ -742,7 +803,7 @@ export default function getAPI() {
 
             options = { ...{ formatting: { bold: false, italics: false, underline: false } }, ...options };
 
-            context.API.resetFontSize();
+            context.API.uniformScale(1.5);
 
             // set the cursor position from world transform
             const currentWorldTransform = Matrix2d.identity();
@@ -763,12 +824,12 @@ export default function getAPI() {
             }
 
             // Apply initial font size if provided
-            if (options.fontSize) {
-                context.API.fontSize(options.fontSize, context.API.getFontSize());
-            }
-            if (options.lineWidth) {
+            if (options.fontSize)
+                context.API.fontSize(options.fontSize);
+            
+            if (options.lineWidth) 
                 context.API.width(options.lineWidth || context.API.getWidth());
-            }
+            
 
             if (options.formatting.bold)
                 context.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
@@ -776,11 +837,11 @@ export default function getAPI() {
             if (options.formatting.italics)
                 this.API.skew(-12);
 
-            // if (options.formatting.underline)
+            if (options.formatting.underline) {}
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
-            // Process text and generate instructions
-            const result = processText.call(context, text);
+            // Process text to generate render instructions
+            const result = textParser.parse.call(context, text);
             textSize[0] = result.width;
             textSize[1] = result.height;
 

@@ -103,6 +103,9 @@ export default class CanvasVectorAssembler {
         let _instruction;
 
         switch (operand) {
+            //-----------------------------------
+            // State modifiers
+
             case vector.COLOR:
                 return `surface.strokeStyle = "${args[0]}";`;
                 break;
@@ -115,29 +118,14 @@ export default class CanvasVectorAssembler {
             case vector.FONTSIZE:
                 const current = args[0] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
                 const last = args[1] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
-                const delta = current / last;
+                const delta = (current / last);
                 // calculate a scaling factor for the delta
                 return `this.surface.scale(${delta}, ${delta});`;
                 break;
-            case vector.TRANSFORM:
-                return `surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
-                break;
-            case vector.ABS_TRANSFORM:
-                return `surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
-                break;
-            case vector.PUSH:
-                _instruction = 'surface.save();';
-                if (args.length === 6) {
-                    _instruction += ` surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`
-                }
-                return _instruction;
-                break;    
-            case vector.POP:
-                return 'surface.restore();';
-                break;
-            case vector.XFORM_RESET:
-                return `surface.resetTransform();`;
-                break;
+
+            //--------------------------------
+            // Imperative Drawing
+
             case vector.POINT:
                 return `surface.fillRect(${parseInt(args[0]) - HALF_P}, ${parseInt(args[1]) - HALF_P}, ${POINT_SIZE}, ${POINT_SIZE});`;
                 break;
@@ -206,11 +194,37 @@ export default class CanvasVectorAssembler {
                     `surface.ellipse(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});` +
                     args[6] === 1 ? 'surface.fill();' : 'surface.stroke();';
                 break;
-            case vector.MOVETO:
-                return `surface.moveTo(${args[0]}, ${args[1]});`
-                break;
+
+            //-----------------------------
+            // Shape Drawing
+
             case vector.SHAPE:
                 return `this.renderCompiledShape(${args[0]}, time, deltaTime);`;
+                break;
+
+            //--------------------------------------------
+            // Transformations
+
+            case vector.TRANSFORM:
+                return `surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
+                break;
+            case vector.ABS_TRANSFORM:
+                return `surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`;
+                break;
+            case vector.PUSH:
+                _instruction = 'surface.save();';
+                if (args.length === 6)
+                    _instruction += ` surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`
+                return _instruction;
+                break;    
+            case vector.POP:
+                return 'surface.restore();';
+                break;
+            case vector.XFORM_RESET:
+                return `surface.resetTransform();`;
+                break;
+            case vector.MOVETO:
+                return `surface.moveTo(${args[0]}, ${args[1]});`
                 break;
             case vector.TRANSLATE:
                 return `surface.translate(${args[0]}, ${args[1]});`;
@@ -225,9 +239,9 @@ export default class CanvasVectorAssembler {
                 return `surface.scale(${args[0]}, ${args[0]});`;
                 break;
             case vector.SKEW:
-                const txfm = Matrix2d.identity().skew(args[0], args[1] || 0);
-                return `surface.transform(${txfm.a}, ${txfm.b}, ${txfm.c}, ${txfm.d}, ${txfm.e}, ${txfm.f});`;
+                return `surface.setTransform(surface.getTransform().skewXSelf(args[0]))`;
                 break;
+
             default:
                 throw new AssemblerError(this, `Unrecognized instruction: ${operand} w/(${args})`);
         }    

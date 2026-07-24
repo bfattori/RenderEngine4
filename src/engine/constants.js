@@ -39,10 +39,11 @@ const Constants = {
         LINE_WIDTH: 1,
         FONT_SIZE: 10,
         
-        MAX_FONT_SIZE: 100,
+        MAX_FONT_SIZE: 200,
         TEXT_BOLD: 2,
         SPACE_WIDTH: 10,
-        CHAR_SPACING: 3
+        CHAR_SPACING: 3,
+        FONT_SCALE: 2.0
     },
 
     // Compilation

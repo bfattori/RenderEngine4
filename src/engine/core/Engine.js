@@ -86,7 +86,7 @@ export default class Engine {
   #animationFrameId = null;
   #lifecycleTiming = 0;
   #collisionModel = null;
-  #fpsCounter = null
+  #fpsCounter = null;
 
   constructor(options) {
     if (!waitInit) {

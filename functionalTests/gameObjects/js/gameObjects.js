@@ -11,14 +11,14 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 // create a double-buffered canvas renderer
 RenderEngine.init({
     flags: {
-        debugMode: false,
+        debugMode: true,
         showFps: true
     },
     world: {
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                true
+                false
             ),
             { enableCulling: false }
         ),
@@ -51,7 +51,7 @@ renderer.API
 renderer.compile();
 
 // set the origin at the center of the text
-gameObject.getComponentByName("transform").origin = [textBox[0] / 2, textBox[1] / 2];
+gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
 
 // fires before each update of the object
 gameObject.onBeforeUpdate = (time, deltaTime) => {

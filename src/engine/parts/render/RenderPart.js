@@ -9,6 +9,9 @@ import Engine from '../../core/Engine.js';
 
 import { CommitTransformEvent, TransformEvent } from '../../parts/transform/Transform2dPart.js';
 import { Matrix2d } from '../../core/Matrix.js';
+import Context from '../../Context.js';
+
+const ctx = Context.getInstance();
 
 class RenderEvent extends ComponentPartEvent {
     #frameTime = 0;
@@ -47,25 +50,33 @@ export default class RenderPart extends ComponentPart {
     //--------------------------------
 
     /**
-     * Maps the render methods of the context to the context property of this component for easy access in game objects.
-     * Since render contexts may have different methods, this provides a consistent interface for game objects to call rendering 
-     * functions without needing to know the specific context implementation. But that also means that if a context doesn't implement 
-     * a method, it will throw an error when called.
-     * 
-     * @returns {object} An object containing the render methods of the context
+     * The engine render context
+     * @returns {RenderContext}
      */
     get context() {
         return this.#context;
     }
 
+    /**
+     * The render context's renderer
+     * @returns {Renderer}
+     */
     get renderer() {
         return this.context.renderer;
     }
 
+    /**
+     * The transform for this render part
+     * @returns {Matrix2d}
+     */
     get renderTransform() {
         return this.peekTransform();
     }
 
+    /**
+     * The line height used for text drawing
+     * @returns {number}
+     */
     get lineHeight() {
         return this.#lineHeight;
     }
@@ -77,7 +88,6 @@ export default class RenderPart extends ComponentPart {
     set cursorDeltaX(delta) {
         this.#context.cursorX += delta;
     }
-
 
     //-------------------------------
     // Properties
@@ -187,9 +197,7 @@ export default class RenderPart extends ComponentPart {
      * @returns {void}
      */
     composeAndDraw(time, deltaTime) {
-        this.context.pushTransform(this.host.worldTransform.multiply(this.peekTransform()));
         this.draw(time, deltaTime);
-        this.context.popTransform();
         this.#committed = false;
     }
 

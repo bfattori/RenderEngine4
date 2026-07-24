@@ -4,6 +4,11 @@ import EventEngine from '../core/EventEngine.js';
 import { Matrix2d, IdentityMatrix } from '../core/Matrix.js';
 import Engine from '../core/Engine.js';
 
+import Context from '../Context.js';
+import DebugObjects from '../ui/debug/DebugObjects.js';
+
+const ctx = Context.getInstance();
+
 /**
  * GameObjectError contains the {@link GameObject} related to the error.
  * @param {GameObject} gameObject - The GameObject this error relates to.
@@ -27,10 +32,11 @@ export default class GameObject {
   #name = 'GameObject';
   #components = [];
   #componentMap = new Map();
-  #eventContext = null;
+  #hostEventContext = null;
   #world = null;
   #localTransform = new Matrix2d(IdentityMatrix);
   #worldTransform = null;
+  #localOrigin = [0, 0];
 
   #fullSort = null;
   #sorted = false;
@@ -67,7 +73,7 @@ export default class GameObject {
     this.#name = name;
 
     // internal event context for this game object
-    this.#eventContext = EventEngine.getInstance().createGameObjectContext(this);
+    this.#hostEventContext = EventEngine.getInstance().createGameObjectContext(this);
   }
 
   // -------------------------------
@@ -99,13 +105,13 @@ export default class GameObject {
   }
 
    /**
-   * The event context for this {@link GameObject}. This private context is used to publish events amongst
+   * The event context for this {@link GameObject}. This private context is used to publish events to the
    * component parts. The parts suscribe to listen for events to update their internal state, separate of their
    * <code>update</code> cycle.
    * @returns {Object} - The event context for the GameObject
    */
   get eventContext() {
-    return this.#eventContext;
+    return this.#hostEventContext;
   }
 
   /**
@@ -166,6 +172,24 @@ export default class GameObject {
     });
     this.#sorted = true;
     return this.#fullSort;
+  }
+
+  /**
+   * Returns the origin of this {@link GameObject}. This is a vector that 
+   * represents the offset of the `GameObject` relative to its world coordinates.
+   * @returns {Array<number>} - The origin point of the `GameObject`
+   */
+  get origin() {
+      return this.#localOrigin;
+  }
+
+  /**
+   * Set the origin for this {@link GameObject}. This is a vector that represents the 
+   * position offset of the `GameObject` relative to its world coordinates.
+   * @param {Array<number>} [x, y] - The new origin point for the `GameObject`
+   */
+  set origin([x, y]) {
+      this.#localOrigin = [x, y];
   }
 
   //------------------------------------------
@@ -270,7 +294,7 @@ export default class GameObject {
     this.#componentMap.get(componentType).push(component);
     
     component.host = this;
-    component.eventContext = this.#eventContext;
+    component.eventContext = this.eventContext;
 
     this.#sorted = false;
     this.#fullSort = null;
@@ -312,11 +336,17 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   update(time, deltaTime, cameraMatrix) {
+    const rc = this.world.renderContext;
     this.#hooks.onBeforeUpdate(time, deltaTime, cameraMatrix);
 
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
-    
+
+    // transform out to world coordinates
+    const mtx = Matrix2d.from(this.worldTransform);
+    mtx.translateSelf(-this.origin[0], -this.origin[1]);
+    rc.API.pushTransform(mtx);
+
     // Find the first transform component - this affects the object
     for (const component of sortedComponents) {
       if (typeof component.update === 'function') {
@@ -328,6 +358,17 @@ export default class GameObject {
           console.error(`Error updating component ${component.constructor.name}:`, error);
         }
       }
+    }
+
+    rc.API.popTransform();
+
+    if (ctx.debug) {
+        const mtx = Matrix2d.from(this.worldTransform);
+        mtx.scaleSelf(3,3);
+        rc.API
+          .pushTransform(mtx)
+          .shape(DebugObjects.originShape)
+          .popTransform();
     }
 
     this.#hooks.onAfterUpdate.call(time, deltaTime);
