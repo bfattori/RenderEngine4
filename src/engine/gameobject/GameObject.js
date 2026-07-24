@@ -5,7 +5,7 @@ import { Matrix2d, IdentityMatrix } from '../core/Matrix.js';
 import Engine from '../core/Engine.js';
 
 import Context from '../Context.js';
-import DebugObjects from '../ui/debug/DebugObjects.js';
+import { originShape } from '../ui/debug/DebugObjects.js';
 
 const ctx = Context.getInstance();
 
@@ -336,7 +336,7 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   update(time, deltaTime, cameraMatrix) {
-    const rc = this.world.renderContext;
+    const rc = this.world.renderContext.API;
     this.#hooks.onBeforeUpdate(time, deltaTime, cameraMatrix);
 
     // Update all components in priority order
@@ -345,7 +345,7 @@ export default class GameObject {
     // transform out to world coordinates
     const mtx = Matrix2d.from(this.worldTransform);
     mtx.translateSelf(-this.origin[0], -this.origin[1]);
-    rc.API.pushTransform(mtx);
+    rc.pushTransform(mtx);
 
     // Find the first transform component - this affects the object
     for (const component of sortedComponents) {
@@ -360,15 +360,14 @@ export default class GameObject {
       }
     }
 
-    rc.API.popTransform();
+    rc.popTransform();
 
     if (ctx.debug) {
         const mtx = Matrix2d.from(this.worldTransform);
         mtx.scaleSelf(3,3);
-        rc.API
-          .pushTransform(mtx)
-          .shape(DebugObjects.originShape)
-          .popTransform();
+        rc.pushTransform(mtx);
+        originShape(this.world.renderContext)
+        rc.popTransform();
     }
 
     this.#hooks.onAfterUpdate.call(time, deltaTime);

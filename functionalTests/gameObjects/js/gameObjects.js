@@ -11,14 +11,14 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 // create a double-buffered canvas renderer
 RenderEngine.init({
     flags: {
-        debugMode: false,
+        debugMode: true,
         showFps: true
     },
     world: {
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                false
+                true
             ),
             { enableCulling: false }
         ),
