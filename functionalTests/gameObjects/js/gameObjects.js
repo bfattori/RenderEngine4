@@ -11,7 +11,7 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 // create a double-buffered canvas renderer
 RenderEngine.init({
     flags: {
-        debugMode: true,
+        debugMode: false,
         showFps: true
     },
     world: {
