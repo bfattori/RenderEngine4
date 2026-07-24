@@ -15,7 +15,7 @@ import ParticleEngine from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
 import AABBCollisionModel from '../collisionModels/models/AABB.js';
 
-import FPSCounter from '../ui/FPSCounter.js'
+import FPSCounter from '../ui/debug/FPSCounter.js'
 
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
