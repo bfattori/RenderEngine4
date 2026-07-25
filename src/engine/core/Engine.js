@@ -86,7 +86,6 @@ export default class Engine {
     // setup the game world
     this.#EVENT_ENGINE = new EventEngine(this);
     this.#WORLD = new GameWorld(this, camera, renderContext);
-    this.#PARTICLE_ENGINE = ParticleEngine.getInstance(this, renderContext.renderer);
 
     // Collision model storage
     const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new AABBCollisionModel(this);
@@ -95,6 +94,8 @@ export default class Engine {
     if (this.#ENGINE_OPTIONS.flags.showFps) {
       this.#fpsCounter = new FPSCounter();
     }
+
+    this.#PARTICLE_ENGINE = ParticleEngine.getInstance(this, renderContext.renderer);
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();

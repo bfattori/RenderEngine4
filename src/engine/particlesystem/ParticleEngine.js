@@ -28,6 +28,7 @@ export default class ParticleEngine {
         if (ParticleEngine.#useBuilder)
             throw new RenderEngineError("Cannot instantiate ParticleEngine directly. Use getInstance() instead.");
         ParticleEngine.#useBuilder = true;
+        
         this.#renderer = renderer;
         this.#gameEngine = engine;
         this.#initializeParticles(this.#engine.options.particleEngine.maxParticles);
@@ -36,14 +37,15 @@ export default class ParticleEngine {
     /**
      * Get the instance of the ParticleEngine.  This method should be used instead of creating 
      * a new instance directly.
+     * @param {Engine} engine - The game engine
      * @param {Renderer} renderer - The renderer the particle engine renders to
      * @returns {ParticleEngine} The engine's `ParticleEngine` instance
      * @static
      */
-    static getInstance(renderer) {
+    static getInstance(engine, renderer) {
         if (ParticleEngine.#instance === null) {
             ParticleEngine.#useBuilder = false;
-            ParticleEngine.#instance = new ParticleEngine(renderer);
+            ParticleEngine.#instance = new ParticleEngine(engine, renderer);
         }
 
         return ParticleEngine.#instance;
@@ -83,23 +85,29 @@ export default class ParticleEngine {
      */
     #initializeParticles(count = Constants.MAX_PARTICLES) {
         this.#maxParticles = count;
-        let type = Int16Array;
+        let pType = Int16Array;
+        let vType = Int8Array;
         switch(this.#precision) {
             case Constants.PARTICLE_PRECISION_LOW:
-                type = Int8Array;
+                vType = Int8Array;
+                break;
             case Constants.PARTICLE_PRECISION_MEDIUM:
-                this.#pPos = new Int16Array(count);
-                this.#pVel = new type(count);
+                vType = Int16Array;
                 break;
             case Constants.PARTICLE_PRECISION_HIGH:
-                this.#pVel = new Int32Array(count);
-                this.#pPos = new Int32Array(count);
+                pType = Int32Array;
+                vType = Int32Array;
                 break;
         }
         
-        // particle lifespans
+        this.#pPos = new pType(count * 2);
+        this.#pVel = new vType(count * 2);
         this.#pSpan = new Uint16Array(count);
         this.#particles = new Array(count).fill(null);
+    }
+
+    get renderer() {
+        return this.#renderer;
     }
 
     /**
@@ -123,7 +131,9 @@ export default class ParticleEngine {
      * @returns {number} The maximum number of particles multiplied by the precision setting.
      */
     get memoryEstimate() {
-        return this.#maxParticles * this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 16 : 8;
+        const v = (this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 32 : this.#precision === Constants.PARTICLE_PRECISION_MEDIUM ? 16 : 8) * 2;
+        const p = (this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 32 : 16) * 2;
+        return (v * this.maxParticles) + (p * this.maxParticles) + (this.maxParticles * 16) /* lifespan */ + (this.maxParticles * 800) /* particle config (est) */;
     }
 
     /**
