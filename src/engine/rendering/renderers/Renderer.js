@@ -21,17 +21,18 @@ export {
 };
 
 export default class Renderer {
+    static #built = false;
+
     #renderContext = null;
     #surface = null;
     #hasCompiler = false;
     #assembler = null;
 
-    // when compiling shapes, this is the index to the path id 
-    // currently being updated in the shape's drawing context
-    #pathId = null;
-    #path = null;
-
     constructor() {
+        if (!Renderer.#built) {
+            throw new RendererError(this, "Use Renderer.build() to construct a Renderer.");
+        }
+        Renderer.#built = false;
     }
 
     /**
@@ -50,6 +51,10 @@ export default class Renderer {
         return this.#renderContext;
     }
 
+    /**
+     * Get the associated assembler for this renderer.
+     * @return 
+     */
     get assembler() {
         return this.#assembler;
     }
@@ -92,25 +97,11 @@ export default class Renderer {
         return this.#hasCompiler;
     }
 
-    set pathId(id) {
-        this.#pathId = id;
-    }
-
-    get pathId() {
-        return this.#pathId;
-    }
-
-    set path(path) {
-        this.#path = path;
-    }
-
-    get path() {
-        return this.#path;
-    }
-
-    get compiledShapes() {
-        if (!this.#hasCompiler) return;
-        return this.assembler.getCompiledShapes();
+    /**
+     * Satisfies the interface for a builder.
+     */
+    static build() {
+        Renderer.#built = true;
     }
 
     /**
@@ -127,7 +118,7 @@ export default class Renderer {
     preFrame() {}
 
     /**
-     * Method to render a single frame to the hardware context. Must be implmented by
+     * Method to render a single instruction to the hardware context. Must be implmented by
      * sub-classes. 
      * @param {string} instruction - The intermediate language instruction to render
      * @returns {void} 
@@ -142,9 +133,7 @@ export default class Renderer {
     postFrame() {}
 
     /**
-     * The method to compile a set of render instructions into an assembly that is executed by the renderer.
-     * Invocations of this method are used to build a compiled function that can be executed each frame to
-     * reduce the number of instructions that must be executed each frame. 
+     * Compile a set of render instructions into an assembly that is executed by the renderer. 
      * 
      * @param {String[]} instructions - A set of instructions to compile.
      * @returns {number} An opaque Id that references the compiled shape.
@@ -156,8 +145,8 @@ export default class Renderer {
     }
 
     /**
-     * Renders a compiled shape with the given opaque Id. Compiled shapes are fixed shaped that can be
-     * rendered without having to pass an entire set of render instructions to generate the assembly at each frame. 
+     * Render a compiled shape with the given opaque Id.
+     * 
      * @param {number} opaqueId - The shape Id to render
      * @param {number} time - The current world time
      * @param {number} deltaTime - The time that has past since the last frame
@@ -166,11 +155,10 @@ export default class Renderer {
     }
 
     /**
-     * Compile a set of render instructions into an assembly that will be executed by the renderer. Used with
-     * <code>renderShape</code> to render a shape to the context without having to pass an entire set of
-     * render instructions to generate the assembly at each frame. 
+     * Compiles the set of render instructions into an assembly that will be executed by the renderer. 
+     * 
      * @param {String[]} instructions - The render instructions.
-     * @param {String} tag - optional tag to apply to the generated function
+     * @param {String} tag - optional tag to apply to the assembly
      * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
      *                   the renderer does not support pre-compilation of renderable objects.
      */
@@ -180,7 +168,7 @@ export default class Renderer {
     }
 
     /**
-     * Us this method to destroy previously compiled shapes. Do not destroy a compiled shape directly
+     * Destroy a previously compiled shape. Does not destroy a compiled shape directly
      * so it can be appropriately garbage collected.
      * @param {number} opaqueId Destroy the shape at the opque index.
      * @returns 
@@ -194,7 +182,6 @@ export default class Renderer {
         this.#assembler = null;
         this.#renderContext = null;
         this.#surface = null;
-        this.#path = null;
         super.destroy();
     }
 

@@ -1,11 +1,23 @@
 body {
     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin:0; padding:0;
+    display: block; /* Default layout */
+    justify-items: center;
+    height: 100vh;
 }
 
 div#context {
     position: absolute;
 }
+
+div#context.debug {
+    border: 1px solid black;
+    border-radius:5px;
+    box-shadow:0 2px 25px rgba(39, 1, 1, 0.4);
+    padding:10px;
+}
+
+/*** Debugging container */
 
 div#debug-container {
     position:absolute;
@@ -16,6 +28,8 @@ div#debug-container {
     box-shadow:0 2px 4px rgba(39, 1, 1, 0.4);
     padding:10px;
 }
+
+/*** FPS Counter */
 
 div.fpsCounter {
     position: absolute;

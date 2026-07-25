@@ -1,4 +1,5 @@
 import Constants from '../../Constants.js';
+import Context from '../../Context.js';
 import { IdentityMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
@@ -11,7 +12,7 @@ import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 const POINT_SIZE = 4;
 const HALF_P = Math.floor(POINT_SIZE * 0.5);
 
-let built = false;
+const ctx = Context.getInstance();
 
 export default class CanvasRenderer extends Renderer {
     #opts = new CanvasConfig();
@@ -19,15 +20,18 @@ export default class CanvasRenderer extends Renderer {
     #htmlElement = null;
     #canvas = null;
     #offscreen = null;
-        
     #localFormat = new Map();
+
+    // immediate mode path identifiers
+    #pathId = null;
+    #path = null;
 
     constructor(htmlElement, options) {
         super();
-        if (!built) {
-            throw new RendererError(this, "CanvasRenderer must be built using CanvasRenderer.build()!");
+        
+        if (!htmlElement) {
+            throw new RendererError(this, "CanvasRenderer requires an HTML element to initialize!");
         }
-        built = false;
 
         this.#opts.merge(options);
         this.#htmlElement = htmlElement;
@@ -57,15 +61,31 @@ export default class CanvasRenderer extends Renderer {
     get assembler() {
         if (!super.assembler) {
             if (this.renderContext.constructor.name === 'VectorRenderContext') {
-                super.assembler = VectorAssembler.instance;
+                super.assembler = VectorAssembler.getInstance();
             } else if (this.renderContext.constructor.name === 'RasterRenderContext') {
-                super.assembler = RasterAssembler.instance;
+                super.assembler = RasterAssembler.getInstance();
             } else {
                 throw new RenderEngineError("Unsupported render context type");
             }
         }
 
         return super.assembler;
+    }
+
+    set pathId(id) {
+        this.#pathId = id;
+    }
+
+    get pathId() {
+        return this.#pathId;
+    }
+
+    set path(path) {
+        this.#path = path;
+    }
+
+    get path() {
+        return this.#path;
     }
 
     /**
@@ -76,7 +96,7 @@ export default class CanvasRenderer extends Renderer {
      * @returns {CanvasRenderer} - The initialized CanvasRenderer instance.
      */
     static build(htmlElement, options) {
-        built = true;
+        Renderer.build();
         return new CanvasRenderer(htmlElement, options);
     }
 
@@ -91,6 +111,10 @@ export default class CanvasRenderer extends Renderer {
         this.#canvas.height = context.viewport.height;
 
         this.#htmlElement.appendChild(this.#canvas);
+
+        if (ctx.debug) {
+            this.#htmlElement.classList.add('debug');
+        }
 
         if (this.config.doubleBuffered) {
             // double-buffered
@@ -323,6 +347,7 @@ export default class CanvasRenderer extends Renderer {
         this.#canvas = null;
         this.#offscreen = null;
         this.#opts = null;
+        this.#path = null;
         super.destroy();
     }
 }

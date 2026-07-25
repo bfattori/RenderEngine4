@@ -256,12 +256,16 @@ export default class Engine {
 
   /**
    * Get the engine operating options
-   * @returns {Object}
+   * @returns {Config}
    */
   get options() {
     return this.#ENGINE_OPTIONS;
   }
 
+  /**
+   * Static accessor method to get to engine configuration options
+   * @returns {Config}
+   */
   static get options() {
     return primary.ENGINE.options;
   }

@@ -1,89 +1,27 @@
 import Constants from '../../../Constants.js';
 import AssemblerError from '../AssemblerError.js';
+import Assembler from '../Assembler.js';
 import { VECTOR_IL } from '../IntermediateLanguages.js';
 
-const compiledShapes = new Map();
-let opaqueShapeId = 100;
-
-function nextShapeId() {
-    return opaqueShapeId++;
-}
-
-export default class CanvasVectorAssembler {
+export default class CanvasVectorAssembler extends Assembler {
     static #instance = null;
-    
-    static get instance() {
+
+    constructor() {
+        super();
+    }
+
+    /**
+     * Get an instance of the `CanvasVectorAssembler` class. This method should be called to 
+     * obtain a single instance of the assembler.
+     * @returns {CanvasVectorAssembler} An instance of the `CanvasVectorAssembler` class.
+     * @static
+     */
+    static getInstance() {
         if (!this.#instance) {
+            Assembler.getInstance();
             CanvasVectorAssembler.#instance = new CanvasVectorAssembler();
         }
         return CanvasVectorAssembler.#instance;
-    }
-
-
-    getCompiledShape(opaqueId) {
-        return compiledShapes.get(opaqueId);
-    }
-
-    destroyCompiledShape(opaqueId) {
-        compiledShapes.delete(opaqueId);
-    }
-
-    getCompiledShapes() {
-        return compiledShapes;
-    }
-    
-    /**
-     * Compile a set of intermediate drawing instructions into a function that, when called, executes the
-     * instructions to the canvas' surface. Further references are to the opaque id, deferring rendering into
-     * the renderer's scope.
-     * 
-     * @param {String[]} instructions - The instructions to compile.
-     * @returns {number} The opaque reference to the function that will render the shape.
-     */
-    compileShape(renderer, instructions, tag = null) {
-        if (instructions.length === 0) {
-           console.warn('Compiling an empty shape?');
-           return Constants.COMPILATION.FAILED;
-        }
-        
-        // generate the re-usable function
-        const shapeContext = new Map();
-        shapeContext.set('paths', []);
-        shapeContext.set('assembled', []);
-
-        // assemble the instructions
-        instructions.forEach(i => {
-            i = i.trim();
-            if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
-                // ignore comments
-                const assembled = this.assemble(renderer, i, shapeContext);
-                if (assembled !== null) {
-                    shapeContext.get('assembled').push(assembled);
-                }
-            }
-        });
-
-        // assemble the function with its drawing context
-        const functionBody = ['const surface = this.surface;']
-            .concat(shapeContext.get('assembled')).join("\n");
-
-        // the assmbled function
-        const shapeFn = Function("shapeContext", "time", "deltaTime", functionBody);
-        const opaqueId = nextShapeId();
-        
-        // wrap the function to capture: renderer, shapeContext, time, and deltaTime
-        const storedProcedure = function procName(time, deltaTime) {
-            shapeFn.call(renderer, shapeContext, time, deltaTime);
-        }
-        
-        // allows identification of stored procedures
-        if (tag !== null) {
-            storedProcedure.tag = tag;
-        }
-
-        // store the procedure that will run the instructions
-        compiledShapes.set(opaqueId, storedProcedure);
-        return opaqueId;
     }
 
     /**
