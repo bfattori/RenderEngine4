@@ -133,7 +133,7 @@ export default class ParticleEngine {
     get memoryEstimate() {
         const v = (this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 32 : this.#precision === Constants.PARTICLE_PRECISION_MEDIUM ? 16 : 8) * 2;
         const p = (this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 32 : 16) * 2;
-        return (v * this.maxParticles) + (p * this.maxParticles) + (this.maxParticles * 16) /* lifespan */ + (this.maxParticles * 800) /* particle config (est) */;
+        return (v * this.maxParticles) + (p * this.maxParticles) + (this.maxParticles * 16) /* lifespan */ + (this.maxParticles * 864) /* particle config (est) */;
     }
 
     /**
