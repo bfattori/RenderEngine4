@@ -54,7 +54,13 @@ const Constants = {
     COMPILATION: {
         FAILED: -1,
         NOT_SUPPORTED: -2
-    }
+    },
+
+    // Paricle engine
+    MAX_PARTICLES: 3000,
+    PARTICLE_PRECISION_LOW: 'low',
+    PARTICLE_PRECISION_MEDIUM: 'medium',
+    PARTICLE_PRECISION_HIGH: 'high'
 };
 
 export default Constants;

@@ -190,6 +190,32 @@ class EngineConfig extends Config {
         collisionModel: null
       },
       /**
+       * Particle Engine config
+       */
+      particleEngine: {
+        /**
+         * Disable the particle engine if not needed
+         * @type {boolean}
+         */
+        disable: false,
+        /**
+         * Maximum number of particles to allow
+         * @type {number}
+         */
+        maxParticles: Constants.MAX_PARTICLES,
+        /**
+         * Circular buffer for particles. If `false` particles are allocated as space becomes free.
+         * @type {boolean}
+         */
+        circularBuffer: true,
+        /**
+         * Particle precision. "Low" uses 16-bits for the position and 8-bits for the velocity, medium uses 16-bits
+         * @type {String} {@link Constants.PARTICLE_PRECISION_LOW}, {@link Constants.PARTICLE_PRECISION_MEDIUM}, {@link Constants.PARTICLE_PRECISION_HIGH}
+         * @default Constants.PARTICLE_PRECISION_MEDIUM
+         */
+        precision: 'medium'
+      },
+      /**
        * Threading options.
        */
       threading: {
@@ -407,9 +433,52 @@ class CameraConfig extends Config {
     }
 }
 
+class ParticleConfig extends Config {
+    constructor() {
+        super({
+            /**
+             * Color of the particle
+             * @type {String}
+             */
+            color: 'white',
+            /**
+             * Size of the particle
+             * @type {number}
+             */
+            size: 1,
+            /**
+             * Lifespan of the particle
+             * @type {number}
+             */
+            lifeSpan: 0,
+            /**
+             * Optional function to execute at each update.
+             * The function receives 3 arguments: (`[x, y], [xV, yV], span`) where
+             * `[x, y]` is the current particle position,
+             * `[xV, yV]` is the current particle velocity,
+             * and `span` is the remaining lifespan for the particle.
+             * The function should return an object:
+             * `{ pos: [x, y], vel: [xV, yV] }` containing the new x, y position and x, y velocity
+             * @type {Function}
+             */
+            run: null,
+            /**
+             * If defined, called to clean up the particle
+             * @type {Function}
+             */
+            cleanUp: null,
+
+            position: [0,0],
+            velocity: [0,0],
+            span: 0
+        });
+    }
+}
+
 export {
     EngineConfig,
     RenderConfig,
     CanvasConfig,
-    CameraConfig
+    CameraConfig,
+    ParticleConfig
 };

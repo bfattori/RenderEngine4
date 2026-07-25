@@ -86,7 +86,7 @@ export default class Engine {
     // setup the game world
     this.#EVENT_ENGINE = new EventEngine(this);
     this.#WORLD = new GameWorld(this, camera, renderContext);
-    this.#PARTICLE_ENGINE = new ParticleEngine();
+    this.#PARTICLE_ENGINE = ParticleEngine.getInstance(this, renderContext.renderer);
 
     // Collision model storage
     const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new AABBCollisionModel(this);
