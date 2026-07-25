@@ -226,8 +226,14 @@ class ComponentPart {
   get properties() {
     return {
       name: this.name,
-      _type: this.type,
-      priority: this.priority
+      type: this.type,
+      priority: this.priority,
+      
+      World: this.world,
+      GameObject: this.host,
+      hostEventContext: this.eventContext,
+
+      _cachedStartupEvents: this.#cachedEvents
     };
   }
 

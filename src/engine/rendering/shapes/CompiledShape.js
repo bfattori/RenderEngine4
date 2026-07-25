@@ -74,4 +74,18 @@ export default class CompiledShape {
             });
         }
     }
+
+    //-------------------------------
+    // Properties
+    //-------------------------------
+
+    get properties() {
+        return {
+            Renderer: this.renderer,
+
+            instructions: this.instructions,
+            assembly: this.assembly
+        };
+    }
+
 }

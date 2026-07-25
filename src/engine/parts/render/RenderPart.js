@@ -99,7 +99,12 @@ export default class RenderPart extends ComponentPart {
 
     get properties() {
         return {...super.properties, ...{
-            context: this.#context
+            RenderContext: this.context,
+            Renderer: this.renderer,
+
+            _localTransformStack: this.#localTransformStack,
+            _committed: this.#committed,
+            _lineHeight: this.#lineHeight
         }};
     }
 

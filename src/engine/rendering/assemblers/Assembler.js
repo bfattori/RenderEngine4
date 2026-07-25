@@ -84,7 +84,7 @@ export default class Assembler {
         });
 
         // assemble the function with its drawing context
-        const functionBody = ['const surface = this.surface;']
+        const functionBody = ['const surface = this.surface; const TwoPi = Math.PI * 2;']
             .concat(shapeContext.get('assembled')).join("\n");
 
         // the assembled function

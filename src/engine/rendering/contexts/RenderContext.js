@@ -303,6 +303,29 @@ export default class RenderContext {
     this.config.renderPlanes.names = names.slice(0, names.length);
   }
 
+  //-------------------------------
+  // Properties
+  //-------------------------------
+
+  get properties() {
+      return {
+        World: this.world,
+        Renderer: this.renderer,
+
+        renderingInstructions: this.renderingInstructions,
+        lastFrameInstructions: this.lastFrameInstructions,
+        
+        config: this.config,
+        immediateMode: this.immediateMode,
+        culling: this.culling,
+        renderArea: this.renderArea,
+        worldArea: this.worldArea,
+
+        planeCount: this.planeCount,
+        planeNames: this.planeNames
+
+      };
+  }
 
   //-----------------------------
   // compiled shapes

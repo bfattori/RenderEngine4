@@ -133,4 +133,24 @@ export default class VectorRenderContext extends RenderContext {
     }
     return this.#api;
   }
+
+    //-------------------------------
+  // Properties
+  //-------------------------------
+
+  get properties() {
+      return { ...super.properties, ...{
+        API: this.API,
+
+        _screenDimensions: this.#screenDimensions,
+        _worldDimensions: this.#worldDimensions,
+
+        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
+        DEFAULT_LINE_WIDTH: VectorRenderContext.DEFAULT_LINE_WIDTH,
+        DEFAULT_FILL_COLOR: VectorRenderContext.DEFAULT_FILL_COLOR,
+        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
+        DEFAULT_FONT_SIZE: VectorRenderContext.DEFAULT_FONT_SIZE,
+      }};
+  }
+
 }

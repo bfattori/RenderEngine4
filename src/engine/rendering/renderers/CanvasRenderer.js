@@ -9,9 +9,6 @@ import VectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
 import RasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
 import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 
-const POINT_SIZE = 4;
-const HALF_P = Math.floor(POINT_SIZE * 0.5);
-
 const ctx = Context.getInstance();
 
 export default class CanvasRenderer extends Renderer {
@@ -222,7 +219,7 @@ export default class CanvasRenderer extends Renderer {
             // Imperative Drawing
 
             case vector.POINT:
-                this.surface.rect(args[0], args[1], 2, 2);
+                this.surface.arc(parseInt(args[0]), parseInt(args[1]), Constants.POINT_SIZE, 0, Constants.TWO_PI);
                 this.surface.fill();
                 break;
             case vector.LINESEG:
@@ -350,4 +347,23 @@ export default class CanvasRenderer extends Renderer {
         this.#path = null;
         super.destroy();
     }
+
+    //-------------------------------
+    // Properties
+    //-------------------------------
+
+    get properties() {
+        return {
+            config: this.config,
+            doubleBuffered: this.isDoubleBuffered,
+            useCompiler: this.isUseCompiler,
+
+            blitter: this.blitter,
+            _offscreenCanvas: this.#offscreen,
+            _htmlElement: this.#htmlElement,
+            _pathId: this.#pathId,
+            _path: this.#path
+        };
+    }
+    
 }

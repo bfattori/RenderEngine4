@@ -46,6 +46,10 @@ const Constants = {
         FONT_SCALE: 2.0
     },
 
+    POINT_SIZE: 0.5,
+    TWO_PI: Math.PI * 2,
+    HALF_PI: Math.PI / 2,
+
     // Compilation
     COMPILATION: {
         FAILED: -1,

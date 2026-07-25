@@ -341,6 +341,29 @@ class GameWorld {
     return this.#currentTransform;
   }
 
+  //-------------------------------
+  // Properties
+  //-------------------------------
+
+  /**
+   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
+   * @returns {Object} An object containing the component's properties
+   */
+  get properties() {
+    return {
+      Camera: this.camera,
+      RenderContext: this.renderContext,
+      CollisionModel: this.collisionModel,
+      dimensions: this.dimensions,
+      collisionModel: this.collisionModel,
+      width: this.width,
+      height: this.height,
+      allObjects: this.allObjects,
+      currentTransform: this.currentTransform,
+      transformStack: this.#transformStack
+    };
+  }
+
 }
 
 // Export the GameWorld for use by Engine

@@ -383,12 +383,24 @@ export default class GameObject {
    * each parts's properties.
    */
   get properties() {
-    const partProperties = this.sortedComponentParts.map(part => {
-      return { type: part.type, properties: part.properties };
-    });
     return {
-      name: this.#name,
-      parts: partProperties
+      name: this.name,
+      eventContext: this.eventContext,
+      parts: this.sortedComponentParts,
+      _nextPartId: this.#nextId,
+
+      // transform
+      localTransform: this.localTransform,
+      worldTransform: this.worldTransform,
+      origin: this.origin,
+
+      // events
+      onBeforeUpdate: this.#hooks.onBeforeUpdate,
+      onAfterUpdate: this.#hooks.onAfterUpdate,
+      onBeforeUpdatePart: this.#hooks.onBeforeUpdatePart,
+      onAfterUpdatePart: this.#hooks.onAfterUpdatePart,
+      onPartAdded: this.#hooks.onPartAdded,
+      onPartRemoved: this.#hooks.onPartRemoved
     }
   }
 

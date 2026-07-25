@@ -70,7 +70,7 @@ api
 // basic vector text rendering    
 api    
     .pushTransform()
-    .translate(80, 15)
+    .translate(80, 20)
     .text("Simple text,\tplain formatting.", 
         {color: "black", lineWidth: 1})
     .popTransform();
@@ -94,9 +94,15 @@ api.popTransform()
 
 api
     .pushTransform()
-    .translate(20, 550)
+    .translate(20, 500)
     .color("black")
     .text("ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz")
+    .popTransform();
+
+api.pushTransform()
+    .translate(20, 545)
+    .color("blue")
+    .text(`!@#$%^&*()\\_-=+[];:'",<.>/?`)
     .popTransform();
 
 // testing curves

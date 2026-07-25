@@ -170,4 +170,20 @@ export default class Camera {
         return x >= this.viewport[0] && x <= (this.viewport[0] + this.viewport[2]) &&
             y >= this.viewport[1] && y <= (this.viewport[1] + this.viewport[3]);
     }
+
+    //-------------------------------
+    // Properties
+    //-------------------------------
+
+    get properties() {
+        return {
+            name: this.name,
+            config: this.config,
+            viewport: this.viewport,
+            worldTransform: this.worldTransform,
+            position: this.position,
+            rotation: this.rotation,
+            scale: this.scale
+        };
+    }
 }

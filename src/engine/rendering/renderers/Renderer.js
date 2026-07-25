@@ -186,6 +186,21 @@ export default class Renderer {
     }
 
     //-------------------------------
+    // Properties
+    //-------------------------------
+
+    get properties() {
+        return {
+            RenderContext: this.renderContext,
+            Assembler: this.assembler,
+
+            surface: this.surface,
+            hasCompiler: this.hasCompiler
+        };
+    }
+
+
+      //-------------------------------
       // Serialization Methods
       //-------------------------------
       

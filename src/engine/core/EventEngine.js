@@ -96,10 +96,10 @@ export { Event };
  */
 export default class EventEngine {
   static #instance = null;
+  #listeners = new Map();
 
   constructor() {
     // Map of event handlers: eventName -> Array of listener functions
-    this.listeners = new Map();
     EventEngine.#instance = this;
   }
   
@@ -113,16 +113,88 @@ export default class EventEngine {
    * @returns {number}
    */
   getListenerCount(eventClass) {
-    return this.listeners.has(eventClass) 
-      ? this.listeners.get(eventClass).length 
+    return this.#listeners.has(eventClass) 
+      ? this.#listeners.get(eventClass).length 
       : 0;
   }
 
+  /**
+   * Subscribe to an event
+   * @param {Class} eventClass - The class of the event to listen for
+   * @param {Function} listener - Function to be called when event is emitted
+   */
+  on(eventClass, listener) {
+    if (!this.#listeners.has(eventClass)) {
+      this.#listeners.set(eventClass, []);
+    }
+    this.#listeners.get(eventClass).push(listener);
+    
+    // Return unsubscribe function for convenience
+    return () => this.off(eventClass, listener);
+  }
   
   /**
-   * Creates a sandboxed event context for a specific GameObject
+   * Unsubscribe from an event
+   * @param {Class} eventClass - The class of the event to unsubscribe from
+   * @param {Function} listener - The listener function to remove (or null to remove all listeners)
+   */
+  off(eventClass, listener) {
+    if (!this.#listeners.has(eventClass)) return;
+    
+    const handlers = this.#listeners.get(eventClass);
+    
+    if (listener === null) {
+      // Remove all listeners for this event
+      this.#listeners.delete(eventClass);
+    } else {
+      // Remove specific listener
+      const index = handlers.indexOf(listener);
+      if (index > -1) {
+        handlers.splice(index, 1);
+      }
+    }
+  }
+  
+  /**
+   * Emit an event to all listeners
+   * @param {Event} eventObject - The event to emit
+   */
+  emit(eventObject) {
+    if (!this.#listeners.has(eventObject.type)) return;
+    eventObject.published;
+    
+    const handlers = this.#listeners.get(eventObject.type);
+    for (const handler of handlers) {
+      try {
+        handler(eventObject);
+      } catch (error) {
+        // Don't crash the engine on a single listener error
+        console.error('EventEngine: Error in event handler:', eventObject.type, error);
+      }
+    }
+  }
+  
+  /**
+   * Check if listeners exist for an event
+   * @param {Class} eventClass - The name of the event to check
+   * @returns {boolean}
+   */
+  has(eventClass) {
+    return this.#listeners.has(eventClass);
+  }
+ 
+  /**
+   * Clear all listeners
+   */
+  clear() {
+    this.#listeners.clear();
+  }
+
+  /**
+   * Creates a sandboxed event context for GameObjects
    * @param {GameObject} gameObject - The game object to create a context for
-   * @returns {Object} - A sandboxed event context with methods for publishing/subscribing events within the GameObject scope
+   * @returns {Object} - A sandboxed event context with methods for publishing/
+   *                     subscribing events within the GameObject's scope
    */
   createGameObjectContext(gameObject) {
     // Create an event context that operates within the GameObject's scope
@@ -191,7 +263,7 @@ export default class EventEngine {
        * @param {Function} listener - Function to be called when event is emitted globally
        */
       subscribe(eventClass) {
-        return Engine.ENGINE.eventEngine.on(eventClass, listener);
+        return Engine.eventEngine.on(eventClass, listener);
       },
       
       /**
@@ -199,7 +271,7 @@ export default class EventEngine {
        * @param {Event} eventObject - The name of the event to emit globally
        */
       publish(eventObject) {
-        return Engine.ENGINE.eventEngine.emit(eventObject);
+        return Engine.eventEngine.emit(eventObject);
       }
     };
     
@@ -207,82 +279,23 @@ export default class EventEngine {
   }
 
   /**
-   * Subscribe to an event
-   * @param {Class} eventClass - The class of the event to listen for
-   * @param {Function} listener - Function to be called when event is emitted
-   */
-  on(eventClass, listener) {
-    if (!this.listeners.has(eventClass)) {
-      this.listeners.set(eventClass, []);
-    }
-    this.listeners.get(eventClass).push(listener);
-    
-    // Return unsubscribe function for convenience
-    return () => this.off(eventClass, listener);
-  }
-  
-  /**
-   * Unsubscribe from an event
-   * @param {Class} eventClass - The class of the event to unsubscribe from
-   * @param {Function} listener - The listener function to remove (or null to remove all listeners)
-   */
-  off(eventClass, listener) {
-    if (!this.listeners.has(eventClass)) return;
-    
-    const handlers = this.listeners.get(eventClass);
-    
-    if (listener === null) {
-      // Remove all listeners for this event
-      this.listeners.delete(eventClass);
-    } else {
-      // Remove specific listener
-      const index = handlers.indexOf(listener);
-      if (index > -1) {
-        handlers.splice(index, 1);
-      }
-    }
-  }
-  
-  /**
-   * Emit an event to all listeners
-   * @param {Event} eventObject - The event to emit
-   */
-  emit(eventObject) {
-    if (!this.listeners.has(eventObject.type)) return;
-    eventObject.published;
-    
-    const handlers = this.listeners.get(eventObject.type);
-    for (const handler of handlers) {
-      try {
-        handler(eventObject);
-      } catch (error) {
-        // Don't crash the engine on a single listener error
-        console.error('EventEngine: Error in event handler:', eventObject.type, error);
-      }
-    }
-  }
-  
-  /**
-   * Check if listeners exist for an event
-   * @param {Class} eventClass - The name of the event to check
-   * @returns {boolean}
-   */
-  has(eventClass) {
-    return this.listeners.has(eventClass);
-  }
-  
- 
-  /**
-   * Clear all listeners
-   */
-  clear() {
-    this.listeners.clear();
-  }
-
-  /**
    * Shutdown the event engine
    */
   shutdown() {
     this.clear();
+  }
+
+  //-------------------------------
+  // Properties
+  //-------------------------------
+
+  /**
+   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
+   * @returns {Object} An object containing the component's properties
+   */
+  get properties() {
+    return {
+      listeners: this.#listeners
+    };
   }
 }

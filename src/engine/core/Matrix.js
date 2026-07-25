@@ -279,6 +279,22 @@ export class Matrix2d extends DOMMatrix {
     static identity() {
         return new Matrix2d(IdentityMatrix);
     }
+
+  //-------------------------------
+  // Properties
+  //-------------------------------
+
+  /**
+   * Gets the properties of this object. 
+   * @returns {Object} An object containing the component's properties
+   */
+  get properties() {
+    return {
+        position: this.position,
+        rotation: this.rotation,
+        scale: this.scaling
+    };
+  }    
 }
 
 // copies to export

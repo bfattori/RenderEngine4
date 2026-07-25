@@ -53,6 +53,25 @@ export default class VectorRendererPart extends RenderPart {
         return this.host.world.renderContext;
     }
 
+    //-------------------------------
+    // Properties
+    //-------------------------------
+
+    get properties() {
+        return {...super.properties, ...{
+            Renderer: this.renderer,
+            renderingInstructions: this.#instructions,
+            API: this.#api,
+            formatting: this.formatting,
+            letterSpacing: this.letterSpacing,
+            lineHeight: this.lineHeight,
+
+            _localTransform: this.#localTransform,
+            _compiledShape: this.#compiledShape,
+
+        }};
+    }
+
     /**
      * Adds a rendering instruction to the shape.
      * @param {String} inst - Instruction from the render method 

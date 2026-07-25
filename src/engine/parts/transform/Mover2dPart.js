@@ -29,61 +29,61 @@ class Mover2dPart extends Transform2d {
      * Velocity vector for linear motion [x, y]
      * @private
      */
-    _velocity = [0, 0];
+    #velocity = [0, 0];
 
     /**
      * Angular velocity in radians per frame
      * @private
      */
-    _angularVelocity = 0;
+    #angularVelocity = 0;
 
     /**
      * Mass of the object for momentum calculations
      * @private
      */
-    _mass = 1;
+    #mass = 1;
 
     /**
      * Friction properties (linear and angular)
      * @private
      */
-    _friction = { linear: 0, angular: 0 };
+    #friction = { linear: 0, angular: 0 };
 
     /**
      * Maximum speed cap (disabled if null/undefined)
      * @private
      */
-    _maxSpeed = null;
+    #maxSpeed = null;
 
     /**
      * Linear drag coefficient
      * @private
      */
-    _drag = 0;
+    #drag = 0;
 
     /**
      * Acceleration vector for external forces [ax, ay]
      * @private
      */
-    _acceleration = [0, 0];
+    #acceleration = [0, 0];
 
     /**
      * Forces array to support multiple force sources
      * @private
      */
-    _forces = [];
+    #forces = [];
 
     /**
      * Impulse buffer for applying sudden forces
      * @private
      */
-    _impulseBuffer = null;
+    #impulseBuffer = null;
 
     /**
      * Enables/disables velocity persistence (stops object when no forces)
      * @private
      */
-    _persistVelocity = false;
+    #persistVelocity = false;
 
     /**
      * Creates a new Mover2d instance
@@ -127,11 +127,11 @@ class Mover2dPart extends Transform2d {
      * @returns {Vector} Current or new velocity vector
      */
     get velocity() {
-        return [...this._velocity];
+        return [...this.#velocity];
     }
 
     set velocity([vx, vy]) {
-        this._velocity = [vx || 0, vy || 0];
+        this.#velocity = [vx || 0, vy || 0];
         this.x += vx; // Apply to position for smooth movement
         this.y += vy;
         return this;
@@ -143,7 +143,7 @@ class Mover2dPart extends Transform2d {
      * @param {number} vx - New X velocity
      */
     set velocityX(vx) {
-        this._velocity[0] = vx || 0;
+        this.#velocity[0] = vx || 0;
         return this;
     }
 
@@ -153,7 +153,7 @@ class Mover2dPart extends Transform2d {
      * @param {number} vy - New Y velocity
      */
     set velocityY(vy) {
-        this._velocity[1] = vy || 0;
+        this.#velocity[1] = vy || 0;
         return this;
     }
 
@@ -164,7 +164,7 @@ class Mover2dPart extends Transform2d {
      * @returns {number} Current or new angular velocity in radians per frame
      */
     get angularVelocity() {
-        return this._angularVelocity;
+        return this.#angularVelocity;
     }
 
     /**
@@ -173,12 +173,12 @@ class Mover2dPart extends Transform2d {
       * @param {number} rotationSpeed - New angular velocity in radians/frame
      */
     set angularVelocity(rotationSpeed) {
-        this._angularVelocity = rotationSpeed || 0;
-        this.rotation += this._angularVelocity;
+        this.#accelerationangularVelocity = rotationSpeed || 0;
+        this.rotation += this.#angularVelocity;
         // Normalize to 0-2π
-        const normalized = this.rotation % (Math.PI * 2);
-        this.rotation = Math.abs(normalized) <= Math.PI ? 
-            normalized : normalized - Math.PI * 2;
+        // const normalized = this.rotation % (Math.PI * 2);
+        // this.rotation = Math.abs(normalized) <= Math.PI ? 
+        //     normalized : normalized - Math.PI * 2;
         return this;
     }
 
@@ -189,7 +189,7 @@ class Mover2dPart extends Transform2d {
      * @returns {number} Current or new mass
      */
     get mass() {
-        return this._mass;
+        return this.#mass;
     }
 
     /**
@@ -198,7 +198,7 @@ class Mover2dPart extends Transform2d {
      * @param {number} mass - New mass value (must
      */
     set mass(mass) {
-        this._mass = Math.max(0.1, mass || 1); // Prevent zero/negative mass
+        this.#mass = Math.max(0.1, mass || 1); // Prevent zero/negative mass
         return this;
     }
 
@@ -209,11 +209,11 @@ class Mover2dPart extends Transform2d {
      * @returns {number} Current or new drag coefficient
      */
     get drag() {
-        return this._drag;
+        return this.#drag;
     }
 
     set drag(drag) {
-        this._drag = Math.max(0, Math.min(1, drag || 0));
+        this.#drag = Math.max(0, Math.min(1, drag || 0));
         return this;
     }
 
@@ -224,19 +224,19 @@ class Mover2dPart extends Transform2d {
      * @returns {number|null} Current or new max speed (null if disabled)
      */
     get maxSpeed() {
-        return this._maxSpeed;
+        return this.#maxSpeed;
     }
 
     set maxSpeed(speed) {
-        this._maxSpeed = speed !== undefined ? speed : null;
-        if (this._maxSpeed !== null) {
+        this.#accelerationmaxSpeed = speed !== undefined ? speed : null;
+        if (this.#maxSpeed !== null) {
             const currentVelocity = Math.sqrt(
-                this._velocity[0] ** 2 + this._velocity[1] ** 2
+                this.#velocity[0] ** 2 + this.#velocity[1] ** 2
             );
             if (currentVelocity > this._maxSpeed) {
-                const scale = this._maxSpeed / currentVelocity;
-                this._velocity[0] *= scale;
-                this._velocity[1] *= scale;
+                const scale = this.#maxSpeed / currentVelocity;
+                this.#velocity[0] *= scale;
+                this.#velocity[1] *= scale;
             }
         }
         return this;
@@ -248,7 +248,7 @@ class Mover2dPart extends Transform2d {
      * @param {boolean} enabled - Whether to persist velocity when no forces are applied
      */
     set persistVelocity(enabled) {
-        this._persistVelocity = enabled;
+        this.#persistVelocity = enabled;
         return this;
     }
 
@@ -258,7 +258,7 @@ class Mover2dPart extends Transform2d {
      * @returns {number} Current speed
      */
     get speed() {
-        return Math.sqrt(this._velocity[0] ** 2 + this._velocity[1] ** 2);
+        return Math.sqrt(this.#velocity[0] ** 2 + this.#velocity[1] ** 2);
     }
 
     //-------------------------------
@@ -278,7 +278,11 @@ class Mover2dPart extends Transform2d {
             friction: this.friction,
             maxSpeed: this.maxSpeed,
             drag: this.drag,
-            persistVelocity: this._persistVelocity
+            
+            _persistVelocity: this.#persistVelocity,
+            _impulseBuffer: this.#impulseBuffer,
+            _forces: this.#forces,
+            _acceleration: this.#acceleration
         }};
     }
 
@@ -298,27 +302,27 @@ class Mover2dPart extends Transform2d {
         const events = options.events || [];
 
         // Apply forces if any exist
-        this._applyForces(deltaTime);
+        this.#applyForces(deltaTime);
 
         // Update velocity based on forces and drag
-        this._updateVelocity(deltaTime);
+        this.#updateVelocity(deltaTime);
 
         // Integrate velocity into position
-        this._integratePosition(deltaTime);
+        this.#integratePosition(deltaTime);
 
         // Rotate object based on angular velocity
-        this._rotateObject(deltaTime, time);
+        this.#rotateObject(deltaTime, time);
 
         // Check for high-speed boundary collisions
-        if (this.world && this._worldWidth !== undefined && this._worldHeight !== undefined) {
-            const result = this._checkBoundaryCollisions(time, deltaTime, events);
-            if (result) {
-                return result;
-            }
-        }
+        // if (this.world && this._worldWidth !== undefined && this._worldHeight !== undefined) {
+        //     const result = this._checkBoundaryCollisions(time, deltaTime, events);
+        //     if (result) {
+        //         return result;
+        //     }
+        // }
 
         // Reset forces for next frame
-        this._clearForces();
+        this.#clearForces();
 
         return super.update(time, deltaTime, options);
     }
@@ -330,8 +334,8 @@ class Mover2dPart extends Transform2d {
      * @param {number} dy - Delta Y velocity
      */
     addVelocity(dx, dy) {
-        this._velocity[0] += dx;
-        this._velocity[1] += dy;
+        this.#velocity[0] += dx;
+        this.#velocity[1] += dy;
         return this;
     }
 
@@ -341,7 +345,7 @@ class Mover2dPart extends Transform2d {
      * @param {number} dRotationSpeed - Delta to angular velocity
      */
     addAngularVelocity(dRotationSpeed) {
-        this._angularVelocity += dRotationSpeed;
+        this.#angularVelocity += dRotationSpeed;
         return this;
     }
 
@@ -355,12 +359,12 @@ class Mover2dPart extends Transform2d {
         if (magnitude === 0) return this;
 
         // F = ma → a = F/m
-        const accelerationX = (fx || 0) / this._mass;
-        const accelerationY = (fy || 0) / this._mass;
+        const accelerationX = (fx || 0) / this.#mass;
+        const accelerationY = (fy || 0) / this.#mass;
 
         // Add to acceleration buffer for next frame's velocity update
-        this._acceleration[0] += accelerationX;
-        this._acceleration[1] += accelerationY;
+        this.#acceleration[0] += accelerationX;
+        this.#acceleration[1] += accelerationY;
 
         return this;
     }
@@ -375,12 +379,12 @@ class Mover2dPart extends Transform2d {
         if (magnitude === 0) return this;
 
         // Impulse = m × Δv → Δv = J/m
-        const velocityChangeX = (ix || 0) / this._mass;
-        const velocityChangeY = (iy || 0) / this._mass;
+        const velocityChangeX = (ix || 0) / this.#mass;
+        const velocityChangeY = (iy || 0) / this.#mass;
 
         // Add to velocity directly for immediate effect
-        this._velocity[0] += velocityChangeX;
-        this._velocity[1] += velocityChangeY;
+        this.#velocity[0] += velocityChangeX;
+        this.#velocity[1] += velocityChangeY;
 
         return this;
     }
@@ -391,17 +395,17 @@ class Mover2dPart extends Transform2d {
      * 
      * @param {number} deltaTime - Time delta in seconds
      */
-    _applyDrag(deltaTime) {
-        if (this._drag === 0) return;
+    #applyDrag(deltaTime) {
+        if (this.#drag === 0) return;
 
         const dt = deltaTime / 1000; // Convert ms to seconds
         
         // Apply drag: v = v × e^(-k×t)
-        const decay = Math.pow(1 - this._drag, dt);
+        const decay = Math.pow(1 - this.#drag, dt);
         
         if (decay !== 0) {
-            this._velocity[0] *= decay;
-            this._velocity[1] *= decay;
+            this.#velocity[0] *= decay;
+            this.#velocity[1] *= decay;
         }
     }
 
@@ -410,18 +414,18 @@ class Mover2dPart extends Transform2d {
      * 
      * @param {number} deltaTime - Time delta in milliseconds
      */
-    _applyFriction(deltaTime) {
+    #applyFriction(deltaTime) {
         const dt = deltaTime / 1000; // Convert ms to seconds
 
         // Linear friction: v = v - μ × g (simplified for games)
-        if (this._friction.linear !== 0) {
-            this._velocity[0] -= this._friction.linear * 9.8 * dt; // gravity factor
-            this._velocity[1] -= this._friction.linear * 9.8 * dt;
+        if (this.#friction.linear !== 0) {
+            this.#velocity[0] -= this.#friction.linear * 9.8 * dt; // gravity factor
+            this.#velocity[1] -= this.#friction.linear * 9.8 * dt;
         }
 
         // Angular friction
-        if (this._friction.angular !== 0) {
-            this._angularVelocity *= (1 - this._friction.angular);
+        if (this.#friction.angular !== 0) {
+            this.#angularVelocity *= (1 - this.#friction.angular);
         }
     }
 
@@ -430,26 +434,26 @@ class Mover2dPart extends Transform2d {
      * 
      * @param {number} deltaTime - Time delta in milliseconds
      */
-    _updateVelocity(deltaTime) {
+    #updateVelocity(deltaTime) {
         // Apply drag first (always active)
-        this._applyDrag(deltaTime);
+        this.#applyDrag(deltaTime);
 
         // Apply friction (ground/contact friction)
-        this._applyFriction(deltaTime);
+        this.#applyFriction(deltaTime);
 
         // Integrate acceleration into velocity
-        if (this._acceleration[0] !== 0 || this._acceleration[1] !== 0) {
+        if (this.#acceleration[0] !== 0 || this.#acceleration[1] !== 0) {
             const dt = deltaTime / 1000;
-            this._velocity[0] += this._acceleration[0] * dt;
-            this._velocity[1] += this._acceleration[1] * dt;
+            this.#velocity[0] += this.#acceleration[0] * dt;
+            this.#velocity[1] += this.#acceleration[1] * dt;
 
             // Reset acceleration after integration
-            this._acceleration[0] = 0;
-            this._acceleration[1] = 0;
+            this.#acceleration[0] = 0;
+            this.#acceleration[1] = 0;
         }
 
         // Apply max speed cap if configured
-        this._enforceMaxSpeed();
+        this.#enforceMaxSpeed();
 
         return this;
     }
@@ -459,11 +463,11 @@ class Mover2dPart extends Transform2d {
      * 
      * @param {number} deltaTime - Time delta in milliseconds
      */
-    _integratePosition(deltaTime) {
+    #integratePosition(deltaTime) {
         const dt = deltaTime / 1000; // Convert to seconds for physics calculations
 
-        this.x += this._velocity[0] * dt;
-        this.y += this._velocity[1] * dt;
+        this.x += this.#velocity[0] * dt;
+        this.y += this.#velocity[1] * dt;
 
         return this;
     }
@@ -474,18 +478,18 @@ class Mover2dPart extends Transform2d {
      * @param {number} deltaTime - Time delta in milliseconds
      * @param {number} time - Current world time for event emission
      */
-    _rotateObject(deltaTime, time) {
-        if (Math.abs(this._angularVelocity) === 0) return this;
+    #rotateObject(deltaTime, time) {
+        if (Math.abs(this.#angularVelocity) === 0) return this;
 
         const dt = deltaTime / 1000; // Convert ms to radians/frame equivalent
 
         // Update rotation based on angular velocity
-        this.rotation += this._angularVelocity * dt;
+        this.rotation += this.#angularVelocity * dt;
         
         // Normalize to prevent unwinding
-        let normalized = this.rotation % (Math.PI * 2);
-        this.rotation = Math.abs(normalized) <= Math.PI ? 
-            normalized : normalized - Math.PI * 2;
+        // let normalized = this.rotation % (Math.PI * 2);
+        // this.rotation = Math.abs(normalized) <= Math.PI ? 
+        //     normalized : normalized - Math.PI * 2;
 
         return this;
     }
@@ -495,8 +499,8 @@ class Mover2dPart extends Transform2d {
      * 
      * @param {number} deltaTime - Time delta in milliseconds
      */
-    _applyForces(deltaTime) {
-        for (const force of this._forces) {
+    #applyForces(deltaTime) {
+        for (const force of this.#forces) {
             const [fx, fy] = force;
             this.applyForce([fx, fy]);
         }
@@ -505,18 +509,18 @@ class Mover2dPart extends Transform2d {
     /**
      * Enforces maximum speed limit if configured
      */
-    _enforceMaxSpeed() {
-        if (this._maxSpeed === null) return this;
+    #enforceMaxSpeed() {
+        if (this.#maxSpeed === null) return this;
 
         const velocityMagnitude = Math.sqrt(
-            this._velocity[0] ** 2 + this._velocity[1] ** 2
+            this.#velocity[0] ** 2 + this.#velocity[1] ** 2
         );
 
-        if (velocityMagnitude > this._maxSpeed) {
+        if (velocityMagnitude > this.#maxSpeed) {
             // Scale down velocity to max speed
-            const scale = this._maxSpeed / velocityMagnitude;
-            this._velocity[0] *= scale;
-            this._velocity[1] *= scale;
+            const scale = this.#maxSpeed / velocityMagnitude;
+            this.#velocity[0] *= scale;
+            this.#velocity[1] *= scale;
         }
 
         return this;
@@ -525,11 +529,11 @@ class Mover2dPart extends Transform2d {
     /**
      * Clears all accumulated forces for next frame
      */
-    _clearForces() {
-        this._forces = [];
-        this._acceleration = [0, 0];
-        if (this._impulseBuffer) {
-            this._impulseBuffer = null;
+    #clearForces() {
+        this.#forces = [];
+        this.#acceleration = [0, 0];
+        if (this.#impulseBuffer) {
+            this.#impulseBuffer = null;
         }
         return this;
     }
@@ -540,8 +544,8 @@ class Mover2dPart extends Transform2d {
      * @param {Vector} [force] - Optional force vector [fx, fy]
      */
     addForce([fx, fy]) {
-        if (!this._forces.includes([fx, fy])) {
-            this._forces.push([fx || 0, fy || 0]);
+        if (!this.#forces.includes([fx, fy])) {
+            this.#forces.push([fx || 0, fy || 0]);
         }
         return this;
     }
@@ -558,7 +562,7 @@ class Mover2dPart extends Transform2d {
         );
         
         if (index !== -1) {
-            this._forces.splice(index, 1);
+            this.#forces.splice(index, 1);
         }
         return this;
     }
@@ -570,9 +574,9 @@ class Mover2dPart extends Transform2d {
      */
     setImpulseBuffer(impulses) {
         if (Array.isArray(impulses)) {
-            this._impulseBuffer = [...impulses];
+            this.#impulseBuffer = [...impulses];
         } else {
-            this._impulseBuffer = null;
+            this.#impulseBuffer = null;
         }
         return this;
     }
@@ -580,14 +584,14 @@ class Mover2dPart extends Transform2d {
     /**
      * Processes all buffered impulses
      */
-    _processImpulseBuffer() {
-        if (!this._impulseBuffer) return this;
+    #processImpulseBuffer() {
+        if (!this.#impulseBuffer) return this;
 
-        for (const impulse of this._impulseBuffer) {
+        for (const impulse of this.#impulseBuffer) {
             this.applyImpulse(impulse);
         }
         
-        this._impulseBuffer = null; // Processed
+        this.#impulseBuffer = null; // Processed
         return this;
     }
 
@@ -599,7 +603,7 @@ class Mover2dPart extends Transform2d {
      * @param {Array} events - Array to push collision events to
      * @returns {Transform2d|null} This or boundary if collision handled
      */
-    _checkBoundaryCollisions(time, deltaTime, events) {
+    #checkBoundaryCollisions(time, deltaTime, events) {
         let collided = false;
 
         // X-axis boundary check
@@ -668,9 +672,9 @@ class Mover2dPart extends Transform2d {
         const bounceFactor = 0.6 + this.friction.linear * 0.4; // 0.6 to 1.0
         
         if (axis === 'x') {
-            this._velocity[0] *= -bounceFactor;
+            this.#velocity[0] *= -bounceFactor;
         } else if (axis === 'y') {
-            this._velocity[1] *= -bounceFactor;
+            this.#velocity[1] *= -bounceFactor;
         }
 
         // Emit boundary event
@@ -735,16 +739,16 @@ class Mover2dPart extends Transform2d {
      * Stops the object's movement (sets velocity to zero)
      */
     stop() {
-        this._velocity = [0, 0];
+        this.#velocity = [0, 0];
         this.rotation = 0; // Optional: stop rotation too
-        this._angularVelocity = 0;
+        this.#angularVelocity = 0;
         
-        if (this.world && this.world.eventEngine) {
-            this.world.eventEngine.publish('stopped', {
-                position: { x: this.x, y: this.y },
-                timestamp: Date.now()
-            });
-        }
+        // if (this.world && this.world.eventEngine) {
+        //     this.world.eventEngine.publish('stopped', {
+        //         position: { x: this.x, y: this.y },
+        //         timestamp: Date.now()
+        //     });
+        // }
         
         return this;
     }

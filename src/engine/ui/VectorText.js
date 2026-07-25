@@ -387,6 +387,11 @@ function getCharacterInstructions(char) {
         const charHeight = minMax[3] - minMax[2];
         const halfHeight = Math.round(charHeight * 0.5);
 
+        if (ctx.debug)
+            instructions.push(`${VECTOR_IL.POINT} 0 0`);
+
+        instructions.push(VECTOR_IL.PUSH);
+        instructions.push(`${VECTOR_IL.TRANSLATE} 0 -10`);
         instructions.push(`${VECTOR_IL.LINESEG} 0`);
         for (let j = 0; j < points.length; j++) {
             const point = points[j];
@@ -399,7 +404,6 @@ function getCharacterInstructions(char) {
                 first = true;    
                 continue;
             }
-
 
             const [x, y] = [halfWidth + point[0], halfHeight + point[1]];
             
@@ -414,6 +418,7 @@ function getCharacterInstructions(char) {
             }
         }
         instructions.push(VECTOR_IL.ENDSEG);
+        instructions.push(VECTOR_IL.POP);
 
         return {
             instructions: instructions,

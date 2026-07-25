@@ -270,6 +270,33 @@ export default class Engine {
     return primary.ENGINE.options;
   }
 
+  //-------------------------------
+  // Properties
+  //-------------------------------
+
+  /**
+   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
+   * @returns {Object} An object containing the component's properties
+   */
+  get properties() {
+    return {
+      World: this.world,
+      EventEngine: this.eventEngine,
+      ParticleEngine: this.particleEngine,
+      RenderContext: this.renderContext,
+      CollisionModel: this.collisionModel,
+      currentWorldTime: this.time,
+      lastFrameTime: this.lastTime,
+      deltaFrameTime: this.deltaTime,
+      running: this.isRunning,
+      options: this.options
+    };
+  }
+
+  //-------------------------------
+  // Lifecycle Control
+  //-------------------------------
+
   /**
    * Initialize the Engine.
    * @param {Object} engineOptions - See the {@link Engine} constructor for availble options

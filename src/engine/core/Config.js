@@ -97,6 +97,21 @@ export default class Config {
             }
         }
     }
+
+    //-------------------------------
+    // Properties
+    //-------------------------------
+
+    /**
+     * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
+     * @returns {Object} An object containing the component's properties
+     */
+    get properties() {
+        return {
+            Options: this.#opts,
+            keys: this.#getters
+        };
+    }
 }
 
 class EngineConfig extends Config {

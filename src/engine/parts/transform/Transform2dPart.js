@@ -259,9 +259,11 @@ class Transform2dPart extends ComponentPart {
      * @returns {Object} Properties including local space and transform matrix
      */
     get properties() {
-        const properties = super.properties;
-        return { ...properties, ...{
-            localTransform: this.#localTransform
+        return { ...super.properties, ...{
+            position: this.position,
+            rotation: this.rotation,
+            scale: this.scale,
+            transform: this.localTransform
         }};
     }
 

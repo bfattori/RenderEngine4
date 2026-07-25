@@ -31,20 +31,24 @@ export { SoundEvent };
  */
 
 class SoundPart extends ComponentPart {
+    #audioSystem = null;
+    #sourcePath = null;
+    #volume = 1.0;
+    #pan = 0;
+    #playing = false;
+    #looping = false;
+    #hooks = {
+        onEnded: null,
+        onError: null
+    };
+    #source = null;
+
     constructor(priority = SOUND_PRIORITY, name = 'SoundPart', soundSystem = null) {
         super(priority, name);
-        this._audioSystem = soundSystem || null;
-        
-        // Initialize volume and pan defaults
-        this._volume = 1.0;
-        this._pan = 0; // Center: 0, Left: -1, Right: 1
-        
-        // Event handlers (optional)
-        this.onEnded = function(event) {};
-        this.onError = function(event) {};
-        
-        this._isPlaying = false;
-        this._looping = false;
+        this.#audioSystem = soundSystem;
+                
+        this.#playing = false;
+        this.#looping = false;
     }
 
     //--------------------------------
@@ -56,26 +60,26 @@ class SoundPart extends ComponentPart {
      * @returns {boolean} True if ready
      */
     get isReady() {
-        if (!this._audioSystem) {
+        if (!this.#audioSystem) {
             console.warn('SoundComponent: Audio system not initialized');
             return false;
         }
         
-        return this._audioSystem.isInitialized();
+        return this.#audioSystem.isInitialized();
     }
 
     /**
      * Returns true if the sound is playing
      */
     get isPlaying() {
-        return this._isPlaying;
+        return this.#playing;
     }
 
     /**
      * Returns true if the sound is looping
      */
     get isLooping() {
-        return this._looping;
+        return this.#looping;
     }
 
     /**
@@ -84,7 +88,7 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     set isLooping(loop) {
-        if (!this._audioSystem || this.sourcePath === null) return;
+        if (!this.audioSystem || this.sourcePath === null) return;
         
         this._looping = loop;
         // Note: For true looping, need to use play() with appropriate options
@@ -95,7 +99,7 @@ class SoundPart extends ComponentPart {
      * @returns {SoundSystem|null} The audio system or null if not initialized
      */
     get audioSystem() {
-        return this._audioSystem;
+        return this.#audioSystem;
     }
 
     /**
@@ -103,7 +107,7 @@ class SoundPart extends ComponentPart {
      * @param {function} handler - Callback function to handle ended event
      */
     set endedEvent(handler) {
-        this.onEnded = handler;
+        this.#hooks.onEnded = handler;
     }
 
     /**
@@ -111,7 +115,7 @@ class SoundPart extends ComponentPart {
      * @param {function} handler - Callback function to handle error event
      */
     set errorEvent(handler) {
-        this.onError = handler;
+        this.#hooks.onError = handler;
     }
 
     /**
@@ -119,7 +123,7 @@ class SoundPart extends ComponentPart {
      * @returns {string|null} The source path or null if not set
      */
     get sourcePath() {
-        return this._sourcePath || null;
+        return this.#sourcePath || null;
     }
     
     /**
@@ -128,10 +132,10 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     set volume(value) {
-        if (!this._audioSystem || this.sourcePath === null) return;
+        if (!this.#audioSystem || this.sourcePath === null) return;
         
-        this._volume = Math.max(0, Math.min(1, value));
-        this._audioSystem.setVolume(this.sourcePath, this._volume);
+        this.#volume = Math.max(0, Math.min(1, value));
+        this.#audioSystem.setVolume(this.sourcePath, this.#volume);
     }
 
     /**
@@ -140,10 +144,10 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     set pan(value) {
-        if (!this._audioSystem || this.sourcePath === null) return;
+        if (!this.#audioSystem || this.sourcePath === null) return;
         
-        this._pan = Math.max(-1, Math.min(1, value));
-        this._audioSystem.setPan(this.sourcePath, this._pan);
+        this.#pan = Math.max(-1, Math.min(1, value));
+        this.#audioSystem.setPan(this.sourcePath, this.#pan);
     }
 
     /**
@@ -151,7 +155,7 @@ class SoundPart extends ComponentPart {
      * @returns {number} Current volume level
      */
     get volume() {
-        return this._volume;
+        return this.#volume;
     }
 
     /**
@@ -159,7 +163,7 @@ class SoundPart extends ComponentPart {
      * @returns {number} Pan value (-1.0 to 1.0)
      */
     get pan() {
-        return this._pan;
+        return this.#pan;
     }  
     
     //-------------------------------
@@ -168,12 +172,19 @@ class SoundPart extends ComponentPart {
 
     get properties() {
         return {...super.properties, ...{
+            AudioSystem: this.audioSystem,
+            sourcePath: this.sourcePath,
+
             volume: this.volume,
             pan: this.pan,
-            onEnded: this.onEnded,
-            onError: this.onError,
-            _isPlaying: this.isPlaying,
-            isLooping: this.isLooping
+            isReady: this.isReady,
+            isPlaying: this.isPlaying,
+            isLooping: this.isLooping,
+
+            onEnded: this.#hooks.onEnded,
+            onError: this.#hooks.onError,
+
+            _source: this.#source
         }};
     }
     
@@ -189,12 +200,12 @@ class SoundPart extends ComponentPart {
      */
     update(time, delta) {
         // Process pending audio events if needed
-        if (this._audioSystem && this._audioSystem.getActiveSources().length > 0) {
+        if (this.#audioSystem && this.#audioSystem.getActiveSources().length > 0) {
             // Check for ended sounds
-            const sources = this._audioSystem.getActiveSources();
+            const sources = this.#audioSystem.getActiveSources();
             sources.forEach(source => {
-                if (!source.isPlaying && this.onEnded) {
-                    this.onEnded(source.sourcePath);
+                if (!source.isPlaying && this.#hooks.onEnded) {
+                    this.#hooks.onEnded(source.sourcePath);
                 }
             });
         }
@@ -206,7 +217,7 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     volumeUp(amount = 0.1) {
-        const newValue = Math.min(1, this._volume + amount);
+        const newValue = Math.min(1, this.#volume + amount);
         this.setVolume(newValue);
     }
 
@@ -216,7 +227,7 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     volumeDown(amount = 0.1) {
-        const newValue = Math.max(0, this._volume - amount);
+        const newValue = Math.max(0, this.#volume - amount);
         this.setVolume(newValue);
     }
 
@@ -226,7 +237,7 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     panRight(amount = 0.1) {
-        const newValue = Math.min(1, this._pan + amount);
+        const newValue = Math.min(1, this.#pan + amount);
         this.setPan(newValue);
     }
 
@@ -236,7 +247,7 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     panLeft(amount = 0.1) {
-        const newValue = Math.max(-1, this._pan - amount);
+        const newValue = Math.max(-1, this.#pan - amount);
         this.setPan(newValue);
     }
 
@@ -246,11 +257,11 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     initAudio(system) {
-        this._audioSystem = system;
+        this.#loopingaudioSystem = system;
         
         // Set default volume and pan
-        this.setVolume(this._volume);
-        this.setPan(this._pan);
+        this.setVolume(this.#volume);
+        this.setPan(this.#pan);
     }
 
     /**
@@ -258,14 +269,14 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     syncGlobalSettings() {
-        if (!this._audioSystem || !this.sourcePath) return;
+        if (!this.#audioSystem || !this.sourcePath) return;
         
         // Sync volume
-        const currentVolume = this._audioSystem.getVolume(this.sourcePath);
+        const currentVolume = this.#audioSystem.getVolume(this.sourcePath);
         this.setVolume(currentVolume);
         
         // Sync pan
-        const currentPan = this._audioSystem.getPan(this.sourcePath);
+        const currentPan = this.#audioSystem.getPan(this.sourcePath);
         this.setPan(currentPan);
     }
 
@@ -276,9 +287,9 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     handleAudioEvent(eventType, event) {
-        if (eventType === 'ended' && this.onEnded) {
+        if (eventType === 'ended' && this.#hooks.onEnded) {
             this.onEnded(event);
-        } else if (eventType === 'error' && this.onError) {
+        } else if (eventType === 'error' && this.#hooks.onError) {
             this.onError(event);
         }
     }
@@ -289,7 +300,7 @@ class SoundPart extends ComponentPart {
      */
     destroy() {
         this.cleanup();
-        this._audioSystem = null;
+        this.#audioSystem = null;
         this.sourcePath = null;
     }
 
@@ -305,15 +316,15 @@ class SoundPart extends ComponentPart {
      * @returns {Promise<AudioSource>} Promise that resolves when sound is ready
      */
     async play(source, volume = null, pan = null) {
-        if (!this._audioSystem) {
+        if (!this.#audioSystem) {
             throw new SoundSystemError(null, 'SoundComponent requires a SoundSystem to be initialized');
         }
 
-        const playedSource = await this._audioSystem.play(source, volume !== null ? volume : this._volume, pan !== null ? pan : this._pan);
+        const playedSource = await this.#audioSystem.play(source, volume !== null ? volume : this.#volume, pan !== null ? pan : this.#pan);
         
         // Store loop setting if provided
-        this._looping = source.includes('loop') || this._looping;
-        this._sourcePath = source;
+        this.#looping = source.includes('loop') || this.#looping;
+        this.#sourcePath = source;
         
         return Promise.resolve({
             sourcePath: source,
@@ -328,11 +339,11 @@ class SoundPart extends ComponentPart {
      * @returns {Promise} Promise that resolves when paused
      */
     async pause() {
-        if (!this._audioSystem || !this._audioSystem.isPlaying(this._sourcePath)) {
+        if (!this.#audioSystem || !this.#audioSystem.isPlaying(this.#sourcePath)) {
             return Promise.resolve();
         }
         
-        await this._audioSystem.pause(this._sourcePath);
+        await this.#audioSystem.pause(this.#sourcePath);
         return Promise.resolve(true);
     }
 
@@ -341,12 +352,12 @@ class SoundPart extends ComponentPart {
      * @returns {Promise} Promise that resolves when stopped
      */
     async stop() {
-        if (!this._audioSystem) {
+        if (!this.#audioSystem) {
             return Promise.resolve();
         }
         
-        this._audioSystem.stop(this.sourcePath);
-        this._isPlaying = false;
+        this.#audioSystem.stop(this.sourcePath);
+        this.#isPlaying = false;
         
         return Promise.resolve(true);
     }
@@ -356,12 +367,12 @@ class SoundPart extends ComponentPart {
      * @returns {Promise} Promise that resolves when resumed
      */
     async resume() {
-        if (!this._audioSystem) {
+        if (!this.#audioSystem) {
             return Promise.resolve();
         }
         
-        await this._audioSystem.resume(this.sourcePath);
-        this._isPlaying = true;
+        await this.#audioSystem.resume(this.sourcePath);
+        this.#isPlaying = true;
         
         return Promise.resolve(true);
     }
@@ -382,14 +393,14 @@ class SoundPart extends ComponentPart {
      * @returns {Promise<AudioSource>} Promise that resolves when sound is ready
      */
     async playBackground(source, volume = null) {
-        if (!this._audioSystem) {
+        if (!this.#audioSystem) {
             throw new SoundSystemError(null, 'SoundComponent requires a SoundSystem to be initialized');
         }
 
-        const playedSource = await this._audioSystem.playBackground(source, volume !== null ? volume : this._volume);
+        const playedSource = await this.#audioSystem.playBackground(source, volume !== null ? volume : this.#volume);
         
         // Background sounds typically don't loop by default
-        this._looping = false;
+        this.#looping = false;
         
         return Promise.resolve({
             sourcePath: source,
@@ -404,10 +415,10 @@ class SoundPart extends ComponentPart {
      * @returns {Promise} Promise that resolves when cleanup is complete
      */
     async cleanup() {
-        if (!this._audioSystem) return Promise.resolve();
+        if (!this.#audioSystem) return Promise.resolve();
         
-        await this._audioSystem.cleanup();
-        this._isPlaying = false;
+        await this.#audioSystem.cleanup();
+        this.#playing = false;
         return Promise.resolve(true);
     }
 
@@ -416,9 +427,9 @@ class SoundPart extends ComponentPart {
     //--------------------------------
     deserialize(data) {
         super.deserialize(data);
-        this._volume = data.volume || 1.0;
-        this._pan = data.pan || 0;
-        this._looping = data.looping || false;
+        this.#volume = data.volume || 1.0;
+        this.#pan = data.pan || 0;
+        this.#looping = data.looping || false;
     }
 }
 
