@@ -52,7 +52,7 @@ export default class ParticleEngine {
     /**
      * Precision indicates if we're using 8-bit, or 16-bit values for the particle 
      * positions and velocities.
-     * @returns {String} {@link Constants.PARTICLE_PRECISION_LOW} or 
+     * @returns {String} {@link Constants.PARTICLE_PRECISION_LOW}, {@link Constants.PARTICLE_PRECISION_MEDIUM}, or 
      *                   {@link Constants.PARTICLE_PRECISION_HIGH}
      */
     get #precision() {
