@@ -33,10 +33,18 @@ export default class VectorRendererPart extends RenderPart {
         return this.#formatting;
     }
 
-    get letterSpacing() {
-        return this.context.letterSpacing;
+/**
+     * The line height used for text drawing
+     * @returns {number}
+     */
+    get lineHeight() {
+        return super.lineHeight;
     }
 
+    get letterSpacing() {
+        return super.letterSpacing;
+    }
+    
     get API() {
         return this.#api;
     }

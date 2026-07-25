@@ -275,9 +275,6 @@ function characterInstruction(char, text, index) {
         consecutiveTrailingSpaces = /( +)/.exec(text.substring(index))[0].length;
     }
     
-    // until we have lowercase characters
-    char = char.toUpperCase();
-    
     // Get character instructions from vector.js
     let ci = getCharacterInstructions.call(this, char);
 
@@ -290,12 +287,10 @@ function characterInstruction(char, text, index) {
     if (ctx.debug) {
         context.addInstruction(`// CHAR: "${char === ' ' ? '[SPACE]' : char}"`);
         // context.API
-        //     .color("#000")
-        //     .width(1)
+        //     .setColor("#000")
+        //     .setWidth(1)
         //     .rectangle(-ci.halfWidth, -ci.halfHeight, 
-        //                 ci.width - ci.halfWidth, ci.height - ci.halfHeight)
-        //     .color()
-        //     .width();
+        //                 ci.width - ci.halfWidth, ci.height - ci.halfHeight);
     }
 
     if (char !== ' ') {
@@ -343,14 +338,15 @@ function characterInstruction(char, text, index) {
 function getCharacterInstructions(char) {
     const minMax = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
 
-    // currently only supports upper case characters
-    char = char.toUpperCase();
+
+    // if (this.config.text.forceUpperCase)
+    //    char = char.toUpperCase();
 
     // Convert char to ASCII code
     const ascii = char.charCodeAt(0);
 
     // Check bounds (printable ASCII: 32-127, but we have specific chars in vector.js)
-    if (ascii < 32 || ascii > 96) {
+    if (ascii < 32 || ascii > 122) {
         return null;
     }
 

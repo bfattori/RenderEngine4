@@ -78,7 +78,11 @@ export default class RenderPart extends ComponentPart {
      * @returns {number}
      */
     get lineHeight() {
-        return this.#lineHeight;
+        return this.context.config.text.lineHeight;
+    }
+
+    get letterSpacing() {
+        return this.context.config.text.letterSpacing;
     }
 
     /**

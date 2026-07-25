@@ -7,6 +7,7 @@ import Context from '../Context.js';
 import Console from './console.js'
 import RenderEngineError from './RenderEngineError.js';
 
+import { EngineConfig } from './Config.js';
 import GameWorld from './GameWorld.js'
 import EventEngine from './EventEngine.js'
 import RenderContext from '../rendering/contexts/RenderContext.js';
@@ -32,41 +33,7 @@ let waitInit = false;
 /**
  * Creates a new Engine instance.
  * 
- * @param {Object} options - Configuration options from the initializer
- * @param {Object} options.flags - Flags for enabling or disabling specific features.
- * @param {boolean} options.flags.debugMode - Enable engine debugging mode. Default is false.
- * @param {boolean} options.flags.performanceLogging - Enable performance logging for rendering and collision events. Default is false.
- * @param {boolean} options.flags.showFps - Display the current FPS, target FPS, and frame time on screen. Default is false.
- * @param {Object} options.world - World configuration options.
- * @param {number} options.world.fps - Desired frames per second for rendering. Default is 60.
- * @param {number} options.world.seedTime - Desired time setting when initializing the engine. Default is 0.
- * @param {Array} options.world.dimensions - Two-element array representing the width and height of the game world. Default is [800, 600].
- * @param {Array} options.world.screenDimensions - Two-element array representing the width and height of the viewport. Default is [800, 600].
- * @param {string} options.world.backgroundColor - Background color of the game world. Default is 'black'.
- * @param {RenderContext} options.world.renderContext - The rendering context for the engine.
- * @param {CollisionModel} options.world.collisionModel - The collision model for the engine. Default is {@link AABBCollisionModel}
- * @param {number} options.world.renderPlanes - Number of render planes to use. Default is 3.
- * @param {Object} options.threading - Threading options.
- * @param {number} options.threading.renderThreads - Number of rendering threads to use. Default is 1.
- * @param {number} options.threading.renderThreadPriority - Priority level for rendering threads. Default is 0.
- * @param {string} options.threading.renderThreadName - Name of the rendering thread. Default is 'RE4 Render Thread'.
- * @param {number} options.threading.collisionThreads - Number of collision threads to use. Default is 1.
- * @param {number} options.threading.collisionThreadPriority - Priority level for collision threads. Default is 0.
- * @param {string} options.threading.collisionThreadName - Name of the collision thread. Default is 'RE4 Collision Thread'.
- * @param {Object} options.hooks - Engine hooks.
- * @param {Function} options.hooks.onInit - Callback function to be executed after initialization. Default is No-op.
- * @param {Function} options.hooks.onStart - Callback function to be executed when the engine starts. Default is No-op.
- * @param {Function} options.hooks.onStop - Callback function to be executed when the engine stops. Default is No-op.
- * @param {Function} options.hooks.onReset - Callback function to be executed when the engine is reset. Default is No-op.
- * @param {Function} options.hooks.onShutdown - Callback function to be executed when the engine exits. Default is No-op.
- * @param {Function} options.hooks.onError - Stateful callback function to be executed if an error occurs during the run-loop. Example: <code>(error) => {};</code> Default is console logging of errors.
- * @param {Function} options.hooks.onBeforeFrame - Stateful callback function to be executed before each frame is generate. Example: <code>(time) => {};</code> 
- * @param {Function} options.hooks.onBeforeUpdate - Stateful callback function to be executed before each world update. Example: <code>(time, deltaTime) => {};</code> 
- * @param {Function} options.hooks.onUpdate - Stateful callback function to be executed after each world update. Example: <code>(time, deltaTime) => {};</code> 
- * @param {Function} options.hooks.onBeforeRender - Stateful callback function to be executed before each frame is rendered. Example: <code>(time, deltaTime) => {};</code> 
- * @param {Function} options.hooks.onRender - Stateful callback function to be executed on each frame of rendering. Example: <code>(time, deltaTime, renderTime) => {};</code>
- * @param {Function} options.hooks.onCollision - Stateful callback function to be executed on collision events. Example: <code>(collisionData) => {};</code> 
- * @param {Function} options.hooks.onFrame - Stateful callback function to be executed after each frame is updated and rendered. Example: <code>(time, frameTime) => {};</code> 
+ * @param {EngineConfig} options - Configuration options from the initializer
  * @constructor
  */
 export default class Engine {
@@ -76,7 +43,8 @@ export default class Engine {
   #PARTICLE_ENGINE = null;
   #RENDER_CONTEXT = null;
 
-  #ENGINE_OPTIONS = null;
+  #ENGINE_OPTIONS = new EngineConfig();
+  
   #width = 0;
   #height = 0;
   #currentTime = 0;
@@ -97,19 +65,9 @@ export default class Engine {
     primary.ENGINE = this;
 
     // store the engine initialization options
-    this.#ENGINE_OPTIONS = { 
-      flags: {...Constants.DEFAULT_ENGINE_OPTIONS.flags, ...options.flags},
-      world: {...Constants.DEFAULT_ENGINE_OPTIONS.world, ...options.world},
-      threading: {...Constants.DEFAULT_ENGINE_OPTIONS.threading, ...options.threading},
-      hooks: {...Constants.DEFAULT_ENGINE_OPTIONS.hooks, ...options.hooks},
-      canvasDefaults: {...Constants.DEFAULT_ENGINE_OPTIONS.canvasDefaults, ...options.canvasDefaults}
-    };
+    this.#ENGINE_OPTIONS.merge(options);
 
     ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
-
-    // configure basics
-    this.#width = this.#ENGINE_OPTIONS.world.dimensions[0];
-    this.#height = this.#ENGINE_OPTIONS.world.dimensions[1];
     
     // Game timer maintained by the engine
     this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;
@@ -118,7 +76,7 @@ export default class Engine {
     
     // render context (initialized later)
     const renderContext = this.#ENGINE_OPTIONS.world.renderContext || new RenderContext(new Renderer());
-    renderContext.screenDimensions = this.#ENGINE_OPTIONS.world.screenDimensions;
+    renderContext.viewport = this.#ENGINE_OPTIONS.world.viewport;
     renderContext.worldDimensions = this.#ENGINE_OPTIONS.world.dimensions;
     
     // the world camera
@@ -294,14 +252,6 @@ export default class Engine {
    */
   get collisionModel() {
     return this.#WORLD.collisionModel;
-  }
-
-  /**
-   * Get all game objects in the world
-   * @returns {GameObject[]}
-   */
-  get allObjects() {
-    return this.#WORLD.allObjects;
   }
 
   /**

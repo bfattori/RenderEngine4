@@ -18,12 +18,20 @@ RenderEngine.init({
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                true
+                {
+                    doubleBuffered: true,
+                    useCompiler: true
+                }
             ),
-            { enableCulling: false }
+            { 
+                enableCulling: false, 
+                text: {
+                    forceUpperCase: true
+                }
+             }
         ),
-        dimensions: [800, 600],
-        viewport: [0, 0, 800, 600]
+        dimensions: {width: 800, height: 600},
+        viewport: {left: 0, top: 0, width: 800, height: 600}
     }
 });
 
@@ -51,7 +59,7 @@ renderer.API
 renderer.compile();
 
 // set the origin at the center of the text
-gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
+//gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
 
 // fires before each update of the object
 gameObject.onBeforeUpdate = (time, deltaTime) => {

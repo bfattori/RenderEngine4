@@ -3,6 +3,7 @@ import { IdentityMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
+import { CanvasConfig } from '../../core/Config.js';
 import VectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
 import RasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
 import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
@@ -11,8 +12,9 @@ const POINT_SIZE = 4;
 const HALF_P = Math.floor(POINT_SIZE * 0.5);
 
 let built = false;
+
 export default class CanvasRenderer extends Renderer {
-    #buffered = false;
+    #opts = new CanvasConfig();
     #blit = null;
     #htmlElement = null;
     #canvas = null;
@@ -20,24 +22,32 @@ export default class CanvasRenderer extends Renderer {
         
     #localFormat = new Map();
 
-    constructor(htmlElement, buffered, useCompiler = true) {
+    constructor(htmlElement, options) {
         super();
         if (!built) {
             throw new RendererError(this, "CanvasRenderer must be built using CanvasRenderer.build()!");
         }
         built = false;
-        this.#buffered = buffered;
+
+        this.#opts.merge(options);
         this.#htmlElement = htmlElement;
 
         // Let the context know the renderer can compile shapes
-        this.hasCompiler = useCompiler;
-        this.#localFormat.set('b', false);
-        this.#localFormat.set('i', false);
-        this.#localFormat.set('u', false);
+        this.hasCompiler = this.#opts.useCompiler;
+        this.#opts.formatting.set('b', false);
+        this.#opts.formatting.set('i', false);
+        this.#opts.formatting.set('u', false);
+    }
+
+    get config() {
+        return this.#opts;
     }
 
     get isDoubleBuffered() {
-        return this.#buffered;
+        return this.config.doubleBuffered;
+    }
+    get isUseCompiler() {
+        return this.config.useCompiler;
     }
 
     get blitter() {
@@ -62,12 +72,12 @@ export default class CanvasRenderer extends Renderer {
      * Build a new instance of the CanvasRenderer.
      * 
      * @param {HTMLElement} htmlElement - The element that represents host the <code>Canvas</code> element.
-     * @param {boolean} buffered - If true, the renderer will use a double-buffered canvas for rendering.
+     * @param {CanvasOptions} options - Canvas cofigurations options
      * @returns {CanvasRenderer} - The initialized CanvasRenderer instance.
      */
-    static build(htmlElement, buffered, useCompiler) {
+    static build(htmlElement, options) {
         built = true;
-        return new CanvasRenderer(htmlElement, buffered, useCompiler);
+        return new CanvasRenderer(htmlElement, options);
     }
 
      /**
@@ -82,7 +92,7 @@ export default class CanvasRenderer extends Renderer {
 
         this.#htmlElement.appendChild(this.#canvas);
 
-        if (this.#buffered) {
+        if (this.config.doubleBuffered) {
             // double-buffered
             this.#offscreen = new OffscreenCanvas(context.viewport.width, context.viewport.height);
             this.surface = this.#offscreen.getContext("2d");
@@ -95,11 +105,9 @@ export default class CanvasRenderer extends Renderer {
             this.surface = this.#canvas.getContext("2d");
         }
 
-        if (Engine.options.canvasDefaults) {
-            // apply canvas default options
-            for (const opt in Engine.options.canvasDefaults) {
-                this.surface[opt] = Engine.options.canvasDefaults[opt];
-            }
+        // apply canvas default options
+        for (const opt in this.config.defaults) {
+            this.surface[opt] = this.config.defaults[opt];
         }
     }
 
@@ -115,7 +123,7 @@ export default class CanvasRenderer extends Renderer {
      * After rendering, if buffered, swap offscreen to visible context.
      */
     postFrame() {
-        if (this.#buffered) {
+        if (this.config.doubleBuffered) {
             // swap offscreen to visible context
             this.#blit.transferFromImageBitmap(this.#offscreen.transferToImageBitmap());
         }
@@ -161,8 +169,6 @@ export default class CanvasRenderer extends Renderer {
      * @returns {void}
      */
     #immediate(instruction, time, deltaTime) {
-
-        // render the drawing instruction
         let fillSeg = "0";
         const vector = VECTOR_IL;
         const parts = instruction.trim().split(' ');
@@ -316,7 +322,7 @@ export default class CanvasRenderer extends Renderer {
         this.#htmlElement = null;
         this.#canvas = null;
         this.#offscreen = null;
-        this.#localFormat = null;
+        this.#opts = null;
         super.destroy();
     }
 }

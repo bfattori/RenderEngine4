@@ -11,11 +11,19 @@ RenderEngine.init({
         renderContext: new VectorRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
-                false
-            )
+                {
+                    doubleBuffered: false
+                }
+            ),
+            { 
+                enableCulling: false, 
+                text: {
+                    forceUpperCase: true
+                }
+            }
         ),
-        dimensions: [800, 600],
-        viewport: [0, 0, 800, 600]
+        dimensions: {width: 800, height: 600},
+        viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     hooks: {
         onInit: () => { console.log("onInit: Hello world!"); },
@@ -84,6 +92,12 @@ api
 
 api.popTransform()
 
+api
+    .pushTransform()
+    .translate(20, 550)
+    .color("black")
+    .text("ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz")
+    .popTransform();
 
 // testing curves
 api    

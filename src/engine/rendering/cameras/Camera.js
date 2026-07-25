@@ -1,26 +1,31 @@
 import { Matrix2d, IdentityMatrix } from '../../core/Matrix.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
+import { CameraConfig } from '../../core/Config.js';
 
 /**
  * Camera is the base class for all camera implementations in the Render Engine 4.
  * @param {Array<number>} position - The initial position of the camera.
  * @param {Array<number>} viewportDimensions - The dimensions of the viewport.
- * @param {Object} options - The options to initialize the camera with.
- * @param {Number} options.rotation - The rotation of the camera in degrees.
- * @param {Array<number>} options.scale - The scale of the camera as a 2D array. Default is [1, 1].
+ * @param {CameraConfig} options - The options to initialize the camera with.
  * @return {Camera} A new instance of Camera
  */
 export default class Camera {
     #name = 'Camera';
+    #opts = new CameraConfig();
     #matrix = new Matrix2d(IdentityMatrix);
     #viewport = null;
 
-    constructor(name = 'Camera', position = [0, 0], viewportDimensions = [800, 600], { rotation, scale } = {rotation:0, scale:[1, 1]}) {
+    constructor(name = 'Camera', options) {
+        this.#opts.merge(options);
         this.#name = name;
-        this.#matrix.translate(position[0], position[1]);
-        this.#matrix.rotate(rotation);
-        this.#matrix.scale(scale[0], scale[1]);
-        this.#viewport = viewportDimensions;
+        this.#matrix.translate(this.#opts.position[0], this.#opts.position[1]);
+        this.#matrix.rotate(this.#opts.rotation);
+        this.#matrix.scale(this.#opts.scale[0], this.#opts.scale[1]);
+        this.#viewport = this.#opts.viewport;
+    }
+
+    get config() {
+        return this.#opts;
     }
 
     /**
@@ -36,16 +41,15 @@ export default class Camera {
      * @returns {Array<number>} The viewport dimensions as [x, y, width, height]
      */
     get viewport() {
-        return [...this.#matrix.translation, ...this.#viewport];
+        return this.config.viewport;
     }
 
     /**
      * Set the viewport dimensions
      * @param {Array<number>} viewportDimensions - The new viewport dimensions as [x, y, width, height]
      */
-    set viewport([x, y, width, height]) {
-        this.#matrix.translate(x, y);
-        this.#viewport = [width, height];
+    set viewport({x, y, width, height}) {
+        this.config.viewport = {x, y, width, height};
     }
 
     /**

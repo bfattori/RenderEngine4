@@ -57,11 +57,7 @@ export default class VectorRenderContext extends RenderContext {
    * Creates a new VectorRenderContext instance
    * @constructor
    * @param {Renderer} renderer - The renderer for the context
-   * @param {Object} options - Configuration options for the render context
-   * @param {number} [options.screenDimensions=[800,600]] - The viewport dimensions
-   * @param {number} [options.worldDimensions=[800,600]] - The world dimensions
-   * @param {number} [options.maxPlanes=3] - The number of rendering planes
-   * @param {boolean} [options.enableCulling=true] - Whether culling is enabled
+   * @param {RenderConfig} options - Configuration options for the render context
    */
   constructor(renderer, options) {
     super(renderer, options);
@@ -77,9 +73,13 @@ export default class VectorRenderContext extends RenderContext {
     this.setCursorPosition(x, y);
   }
 
-  set screenDimensions(dims) {
+  set viewport(dims) {
     super.viewport = dims;
     this.renderer.init(this);
+  }
+
+  get viewport() {
+    return super.viewport;
   }
 
   /**

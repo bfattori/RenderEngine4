@@ -3,6 +3,7 @@
  * Defines the common interface and capabilities for vector and raster rendering
  */
 import Engine from '../../core/Engine.js';
+import { RenderConfig } from '../../core/Config.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import RenderPart from '../../parts/render/RenderPart.js';
@@ -31,72 +32,33 @@ export {
  * must implement. Actual implementations should extend this class or follow its interface.
  */
 export default class RenderContext {
+  #opts = new RenderConfig();
   #renderer = null;
-  #viewport = {left: 0, top: 0, width: 800, height: 600};
-  #worldDimensions = {width: 800, height: 600};
-  #enableCulling = false;
   #world = null;
   #activeObjects = [];
-  #maxPlanes = 3;
-  #renderPlanes = [
-      'background',      // Farthest plane (lowest priority)
-      'middle',          // Middle plane
-      'foreground'       // Closest plane (highest priority)
-    ];
   #objectPlaneAssignments = new Map();
   #lastUpdateTime = null;
   #instructionBuffer = [];
   #lastFrame = [];
-  #cursor = {x: 0, y: 0};
-  #cursorLimits = {left: 0, top: 0, width: 800, height: 600};
-  #lineHeight = 15;
-  #letterSpacing = 2;
-  #immediateMode = false;
-  #formatting = {
-      bold: false,
-      italics: false,
-      underline: false
-    };
-  #configOptions = null;
 
   /**
    * Creates a new RenderContext instance
    * @param {Renderer} renderer - The renderer for the context
    * @param {Object} options - Configuration options for the render context
-   * @param {number} [options.viewport=[0, 0, 800,600]] - The viewport dimensions
-   * @param {number} [options.worldDimensions=[800, 600]] - The world dimensions
-   * @param {number} [options.maxPlanes=3] - Maximum number of render planes to support
-   * @param {number} [options.lineHeight=40] - The line height for characters rendered
-   * @param {number} [options.letterSpacing=3] - The spacing between characters
-   * @param {Array<string>} [options.planeNames] - Names of render planes (default: background, middle, foreground)
    */
   constructor(renderer, options = {}) {
+    this.#opts.merge(options);
+
     // the renderer which will be targeted by the context
     this.#renderer = renderer;
     this.#renderer !== null ? (this.#renderer.renderContext = this) : null;
-    this.#configOptions = options;
+  }
 
-    // Screen coordinate boundaries (top, left, right, bottom)
-    // These define the visible world within the render context
-    if (options.viewport && options.viewport.length === 4) {
-      this.#viewport.top = options.viewport[0];
-      this.#viewport.left = options.viewport[1];
-      this.#viewport.width = options.viewport[2];
-      this.#viewport.height = options.viewport[3];
-    }
-    if (options.worldDimensions && options.worldDimensions.length === 2) {
-      this.#worldDimensions.width = options.worldDimensions[0];
-      this.#worldDimensions.height = options.worldDimensions[1];
-    }
+  //---------------------------
+  // Properties
 
-    this.#letterSpacing = options.letterSpacing ? options.letterSpacing : this.#letterSpacing;
-
-    // Flag to control whether culling is enabled
-    this.#enableCulling = options.enableCulling !== false || this.#enableCulling;
-    
-    // NEW: Render planes configuration - support any number of planes, default 3
-    this.#maxPlanes = options.maxPlanes || this.#maxPlanes;
-    this.#lineHeight = options.lineHeight || this.#lineHeight;
+  get config() {
+    return this.#opts;
   }
 
   //--------------------------------------------
@@ -104,7 +66,7 @@ export default class RenderContext {
   //--------------------------------------------
 
   get formatting() {
-    return this.#formatting;
+    return this.config.text.formatting;
   }
 
   /**
@@ -112,7 +74,7 @@ export default class RenderContext {
    * @return number
    */
   get lineHeight() {
-    return this.#lineHeight;
+    return this.config.text.lineHeight;
   }
 
   /**
@@ -120,15 +82,15 @@ export default class RenderContext {
    * @param {number} height - The line height
    */
   set lineHeight(height) {
-    this.#lineHeight = height;
+    this.config.text.lineHeight = height;
   }
 
   get letterSpacing() {
-    return this.#letterSpacing;
+    return this.config.text.letterSpacing;
   }
 
   set letterSpacing(s) {
-    this.#letterSpacing = s; 
+    this.config.text.letterSpacing = s; 
   }
 
   /**
@@ -136,7 +98,7 @@ export default class RenderContext {
    * @returns {Array<number>} The cursor [x, y]
    */
   get cursor() {
-    return [this.#cursor.x, this.#cursor.y];
+    return [this.config.cursor.x, this.config.cursor.y];
   }
 
   /**
@@ -144,8 +106,8 @@ export default class RenderContext {
    * @param {Array<number>} [x, y] - The cursor position
    */
   set cursor([x, y]) {
-    this.#cursor.x = x;
-    this.#cursor.y = y;
+    this.config.cursor.x = x;
+    this.config.cursor.y = y;
   }
 
   /**
@@ -153,7 +115,7 @@ export default class RenderContext {
    * @returns {number}
    */
   get cursorX() {
-    return this.#cursor.x;
+    return this.config.cursor.x;
   }
 
   /**
@@ -161,7 +123,7 @@ export default class RenderContext {
    * @returns {number}
    */
   get cursorY() {
-    return this.#cursor.y;
+    return this.config.cursor.y;
   }
 
   /**
@@ -169,7 +131,7 @@ export default class RenderContext {
    * @param {number} x - The X position
    */
   set cursorX(x) {
-    this.#cursor.x = x;
+    this.config.cursor.x = x;
   }
 
   /**
@@ -177,7 +139,7 @@ export default class RenderContext {
    * @param {number} y - The Y position
    */
   set cursorY(y) {
-    this.#cursor.y = y;
+    this.config.cursor.y = y;
   }
 
   /**
@@ -185,7 +147,7 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the X position by
    */
   set cursorDeltaX(delta) {
-    this.cursorX += delta;
+    this.config.cursor.x += delta;
   }
 
   /**
@@ -193,54 +155,39 @@ export default class RenderContext {
    * @param {number} delta - The value to modify the Y poisition by
    */
   set cursorDeltaY(delta) {
-    this.cursorY += delta;
+    this.config.cursor.y += delta;
   }
 
   /**
    * Get the boundaries for text rendering.
    * @returns {Array<number>} [left, top, width, height]
    */
-  get cursorLimits() {
-    return this.#cursorLimits;
+  get cursorMargins() {
+    return this.config.cursor.margins;
   }
 
   /**
    * Set the boundaries for the text being drawn.
-   * @param {Array<number>} [left, top, width, height]
+   * @param {Object} margins
+   * @param {number} [margins.left] - The left margin
+   * @param {number} [margins.top] - The top margin
+   * @param {number} [margins.right] - The right margin
+   * @param {number} [margins.bottom] - The bottom marin
    */
-  setCursorLimits([left, top, width, height]) {
-    this.#cursorLimits = {left: left, top: top, width: width, height: height};
+  set cursorMargins({left, right, top, bottom}) {
+    this.config.cursor.margins = {left: left, top: top, right: right, bottom: bottom};
   }
 
-  //-----------------------------
-  // compiled shapes
-  //----------------------------
-  
-  getCompiledShape(instructions, tag) {
-    return this.#renderer.getCompiledShape(instructions, tag);
-  }
-
-  destroyCompiledShape(opaqueId) {
-    this.#renderer.destroyCompiledShape(opaqueId);
-  }
-
-  renderCompiledShape(opaqueId, time, deltaTime) {
-  }
-
-  //-----------------------------
-  // viewport and world
-  //------------------------------
-
-  set viewport([left, top, width, height] = [0, 0, 800, 600]) {
-    this.#viewport = {left: left, top: top, width: width, height: height};
+  set viewport({left, top, width, height}) {
+    this.config.viewport = {left: left, top: top, width: width, height: height};
   }
 
   get viewport() {
-    return this.#viewport;
+    return this.config.viewport;
   }
 
-  set worldDimensions([width, height] = [800, 600]) {
-    this.#worldDimensions = {width: width, height: height};
+  set worldDimensions({width, height}) {
+    this.config.worldDimensions = {width: width, height: height};
   }
   
   /**
@@ -248,7 +195,7 @@ export default class RenderContext {
    * @return {boolean} True if the context is in immediate mode
    */
   get immediateMode() {
-    return this.#immediateMode;
+    return this.config.immediateMode;
   }
 
   /**
@@ -256,7 +203,7 @@ export default class RenderContext {
    * @param {boolean} state - Whether to enable immediate mode
    */
   set immediateMode(state) {
-    this.#immediateMode = state;
+    this.config.immediateMode = state;
   }
 
   /**
@@ -278,6 +225,104 @@ export default class RenderContext {
     return this.#lastFrame;
   }
 
+    /**
+   * Set the owning world for this render context
+   * @param {GameWorld} world - The world that manages GameObjects for this context
+   */
+  set world(world) {
+    this.#world = world;
+  }
+  
+  /**
+   * Get the owning world
+   * @returns {GameWorld|null} The associated world or null
+   */
+  get world() {
+    return this.#world;
+  }
+  
+  /**
+   * Set enable/disable culling for this render context
+   * @param {boolean} enabled - Whether culling should be active
+   */
+  set culling(enabled) {
+    this.config.enableCulling = enabled;
+  }
+  
+  /**
+   * Get whether culling is enabled
+   * @returns {boolean}
+   */
+  get culling() {
+    return this.config.enableCulling;
+  }
+  
+  /**
+   * Get render area dimensions
+   * @returns {Object} Object with width and height of screen coordinates
+   */
+  get renderArea() {
+    return {
+      width: this.viewport.width,
+      height: this.viewport.height,
+      x: this.viewport.left,
+      y: this.viewport.top
+    };
+  }
+  
+  /**
+   * Get world dimensions
+   * @returns {Object} Object with world width and height
+   */
+  get worldArea() {
+    return {
+      width: this.worldDimensions.width,
+      height: this.worldDimensions.height,
+      x: 0,
+      y: 0
+    };
+  }
+  
+  /**
+   * Get the number of configured render planes
+   * @returns {number} Number of active render planes
+   */
+  get planeCount() {
+    return this.config.renderPlanes.names.length;
+  }
+  
+  /**
+   * Get the list of configured render plane names
+   * @returns {Array<string>} Array of plane names
+   */
+  get planeNames() {
+    return this.config.renderPlanes.names.slice(0, this.config.renderPlanes.maxPlanes);
+  }
+
+  set planeNames(names) {
+    this.config.renderPlanes.names = names.slice(0, names.length);
+  }
+
+
+  //-----------------------------
+  // compiled shapes
+  //----------------------------
+  
+  getCompiledShape(instructions, tag) {
+    return this.#renderer.getCompiledShape(instructions, tag);
+  }
+
+  destroyCompiledShape(opaqueId) {
+    this.#renderer.destroyCompiledShape(opaqueId);
+  }
+
+  renderCompiledShape(opaqueId, time, deltaTime) {
+  }
+
+  //-----------------------------
+  // viewport and world
+  //------------------------------
+
   /**
    * Updates the rendering state based on current world time and delta
    * @param {number} currentTime - Current game time in milliseconds
@@ -297,7 +342,7 @@ export default class RenderContext {
    * @param  {String} instruction A rendering instruction
    */
   addInstruction(instruction) {
-    if (this.#immediateMode) {
+    if (this.immediateMode) {
       this.#renderer.render(instruction);
     } else {
       this.#instructionBuffer.push(instruction);
@@ -378,7 +423,7 @@ export default class RenderContext {
       }
       
       // If culling is enabled, check visibility before rendering
-      if (this.#enableCulling) {
+      if (this.config.enableCulling) {
         const visibleObjects = activeObjects.filter((obj) => this.isObjectVisible(obj));
         
         // Assign objects to render planes based on their world positions
@@ -483,9 +528,9 @@ export default class RenderContext {
    * @returns {boolean} true if assignment was successful
    */
   assignObjectToPlane(object, planeName) {
-    const validPlanes = this.#renderPlanes.slice(0, this.maxPlanes);
+    const validPlanes = this.planeNames.slice(0, this.config.renderPlanes.max);
     if (!validPlanes.includes(planeName)) {
-      console.warn(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.#renderPlanes.join(', ')}`);
+      console.warn(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.planeNames.join(', ')}`);
       return false;
     }
     
@@ -527,7 +572,7 @@ export default class RenderContext {
    * @returns {Array<GameObject>} Array of objects in this plane
    */
   getObjectsInPlane(planeName) {
-    if (this.#renderPlanes.includes(planeName)) {
+    if (this.planeNames.includes(planeName)) {
       return this.#activeObjects.filter((obj) => obj.assignedPlane === planeName);
     }
     return [];
@@ -538,7 +583,7 @@ export default class RenderContext {
    * Objects in the background plane render first, then middle, then foreground
    */
   sortObjectsByPlanes() {
-    const planes = this.#renderPlanes.slice(0, this.#maxPlanes);
+    const planes = this.planeNames.slice(0, this.config.renderPlanes.max);
     
     // Clear active objects and rebuild with proper plane sorting
     const activeObjects = [];
@@ -597,100 +642,29 @@ export default class RenderContext {
   }
   
   /**
-   * Set the owning world for this render context
-   * @param {GameWorld} world - The world that manages GameObjects for this context
-   */
-  set world(world) {
-    this.#world = world;
-  }
-  
-  /**
-   * Get the owning world
-   * @returns {GameWorld|null} The associated world or null
-   */
-  get world() {
-    return this.#world;
-  }
-  
-  /**
-   * Set enable/disable culling for this render context
-   * @param {boolean} enabled - Whether culling should be active
-   */
-  set culling(enabled) {
-    this.#enableCulling = enabled;
-  }
-  
-  /**
-   * Get whether culling is enabled
-   * @returns {boolean}
-   */
-  get culling() {
-    return this.#enableCulling;
-  }
-  
-  /**
    * Clear active objects list (used during render preparation)
    */
   clearActiveObjects() {
     this.#activeObjects = [];
   }
   
-  /**
-   * Get render area dimensions
-   * @returns {Object} Object with width and height of screen coordinates
-   */
-  get renderArea() {
-    return {
-      width: this.#viewport.width,
-      height: this.#viewport.height,
-      x: this.#viewport.left,
-      y: this.#viewport.top
-    };
-  }
-  
-  /**
-   * Get world dimensions
-   * @returns {Object} Object with world width and height
-   */
-  get worldArea() {
-    return {
-      width: this.#worldDimensions.width,
-      height: this.#worldDimensions.height,
-      x: 0,
-      y: 0
-    };
-  }
-  
-  /**
-   * Get the number of configured render planes
-   * @returns {number} Number of active render planes
-   */
-  get planeCount() {
-    return this.#renderPlanes.length;
-  }
-  
-  /**
-   * Get the list of configured render plane names
-   * @returns {Array<string>} Array of plane names
-   */
-  get planeNames() {
-    return this.#renderPlanes.slice(0, this.#maxPlanes);
-  }
-  
+  //-----------------------------------
+  // Render Planes
+
   /**
    * Set custom render plane configuration
    * @param {number} count - Number of planes to configure
    * @param {Array<string>} names - Names for each plane (optional)
    */
   setPlaneConfiguration(count, names = null) {
-    this.#maxPlanes = count;
+    this.config.renderPlanes.max = count;
     
     if (!names) {
       // Generate default plane names
       const defaults = ['background', 'middle', 'foreground'];
-      this.#renderPlanes = defaults.slice(0, count);
+      this.planeNames = defaults.slice(0, count);
     } else {
-      this.#renderPlanes = names.slice(0, count);
+      this.planeNames = names.slice(0, count);
     }
   }
   
@@ -700,15 +674,15 @@ export default class RenderContext {
    * @param {string} name - Name for the new plane
    */
   addRenderPlane(index, name) {
-    if (index < 0 || index > this.#maxPlanes) {
-      throw new RenderContextError(this, `Cannot add plane at index ${index}. Max planes: ${this.#maxPlanes}`);
+    if (index < 0 || index > this.config.renderPlanes.max) {
+      throw new RenderContextError(this, `Cannot add plane at index ${index}. Max planes: ${this.config.renderPlanes.max}`);
     }
     
-    if (!this.#renderPlanes[index]) {
-      this.#renderPlanes.splice(index, 0, name);
-    } else if (this.#renderPlanes.length <= this.#maxPlanes) {
-      this.#renderPlanes.push(name);
-      this.#maxPlanes = this.#renderPlanes.length;
+    if (!this.planeNames[index]) {
+      this.planeNames.splice(index, 0, name);
+    } else if (this.planeNames.length <= this.config.renderPlanes.max) {
+      this.planeNames.push(name);
+      this.config.renderPlanes.max = this.planeNames.length;
     }
   }
   
@@ -717,13 +691,13 @@ export default class RenderContext {
    * @param {string} planeName - Name of the plane to remove
    */
   removeRenderPlane(planeName) {
-    const index = this.#renderPlanes.indexOf(planeName);
+    const index = this.planeNames.indexOf(planeName);
     if (index > -1) {
-      this.#renderPlanes.splice(index, 1);
+      this.planeNames.splice(index, 1);
       
       // Update max planes if needed
-      if (this.#renderPlanes.length < this.#maxPlanes) {
-        this.#maxPlanes = this.#renderPlanes.length;
+      if (this.planeNames.length < this.config.renderPlanes.max) {
+        this.config.renderPlanes.max = this.planeNames.length;
       }
     }
   }
