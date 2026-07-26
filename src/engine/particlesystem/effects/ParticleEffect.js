@@ -14,7 +14,6 @@ function randomRange(low, high, whole) {
     return (whole ? Math.floor(v) : v);
 }
 
-
 export default class ParticleEffect {
     #particleCount = 10;
     #particleCountVariance = 0;
@@ -207,7 +206,7 @@ export default class ParticleEffect {
 
         if (!this.isRun || (this.isRun && time - this.#lastTime > freq)) {
             var options = {};
-            this.#generateParticles(count, life, vel, time, deltaTime);
+            this.generateParticles(count, life, vel, time, deltaTime);
             this.#lastTime = time;
         }
 
@@ -221,7 +220,7 @@ export default class ParticleEffect {
      * @param {number} time - The current world time
      * @param {number} deltaTime - The number of milliseconds since the last rendered frame
      */
-    #modifyParticle(particle, time, deltaTime) {
+    modifyParticle(particle, time, deltaTime) {
         const variance = this.velocity + randomRange(0, this.velocityVariance);
         particle.velocity = variance;
     }
@@ -234,9 +233,9 @@ export default class ParticleEffect {
      * @param time {Number} The current world time
      * @param deltaTime {Number} The time between the last world frame and current time
      */
-    #generateParticles(count, life, velocity, time, deltaTime) {
+    generateParticles(count, life, velocity, time, deltaTime) {
         particles.forEach((particle) => {
-            this.#modifyParticle(particle.config, time, deltaTime);
+            this.modifyParticle(particle.config, time, deltaTime);
             this.#particles.push(new this.#particleClass(this.origin, [velocity, velocity], {
                 position: this.origin,
                 velocity: [velocity, velocity],

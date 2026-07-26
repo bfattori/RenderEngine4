@@ -7,7 +7,7 @@ export default class ParticleEngine {
     static #useBuilder = true;
 
     #renderer = null;
-    #gameEngine = null;
+    #engine = null;
 
     #maxParticles = 0;
     #particles = null;
@@ -30,7 +30,7 @@ export default class ParticleEngine {
         ParticleEngine.#useBuilder = true;
         
         this.#renderer = renderer;
-        this.#gameEngine = engine;
+        this.#engine = engine;
         this.#initializeParticles(this.#engine.options.particleEngine.maxParticles);
     }
 
@@ -67,15 +67,6 @@ export default class ParticleEngine {
      */
     get #isCircular() {
         return this.#engine.options.particleEngine.circularBuffer;
-    }
-
-    /**
-     * Returns the Engine instance
-     * @return {Engine}
-     * @private
-     */
-    get #engine() {
-        return this.#gameEngine;
     }
 
     /**
