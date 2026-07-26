@@ -452,25 +452,29 @@ class ParticleConfig extends Config {
              */
             lifeSpan: 0,
             /**
-             * Optional function to execute at each update.
-             * The function receives 3 arguments: (`[x, y], [xV, yV], span`) where
-             * `[x, y]` is the current particle position,
-             * `[xV, yV]` is the current particle velocity,
-             * and `span` is the remaining lifespan for the particle.
+             * Optional function to execute at each update. Position and velocity are `FixedPoint` values
+             * so should not be manipulated as regular JavaScript primitives. See {@link FixedPointMath}
+             * for methods to manipulate the values.
+             * 
+             * The function receives 3 arguments: (`time, deltaTime, bits, [x, y], [vX, vY], lifeSpan`) where
+             * `bits` is the number of precision bits in the `FixedPoint` numbers
+             * `[x, y]` is the current particle position
+             * `[vX, vY]` is the current particle velocity
+             * and `lifeSpan` is the remaining lifespan for the particle.
              * The function should return an object:
-             * `{ pos: [x, y], vel: [xV, yV] }` containing the new x, y position and x, y velocity
+             * `{ pos: [x, y], vel: [xV, yV] }` containing the new x, y position and x, y velocity as `FixedPoint` values
              * @type {Function}
              */
             run: null,
             /**
+             * Optional function to render the particle. The function is passed (`renderer, [x, y], remainingLife, world time, and deltaTime
+             */
+            render: null,
+            /**
              * If defined, called to clean up the particle
              * @type {Function}
              */
-            cleanUp: null,
-
-            position: [0,0],
-            velocity: [0,0],
-            span: 0
+            cleanUp: null
         });
     }
 }

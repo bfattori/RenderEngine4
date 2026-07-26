@@ -21,7 +21,7 @@ const VECTOR_IL = {
   SKEW:           'SKEW',         // "SKEW ANGLE X Y" modifies the current transform by skewing the current transform by ANGLE degrees along the X and Y axes
 
   // Rendering Instructions (Imperative)
-  POINT:          'POINT',        // "POINT X Y" will draw a point at X, Y
+  POINT:          'POINT',        // "POINT X Y SIZE=1" will draw a point at X, Y of SIZE radius
   LINESEG:        'LINESEG',      // "LINESEG FILLED" starts a line segment, FILLED is a boolean indicating whether the shape is filled or not
   ENDSEG:         'ENDSEG',       // "ENDSEG" ends the current line segment
   CURVE:          'CURVE',        // "CURVE FILLED" draws a cubic Bezier curve, FILLED is a boolean indicating whether the shape is filled or not

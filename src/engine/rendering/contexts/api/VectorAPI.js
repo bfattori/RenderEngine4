@@ -3,7 +3,7 @@ import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
 import { VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
 import VectorTextParser from '../../../ui/VectorText.js';
 import Util from '../../../core/Util.js';
-import Math2d from '../../../core/Math2d.js';
+import $Math from '../../../core/Math.js';
 
 /**
  * @returns {Object} Returns the high-level API methods for vector drawing.
@@ -646,7 +646,7 @@ export default function getAPI() {
          * @param {boolean} filled - filled arc
          * @returns {Object} Returns this for chaining
          */
-        arc: (cx, cy, rX, rY, startAngle = 0, endAngle = Math2d.TWO_PI, filled = false) => {
+        arc: (cx, cy, rX, rY, startAngle = 0, endAngle = $Math.TWO_PI, filled = false) => {
             let center = [cx, cy]; 
 
             if (context.enableCulling) {
@@ -673,7 +673,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         ellipse: (cx, cy, rX, rY, filled) => {
-            return context.API.arc(cx, cy, rX, rY, 0, Math2d.TWO_PI, filled);
+            return context.API.arc(cx, cy, rX, rY, 0, $Math.TWO_PI, filled);
         },
 
         /**
@@ -684,7 +684,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         circle: (cx, cy, r, filled) => {
-            return context.API.arc(cx, cy, r, r, 0, Math2d.TWO_PI, filled);
+            return context.API.arc(cx, cy, r, r, 0, $Math.TWO_PI, filled);
         },
         
         /**

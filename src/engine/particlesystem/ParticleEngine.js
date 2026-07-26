@@ -1,6 +1,7 @@
 import Constants from '../Constants.js';
 import RenderEngineError from '../core/RenderEngineError.js';
 import Particle from '../particlesystem/Particle.js';
+import { FixedPointMath as FMath } from '../core/Math.js';
 
 export default class ParticleEngine {
     static #instance = null;
@@ -19,6 +20,8 @@ export default class ParticleEngine {
     #particleIdx = 0;
     #liveParticles = 0;
     #particleEffects = [];
+
+    #qN = 0;
     
     /**
      * @private
@@ -76,25 +79,23 @@ export default class ParticleEngine {
      */
     #initializeParticles(count = Constants.MAX_PARTICLES) {
         this.#maxParticles = count;
-        let pType = Int16Array;
-        let vType = Int8Array;
+        let pType = Uint8Array;
+        let vType = Uint8Array;
         switch(this.#precision) {
-            case Constants.PARTICLE_PRECISION_LOW:
-                vType = Int8Array;
-                break;
             case Constants.PARTICLE_PRECISION_MEDIUM:
-                vType = Int16Array;
+                pType = Uint16Array;
+                vType = Uint16Array;
                 break;
             case Constants.PARTICLE_PRECISION_HIGH:
-                pType = Int32Array;
-                vType = Int32Array;
+                pType = Uint32Array;
+                vType = Uint32Array;
                 break;
         }
         
-        this.#pPos = new pType(count * 2);
-        this.#pVel = new vType(count * 2);
-        this.#pSpan = new Uint16Array(count);
-        this.#particles = new Array(count).fill(null);
+        this.#pPos = new pType(count * 2);                  // stores x and y sequentially as FixedPointNumber
+        this.#pVel = new vType(count * 2);                  // stores vX and vY sequentially as FixedPointNumber
+        this.#pSpan = new Uint16Array(count);               // single value for each lifespan as Number
+        this.#particles = new Array(count).fill(null);      // array of particle configuration pointers
     }
 
     get renderer() {
@@ -162,6 +163,10 @@ export default class ParticleEngine {
         return this.#liveParticles;
     }
 
+    get #precisionBits() {
+        return this.#precision === Constants.PARTICLE_PRECISION_HIGH ? Constants.FP_HIGH : this.#precision === Constants.PARTICLE_PRECISION_MEDIUM ? Constants.FP_MEDIUM : Constants.FP_LOW;
+    }
+
     /**
      * Add a set of particles at once
      * @param {Array<Particle>} particles The set of particles
@@ -183,9 +188,13 @@ export default class ParticleEngine {
         if (idx !== -1 && particle.lifeSpan !== 0) {
             // add the particle config and relative values
             this.#particles[idx] = particle.config;
-            this.#pPos[idx] = particle.position;
-            this.#pVel[idx] = particle.velocity;
             this.#pSpan[idx] = particle.lifeSpan;
+
+            // store as fixed point for performance
+            this.#pPos[idx * 2] = particle.position[0];
+            this.#pPos[(idx * 2) + 1] = particle.position[1];
+            this.#pVel[idx * 2] = particle.velocity[0];
+            this.#pVel[(idx * 2) + 1] = particle.velocity[1];
         }
     }
 
@@ -209,6 +218,8 @@ export default class ParticleEngine {
     update(time, deltaTime) {
         if (Engine.options.particleEngine.disabled) return;
 
+        this.#renderer.surface.save();       // FIXME: this is specific to Canvas
+
         // Run all queued effects
         const dead = [];
         for (const effect of this.particleEffects) {
@@ -225,9 +236,11 @@ export default class ParticleEngine {
         dead = null;
 
         // If there are no live particles, don't do anything
-        if (this.liveParticles === 0) return;
+        if (this.liveParticles === 0) {
+            this.#renderer.surface.restore();       // FIXME: this is specific to Canvas
+            return;
+        }
 
-        this.#renderer.surface.save();
 
         let lives = 0;
         this.#particles.forEach((particle, idx) => {
@@ -237,7 +250,7 @@ export default class ParticleEngine {
             }
         })
 
-        this.#renderer.surface.restore();
+        this.#renderer.surface.restore();       // FIXME: this is specific to Canvas
         this.#liveParticles = lives;
     }
 
@@ -247,14 +260,17 @@ export default class ParticleEngine {
      * @param {number} idx - The particle index
      */
     #runParticle(particle, idx, time, deltaTime) {
+        const bits = this.#precisionBits;
         if (particle.run !== null) {
+            // custom update method
             const pUpdate = particle.run(
                 time, 
-                deltaTime, 
-                this.#pPos[(idx * 2)],          // X 
-                this.#pPos[(idx * 2) + 1],      // Y
-                this.#pVel[(idx * 2)],          // Velocity X
-                this.#pVel[(idx * 2) + 1],      // Velocity Y
+                deltaTime,
+                bits,                           // fractional bits in FP numbers 
+                [this.#pPos[(idx * 2)],         // X, Y position 
+                    this.#pPos[(idx * 2) + 1]],      
+                [this.#pVel[(idx * 2)],         // X, Y velocity
+                    this.#pVel[(idx * 2) + 1]],      
                 this.#pSpan[idx]                // Lifespan remaining
             );
 
@@ -264,20 +280,41 @@ export default class ParticleEngine {
             this.#pVel[(idx * 2)] = pUpdate.vel[0];   
             this.#pVel[(idx * 2) + 1] = pUpdate.vel[1];
         } else {
-            // standard update (add velocity to position and age)
-            this.#pPos[(idx * 2)] += this.#pVel[(idx * 2)];
-            this.#pPos[(idx * 2) + 1] += this.#pVel[(idx * 2) + 1];
+            // standard update (add velocity to position)
+            this.#pPos[idx * 2] = FMath.add(this.#pPos[(idx * 2)], this.#pVel[(idx * 2)], bits);
+            this.#pPos[(idx * 2) + 1] = FMath.add(this.#pPos[(idx * 2) + 1], this.#pVel[(idx * 2) + 1], bits);
         }
 
         // age the particle
         this.#pSpan[idx] -= deltaTime;
 
-        // remove if dead
+        // free-up space if dead
         if (this.#pSpan[idx] <= 0) {
             if (particle.cleanUp !== null) 
                 particle.cleanUp();
             this.#particles[idx] = null;
         }
+    }
+
+    /**
+     * Render all of the active particles to the renderer
+     * @param {number} time - The current world time 
+     * @param {number} deltaTime - The time since the last frame
+     */
+    renderParticles(time, deltaTime) {
+        this.#particles.forEach((p, i) => {
+            const bits = this.#precisionBits; 
+            if (p !== null) {
+                if (p.render) 
+                    p.render(
+                        this.renderer, 
+                        [ FMath.toFloat(this.#pPos[i * 2], bits), FMath.toFloat(this.#pPos[(i * 2) + 1], bits) ],
+                        this.#pSpan[i],
+                        time, deltaTime);
+                else
+                    this.renderer.render(`POINT ${FMath.toFloat(this.#pPos[i * 2], bits)} ${FMath.toFloat(this.#pPos[(i * 2) + 1], bits)}, ${p.size}`, time, deltaTime);  // this is a bit of a hack since both IL's have the POINT instruction  
+            }
+        });
     }
 
     /**

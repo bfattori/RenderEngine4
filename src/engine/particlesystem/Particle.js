@@ -1,3 +1,5 @@
+import Constants from '../Constants.js';
+import { FixedPointMath as FMath } from '../core/Math.js';
 import { ParticleConfig } from '../core/Config.js';
 
 export default class Particle {
@@ -5,6 +7,7 @@ export default class Particle {
     #position = null;
     #velocity = null;
     #options = new ParticleConfig();
+    #lifeSpan = 0;
 
     /**
      * 
@@ -14,30 +17,27 @@ export default class Particle {
      */
     constructor([x, y], [vX, vY], options = {}) {
         this.#options.merge(options);
-        this.initPos([x, y]);
-        this.initVel([vX, vY]);
-        this.dead = false;
+        this.position = [x, y];
+        this.velocity = [vX, vY];
+        this.lifeSpan = this.config.lifeSpan;
     }
 
     /**
      * Initialize the position of the particle
      * @param {UInt16Array<number>} param0 - [x, y] position of particle spawn 
      */
-    initPos([x, y]) {
-        this.#position = new Int16Array(2);
-        this.#position[0] = x;
-        this.#position[1] = y;
+    set position([x, y]) {
+        this.#position[0] = FMath.toFixed(x, Constants.FP_LOW);
+        this.#position[1] = FMath.toFixed(y, Constants.FP_LOW);
     }
 
     /**
      * Initialize the velocity of the particle
      * @param {Array<any>} param0 - [X, Y] velocity of the particle 
      */
-    initVel([vX, vY]) {}
-
-    set position([x, y]) {
-        this.#position[0] = x;
-        this.#position[1] = y;
+    set velocity([vX, vY]) {
+        this.#velocity[0] = FMath.toFixed(vX, Constants.FP_LOW);
+        this.#velocity[1] = FMath.toFixed(vY, Constants.FP_LOW);
     }
 
     /**
@@ -46,15 +46,6 @@ export default class Particle {
      */
     get position() {
         return this.#position;
-    }
-
-    /**
-     * Set the velocity of the particle
-     * @param {Array<number>} vel - The particle velocity vector
-     */
-    set velocity(vel) {
-        this.#velocity[0] = vel[0];
-        this.#velocity[1] = vel[1];
     }
 
     /**
@@ -70,7 +61,7 @@ export default class Particle {
      * @returns {number} Lifespan in milliseconds
      */
     get lifeSpan() {
-        return this.#options.lifeSpan;
+        return this.#lifeSpan;
     }
 
     /**
@@ -78,7 +69,7 @@ export default class Particle {
      * @param {number} span - The lifespan in milliseconds
      */
     set lifeSpan(span) {
-        this.#options.lifeSpan = span;
+        this.lifeSpan = span;
     }
 
     /**
@@ -93,21 +84,12 @@ export default class Particle {
      * @param {number} time - The current world time 
      * @param {number} deltaTime - The time since the last frame
      */
-    update(time, deltaTime) {}
-}
-
-/**
- * Low precision particles have a 16-bit position and 8-bit velocity vectors
- */
-class ParticleLP extends Particle {
-    /**
-     * Initialize the velocity vector
-     * @param {number[]} vel - The velocity vector 
-     */
-    initVel([vX, vY]) {
-        this.velocity = new Int8Array(2);
-        this.velocity[0] = vX;
-        this.velocity[1] = vY;
+    render(renderer, [x, y], time, deltaTime) {
+        if (this.options.render) {
+            this.options.render(renderer, [x, y], time, deltaTime);
+        } else {
+            renderer.render(`POINT `)    
+        }
     }
 }
 
@@ -115,15 +97,26 @@ class ParticleLP extends Particle {
  * Medium precision particles have 16-bit position and velocity vectors.
  */
 class ParticleMP extends Particle {
+    /**
+     * Set the position of the particle
+     * @param {UInt16Array<number>} param0 - [x, y] position of particle spawn 
+     */
+    set position([x, y]) {
+        super.position = [
+            FMath.toFixed(x, Constants.FP_MEDIUM),
+            FMath.toFixed(y, Constants.FP_MEDIUM) 
+        ];
+    }
 
     /**
-     * Initialize the velocity vector
-     * @param {number[]} vel - The velocity vector 
+     * Set the velocity of the particle
+     * @param {Array<any>} param0 - [X, Y] velocity of the particle 
      */
-    initVel([vX, vY]) {
-        this.velocity = new Int16Array(2);
-        this.velocity[0] = vX;
-        this.velocity[1] = vY;
+    set velocity([vX, vY]) {
+        super.velocity = [ 
+            FMath.toFixed(vX, Constants.FP_MEDIUM),
+            FMath.toFixed(vY, Constants.FP_MEDIUM)
+        ];
     }
 }
 
@@ -132,28 +125,29 @@ class ParticleMP extends Particle {
  */
 class ParticleHP extends Particle {
     /**
-     * Initialize the position of the particle
+     * Set the position of the particle
      * @param {UInt16Array<number>} param0 - [x, y] position of particle spawn 
      */
-    initPos([x, y]) {
-        this.position = new Int32Array(2);
-        this.position[0] = x;
-        this.position[1] = y;
+    set position([x, y]) {
+        super.position = [
+            FMath.toFixed(x, Constants.FP_HIGH),
+            FMath.toFixed(y, Constants.FP_HIGH) 
+        ];
     }
 
     /**
-     * Initialize the velocity vector
-     * @param {number[]} vel - The velocity vector 
+     * Set the velocity of the particle
+     * @param {Array<any>} param0 - [X, Y] velocity of the particle 
      */
-    initVel([vX, vY]) {
-        this.velocity = new Int32Array(2);
-        this.velocity[0] = vX;
-        this.velocity[1] = vY;
+    set velocity([vX, vY]) {
+        super.velocity = [ 
+            FMath.toFixed(vX, Constants.FP_HIGH),
+            FMath.toFixed(vY, Constants.FP_HIGH)
+        ];
     }
 } 
 
 export {
-    ParticleLP,
     ParticleMP,
     ParticleHP
 };

@@ -66,7 +66,7 @@ export default class CanvasVectorAssembler extends Assembler {
 
             case vector.POINT:
                 //return `surface.fillRect(${parseInt(args[0]) - HALF_P}, ${parseInt(args[1]) - HALF_P}, ${POINT_SIZE}, ${POINT_SIZE});`;
-                return `surface.arc(${parseInt(args[0])}, ${parseInt(args[1])}, ${Constants.POINT_SIZE}, 0, TwoPi); surface.fill();`;
+                return `surface.arc(${parseInt(args[0])}, ${parseInt(args[1])}, ${args[2] || Constants.POINT_SIZE}, 0, TwoPi); surface.fill();`;
                 break;
             case vector.CURVE:
                 pathInfo = { path: new Path2D(), fill: args[0], points: [[args[1], args[2]]], controls: [] };
