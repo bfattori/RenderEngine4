@@ -1,6 +1,5 @@
 import { ParticleConfig } from '../core/Config.js';
 
-
 export default class Particle {
   #dead = false;
     #position = null;

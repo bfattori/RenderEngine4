@@ -1,18 +1,4 @@
-
-/**
- * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
- * optionally as an integer value only.
- *
- * @param low {Number} The low part of the range
- * @param high {Number} The high part of the range
- * @param [whole] {Boolean} Return whole values only
- * @return {Number}
- * @memberof R.lang.Math2
- */
-function randomRange(low, high, whole) {
-    const v = low + (Math.random() * high);
-    return (whole ? Math.floor(v) : v);
-}
+import Util from '../../core/Util.js';
 
 export default class ParticleEffect {
     #particleCount = 10;
@@ -199,10 +185,10 @@ export default class ParticleEffect {
      * @private
      */
     run(time, deltaTime) {
-        const count = this.#particleCount + randomRange(-this.#particleCountVariance, this.#particleCountVariance, true);
-        const life = this.#particleLifetime + randomRange(-this.#particleLifetimeVariance, this.#particleLifetimeVariance, true);
-        const vel = this.#velocity + randomRange(-this.#velocityVariance, this.#velocityVariance, true);
-        const freq = this.#emitFrequency + randomRange(-this.#emitFrequencyVariance, this.#emitFrequencyVariance, true);
+        const count = this.#particleCount + Util.randomRange(-this.#particleCountVariance, this.#particleCountVariance, true);
+        const life = this.#particleLifetime + Util.randomRange(-this.#particleLifetimeVariance, this.#particleLifetimeVariance, true);
+        const vel = this.#velocity + Util.randomRange(-this.#velocityVariance, this.#velocityVariance, true);
+        const freq = this.#emitFrequency + Util.randomRange(-this.#emitFrequencyVariance, this.#emitFrequencyVariance, true);
 
         if (!this.isRun || (this.isRun && time - this.#lastTime > freq)) {
             var options = {};
@@ -221,7 +207,7 @@ export default class ParticleEffect {
      * @param {number} deltaTime - The number of milliseconds since the last rendered frame
      */
     modifyParticle(particle, time, deltaTime) {
-        const variance = this.velocity + randomRange(0, this.velocityVariance);
+        const variance = this.velocity + Util.randomRange(0, this.velocityVariance);
         particle.velocity = variance;
     }
 

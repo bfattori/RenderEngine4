@@ -1,20 +1,6 @@
 import ParticleEffect from './ParticleEffect.js';
 import Particle from '../Particle.js';
-
-/**
- * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
- * optionally as an integer value only.
- *
- * @param low {Number} The low part of the range
- * @param high {Number} The high part of the range
- * @param [whole] {Boolean} Return whole values only
- * @return {Number}
- * @memberof R.lang.Math2
- */
-function randomRange(low, high, whole) {
-    const v = low + (Math.random() * high);
-    return (whole ? Math.floor(v) : v);
-}
+import Util from '../../core/Util.js';
 
 export default class Spray extends ParticleEffect {
     #spread = 10;
@@ -56,10 +42,10 @@ export default class Spray extends ParticleEffect {
      */
     modifyParticle(particle, time, deltaTime) {
         super(particle, time, deltaTime);
-        const sprayWidth = this.#spread + randomRange(0, this.spreadVariance, true);
+        const sprayWidth = this.#spread + Util.randomRange(0, this.spreadVariance, true);
         const halfAngle = Math.floor(sprayWidth / 2);
-        particleOptions.angle = this.angle + randomRange(-this.angleVariance, this.angleVariance * 2, true) +
-            randomRange(-halfAngle, halfAngle * 2, true);
+        particleOptions.angle = this.angle + Util.randomRange(-this.angleVariance, this.angleVariance * 2, true) +
+            Util.randomRange(-halfAngle, halfAngle * 2, true);
     }
 }
 

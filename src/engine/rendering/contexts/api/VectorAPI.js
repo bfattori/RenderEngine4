@@ -2,25 +2,8 @@ import Constants from '../../../Constants.js';
 import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
 import { VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
 import VectorTextParser from '../../../ui/VectorText.js';
-
-const twoPi = 6.2831;   // approx. Math.PI * 2
-
-function getColor(r, g, b, a) {
-  // Convert to hex if RGB values provided
-  if (typeof r === 'number') {
-    const r8 = Math.round(r * 255).toString(16).padStart(2, '0');
-    const g8 = g !== null ? Math.round(g * 255).toString(16).padStart(2, '0') : '00';
-    const b8 = Math.round(b * 255).toString(16).padStart(2, '0');
-    const alphaHex = a !== undefined && a < 1 ? 
-      Math.round(a * 255).toString(16).padStart(2, '0') : '';
-    
-    return `#${r8}${g8}${b8}${alphaHex}`;
-  } else if (typeof r === 'string') {
-    // Keep hex or named colors as-is
-    return r;
-  }
-  return "#000000";
-}
+import Util from '../../../core/Util.js';
+import Math2d from '../../../core/Math2d.js';
 
 /**
  * @returns {Object} Returns the high-level API methods for vector drawing.
@@ -200,7 +183,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         color: (r, g = null, b = null, { a = 1 } = {}) => {
-            const c = getColor(r, g, b, a);
+            const c = Util.getColor(r, g, b, a);
             let same = false;
             if (c) {
                 if (c === state.currentColor) same = true;
@@ -225,7 +208,7 @@ export default function getAPI() {
         },
 
         setColor: (r, g = null, b = null, { a = 1 } = {}) => {
-            const c = getColor(r, g, b, a);
+            const c = Util.getColor(r, g, b, a);
             if (c !== state.currentColor) {
                 state.currentColor = c;
                 context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`)
@@ -255,7 +238,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         fillColor: (r, g = null, b = null, { a = 1 } = {}) => {
-            const f = getColor(r, g, b, a);
+            const f = Util.getColor(r, g, b, a);
             let same = false;
             if (f) {
                 if (f === state.currentFillColor) same = true;
@@ -280,7 +263,7 @@ export default function getAPI() {
         },
 
         setFillColor: (r, g = null, b = null, { a = 1 } = {}) => {
-            const f = getColor(r, g, b, a);
+            const f = Util.getColor(r, g, b, a);
             if (f !== state.currenrFillColor) {
                 state.currentFillColor = f;
                 context.addInstruction(`${VECTOR_IL.FILL} ${f}`);
@@ -663,7 +646,7 @@ export default function getAPI() {
          * @param {boolean} filled - filled arc
          * @returns {Object} Returns this for chaining
          */
-        arc: (cx, cy, rX, rY, startAngle = 0, endAngle = twoPi, filled = false) => {
+        arc: (cx, cy, rX, rY, startAngle = 0, endAngle = Math2d.TWO_PI, filled = false) => {
             let center = [cx, cy]; 
 
             if (context.enableCulling) {
@@ -690,7 +673,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         ellipse: (cx, cy, rX, rY, filled) => {
-            return context.API.arc(cx, cy, rX, rY, 0, twoPi, filled);
+            return context.API.arc(cx, cy, rX, rY, 0, Math2d.TWO_PI, filled);
         },
 
         /**
@@ -701,7 +684,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         circle: (cx, cy, r, filled) => {
-            return context.API.arc(cx, cy, r, r, 0, twoPi, filled);
+            return context.API.arc(cx, cy, r, r, 0, Math2d.TWO_PI, filled);
         },
         
         /**
