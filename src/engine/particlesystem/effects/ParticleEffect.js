@@ -1,6 +1,6 @@
 
 /**
- * Return a random value within the <tt>low</tt> to <tt>height</tt> range,
+ * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
  * optionally as an integer value only.
  *
  * @param low {Number} The low part of the range
