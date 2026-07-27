@@ -60,7 +60,7 @@ for (let i = 0; i < numObjects; i++) {
     RenderEngine.world.addObject(gameObject);
 
     // vector renderer
-    const color = Util.getColor(Math.random(), Math.random(0, 1), Math.random());
+    const color = Util.getColor(Math.random(), Math.random(), Math.random());
     const renderer = gameObject.getComponentByName("renderer");
     renderer.API
         .color(color)
