@@ -160,17 +160,19 @@ export class Matrix2d extends DOMMatrix {
      * @param {boolean} self 
      * @returns 
      */
-    #modify({position, rotation, scale}, self = false) {
+    #modify({position, rotation, scale}) {
         scale ? Array.isArray(scale) || (scale = [scale, scale]) : undefined;
+        let s = [0,0], r = 0, p = [0, 0], m;
         if (scale) {
-            this[`scale${self?'Self':''}`](scale[0], scale[1]);
+            this.scaleSelf(scale[0], scale[1]);
         }
         if (rotation !== undefined) {
-            this[`rotate${self?'Self':''}`](rotation);
+            this.rotateSelf(rotation);
         }
         if (position) {
-            this[`translate${self?'Self':''}`](position[0], position[1]);
+           this.translateSelf(position[0], position[1]);
         }
+
         return this;
 
     }
@@ -196,7 +198,16 @@ export class Matrix2d extends DOMMatrix {
      * @return {Matrix2d}
      */
     setTo({position, rotation, scale}) {
-        return Matrix2d.from(this.#modify({position, rotation, scale}));
+        const s = scale || this.scaling;
+        const r = (0.01745 * rotation) || this.rotation;
+        const p = position || this.position;
+        this.a = s[0] * Math.cos(r);
+        this.b = s[0] * Math.sin(r);
+        this.c = -s[1] * Math.sin(r);
+        this.d = s[1] * Math.cos(r);
+        this.e = p[0];
+        this.f = p[1];
+        return this;
     }
 
     /**

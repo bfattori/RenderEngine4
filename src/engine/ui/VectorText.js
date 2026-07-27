@@ -387,7 +387,7 @@ function getCharacterInstructions(char) {
         const charHeight = minMax[3] - minMax[2];
         const halfHeight = Math.round(charHeight * 0.5);
 
-        if (ctx.debug)
+        if (ctx.debug && ctx.debugOpts.charOrigin)
             instructions.push(`${VECTOR_IL.POINT} 0 0`);
 
         instructions.push(VECTOR_IL.PUSH);

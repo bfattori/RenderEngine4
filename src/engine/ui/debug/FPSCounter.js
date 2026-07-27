@@ -1,25 +1,8 @@
 
 export default class FPSCounter {
     static #MAXSAMPLES = 100;  // for smoothing
-    
-    #tickers = {
-        total: {
-            index: 0,
-            sum: 0,
-            samples: new Array(FPSCounter.#MAXSAMPLES).fill(0)
-        },
-        update: {
-            index: 0,
-            sum: 0,
-            samples: new Array(FPSCounter.#MAXSAMPLES).fill(0)
-        },
-        render: {
-            index: 0,
-            sum: 0,
-            samples: new Array(FPSCounter.#MAXSAMPLES).fill(0)
-        }
-    };
 
+    // HTML Elements
     #fpsDisplay = null;
     #fpsCounter = null;
     #updateContainer = null;
@@ -30,8 +13,18 @@ export default class FPSCounter {
     #renderCounter = null
     #renderBar = null;
     #renderBarText = null;
+
+    // Smoothed values
+    #smoothedFPS = 0;
+    #smoothedT = 0;
+    #smoothedR = 0;
+    #smoothedU = 0;
+
+    // Smoothing filter
+    #filterStrength = 10;
         
     constructor() {
+        // generate display
         this.#fpsDisplay = document.createElement('div');
         this.#fpsDisplay.classList.add('fpsCounter');
         this.#fpsDisplay.innerHTML = "<span class='fps'>FPS:</span><span class='update'>Update:</span><span class='render'>Render:</span>";
@@ -65,48 +58,29 @@ export default class FPSCounter {
         document.body.appendChild(this.#fpsDisplay);
     }
 
-    update(frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd) {
+    update(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd) {
         const updateTick = updateEnd - updateStart;
         const renderTick = renderEnd - renderStart;
         const totalTick = frameEnd - frameStart;
         
-        this.#tickers.update.sum -= this.#tickers.update.samples[this.#tickers.update.index];
-        this.#tickers.render.sum -= this.#tickers.render.samples[this.#tickers.render.index];
-        this.#tickers.total.sum -= this.#tickers.total.samples[this.#tickers.total.index];
+        const instantFPS = 1000 / deltaTime;
+        this.#smoothedFPS += (instantFPS - this.#smoothedFPS) / this.#filterStrength;
+        this.#smoothedT += (totalTick - this.#smoothedT) / this.#filterStrength;
+        this.#smoothedU += (updateTick - this.#smoothedU) / this.#filterStrength;
+        this.#smoothedR += (renderTick - this.#smoothedR) / this.#filterStrength;
 
-        this.#tickers.update.sum += updateTick;
-        this.#tickers.render.sum += renderTick;
-        this.#tickers.total.sum += totalTick;
+        const updatePct = (this.#smoothedU / this.#smoothedT) * 100;
+        const renderPct = (this.#smoothedR / this.#smoothedT) * 100;
 
-        this.#tickers.update.samples[this.#tickers.update.index] = updateTick;
-        this.#tickers.render.samples[this.#tickers.render.index] = renderTick;
-        this.#tickers.total.samples[this.#tickers.total.index] = totalTick;
+        this.#fpsCounter.textContent = `${this.#smoothedFPS.toFixed(1)} fps`;
 
-        if(++this.#tickers.update.index===FPSCounter.#MAXSAMPLES)
-            this.#tickers.update.index=0;
+        this.#updateCounter.textContent = `${updatePct.toFixed(0)}%`;
+        this.#updateBarText.textContent = `${updatePct.toFixed(0)}%`;
 
-        if(++this.#tickers.render.index===FPSCounter.#MAXSAMPLES)
-            this.#tickers.render.index=0;
+        this.#renderCounter.textContent = `${renderPct.toFixed(0)}%`;
+        this.#renderBarText.textContent = `${renderPct.toFixed(0)}%`;
 
-        if(++this.#tickers.total.index===FPSCounter.#MAXSAMPLES)
-            this.#tickers.total.index=0;
-
-        const totalFPS = ((1 / (this.#tickers.total.sum / FPSCounter.#MAXSAMPLES)) * FPSCounter.#MAXSAMPLES).toFixed(0);
-        const updateFPS = ((1 / (this.#tickers.update.sum / FPSCounter.#MAXSAMPLES)) * FPSCounter.#MAXSAMPLES).toFixed(0);
-        const renderFPS = ((1 / (this.#tickers.render.sum / FPSCounter.#MAXSAMPLES)) * FPSCounter.#MAXSAMPLES).toFixed(0);
-
-        const updatePct = (updateFPS/totalFPS).toFixed(0);
-        const renderPct = (renderFPS/totalFPS).toFixed(0);
-
-        this.#fpsCounter.textContent = `${(totalFPS / 10).toFixed(1)} fps`;
-
-        this.#updateCounter.textContent = `${updatePct}%`;
-        this.#updateBarText.textContent = `${updatePct}%`;
-
-        this.#renderCounter.textContent = `${renderPct}%`;
-        this.#renderBarText.textContent = `${renderPct}%`;
-
-        this.#updateBar.style.width = `${updatePct}%`;
-        this.#renderBar.style.width = `${renderPct}%`;
+        this.#updateBar.style.width = `${updatePct.toFixed(0)}%`;
+        this.#renderBar.style.width = `${renderPct.toFixed(0)}%`;
     }
 }

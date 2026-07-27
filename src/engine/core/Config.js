@@ -127,6 +127,15 @@ class EngineConfig extends Config {
          */
         debugMode: false,
         /**
+         * Enable debug mode to use these options
+         */
+        debugOpts: {
+            objectOrigin: true,
+            boundingBoxes: true,
+            collisionSep: true,
+            charOrigin: true
+        },
+        /**
          * Enable performance logging for rendering and collision events. Default is false.
          * @type {boolean}
          */

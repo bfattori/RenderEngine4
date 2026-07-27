@@ -1,6 +1,6 @@
 import ParticleEffect from './ParticleEffect.js';
 import Particle from '../Particle.js';
-import Util from '../../core/Util.js';
+import $Math from '../../core/Math.js';
 
 export default class Spray extends ParticleEffect {
     #spread = 10;
@@ -42,10 +42,10 @@ export default class Spray extends ParticleEffect {
      */
     modifyParticle(particle, time, deltaTime) {
         super(particle, time, deltaTime);
-        const sprayWidth = this.#spread + Util.randomRange(0, this.spreadVariance, true);
+        const sprayWidth = this.#spread + $Math.randomRange(0, this.spreadVariance, true);
         const halfAngle = Math.floor(sprayWidth / 2);
-        particleOptions.angle = this.angle + Util.randomRange(-this.angleVariance, this.angleVariance * 2, true) +
-            Util.randomRange(-halfAngle, halfAngle * 2, true);
+        particleOptions.angle = this.angle + $Math.randomRange(-this.angleVariance, this.angleVariance * 2, true) +
+            $Math.randomRange(-halfAngle, halfAngle * 2, true);
     }
 }
 

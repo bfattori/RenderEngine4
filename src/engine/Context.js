@@ -2,9 +2,10 @@
  * Global context for the engine
  */
 export default class Context {
-    #debug = true;
     static #instance = null;
-
+    #debug = true;
+    #debugOpts = {};
+    
     constructor() {}
 
     static getInstance() {
@@ -14,11 +15,19 @@ export default class Context {
         return Context.#instance;
     }
 
-    static get debug() {
+    get debug() {
         return this.#debug;
     }
 
-    static set debug(state) {
+    set debug(state) {
         this.#debug = state;
+    }
+
+    set debugOpts(opts) {
+        this.#debugOpts = opts;
+    }
+
+    get debugOpts() {
+        return this.#debugOpts;
     }
 }

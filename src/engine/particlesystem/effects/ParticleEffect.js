@@ -1,4 +1,5 @@
-import Util from '../../core/Util.js';
+import $Math from '../../core/Math.js';
+import { FixedPointMath as FMath } from '../../core/Math.js';
 
 export default class ParticleEffect {
     #particleCount = 10;
@@ -185,10 +186,10 @@ export default class ParticleEffect {
      * @private
      */
     run(time, deltaTime) {
-        const count = this.#particleCount + Util.randomRange(-this.#particleCountVariance, this.#particleCountVariance, true);
-        const life = this.#particleLifetime + Util.randomRange(-this.#particleLifetimeVariance, this.#particleLifetimeVariance, true);
-        const vel = this.#velocity + Util.randomRange(-this.#velocityVariance, this.#velocityVariance, true);
-        const freq = this.#emitFrequency + Util.randomRange(-this.#emitFrequencyVariance, this.#emitFrequencyVariance, true);
+        const count = this.#particleCount + $Math.randomRange(-this.#particleCountVariance, this.#particleCountVariance, true);
+        const life = this.#particleLifetime + $Math.randomRange(-this.#particleLifetimeVariance, this.#particleLifetimeVariance, true);
+        const vel = this.#velocity + $Math.randomRange(-this.#velocityVariance, this.#velocityVariance, true);
+        const freq = this.#emitFrequency + $Math.randomRange(-this.#emitFrequencyVariance, this.#emitFrequencyVariance, true);
 
         if (!this.isRun || (this.isRun && time - this.#lastTime > freq)) {
             var options = {};
@@ -207,8 +208,8 @@ export default class ParticleEffect {
      * @param {number} deltaTime - The number of milliseconds since the last rendered frame
      */
     modifyParticle(particle, time, deltaTime) {
-        const variance = this.velocity + Util.randomRange(0, this.velocityVariance);
-        particle.velocity = variance;
+        const variance = this.velocity + $Math.randomRange(0, this.velocityVariance);
+          FMath.add(particle.velocity[0] = variance;
     }
 
     /**
@@ -221,7 +222,7 @@ export default class ParticleEffect {
      */
     generateParticles(count, life, velocity, time, deltaTime) {
         particles.forEach((particle) => {
-            this.modifyParticle(particle.config, time, deltaTime);
+            this.modifyParticle(particle, time, deltaTime);
             this.#particles.push(new this.#particleClass(this.origin, [velocity, velocity], {
                 position: this.origin,
                 velocity: [velocity, velocity],

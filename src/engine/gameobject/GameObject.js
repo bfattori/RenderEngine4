@@ -362,7 +362,7 @@ export default class GameObject {
 
     rc.popTransform();
 
-    if (ctx.debug) {
+    if (ctx.debug && ctx.debugOpts.objectOrigin) {
         const mtx = Matrix2d.from(this.worldTransform);
         mtx.scaleSelf(3,3);
         rc.pushTransform(mtx);

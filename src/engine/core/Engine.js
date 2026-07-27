@@ -68,6 +68,7 @@ export default class Engine {
     this.#ENGINE_OPTIONS.merge(options);
 
     ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
+    ctx.debugOpts = this.#ENGINE_OPTIONS.flags.debugOpts;
     
     // Game timer maintained by the engine
     this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;
@@ -392,7 +393,7 @@ export default class Engine {
       lifecycleHooks?.onBeforeFrame(currentTime);
 
       // Calculate delta time in milliseconds (convert seconds back to ms)
-      const deltaTime = Math.min((currentTime - this.lastTime), 16.67 * 1000); // Cap at ~60fps
+      const deltaTime = currentTime - this.lastTime; // Cap at ~60fps
       this.lastTime = currentTime;
       
       // Update the scene
@@ -418,7 +419,7 @@ export default class Engine {
       }
 
       if (this.options.flags.showFps) {
-        this.#fpsCounter.update(frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
+        this.#fpsCounter.update(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
       }
 
     };

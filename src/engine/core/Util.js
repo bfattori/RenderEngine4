@@ -1,21 +1,6 @@
 
 export default class Util {
-
-    /**
-     * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
-     * optionally as an integer value only.
-     *
-     * @param low {Number} The low part of the range
-     * @param high {Number} The high part of the range
-     * @param [whole] {Boolean} Return whole values only
-     * @return {Number}
-     * @memberof R.lang.Math2
-     */
-    static randomRange(low, high, whole) {
-        const v = low + (Math.random() * high);
-        return (whole ? Math.floor(v) : v);
-    }
-
+    
     /**
      * Get the color for the RBGA values, returning a hex value, or the color name if R is a string.
      * Returns black (#000) if color cannot be decoded
