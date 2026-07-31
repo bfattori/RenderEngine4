@@ -94,6 +94,10 @@ const RenderEngine = {
 
     get renderContext() {
         return this.world.renderContext;
+    },
+
+    get particleEngine() {
+        return RE4.particleEngine;
     }
 }
 

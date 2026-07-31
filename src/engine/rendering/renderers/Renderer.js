@@ -1,6 +1,7 @@
 import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
+import { RendererConfig } from '../../core/Config.js';
 
 /**
  * Renderer error class for low-level rendering errors.
@@ -23,16 +24,23 @@ export {
 export default class Renderer {
     static #built = false;
 
+    #opts = null;
     #renderContext = null;
+    #container = null;
     #surface = null;
     #hasCompiler = false;
     #assembler = null;
 
-    constructor() {
+    constructor(options) {
         if (!Renderer.#built) {
             throw new RendererError(this, "Use Renderer.build() to construct a Renderer.");
         }
         Renderer.#built = false;
+        this.#opts = options;
+    }
+
+    get config() {
+        return this.#opts;
     }
 
     /**
@@ -79,6 +87,14 @@ export default class Renderer {
      */
     get surface() {
         return this.#surface;
+    }
+
+    set container(container) {
+        this.#container = container;
+    }
+
+    get container() {
+        return this.#container;
     }
 
     /**

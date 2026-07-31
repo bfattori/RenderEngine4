@@ -1,153 +1,102 @@
 import Constants from '../Constants.js';
-import { FixedPointMath as FMath } from '../core/Math.js';
-import { ParticleConfig } from '../core/Config.js';
+import Config from '../core/Config.js';
+import $Math from '../core/Math.js';
 
-export default class Particle {
-  #dead = false;
-    #position = null;
-    #velocity = null;
-    #options = new ParticleConfig();
-    #lifeSpan = 0;
+export default class Particle extends Config {
+    constructor(opts) {
+        super({
+            /**
+             * Colors of the particle
+             * @type {String}
+             */
+            colors: ['#fff'],
+            /**
+             * Size of the particle
+             * @type {number}
+             */
+            particleSize: 2,
+            /**
+             * Velocity range - a scalar multiple to apply to the velocity
+             * @type {number}
+             */
+            velocity: 1.4,
+            /**
+             * Lifespan range of the particle in milliseconds
+             * @type {Array<number>} [minimum, maximum]
+             */
+            lifeSpan: [100, 500]
+        });
+        this.merge(opts);
+    }
 
-    /**
-     * 
-     * @param {Array<number>} param0 - X and Y position of particle 
-     * @param {Array<number>} param1 - X and Y velocity vector 
-     * @param {ParticleConfig} options - Particle configuration options
-     */
-    constructor([x, y], [vX, vY], options = {}) {
-        this.#options.merge(options);
-        this.position = [x, y];
-        this.velocity = [vX, vY];
-        this.lifeSpan = this.config.lifeSpan;
+    static getInstance() {
+        return new Particle();
     }
 
     /**
-     * Initialize the position of the particle
-     * @param {UInt16Array<number>} param0 - [x, y] position of particle spawn 
+     * Called when a particle is spawned to initialize its settings
+     * @param {Object} $memory - The memory object to store instantaneous properties
+     * @param {number} time - The current world time in milliseconds
+     * @param {String} type - The particle type name
+     * @param {Object} config - The particle's configuration
+     * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    set position([x, y]) {
-        this.#position[0] = FMath.toFixed(x, Constants.FP_LOW);
-        this.#position[1] = FMath.toFixed(y, Constants.FP_LOW);
-    }
-
-    /**
-     * Initialize the velocity of the particle
-     * @param {Array<any>} param0 - [X, Y] velocity of the particle 
-     */
-    set velocity([vX, vY]) {
-        this.#velocity[0] = FMath.toFixed(vX, Constants.FP_LOW);
-        this.#velocity[1] = FMath.toFixed(vY, Constants.FP_LOW);
-    }
-
-    /**
-     * Return the initial position of the particle
-     * @return {Uint16Array<number>|Uint32Array<number>} position of the particle 
-     */
-    get position() {
-        return this.#position;
-    }
-
-    /**
-     * Return ths initial velocity of the particle
-     * @return {Uint8Array<number>|Uint16Array<number>|Uint32Array<number>} velocity of the particle 
-     */
-    get velocity() {
-        return this.#velocity;
-    }
-
-    /**
-     * Return the lifespan of the particle
-     * @returns {number} Lifespan in milliseconds
-     */
-    get lifeSpan() {
-        return this.#lifeSpan;
-    }
-
-    /**
-     * Set the lifespan of the particle
-     * @param {number} span - The lifespan in milliseconds
-     */
-    set lifeSpan(span) {
-        this.lifeSpan = span;
-    }
-
-    /**
-     * Get the particle configuration
-     */
-    get config() {
-        return this.#options;
+    spawn($memory, time, type, config) {
+        $memory.$pType = type;    // the particle type
+        $memory.color = config.colors[$Math.randomRange(0, config.colors.length - 1, true)];
+        $memory.size = config.particleSize;
+        return {
+            life: $Math.randomRange(config.lifeSpan[0], config.lifeSpan[1], true),
+            vel: $Math.vecMulScalar(
+                    $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
+                    $Math.randomRange(0, config.velocity)
+                )
+        };
     }
 
     /**
      * Update the particle
-     * @param {number} time - The current world time 
-     * @param {number} deltaTime - The time since the last frame
+     * @param {number} time - Current world time in milliseconds
+     * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
+     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @param {Array<number>} pos - The particle's current position
+     * @param {Array<number>} vel - The particle's velocity vector
+     * @param {number} life - Remaining lifespace of the particle
+     * @type {Function}
      */
-    render(renderer, [x, y], time, deltaTime) {
-        if (this.options.render) {
-            this.options.render(renderer, [x, y], time, deltaTime);
-        } else {
-            renderer.render(`POINT `)    
+    update(time, deltaTime, $memory, pos, vel, life) {
+        // standard update (add velocity to position)
+        pos[0] += vel[0];
+        pos[1] += vel[1];
+    }
+
+    /**
+     * Render the particle
+     * @param {Number} time - The current world time in milliseconds
+     * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
+     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @param {Array<number>} pos - The current position of the particle
+     * @param {Number} life - The remaining lifespan of the particle
+     * @param {String} target - The name of the renderer ('canvas', 'webgl', ...)
+     * @param {CanvasRenderingContext2D} surface - The rendering context
+     * @type {Function}
+     */
+    render(time, deltaTime, $memory, pos, life, target, surface ) {
+        const sz = Math.ceil($memory.size / 2);
+        switch (target) {
+            case 'canvas':
+                surface.fillStyle = $memory.color;
+                surface.fillRect(pos[0] - sz, pos[1] - sz, $memory.size, $memory.size);    
+                break;
+            case 'webgl':
+                break;
         }
     }
+    
+    /**
+     * Called to clean up the particle, such as for freeing resources
+     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @type {Function}
+     */
+    cleanUp($memory) {}            
 }
-
-/**
- * Medium precision particles have 16-bit position and velocity vectors.
- */
-class ParticleMP extends Particle {
-    /**
-     * Set the position of the particle
-     * @param {UInt16Array<number>} param0 - [x, y] position of particle spawn 
-     */
-    set position([x, y]) {
-        super.position = [
-            FMath.toFixed(x, Constants.FP_MEDIUM),
-            FMath.toFixed(y, Constants.FP_MEDIUM) 
-        ];
-    }
-
-    /**
-     * Set the velocity of the particle
-     * @param {Array<any>} param0 - [X, Y] velocity of the particle 
-     */
-    set velocity([vX, vY]) {
-        super.velocity = [ 
-            FMath.toFixed(vX, Constants.FP_MEDIUM),
-            FMath.toFixed(vY, Constants.FP_MEDIUM)
-        ];
-    }
-}
-
-/**
- * High precision particles have 32-bit position and velocity vectors
- */
-class ParticleHP extends Particle {
-    /**
-     * Set the position of the particle
-     * @param {UInt16Array<number>} param0 - [x, y] position of particle spawn 
-     */
-    set position([x, y]) {
-        super.position = [
-            FMath.toFixed(x, Constants.FP_HIGH),
-            FMath.toFixed(y, Constants.FP_HIGH) 
-        ];
-    }
-
-    /**
-     * Set the velocity of the particle
-     * @param {Array<any>} param0 - [X, Y] velocity of the particle 
-     */
-    set velocity([vX, vY]) {
-        super.velocity = [ 
-            FMath.toFixed(vX, Constants.FP_HIGH),
-            FMath.toFixed(vY, Constants.FP_HIGH)
-        ];
-    }
-} 
-
-export {
-    ParticleMP,
-    ParticleHP
-};

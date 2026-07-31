@@ -13,6 +13,7 @@ import EventEngine from './EventEngine.js'
 import RenderContext from '../rendering/contexts/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine from './../particlesystem/ParticleEngine.js';
+import { PEStub } from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
 import AABBCollisionModel from '../collisionModels/models/AABB.js';
 
@@ -56,6 +57,12 @@ export default class Engine {
   #collisionModel = null;
   #fpsCounter = null;
 
+  #threads = {
+    render: null,
+    collision: null,
+    particleEngine: null
+  };
+
   constructor(options) {
     if (!waitInit) {
       throw new RenderEngineError("Engine must be initialized before use. Please call 'init' first.")
@@ -87,6 +94,8 @@ export default class Engine {
     // setup the game world
     this.#EVENT_ENGINE = new EventEngine(this);
     this.#WORLD = new GameWorld(this, camera, renderContext);
+    this.#WORLD.width = renderContext.worldDimensions.width;
+    this.#WORLD.height = renderContext.worldDimensions.height;
 
     // Collision model storage
     const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new AABBCollisionModel(this);
@@ -96,7 +105,26 @@ export default class Engine {
       this.#fpsCounter = new FPSCounter();
     }
 
-    this.#PARTICLE_ENGINE = ParticleEngine.getInstance(this, renderContext.renderer);
+    if (this.#ENGINE_OPTIONS.threading.particleEngine.enabled) {
+      // load the particle engine into a thread
+      this.#threads.particleEngine = new Worker(new URL("../particlesystem/Thread.js", import.meta.url), {
+        name: this.#ENGINE_OPTIONS.threading.particleEngine.name,
+        type: 'module'
+      });
+      this.#threads.particleEngine.postMessage({ 
+        init: 'render', 
+        width: this.width, 
+        height: this.height, 
+        config: this.#ENGINE_OPTIONS.particleEngine, 
+        threading: this.#ENGINE_OPTIONS.threading.particleEngine 
+      });
+      // Use the stub to redirect engine calls to the thread
+      // so a dev doesn't need to be aware of threading
+      this.#PARTICLE_ENGINE = new PEStub(this.#threads.particleEngine).stub;
+    } else {
+      // load the engine in the main thread
+      this.#PARTICLE_ENGINE = ParticleEngine.getInstance(this.width, this.height, this.#ENGINE_OPTIONS.particleEngine, this.#ENGINE_OPTIONS.threading.particleEngine);
+    }
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
@@ -229,6 +257,33 @@ export default class Engine {
   set lastTime(time) {
     this.#lastTime = time;
   }
+
+  //--------------------------------
+  // Threading
+
+  get renderThreading() {
+    return this.#threads.render !== null;
+  }
+
+  get renderThread() {
+    return this.#threads.render;
+  }
+
+  get collisionThreading() {
+    return this.#threads.collision !== null;
+  }
+
+  get collisionThread() {
+    return this.#threads.collision;
+  }
+
+  get particleThreading() {
+    return this.#threads.particleEngine !== null;
+  }
+
+  get particleEngineThread() {
+    return this.#threads.particleEngine;
+  }
  
   //--------------------------------
 
@@ -330,15 +385,19 @@ export default class Engine {
     this.time = currentTime;
     this.lastTime = this.lastTime === 0 ? currentTime : this.lastTime;
     this.deltaTime = currentTime - this.lastTime;
-      
+
     try {
-      // Update the world with time and delta
+      // update the particles
+      this.particleEngine.update(currentTime, deltaTime);
+
+      // Update the world
       this.world.update(currentTime, deltaTime);
       
       // If render context exists, update its state
       if (this.world.renderContext && this.world.renderContext.update) {
         this.world.renderContext.update(currentTime, deltaTime);
       }
+
     } catch (ex) {
       // if any exception occurs during the update cycle, throw the exception and stop the engine
       this.options.hooks.onError(ex, "An error occurred in the render loop!");
@@ -358,9 +417,7 @@ export default class Engine {
     try {
       // Render context traverses its internal structure of GameObjects
       // to update the scene and then render the scene
-      const result = this.world.renderContext.renderScene(this.world.allObjects, currentTime, deltaTime);
-      
-      return result !== false;
+      return !!this.world.renderContext.renderScene(this.world.allObjects, currentTime, deltaTime);
     } catch (error) {
       console.error('Engine: Error during rendering:', error);
       return false;

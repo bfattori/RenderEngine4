@@ -3,7 +3,7 @@
  * Defines the common interface and capabilities for vector and raster rendering
  */
 import Engine from '../../core/Engine.js';
-import { RenderConfig } from '../../core/Config.js';
+import { RenderContextConfig } from '../../core/Config.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import RenderPart from '../../parts/render/RenderPart.js';
@@ -32,7 +32,7 @@ export {
  * must implement. Actual implementations should extend this class or follow its interface.
  */
 export default class RenderContext {
-  #opts = new RenderConfig();
+  #opts = new RenderContextConfig();
   #renderer = null;
   #world = null;
   #activeObjects = [];
@@ -184,6 +184,10 @@ export default class RenderContext {
 
   get viewport() {
     return this.config.viewport;
+  }
+
+  get worldDimensions() {
+    return this.config.worldDimensions;
   }
 
   set worldDimensions({width, height}) {
@@ -494,6 +498,9 @@ export default class RenderContext {
 
       // render any pending instructions
       this.renderInstructions(time, deltaTime);
+
+      // render the particles
+      Engine.particleEngine.renderParticles(time, deltaTime, null, this.renderer.surface);
 
       // post-frame generation
       this.#renderer.postFrame();

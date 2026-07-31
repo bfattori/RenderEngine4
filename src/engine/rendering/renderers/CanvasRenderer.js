@@ -12,7 +12,6 @@ import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 const ctx = Context.getInstance();
 
 export default class CanvasRenderer extends Renderer {
-    #opts = new CanvasConfig();
     #blit = null;
     #htmlElement = null;
     #canvas = null;
@@ -24,24 +23,23 @@ export default class CanvasRenderer extends Renderer {
     #path = null;
 
     constructor(htmlElement, options) {
-        super();
+        super(new CanvasConfig(options));
         
         if (!htmlElement) {
             throw new RendererError(this, "CanvasRenderer requires an HTML element to initialize!");
         }
 
-        this.#opts.merge(options);
         this.#htmlElement = htmlElement;
 
         // Let the context know the renderer can compile shapes
-        this.hasCompiler = this.#opts.useCompiler;
-        this.#opts.formatting.set('b', false);
-        this.#opts.formatting.set('i', false);
-        this.#opts.formatting.set('u', false);
+        this.hasCompiler = this.config.useCompiler;
+        this.config.formatting.set('b', false);
+        this.config.formatting.set('i', false);
+        this.config.formatting.set('u', false);
     }
 
-    get config() {
-        return this.#opts;
+    get offscreen() {
+        return this.#offscreen;
     }
 
     get isDoubleBuffered() {
@@ -136,8 +134,14 @@ export default class CanvasRenderer extends Renderer {
      * Clear the frame buffer before beginning any rendering
      */
     preFrame() {
-        // clear the surface before rendering
         this.surface.clearRect(0, 0, this.renderContext.viewport.width, this.renderContext.viewport.height);
+    }
+
+    #particles(target) {
+        if (!Engine.options.particleEngine.disabled && Engine.particleEngine.bitmap) {
+            // draw particles to target
+            target.drawImage(Engine.particleEngine.bitmap, 0, 0);
+        }        
     }
 
     /**
@@ -146,7 +150,10 @@ export default class CanvasRenderer extends Renderer {
     postFrame() {
         if (this.config.doubleBuffered) {
             // swap offscreen to visible context
+            this.#particles(this.surface);
             this.#blit.transferFromImageBitmap(this.#offscreen.transferToImageBitmap());
+        } else {
+            this.#particles(this.surface);
         }
     }
 
@@ -343,7 +350,6 @@ export default class CanvasRenderer extends Renderer {
         this.#htmlElement = null;
         this.#canvas = null;
         this.#offscreen = null;
-        this.#opts = null;
         this.#path = null;
         super.destroy();
     }

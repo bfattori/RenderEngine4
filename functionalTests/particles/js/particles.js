@@ -1,0 +1,76 @@
+import RenderEngine from '../../../src/engine/renderEngine4.js';
+import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
+
+import GameObject from '../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
+import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
+import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
+import ParticleEffect from '../../../src/engine/particlesystem/ParticleEffect.js';
+
+import { Matrix2d } from '../../../src/engine/core/Matrix.js';
+import $Math from '../../../src/engine/core/Math.js';
+
+// create a double-buffered canvas renderer
+RenderEngine.init({
+    flags: {
+        debugMode: false,
+        showFps: true
+    },
+    world: {
+        renderContext: new VectorRenderContext(
+            CanvasRenderer.build(
+                document.getElementById("context"), 
+                {
+                    doubleBuffered: true,
+                    useCompiler: true
+                }
+            ),
+            { 
+                enableCulling: false
+             }
+        ),
+        dimensions: {width: 800, height: 600},
+        viewport: {left: 0, top: 0, width: 800, height: 600}
+    }
+});
+
+// set up the particles and effects we'll use
+RenderEngine.particleEngine.addParticleType('expParticle', ExplosionParticle.getInstance());
+
+const pEffect = ParticleEffect.getInstance(['expParticle']);
+pEffect.quantity = 500;
+RenderEngine.particleEngine.addEffect('explosion', pEffect);
+
+// game object and component parts
+// - set world position, rotation, and scale
+const gameObject = new GameObject();
+gameObject
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
+    .worldTransform = Matrix2d.identity().update({
+        position: [400, 300],
+        rotation: 0,
+        scale: [1, 1]
+    });
+
+// add the object to the world - before making any modifications to it
+RenderEngine.world.addObject(gameObject);
+
+// configure the emitter to use the explosion effect
+const emitter = gameObject.getComponentByName("emitter");
+emitter.effect = 'explosion';
+
+// every few seconds we'll generate an explosion
+function explode() {
+    gameObject.worldTransform.setTo({
+        position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
+    });
+    emitter.emit();
+    setTimeout(explode, $Math.randomRange(50, 2000, true));
+}
+
+explode();
+
+// Start the render loop   
+RenderEngine.start();
+

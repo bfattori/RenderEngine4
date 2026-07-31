@@ -1,0 +1,15 @@
+import Particle from '../Particle.js';
+import $Math from '../../core/Math.js';
+
+export default class ExplosionParticle extends Particle {
+    constructor() {
+        super({
+            colors: ['#800', '#ff0', '#fff', '#888', '#f00', '#f90'],
+            lifeSpan: [1000, 3000]
+        })
+    }
+
+    static getInstance() {
+        return new ExplosionParticle();
+    }
+}

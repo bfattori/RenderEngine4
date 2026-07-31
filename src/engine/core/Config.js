@@ -5,7 +5,7 @@ import { NOP, ENGINE_ERRORS } from '../Constants.js';
  * Options Configuation
  */
 export default class Config {
-    #opts = null;
+    #opts = {};
     #getters = [];
 
     /**
@@ -14,8 +14,11 @@ export default class Config {
      * @param {Object} opts - The options
      */
     constructor(opts = {}) {
-        this.#opts = opts;
-        this.#lombok();
+        if (opts instanceof Config) {
+            this.merge(opts.opts);
+        } else {
+            this.merge(opts);
+        }
     }
 
     #isObject(item) {
@@ -44,7 +47,7 @@ export default class Config {
         return output;
     }
 
-    merge(incoming) {
+    merge(incoming = {}) {
         const merged = this.#deepMerge(this.#opts, incoming);
         if (this.#getters.length !== 0) {
             // remove getters for properties that no longer exist
@@ -206,7 +209,7 @@ class EngineConfig extends Config {
          * Disable the particle engine if not needed
          * @type {boolean}
          */
-        disable: false,
+        disabled: false,
         /**
          * Maximum number of particles to allow
          * @type {number}
@@ -216,13 +219,7 @@ class EngineConfig extends Config {
          * Circular buffer for particles. If `false` particles are allocated as space becomes free.
          * @type {boolean}
          */
-        circularBuffer: true,
-        /**
-         * Particle precision. "Low" uses 16-bits for the position and 8-bits for the velocity, medium uses 16-bits
-         * @type {String} {@link Constants.PARTICLE_PRECISION_LOW}, {@link Constants.PARTICLE_PRECISION_MEDIUM}, {@link Constants.PARTICLE_PRECISION_HIGH}
-         * @default Constants.PARTICLE_PRECISION_MEDIUM
-         */
-        precision: 'medium'
+        circularBuffer: true
       },
       /**
        * Threading options.
@@ -246,11 +243,7 @@ class EngineConfig extends Config {
            * Name of the rendering thread. Default is 'RE4 Render Thread'.
            * @type {String}
            */
-          name: 'RE4 Render Thread',
-          /**
-           * Number of rendering threads to use. Default is 1.
-           */
-          count: 1
+          name: 'RE4 Render Thread'
         },
         collision: {
           /**
@@ -267,11 +260,19 @@ class EngineConfig extends Config {
            * Name of the collisions thread. Default is 'RE4 Collision Thread'.
            * @type {String}
            */
-          name: 'RE4 Collision Thread',
+          name: 'RE4 Collision Thread'
+        },
+        particleEngine: {
           /**
-           * Number of collision threads to use. Default is 1.
+           * Threading enabled
+           * @type {boolean}
            */
-          count: 1
+          enabled: false,
+          /**
+           * Name of the collisions thread. Default is 'RE4 Collision Thread'.
+           * @type {String}
+           */
+          name: 'RE4ParticleThread'
         },
       },
       /**
@@ -362,7 +363,7 @@ class EngineConfig extends Config {
   }
 }
 
-class RenderConfig extends Config {
+class RenderContextConfig extends Config {
   constructor() {
     super({
       enableCulling: false,
@@ -407,12 +408,20 @@ class RenderConfig extends Config {
   }
 }
 
-class CanvasConfig extends Config {
-    constructor() {
+class RendererConfig extends Config {
+    constructor(defaults = {}) {
         super({
             doubleBuffered: false,
             useCompiler: true,
-            formatting: new Map(),
+            formatting: new Map()
+        });
+        this.merge(defaults);
+    }
+}
+
+class CanvasConfig extends RendererConfig {
+    constructor(opts) {
+        super({
             defaults: {
                 filter: "none",
                 globalAlpha: 1.0,
@@ -428,6 +437,7 @@ class CanvasConfig extends Config {
                 textRendering: "auto"
             }
         });
+        this.merge(opts);
     }
 }
 
@@ -442,56 +452,10 @@ class CameraConfig extends Config {
     }
 }
 
-class ParticleConfig extends Config {
-    constructor() {
-        super({
-            /**
-             * Color of the particle
-             * @type {String}
-             */
-            color: 'white',
-            /**
-             * Size of the particle
-             * @type {number}
-             */
-            size: 1,
-            /**
-             * Lifespan of the particle
-             * @type {number}
-             */
-            lifeSpan: 0,
-            /**
-             * Optional function to execute at each update. Position and velocity are `FixedPoint` values
-             * so should not be manipulated as regular JavaScript primitives. See {@link FixedPointMath}
-             * for methods to manipulate the values.
-             * 
-             * The function receives 3 arguments: (`time, deltaTime, bits, [x, y], [vX, vY], lifeSpan`) where
-             * `bits` is the number of precision bits in the `FixedPoint` numbers
-             * `[x, y]` is the current particle position
-             * `[vX, vY]` is the current particle velocity
-             * and `lifeSpan` is the remaining lifespan for the particle.
-             * The function should return an object:
-             * `{ pos: [x, y], vel: [xV, yV] }` containing the new x, y position and x, y velocity as `FixedPoint` values
-             * @type {Function}
-             */
-            run: null,
-            /**
-             * Optional function to render the particle. The function is passed (`renderer, [x, y], remainingLife, world time, and deltaTime
-             */
-            render: null,
-            /**
-             * If defined, called to clean up the particle
-             * @type {Function}
-             */
-            cleanUp: null
-        });
-    }
-}
-
 export {
     EngineConfig,
-    RenderConfig,
+    RenderContextConfig,
+    RendererConfig,
     CanvasConfig,
-    CameraConfig,
-    ParticleConfig
+    CameraConfig
 };

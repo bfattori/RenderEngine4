@@ -1,3 +1,4 @@
+import Constants from '../Constants.js';
 
 /**
  * RenderEngine4 math functions
@@ -36,7 +37,7 @@ export default class $Math {
      * @return {number} The radians value converted to degrees
      */
     static radToDeg(radians) {
-        return (radians * 180 / MathRE.PI);
+        return (radians * 180 / $Math.PI);
     }
 
     /**
@@ -91,12 +92,11 @@ export default class $Math {
      * @return {Array<number>} The center of the given points `[x, y]`
      */
     static logicalCenter(points) {
-        var p = R.math.Point2D.create(0, 0);
-        for (var pt = 0; pt < points.length; pt++) {
-            p.add(points[pt]);
+        var p = [0, 0];
+        for (let pt = 0; pt < points.length; pt++) {
+            p = $Math.vecAdd(p, points[pt]);
         }
-        p.div(points.length);
-        return p;
+        return $Math.vecDivScalar(p, points.length);
     }
 
     /**
@@ -112,12 +112,12 @@ export default class $Math {
      * Calculate a direction vector from a heading angle.
      *
      * @param {Array<number>} origin The origin of the shape
-     * @param {Array<number>} baseVec - The base vector
+     * @param {Array<number>} baseVec - The base vector (default: up vector)
      * @param {number} angle - The rotation in degrees
      * @return {Array<number>} The direction vector
      */
-    static getDirectionVector({origin, baseVec = [0, 0], angle}) {
-        const r = MathRE.degToRad(angle);
+    static getDirectionVector(origin = [0, 0], angle, baseVec = Constants.UP_VECTOR) {
+        const r = $Math.degToRad(angle);
         const x = Math.cos(r) * baseVec[0] - Math.sin(r) * baseVec[1];
         const y = Math.sin(r) * baseVec[0] + Math.cos(r) * baseVec[1];
         let v = [x, y];
@@ -132,8 +132,8 @@ export default class $Math {
      * @param {Array<number>} vector2 A second point on the line
      * @return {number} the vector cross-product
      */
-    static xProduct({vector1 = [1, 1], vector2 = [1, 1]}) {
-        return (vector1[0] * vector2[1]) - (vector1[1] * vector2[0]);
+    static xProduct([x1, y1], [x2, y2]) {
+        return (x1 * y2) - (y1 * x2);
     }
 
     /**
@@ -142,7 +142,7 @@ export default class $Math {
      * @param {Array<number>} vector2 - The second vector
      * @return {number} The dot product
      */
-    static dot({vector1: [x1, y1], vector2: [x2, y2]}) {
+    static dot([x1, y1], [x2, y2]) {
         return (x1 * x2) + (y1 * y2);
     }
 
@@ -152,8 +152,8 @@ export default class $Math {
      * @param {Array<number>} point2 - The second point
      * @returns {number} The distance between the two points
      */
-    static distance({point1: [x1, y1], point2: [x2, y2]}) {
-        return Math.sqrt($Math.distanceSqrd(point1, point2));
+    static distance([x1, y1], [x2, y2]) {
+        return Math.sqrt($Math.distanceSqrd([x1, y1], [x2, y2]));
     }
 
     /**
@@ -162,7 +162,7 @@ export default class $Math {
      * @param {Array<number>} point2 - The second point
      * @returns {number} The squared distance between the two points
      */
-    static distanceSqrd({point1: [x1, y1], point2: [x2, y2]}) {
+    static distanceSqrd([x1, y1], [x2, y2]) {
         return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
     }
 
@@ -171,7 +171,7 @@ export default class $Math {
      * @param {Array<number>} vector - The vector 
      * @returns 
      */
-    static magnitude({vector: [x1, y1]}) {
+    static magnitude([x1, y1]) {
         return Math.sqrt((x1 * x1) + (y1 * y1));
     }
 
@@ -180,14 +180,38 @@ export default class $Math {
      * @param {Array<number>} vector - The vector to normalize
      * @return {number} The unit length of the vector
      */
-    static normalize({vector: [vX, vY]}) {
+    static normalize([vX, vY]) {
         const norm = [0,0];
-        const ln = MathRE.mag([vX, vY]);
+        const ln = $Math.magnitude([vX, vY]);
         if (ln != 0) {
             norm[0] = vX / ln;
             norm[1] = vY / ln;
         }
         return norm;
+    }
+
+    static vecMulScalar(vec, scalar) {
+        return vec.map(e => e * scalar);
+    }
+
+    static vecMul(vec, vec2) {
+        return vec.map((e, i) => e * vec2[i]);
+    }
+
+    static vecAddScalar(vec, scalar) {
+        return vec.map(e => e + scalar);
+    }
+
+    static vecAdd(vec, vec2) {
+        return vec.map((e, i) => e + vec2[i]);
+    }
+
+    static vecDivScalar(vec, scalar) {
+        return vec.map((e) => e / scalar);
+    }
+
+    static vecDiv(vec, vec2) {
+        return vec.map((e, i) => e / vec2[i]);
     }
 
     //----------------------------------
@@ -312,7 +336,7 @@ export default class $Math {
             return null;
         }
 
-        const lenC = MathRE.magnitude(c);
+        const lenC = $Math.magnitude(c);
         const f = (lenC * lenC) - (dot * dot);
 
         // Escape test: if the closest that A will get to B
@@ -475,9 +499,10 @@ class FixedPointMath {
 
     /**
      * Perform a fixed point operation on two arrays of numbers, retuning a new array of fixed point numbers.
-     * The retured array will the length of the longer of the two input arrays.
+     * The retured array will be the length of the first of the two input arrays. If b is a number, all elements
+     * of `a` will be operated on with the scalar `b`
      * @param {Array<number>} a - The first array of fixed point numbers 
-     * @param {Array<number>} b - The second array of fixed point numbers
+     * @param {Array<number>|number} b - The second array of fixed point numbers, or a scalar
      * @param {Function} op - The operation to perform on the two values
      * @param {number} [n] - Optional bit precision, required for multiplication and division
      * @returns {Array<number>} The new array of fixed point numbers. 
@@ -485,16 +510,19 @@ class FixedPointMath {
      */
     static #arrayOp(a, b, op, n) {
         const aType = a.constructor.name;
-        const bType = b.constructor.name;
-        if (a !== b)
-            throw new RenderEngineError('Arrays must be of the same type');
-        
-        let len = a.length;
-        const newArray = new aType(len);
-        if (b.length < a.length)
-            len = b.length;
-        for (let i = 0; i < len; i++) {
-            newArray[i] = op(a[i], b[i]);
+        const newArray = new aType(a.length);
+        if (!Array.isArray(b)) {
+            for (let i = 0; i < len; i++) {
+                newArray[i] = op(a[i], b[i]);
+            }
+        } else {
+            const bType = b.constructor.name;
+            if (a !== b)
+                throw new RenderEngineError('Arrays must be of the same type');
+            
+            for (let i = 0; i < a.length; i++) {
+                newArray[i] = op(a[i], b[i]);
+            }
         }
         return newArray;
     }
@@ -612,7 +640,6 @@ class FixedPointMath {
      * Multiplies two arrays of fixed point numbers. The arrays must be the same type.
      * @param {Array<number>} a - The first array of fixed point numbers
      * @param {Array<number>} b - The second array of fixed point numbers
-     * @param {number} n - The bit precision
      * @returns {Array<number>} A new array of the two multiplied together
      */
     static arrayMul(a,b,n) {

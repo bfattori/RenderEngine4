@@ -1,105 +1,152 @@
 import Constants from '../Constants.js';
 import RenderEngineError from '../core/RenderEngineError.js';
+import Config from '../core/Config.js';
+import Context from '../Context.js';
 import Particle from '../particlesystem/Particle.js';
-import { FixedPointMath as FMath } from '../core/Math.js';
+
+const ctx = Context.getInstance();
+
+class ParticleEngineConfig extends Config {
+    constructor() {
+        super({
+            /**
+             * Disable the particle engine if not needed
+             * @type {boolean}
+             */
+            disabled: false,
+            /**
+             * Maximum number of particles to allow
+             * @type {number}
+             */
+            maxParticles: Constants.MAX_PARTICLES,
+            /**
+             * Circular buffer for particles. If `false` particles are allocated as space becomes free.
+             * @type {boolean}
+             */
+            circularBuffer: true
+        });
+    }
+}
+
+class ParticleEngineThreadingConfig extends Config {
+    constructor() {
+        super({
+          /**
+           * Threading enabled
+           * @type {boolean}
+           */
+          enabled: true,
+          /**
+           * Name of the collisions thread. Default is 'RE4 Collision Thread'.
+           * @type {String}
+           */
+          name: 'RE4ParticleThread'
+        });
+    }
+}
 
 export default class ParticleEngine {
     static #instance = null;
     static #useBuilder = true;
 
-    #renderer = null;
-    #engine = null;
+    #config = new ParticleEngineConfig();
+    #threading = new ParticleEngineThreadingConfig();
 
-    #maxParticles = 0;
-    #particles = null;
+    // particle types the engine is configured to render
+    #particleTypes = new Map();
+
+    // particle effects the engine is configured to run
+    #particleEffects = new Map();
+
+    // when new particles are added, this goes true
+    #newParticles = false;
+
+    // these are the arrays of particle "memories", positions, velocities, and lifespans.  
+    // the particle engine only has access to this information during the lifecycle stages
+    #memories = null;
     #pPos = null;
     #pVel = null;
     #pSpan = null;
     
     // pointer to the arrays above
     #particleIdx = 0;
+    
+    // number of particles that are live in the engine
     #liveParticles = 0;
-    #particleEffects = [];
+    
+    // particles are added to a buffer to be added after each update completes
+    // this comes down to threading, since world updates occur simultaneous to particle updates
+    #buffered = [];
 
-    #qN = 0;
+    // the render context for the particle engine, combined back with the
+    // context in the main thread
+    #offscreen = null;
+    #surface = null;
     
     /**
-     * @private
-     * Initialize the particle engine.
-     */
-    constructor(engine, renderer) {
-        if (ParticleEngine.#useBuilder)
-            throw new RenderEngineError("Cannot instantiate ParticleEngine directly. Use getInstance() instead.");
-        ParticleEngine.#useBuilder = true;
-        
-        this.#renderer = renderer;
-        this.#engine = engine;
-        this.#initializeParticles(this.#engine.options.particleEngine.maxParticles);
-    }
-
-    /**
      * Get the instance of the ParticleEngine.  This method should be used instead of creating 
-     * a new instance directly.
-     * @param {Engine} engine - The game engine
-     * @param {Renderer} renderer - The renderer the particle engine renders to
-     * @returns {ParticleEngine} The engine's `ParticleEngine` instance
+     * a new instance directly to enforce the singleton pattern.
+     * @param {number} width - The width of the render context of the particle engine
+     * @param {number} height - The height of the render context of the particle engine
+     * @param {Object} config - The `particleEngine` portion of the engine configuration
+     * @param {Object} threading - The `particleEngine` portion of the engine threading configuration
+     * @returns {ParticleEngine} The `ParticleEngine` singleton instance
      * @static
      */
-    static getInstance(engine, renderer) {
+    static getInstance(width, height, config, threading) {
         if (ParticleEngine.#instance === null) {
             ParticleEngine.#useBuilder = false;
-            ParticleEngine.#instance = new ParticleEngine(engine, renderer);
+            ParticleEngine.#instance = new ParticleEngine(width, height, config, threading);
         }
 
         return ParticleEngine.#instance;
     }
 
     /**
-     * Precision indicates if we're using 8-bit, or 16-bit values for the particle 
-     * positions and velocities.
-     * @returns {String} {@link Constants.PARTICLE_PRECISION_LOW}, {@link Constants.PARTICLE_PRECISION_MEDIUM}, or 
-     *                   {@link Constants.PARTICLE_PRECISION_HIGH}
-     */
-    get #precision() {
-        return this.#engine.options.particleEngine.precision;
-    }
-
-    /**
-     * Returns `true` if the buffer is circular
-     * @returns {boolean} `true` if the buffer is circular, `false` otherwise.
-     */
-    get #isCircular() {
-        return this.#engine.options.particleEngine.circularBuffer;
-    }
-
-    /**
-     * Initialize the particle array.  This is called if `maxParticles` is changed.
-     * @param {number} count - The maximum number of particles the engine will create
      * @private
+     * Initialize the particle engine.
      */
-    #initializeParticles(count = Constants.MAX_PARTICLES) {
-        this.#maxParticles = count;
-        let pType = Uint8Array;
-        let vType = Uint8Array;
-        switch(this.#precision) {
-            case Constants.PARTICLE_PRECISION_MEDIUM:
-                pType = Uint16Array;
-                vType = Uint16Array;
-                break;
-            case Constants.PARTICLE_PRECISION_HIGH:
-                pType = Uint32Array;
-                vType = Uint32Array;
-                break;
-        }
+    constructor(width, height, config, threading) {
+        if (ParticleEngine.#useBuilder)
+            throw new RenderEngineError("Cannot instantiate ParticleEngine directly. Use getInstance() instead.");
+
+        // enforce singleton pattern
+        ParticleEngine.#useBuilder = true;
         
-        this.#pPos = new pType(count * 2);                  // stores x and y sequentially as FixedPointNumber
-        this.#pVel = new vType(count * 2);                  // stores vX and vY sequentially as FixedPointNumber
-        this.#pSpan = new Uint16Array(count);               // single value for each lifespan as Number
-        this.#particles = new Array(count).fill(null);      // array of particle configuration pointers
+        this.#config.merge(config);
+        this.#threading.merge(threading);
+
+        // the rendering context for the particle engine
+        this.#offscreen = new OffscreenCanvas(width, height);
+        this.#surface = this.#offscreen.getContext('2d');
+        this.#initializeParticles(config.maxParticles);
+
+        // add the `basicParticle` type
+        this.addParticleType('basicParticle', new Particle());
     }
 
-    get renderer() {
-        return this.#renderer;
+    /**
+     * Get the current configuration for the particle engine.
+     * @returns {ParticleConfig} The current configuration
+     */
+    get config() {
+        return this.#config;
+    }
+
+    get thread() {
+        return this.#threading;
+    }
+
+    get enabled() {
+        return !this.config.disabled;
+    }
+
+    get offscreen() {
+        return this.#offscreen;
+    }
+
+    get surface() {
+        return this.#surface;
     }
 
     /**
@@ -107,52 +154,16 @@ export default class ParticleEngine {
      * @returns {number} The maximum particle count
      */
     get maxParticles() {
-        return this.#maxParticles;
+        return this.config.maxParticles;
     }
 
     /**
      * Set the maxmimum number of particles the engine can produce.
      * @param {number} max - The maximum particle count
      */
-    set maxParticles(max) {
-        this.#initializeParticles(max);
-    }
-
-    /**
-     * Returns an estimate of the memory used by the particle engine
-     * @returns {number} The maximum number of particles multiplied by the precision setting.
-     */
-    get memoryEstimate() {
-        const v = (this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 32 : this.#precision === Constants.PARTICLE_PRECISION_MEDIUM ? 16 : 8) * 2;
-        const p = (this.#precision === Constants.PARTICLE_PRECISION_HIGH ? 32 : 16) * 2;
-        return (v * this.maxParticles) + (p * this.maxParticles) + (this.maxParticles * 16) /* lifespan */ + (this.maxParticles * 864) /* particle config (est) */;
-    }
-
-    /**
-     * Get the next available pointer into the buffer. A circular buffer will wrap aroung
-     * and being overwriting existing particles. A non-circular buffer will look for the first
-     * available opening in the buffer. If none is available, -1 is returned.
-     * @returns {number} The next available index in the buffer, or -1 if no free spot is available
-     * @private
-     */
-    get #nextIndex() {
-        this.#particleIdx++;
-        if (this.#isCircular && this.#particleIdx === this.maxParticles)
-            this.#particleIdx = 0;    // wrap
-        else {
-            // find first free index
-            this.#particleIdx = this.#particles.findIndex((e) => e === null);
-        }
-
-        return this.#particleIdx;
-    }
-
-    /**
-     * Get the list of particle effects that are currently active
-     * @return {Array<ParticleEffect>} List of active particle effects
-     */
-    get particleEffects() {
-        return this.#particleEffects;
+    set maxParticles(count) {
+        this.config.maxParticles = count;
+        this.#initializeParticles(count);
     }
 
     /**
@@ -163,15 +174,96 @@ export default class ParticleEngine {
         return this.#liveParticles;
     }
 
-    get #precisionBits() {
-        return this.#precision === Constants.PARTICLE_PRECISION_HIGH ? Constants.FP_HIGH : this.#precision === Constants.PARTICLE_PRECISION_MEDIUM ? Constants.FP_MEDIUM : Constants.FP_LOW;
+    /**
+     * Returns `true` if the buffer is circular
+     * @returns {boolean} `true` if the buffer is circular, `false` otherwise.
+     */
+    get isCircular() {
+        return this.config.circularBuffer;
     }
 
     /**
-     * Add a set of particles at once
-     * @param {Array<Particle>} particles The set of particles
+     * The particle types available to the engine
+     * @returns {Map<string, ParticleType>} A map of particle types to their corresponding ParticleType objects.
+     */
+    get types() {
+        return this.#particleTypes;
+    }
+
+    /**
+     * The particle effects available to the engine
+     * @returns {Map<string, ParticleEffect>} A map of particle effects to their corresponding ParticleEffect objects.
+     */
+    get effects() {
+        return this.#particleEffects;
+    }
+
+    /**
+     * Get the bitmap image of the offscreen canvas, and reset it
+     * for the next rendering.
+     * @returns {ImageBitmap} The bitmap image of the offscreen canvas, and reset it
+     */
+    get bitmap() {
+        return this.#offscreen.transferToImageBitmap();
+    }
+
+    /**
+     * Initialize the particle arrays.  This is also called if `maxParticles` is changed.
+     * @param {number} count - The maximum number of particles the engine will create
+     * @private
+     */
+    #initializeParticles(count) {
+        this.#pPos = new Array(count).fill([0,0]);          // stores x and y as an array
+        this.#pVel = new Array(count).fill([0,0]);          // stores vX and vY as an array
+        this.#pSpan = new Array(count).fill(0);               // single value for each lifespan as Number
+        this.#memories = new Array(count).fill(null);        // array that will hold the particle memory
+    }
+
+    /**
+     * Get the next available pointer into the buffer. A circular buffer will wrap aroung
+     * and being overwriting existing particles. A non-circular buffer will look for the first
+     * available opening in the buffer. If none is available, -1 is returned.
+     * @returns {number} The next available index in the buffer, or -1 if no free spot is available
+     * @private
+     */
+    get #nextIndex() {
+        if (this.isCircular && this.#particleIdx > this.maxParticles)
+            this.#particleIdx = 0;    // wrap
+        else if (this.isCircular)
+            return this.#particleIdx++;
+        else if (!this.isCircular) {
+            // find first free index (could be -1)
+            this.#particleIdx = this.#memories.findIndex((e) => e === null);
+        }
+
+        return this.#particleIdx;
+    }
+
+    /**
+     * Add a new particle type to the particle engine
+     * @param {String} name 
+     * @param {Particle} particle 
+     */
+    addParticleType(name, particle) {
+        if (this.types.get(name) === undefined)
+            this.types.set(name, particle);
+    }
+
+    /**
+     * Get the particle type for the name
+     * @param {String} name - The name of the particle type
+     * @returns {Object} The configuration object for the specified particle type, or undefined if no such type exists
+     */
+    getParticleType(name) {
+        return this.types.get(name);
+    }
+
+    /**
+     * Add a set of particles at once. Particles have two properties: `pos` and `type`
+     * @param {Array<Object>} particles The set of particles
      */
     addParticles(particles) {
+        this.#newParticles |= particles.length !== 0;
         for (const particle of particles) {
             this.addParticle(particle);
         }
@@ -179,22 +271,36 @@ export default class ParticleEngine {
 
     /**
      * Add a single particle to the engine
-     * @param particle {Particle} A particle
+     * @param particle {Object} A particle contains `pos` ([x, y]) and `type`
      */
     addParticle(particle) {
-        if (R.Engine.options.disableParticleEngine) return;
-    
-        const idx = this.#nextIndex;
-        if (idx !== -1 && particle.lifeSpan !== 0) {
-            // add the particle config and relative values
-            this.#particles[idx] = particle.config;
-            this.#pSpan[idx] = particle.lifeSpan;
+        if (!this.enabled) return;
+        this.#buffered.push(particle);
+    }
 
-            // store as fixed point for performance
-            this.#pPos[idx * 2] = particle.position[0];
-            this.#pPos[(idx * 2) + 1] = particle.position[1];
-            this.#pVel[idx * 2] = particle.velocity[0];
-            this.#pVel[(idx * 2) + 1] = particle.velocity[1];
+    /**
+     * 
+     * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
+     * @param {number} time - The current world time in milliseconds
+     * @param {String} particleType - the type of particle to spawn 
+     */
+    spawnParticle(worldPos, time, particleType) {
+        this.#newParticles = true;
+        const pType = this.getParticleType(particleType);
+        if (pType !== null) {
+            const idx = this.#nextIndex;
+            if (idx !== -1) {
+                this.#memories[idx] = {};
+                const spawn = pType.spawn(this.#memories[idx], time, particleType, pType.opts);
+                
+                this.#pPos[idx] = [worldPos[0], worldPos[1]];
+                this.#pVel[idx] = [spawn.vel[0], spawn.vel[1]];
+                this.#pSpan[idx] = spawn.life;
+            } else if (ctx.debug)
+                console.warn(`Failed to spawn particle: ${particleType} - no available memory`);
+            
+        } else {
+            throw new RenderEngineError(`Unknown particle type: ${particleType}`);
         }
     }
 
@@ -203,9 +309,29 @@ export default class ParticleEngine {
      * @param particleEffect
      * @return {ParticleEffect} The instance of the effect
      */
-    addEffect(particleEffect) {
-        this.particleEffects.push(particleEffect);
-        return particleEffect;
+    addEffect(name, particleEffect) {
+        this.effects.set(name, particleEffect);
+    }
+
+    /**
+     * Get a particle effect by name
+     * @param {String} name - The particle effect name
+     * @returns {ParticleEffect} The instance of the effect or null if it does not exist.
+     */
+    getEffect(name) {
+        return this.effects.get(name);
+    }
+
+    /**
+     * Emit particles using an effect, into the particle engine, at a specified world position. 
+     * 
+     * @param {Array<number>} param0 - The [x,y] world coordinates where the effect should emit particles
+     * @param {String} effectName - The name of the effect to run, effects contain the functionality to generate and modify particles emitted to the engine
+     * @param {number} time - Current world time in milliseconds 
+     * @param {number} deltaTime - The time in milliseconds since the last frame
+     */
+    runEffect([x, y], effectName, time, deltaTime) {
+        this.getEffect(effectName).run([x, y], time, deltaTime);
     }
 
     /**
@@ -216,103 +342,72 @@ export default class ParticleEngine {
      *          in milliseconds.
      */
     update(time, deltaTime) {
-        if (Engine.options.particleEngine.disabled) return;
+        if (!this.enabled) return;
 
-        this.#renderer.surface.save();       // FIXME: this is specific to Canvas
-
-        // Run all queued effects
-        const dead = [];
-        for (const effect of this.particleEffects) {
-            if (!effect.isRun || effect.lifespan(deltaTime) > 0) {
-                effect.run(this, time, deltaTime);
-            } else {
-                // Dead effect - these are cleaned up later
-                dead.push(effect);
-            }
-        }
-
-        // clean up dead effects
-        dead.forEach((e, i) => this.particleEffects.splice(i, 1));
-        dead = null;
-
-        // If there are no live particles, don't do anything
-        if (this.liveParticles === 0) {
-            this.#renderer.surface.restore();       // FIXME: this is specific to Canvas
+        // If there are no new particles in the buffer, and no live particles, don't do anything
+        if (!this.#newParticles && this.liveParticles === 0) {
             return;
         }
 
+        // add any particles that are queued...
+        if (this.#buffered.length !== 0) {
+            for (const p of this.#buffered) {
+                // spawn the particle
+                this.spawnParticle(p.pos, time, p.type);
+            }
+            this.#buffered = [];
+        }
 
+        // run all particles
         let lives = 0;
-        this.#particles.forEach((particle, idx) => {
-            if (particle !== null && this.#pSpan[idx] !== 0) {
+        this.#memories.forEach((memory, idx) => {
+            if (memory !== null && this.#pSpan[idx] !== 0) {
+                this.#runParticle(memory, idx, time, deltaTime);
                 lives++;
-                this.#runParticle(particle, idx, time, deltaTime);
             }
         })
 
-        this.#renderer.surface.restore();       // FIXME: this is specific to Canvas
         this.#liveParticles = lives;
+        this.#newParticles = false;
     }
 
     /**
-     * Run a particle
-     * @param {ParticleConfig} particle - The particle configuration
+     * Run a single particle
+     * @param {Object} memory - The particle's instantaneous memory
      * @param {number} idx - The particle index
+     * @param {number} time - world time in milliseconds
+     * @param {number} deltaTime - delta time in milliseconds since last frame
      */
-    #runParticle(particle, idx, time, deltaTime) {
-        const bits = this.#precisionBits;
-        if (particle.run !== null) {
-            // custom update method
-            const pUpdate = particle.run(
-                time, 
-                deltaTime,
-                bits,                           // fractional bits in FP numbers 
-                [this.#pPos[(idx * 2)],         // X, Y position 
-                    this.#pPos[(idx * 2) + 1]],      
-                [this.#pVel[(idx * 2)],         // X, Y velocity
-                    this.#pVel[(idx * 2) + 1]],      
-                this.#pSpan[idx]                // Lifespan remaining
-            );
-
-            // update the particle
-            this.#pPos[(idx * 2)] = pUpdate.pos[0]; 
-            this.#pPos[(idx * 2) + 1] = pUpdate.pos[1];
-            this.#pVel[(idx * 2)] = pUpdate.vel[0];   
-            this.#pVel[(idx * 2) + 1] = pUpdate.vel[1];
-        } else {
-            // standard update (add velocity to position)
-            this.#pPos[idx * 2] = FMath.add(this.#pPos[(idx * 2)], this.#pVel[(idx * 2)], bits);
-            this.#pPos[(idx * 2) + 1] = FMath.add(this.#pPos[(idx * 2) + 1], this.#pVel[(idx * 2) + 1], bits);
-        }
-
-        // age the particle
+    #runParticle(memory, idx, time, deltaTime) {
+        // get the type configuration
+        const pType = this.getParticleType(memory.$pType);
+        
+        // update the particle and then age it
+        pType.update(time, deltaTime, memory, this.#pPos[idx], this.#pVel[idx], this.#pSpan[idx]);
         this.#pSpan[idx] -= deltaTime;
 
-        // free-up space if dead
+        // free-up space when dead
         if (this.#pSpan[idx] <= 0) {
-            if (particle.cleanUp !== null) 
-                particle.cleanUp();
-            this.#particles[idx] = null;
+            pType.cleanUp(memory);
+            this.#memories[idx] = null;
         }
     }
 
     /**
-     * Render all of the active particles to the renderer
+     * Render all of the active particles to the render context
      * @param {number} time - The current world time 
      * @param {number} deltaTime - The time since the last frame
+     * @param {Path2D} occlusionMask - Optional mask to clip areas that are occluded by objects
      */
-    renderParticles(time, deltaTime) {
-        this.#particles.forEach((p, i) => {
-            const bits = this.#precisionBits; 
-            if (p !== null) {
-                if (p.render) 
-                    p.render(
-                        this.renderer, 
-                        [ FMath.toFloat(this.#pPos[i * 2], bits), FMath.toFloat(this.#pPos[(i * 2) + 1], bits) ],
-                        this.#pSpan[i],
-                        time, deltaTime);
-                else
-                    this.renderer.render(`POINT ${FMath.toFloat(this.#pPos[i * 2], bits)} ${FMath.toFloat(this.#pPos[(i * 2) + 1], bits)}, ${p.size}`, time, deltaTime);  // this is a bit of a hack since both IL's have the POINT instruction  
+    renderParticles(time, deltaTime, occlusionMask = null, directSurface = null) {
+        if (!this.enabled || this.liveParticles === 0) return;
+
+        let surf = directSurface || this.#surface;
+        this.#memories.forEach((memory, i) => {
+            if (memory !== null) {
+                const pType = this.getParticleType(memory.$pType);
+                pType.render(time, deltaTime, memory, 
+                    this.#pPos[i], this.#pSpan[i], 'canvas', surf);
             }
         });
     }
@@ -327,10 +422,142 @@ export default class ParticleEngine {
             ParticleEffects: this.particleEffects,
 
             _pointer: this.#particleIdx,
-            _particles: this.#particles,
+            _particleMemories: this.#memories,
             _particlePositions: this.#pPos,
             _particleVelocities: this.#pVel,
             _particleLifespans: this.#pSpan
         }
     }
 }
+
+class PEStub {
+    #thread = null;
+    #ready = false;
+    #bitmap = null;
+
+    constructor(particleThread) {
+        this.#thread = particleThread;
+        this.#thread.onmessage = (event) => {
+            if (event.data.re4 === 'render' && event.data.type === 'rendered') {
+                this.#bitmap = event.data.image;
+                this.#ready = true;
+            }
+        };
+    }
+
+    send(data) {
+        this.#thread.postMessage({ re4: true, ... data });
+    }
+
+    /**
+     * Called when the bitmap is returned from the thread for rendering.
+     */
+    notReady() {
+        this.#ready = false;
+    }
+
+    /**
+     * Returns true when the bitmap has been rendered by the thread.
+     * @returns {boolean}
+     */
+    get ready() {
+        return this.#ready;
+    }
+
+    /**
+     * Returns the bitmap of the rendered particles. This is updated by the thread, meaning that until `ready` is `true` this
+     * represents the last state of the particles.
+     * @returns {ImageBitmap}
+     */
+    get bitmap() {
+        return this.#bitmap;
+    }
+
+    /**
+     * Returns a stub class for the particle engine that can be used in place of the engine
+     * when running multithreaded.
+     */
+    get stub() {
+        const $this = this;
+        return {
+            /**
+             * Add a new particle type to the particle engine
+             * @param {String} name 
+             * @param {Particle} particle 
+             */
+            addParticleType: (name, particle) => {
+                $this.send({ type: 'type', name: name, particle: particle }, [particle]);
+            },
+
+            /**
+             * Add a particle effect
+             * @param particleEffect
+             * @return {ParticleEffect} The instance of the effect
+             */
+            addEffect: (name, particleEffect) => {
+                $this.send({ type: 'addEffect', name: name, effect: particleEffect }, [particleEffect]);
+            },
+
+            /**
+             * Add a set of particles at once
+             * @param {Array<Object>} particles - The set of particles to add, an array of objects containing `type`, and `pos` ([x, y] world position)
+             */
+            addParticles: (particles) => {
+                $this.send({ type: 'addParticles', particles: particles});
+            },
+
+            /**
+             * Add a single particle to the engine
+             * @param {Object} particle - contains `type`, and `pos` ([x, y] world position)
+             */
+            addParticle: (particle) => {
+                $this.send({ type: 'addParticles', particles: [particle]});
+            },
+
+            /**
+             * Emit particles using an effect, into the particle engine, at the world position
+             * 
+             * @param {Array<number>} worldPos - The [x,y] world coordinates where the effect should emit particles
+             * @param {String} effectName - The name of the effect to run, effects contain the functionality to generate and modify particles emitted to the engine
+             * @param {number} time - Current world time in milliseconds 
+             * @param {number} deltaTime - The time in milliseconds since the last frame
+             */
+            runEffect: ([x, y], effectName, time, deltaTime) => {
+                $this.send({ type: 'effect', pos: [x, y], name: effectName, time: time, deltaTime: deltaTime })
+            },
+
+            /**
+             * 
+             * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
+             * @param {String} particleType - the type of particle to spawn 
+             */
+            spawnParticle: (worldPos, particleType) => {
+                $this.send({type: 'spawn', pos: worldPos, particle: particleType });
+            },
+
+            /**
+             * Update the particles
+             * @param time {Number} The global time within the engine.
+             * @param deltaTime {Number} The delta between the world time and the last time the world was updated
+             *          in milliseconds.
+             */
+            update: (time, deltaTime) => {
+                $this.send({ type: 'update', time: time, deltaTime: deltaTime });
+            },
+
+            /**
+             * Render all of the active particles to the buffer
+             * @param {number} time - The current world time 
+             * @param {number} deltaTime - The time since the last frame
+             * @param {Path2D} occlusionMask - Optional mask to clip areas that are occluded by objects
+             */
+            renderParticles: (time, deltaTime, occlusionMask = null) => {
+                $this.notReady();
+                $this.send({ type: 'render', time: time, deltaTime: deltaTime, mask: occlusionMask });
+            }  
+        };
+    }
+}
+
+export { PEStub };
+
