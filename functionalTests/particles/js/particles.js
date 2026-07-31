@@ -36,11 +36,15 @@ RenderEngine.init({
 });
 
 // set up the particles and effects we'll use
-RenderEngine.particleEngine.addParticleType('expParticle', ExplosionParticle.getInstance());
+const particleName = 'expParticle';
+const effectName = 'explosion';
 
-const pEffect = ParticleEffect.getInstance(['expParticle']);
+const pEffect = ParticleEffect.getInstance([particleName]);
 pEffect.quantity = 500;
-RenderEngine.particleEngine.addEffect('explosion', pEffect);
+
+const exParticle = ExplosionParticle.getInstance();
+RenderEngine.particleEngine.addParticleType(particleName, exParticle);
+RenderEngine.particleEngine.addEffect(effectName, pEffect);
 
 // game object and component parts
 // - set world position, rotation, and scale
@@ -58,7 +62,7 @@ RenderEngine.world.addObject(gameObject);
 
 // configure the emitter to use the explosion effect
 const emitter = gameObject.getComponentByName("emitter");
-emitter.effect = 'explosion';
+emitter.effect = effectName;
 
 // every few seconds we'll generate an explosion
 function explode() {
