@@ -37,6 +37,28 @@ export default class Particle extends Config {
         this.merge(opts);
     }
 
+    #getFuncBody(funcStr) {
+        let lines = funcStr.split('\r\n');
+        lines.shift();
+        lines.length -= 1;
+        // remove comments
+        lines = lines.join('\r\n').replaceAll(/\/\/[^\r\n]*/g, '');
+        return lines;
+    }
+
+    getTransferrable(name) {
+        const t = {type:'Particle', name: name, props:{}, f: {}};
+        for (const prop in this.opts) {
+            t.props[prop] = this[prop];
+        }
+        t.f['spawn'] = this.#getFuncBody(this.spawn.toString());
+        t.f['update'] = this.#getFuncBody(this.update.toString());
+        t.f['render'] = this.#getFuncBody(this.render.toString());
+        t.f['cleanup'] = this.#getFuncBody(this.cleanUp.toString());
+        return t;
+    }
+
+
     static getInstance() {
         return new Particle();
     }
@@ -98,7 +120,7 @@ export default class Particle extends Config {
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, $memory, pos, life, target, surface ) {
+    render(time, deltaTime, $memory, pos, life, target, surface) {
         const sz = Math.ceil($memory.size / 2);
         switch (target) {
             case 'canvas':
@@ -115,5 +137,6 @@ export default class Particle extends Config {
      * @param {Object} $memory - The memory object containing the particle's instantaneous properties
      * @type {Function}
      */
-    cleanUp($memory) {}            
+    cleanUp($memory) {
+    }            
 }

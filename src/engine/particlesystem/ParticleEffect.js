@@ -1,7 +1,5 @@
-import Engine from '../core/Engine.js';
 import Constants from '../Constants.js';
 import $Math from '../core/Math.js';
-import { FixedPointMath as FMath } from '../core/Math.js';
 import Particle from './Particle.js';
 
 export default class ParticleEffect {
@@ -11,6 +9,7 @@ export default class ParticleEffect {
     #frequencyVariance = 0;
     #lastTime = 0;
     #types = [];
+    #engine = null;
 
     constructor(types) {
         this.#types = types;
@@ -18,6 +17,19 @@ export default class ParticleEffect {
 
     static getInstance(types) {
         return new ParticleEffect(types);
+    }
+
+    getTransferrable(name) {
+        const t = {type:'ParticleEffect', name: name, props:{}};
+        for (const prop of ['quantity', 'quantityVariance', 'frequency', 'frequencyVariance']) {
+            t.props[prop] = this[prop];
+        }
+        t.types = this.#types;
+        return t;
+    }
+
+    set engine(pEngine) {
+        this.#engine = pEngine;
     }
 
     /**
@@ -119,7 +131,7 @@ export default class ParticleEffect {
         for (let i = 0; i < count; i++) {
             const typeIdx = $Math.randomRange(0, types.length - 1, true);
             const type = types.at(typeIdx);
-            Engine.particleEngine.spawnParticle(worldPos, time, type);
+            this.#engine.spawnParticle(worldPos, time, type);
         }
     }
 }

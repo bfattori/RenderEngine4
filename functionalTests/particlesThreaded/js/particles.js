@@ -37,6 +37,11 @@ RenderEngine.init({
     particleEngine: {
         maxParticles: 50000
     },
+    threading: {
+        particleEngine: {
+            enabled: true
+        }
+    }
 });
 
 // set up the particles and effects we'll use
@@ -76,7 +81,6 @@ function explode() {
     emitter.emit();
     setTimeout(explode, $Math.randomRange(10, 100, true));
 }
-
 
 // game object and component parts
 // - set world position, rotation, and scale

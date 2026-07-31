@@ -287,7 +287,7 @@ export default class ParticleEngine {
     spawnParticle(worldPos, time, particleType) {
         this.#newParticles = true;
         const pType = this.getParticleType(particleType);
-        if (pType !== null) {
+        if (pType) {
             const idx = this.#nextIndex;
             if (idx !== -1) {
                 this.#memories[idx] = {};
@@ -299,9 +299,9 @@ export default class ParticleEngine {
             } else if (ctx.debug)
                 console.warn(`Failed to spawn particle: ${particleType} - no available memory`);
             
-        } else {
-            throw new RenderEngineError(`Unknown particle type: ${particleType}`);
-        }
+        } else if (ctx.debug)
+            console.warn(`Unknown particle type: ${particleType}`);
+        
     }
 
     /**
@@ -310,6 +310,7 @@ export default class ParticleEngine {
      * @return {ParticleEffect} The instance of the effect
      */
     addEffect(name, particleEffect) {
+        particleEffect.engine = this;
         this.effects.set(name, particleEffect);
     }
 
@@ -331,7 +332,9 @@ export default class ParticleEngine {
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
     runEffect([x, y], effectName, time, deltaTime) {
-        this.getEffect(effectName).run([x, y], time, deltaTime);
+        const effect = this.getEffect(effectName);
+        if (effect)
+            effect.run([x, y], time, deltaTime);
     }
 
     /**
@@ -445,8 +448,8 @@ class PEStub {
         };
     }
 
-    send(data) {
-        this.#thread.postMessage({ re4: true, ... data });
+    send(data, transfer) {
+        this.#thread.postMessage({ re4: 'render', ... data }, transfer);
     }
 
     /**
@@ -454,6 +457,10 @@ class PEStub {
      */
     notReady() {
         this.#ready = false;
+    }
+
+    getTransferrable(name, obj) {
+        return obj.getTransferrable(name);
     }
 
     /**
@@ -480,13 +487,18 @@ class PEStub {
     get stub() {
         const $this = this;
         return {
+            get bitmap() {
+                return $this.bitmap;
+            },
+
             /**
              * Add a new particle type to the particle engine
              * @param {String} name 
              * @param {Particle} particle 
              */
             addParticleType: (name, particle) => {
-                $this.send({ type: 'type', name: name, particle: particle }, [particle]);
+                const tParticle = $this.getTransferrable(name, particle);
+                $this.send({ type: 'type', name: name, particle: tParticle });
             },
 
             /**
@@ -495,7 +507,8 @@ class PEStub {
              * @return {ParticleEffect} The instance of the effect
              */
             addEffect: (name, particleEffect) => {
-                $this.send({ type: 'addEffect', name: name, effect: particleEffect }, [particleEffect]);
+                const tEffect = $this.getTransferrable(name, particleEffect);
+                $this.send({ type: 'addEffect', name: name, effect: tEffect });
             },
 
             /**

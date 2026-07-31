@@ -107,7 +107,7 @@ export default class Engine {
 
     if (this.#ENGINE_OPTIONS.threading.particleEngine.enabled) {
       // load the particle engine into a thread
-      this.#threads.particleEngine = new Worker(new URL("../particlesystem/Thread.js", import.meta.url), {
+      this.#threads.particleEngine = new Worker(new URL(`../particlesystem/Thread.js?v=${Date.now()}`, import.meta.url), {
         name: this.#ENGINE_OPTIONS.threading.particleEngine.name,
         type: 'module'
       });

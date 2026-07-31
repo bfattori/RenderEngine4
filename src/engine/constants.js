@@ -58,12 +58,6 @@ const Constants = {
 
     // Paricle engine
     MAX_PARTICLES: 3000,
-    PARTICLE_PRECISION_LOW: 'low',
-    FP_LOW: 2,
-    PARTICLE_PRECISION_MEDIUM: 'medium',
-    FP_MEDIUM: 5,
-    PARTICLE_PRECISION_HIGH: 'high',
-    FP_HIGH: 16,
 
 
     UP_VECTOR: [1, -1],

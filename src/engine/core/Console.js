@@ -50,8 +50,8 @@ export default class Console {
 // Replace window.console or global.console 
 // with our console
 const re4Console = new Console();
-if (window) {
-    window.console = re4Console;
-} else if (global) {
-    global.console = re4Console;
+if (typeof global !== 'undefined') {
+  global.console = re4Console;
+} else {
+  self.console = re4Console;
 }

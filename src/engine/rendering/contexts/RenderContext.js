@@ -436,6 +436,10 @@ export default class RenderContext {
     // Clear active objects for this frame
     this.clearActiveObjects();
 
+    // start the particles rendering
+    if (Engine.particleThreading)
+      Engine.particleEngine.renderParticles(time, deltaTime, null);
+
     if (this.#renderer && this.#renderer.constructor !== Renderer) {
       // pre-frame generation
       this.#renderer.preFrame();
@@ -499,8 +503,9 @@ export default class RenderContext {
       // render any pending instructions
       this.renderInstructions(time, deltaTime);
 
-      // render the particles
-      Engine.particleEngine.renderParticles(time, deltaTime, null, this.renderer.surface);
+      if (!Engine.particleThreading)
+        Engine.particleEngine.renderParticles(time, deltaTime, null,  this.renderer.surface);
+
 
       // post-frame generation
       this.#renderer.postFrame();
