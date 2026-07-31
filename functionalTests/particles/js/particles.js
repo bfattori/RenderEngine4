@@ -70,7 +70,7 @@ function explode() {
         position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
     });
     emitter.emit();
-    setTimeout(explode, $Math.randomRange(50, 2000, true));
+    setTimeout(explode, $Math.randomRange(10, 500, true));
 }
 
 explode();

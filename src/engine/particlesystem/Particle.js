@@ -14,17 +14,25 @@ export default class Particle extends Config {
              * Size of the particle
              * @type {number}
              */
-            particleSize: 2,
+            particleSize: 3,
             /**
              * Velocity range - a scalar multiple to apply to the velocity
              * @type {number}
              */
             velocity: 1.4,
             /**
+             * Particle drag
+             */
+            drag: 0.5,
+            /**
+             * Increase in drag at each update
+             */
+            dragRate: 0.01,
+            /**
              * Lifespan range of the particle in milliseconds
              * @type {Array<number>} [minimum, maximum]
              */
-            lifeSpan: [100, 500]
+            lifeSpan: [100, 1000]
         });
         this.merge(opts);
     }
@@ -44,9 +52,15 @@ export default class Particle extends Config {
     spawn($memory, time, type, config) {
         $memory.$pType = type;    // the particle type
         $memory.color = config.colors[$Math.randomRange(0, config.colors.length - 1, true)];
+        $memory.startSize = config.particleSize;
         $memory.size = config.particleSize;
+        $memory.drag = config.drag;
+        $memory.dragRate = config.dragRate;
+    
+        const life = config.lifeSpan[$Math.randomRange(0, config.lifeSpan.length - 1, true)];
+        $memory.ttl = life;
         return {
-            life: $Math.randomRange(config.lifeSpan[0], config.lifeSpan[1], true),
+            life: life,
             vel: $Math.vecMulScalar(
                     $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
                     $Math.randomRange(0, config.velocity)
@@ -61,13 +75,16 @@ export default class Particle extends Config {
      * @param {Object} $memory - The memory object containing the particle's instantaneous properties
      * @param {Array<number>} pos - The particle's current position
      * @param {Array<number>} vel - The particle's velocity vector
-     * @param {number} life - Remaining lifespace of the particle
+     * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
     update(time, deltaTime, $memory, pos, vel, life) {
         // standard update (add velocity to position)
-        pos[0] += vel[0];
-        pos[1] += vel[1];
+        pos[0] += (vel[0] * (1 / $memory.drag));
+        pos[1] += (vel[1] * (1 / $memory.drag));
+        $memory.drag += $memory.dragRate;
+
+        $memory.size = (life / $memory.ttl) * $memory.startSize;
     }
 
     /**
