@@ -4,7 +4,7 @@ import $Math from '../../core/Math.js';
 export default class ExplosionParticle extends Particle {
     constructor() {
         super({
-            colors: ['#800', '#ff0', '#fff', '#888', '#f00', '#f90'],
+            colors: ['#ff8', '#ff0', '#fff', '#888', '#f00', '#f90'],
             lifeSpan: [1000, 3000]
         })
     }
