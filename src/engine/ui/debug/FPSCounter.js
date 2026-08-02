@@ -69,8 +69,8 @@ export default class FPSCounter {
         this.#smoothedU += (updateTick - this.#smoothedU) / this.#filterStrength;
         this.#smoothedR += (renderTick - this.#smoothedR) / this.#filterStrength;
 
-        const updatePct = (this.#smoothedU / this.#smoothedT) * 100;
-        const renderPct = (this.#smoothedR / this.#smoothedT) * 100;
+        const updatePct = 100 - ((this.#smoothedU / this.#smoothedT) * 100);
+        const renderPct = 100 - ((this.#smoothedR / this.#smoothedT) * 100);
 
         this.#fpsCounter.textContent = `${this.#smoothedFPS.toFixed(1)} fps`;
 

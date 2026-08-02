@@ -2,7 +2,9 @@
  * Console - Simple logging utility for RenderEngine4
  * Provides warn and error logging functionality
  */
+import Context from '../Context.js';
 
+const ctx = Context.getInstance();
 const ref = console;
 
 export default class Console {
@@ -43,15 +45,33 @@ export default class Console {
    * @param {string} message - The debug message to log
    */
   debug(...message) {
-    ref.debug('[RenderEngine4]', ...message);
+    this.info(...message);
+  }
+
+  shutdown() {
+    if (typeof global !== 'undefined') {
+      global.console = ref;
+      delete global.PRAGMA;
+    } else {
+      self.console = ref;
+      delete self.PRAGMA;
+    }
   }
 };
 
+// Debug insert points
+function pragma(name, fn) {
+  if (ctx.debug && ctx.debugOpts[name.split(':')[0]] === true)
+    fn();
+}
+
 // Replace window.console or global.console 
-// with our console
+// with our console and assign the pragma directive
 const re4Console = new Console();
 if (typeof global !== 'undefined') {
   global.console = re4Console;
+  global.PRAGMA = pragma;
 } else {
   self.console = re4Console;
+  self.PRAGMA = pragma;
 }

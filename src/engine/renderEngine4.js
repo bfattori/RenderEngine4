@@ -14,9 +14,9 @@ const RenderEngine = {
      * 
      * @param {Object} options - See {@link Engine} for engine configuration options.
      */
-    init(options) {
+    async init(options) {
         engineOptions = options;
-        RenderEngine.RE4 = Engine.init(engineOptions);
+        RenderEngine.RE4 = await Engine.init(engineOptions);
 
         // also assign to Window and Global scope
         if (window) {
@@ -76,8 +76,8 @@ const RenderEngine = {
      * Shutdown the engine
      */
     shutdown() {
-        RE4.shutdown();
-        Console.info("Shutdown");
+        RE4.destroy();
+        console.info("Shutting down...");
     },
 
     get world() {
@@ -116,6 +116,9 @@ window.addEventListener('keyup', (event) => {
             RenderEngine.start();
         } else
             RenderEngine.pause();
+    if (event.key === 'F4') {
+        RenderEngine.shutdown();
+    }
     return false;
 });
 

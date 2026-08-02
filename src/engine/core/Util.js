@@ -1,4 +1,4 @@
-
+import $Math from './Math.js';
 export default class Util {
     
     /**
@@ -25,5 +25,19 @@ export default class Util {
             return r;
         }
         return "#000000";
+    }
+
+    /**
+     * Get a random color between the value and 240 for each component
+     * @param {number} r 
+     * @param {number} g 
+     * @param {number} b 
+     * @returns {String} A color
+     */
+    static getRandomColor(r,g,b) {
+        r = r/255;
+        g = g/255;
+        b = b/255;
+        return Util.getColor($Math.randomRange(r, 0.9 - r), $Math.randomRange(g, 0.9 - g), $Math.randomRange(b, 0.9 - b));
     }
 }

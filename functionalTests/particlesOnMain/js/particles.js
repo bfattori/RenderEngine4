@@ -13,7 +13,7 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
 
 // create a double-buffered canvas renderer
-RenderEngine.init({
+await RenderEngine.init({
     flags: {
         debugMode: false,
         showFps: true
@@ -35,7 +35,7 @@ RenderEngine.init({
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 50000
+        maxParticles: 200000
     },
 });
 
@@ -44,7 +44,7 @@ const particleName = 'expParticle';
 const effectName = 'explosion';
 
 const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 2000;
+pEffect.quantity = 1000;
 
 const exParticle = ExplosionParticle.getInstance();
 RenderEngine.particleEngine.addParticleType(particleName, exParticle);

@@ -13,7 +13,6 @@ import EventEngine from './EventEngine.js'
 import RenderContext from '../rendering/contexts/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine from './../particlesystem/ParticleEngine.js';
-import { PEStub } from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
 import AABBCollisionModel from '../collisionModels/models/AABB.js';
 
@@ -57,12 +56,6 @@ export default class Engine {
   #collisionModel = null;
   #fpsCounter = null;
 
-  #threads = {
-    render: null,
-    collision: null,
-    particleEngine: null
-  };
-
   constructor(options) {
     if (!waitInit) {
       throw new RenderEngineError("Engine must be initialized before use. Please call 'init' first.")
@@ -76,6 +69,9 @@ export default class Engine {
 
     ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
     ctx.debugOpts = this.#ENGINE_OPTIONS.flags.debugOpts;
+
+    ctx.engineOpts = this.#ENGINE_OPTIONS.engineOpts;
+    ctx.engineOpts.showFps = this.#ENGINE_OPTIONS.flags.showFps;
     
     // Game timer maintained by the engine
     this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;
@@ -103,27 +99,6 @@ export default class Engine {
 
     if (this.#ENGINE_OPTIONS.flags.showFps) {
       this.#fpsCounter = new FPSCounter();
-    }
-
-    if (this.#ENGINE_OPTIONS.threading.particleEngine.enabled) {
-      // load the particle engine into a thread
-      this.#threads.particleEngine = new Worker(new URL(`../particlesystem/Thread.js?v=${Date.now()}`, import.meta.url), {
-        name: this.#ENGINE_OPTIONS.threading.particleEngine.name,
-        type: 'module'
-      });
-      this.#threads.particleEngine.postMessage({ 
-        init: 'render', 
-        width: this.width, 
-        height: this.height, 
-        config: this.#ENGINE_OPTIONS.particleEngine, 
-        threading: this.#ENGINE_OPTIONS.threading.particleEngine 
-      });
-      // Use the stub to redirect engine calls to the thread
-      // so a dev doesn't need to be aware of threading
-      this.#PARTICLE_ENGINE = new PEStub(this.#threads.particleEngine).stub;
-    } else {
-      // load the engine in the main thread
-      this.#PARTICLE_ENGINE = ParticleEngine.getInstance(this.width, this.height, this.#ENGINE_OPTIONS.particleEngine, this.#ENGINE_OPTIONS.threading.particleEngine);
     }
 
     // call init hook
@@ -164,6 +139,11 @@ export default class Engine {
    */
   get eventEngine() {
     return this.#EVENT_ENGINE;
+  }
+
+  set particleEngine(engine) {
+    this.#PARTICLE_ENGINE = engine;
+    primary.PARTICLE_ENGINE = engine;
   }
 
   static get particleEngine() {
@@ -262,29 +242,17 @@ export default class Engine {
   // Threading
 
   get renderThreading() {
-    return this.#threads.render !== null;
-  }
-
-  get renderThread() {
-    return this.#threads.render;
+    return this.options.threading.render.enabled;
   }
 
   get collisionThreading() {
-    return this.#threads.collision !== null;
-  }
-
-  get collisionThread() {
-    return this.#threads.collision;
+    return this.options.threading.collision.enabled;
   }
 
   get particleThreading() {
-    return this.#threads.particleEngine !== null;
+    return this.options.threading.particleEngine.enabled;
   }
 
-  get particleEngineThread() {
-    return this.#threads.particleEngine;
-  }
- 
   //--------------------------------
 
   /**
@@ -359,11 +327,15 @@ export default class Engine {
    * @param {Object} engineOptions - See the {@link Engine} constructor for availble options
    * @returns {Engine} The current instance of Engine.
    */
-  static init(engineOptions) {
+  static async init(engineOptions) {
     waitInit = true;
     // validate engine options
     // ...
-    return new Engine(engineOptions);
+    const e = new Engine(engineOptions);
+    if (!e.options.particleEngine.disabled) {
+      e.particleEngine = await ParticleEngine.getInstance(e.width, e.height, e.options.particleEngine, e.options.threading.particleEngine);
+    }
+    return e;
   }
 
   /**
@@ -540,17 +512,24 @@ export default class Engine {
    */
   destroy() {
     // clean up before exiting
+    cancelAnimationFrame(this.#animationFrameId);
     this.#EVENT_ENGINE?.shutdown();
     this.#WORLD?.shutdown();
     this.#PARTICLE_ENGINE?.shutdown();
 
-    const self = this;
+    const $this = this;
+    const $self = typeof global !== 'undefined' ? global : self;
+
     // async cleanup of the engine
     setTimeout(() => {
+      console.debug('Engine terminated');
+      console.shutdown();
+
       // call shutdown hook
-      self.options.hooks.onShutdown();
+      $this.options.hooks.onShutdown();
       primary.ENGINE = null;
-      this.#ENGINE_OPTIONS = null;
+      delete $self.RE4;
+      delete $self.RenderEngine4;
     }, 250);
   }
 

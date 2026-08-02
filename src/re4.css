@@ -125,3 +125,105 @@ div.renderBar span.renderBarText {
     color: black;
     padding-left: 5px;
 }
+
+/** Canvas Picture-in-Picture Views **/
+
+canvas.pip {
+    position: absolute;
+    border: 1px solid;
+    padding: 3px;
+    box-shadow:0 2px 25px rgba(39, 1, 1, 0.4);
+}
+
+canvas.pip.orchestrator-view {
+    top: 10px;
+    left: 10px;
+}
+
+canvas.pip.worker-view {
+    left: 10px; 
+}
+
+/** Load Counter */
+
+div.loadView {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 130px;
+    border: 1px solid silver;
+    font-size: 8pt;
+    padding-left: 5px;
+    background-color: #ededed;
+}
+
+div.loadView div.loadTitle {
+    font-weight: bold;
+}
+
+div.loadView div.loadContainer {
+    color: black;
+    position: absolute;
+    left: 5px;
+    width: 78px;
+}
+
+div.loadView span.loadLabel {
+    color: black;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+div.loadContainer div.loadCounter {
+    color: black;
+    position: absolute;
+    padding-left: 5px;
+    top: 0;
+    left: 55px;
+}
+
+div.loadContainer div.loadBar {
+    color: black;
+    position: absolute;
+    top: 0;
+    left: 55px;
+    height: 15px;
+    z-index: 20;
+}
+
+div.loadBar span.loadBarText {
+    color: black;
+    padding-left: 5px;
+}
+
+div.fpsCounter div.renderContainer {
+    position: absolute;
+    top: 30px;
+    left: 55px;
+    width: 78px;
+}
+
+div.renderContainer div.renderCounter {
+    color: black;
+    position: absolute;
+    padding-left: 5px;
+    top: 0;
+    left: 0;
+}
+
+div.renderContainer div.renderBar {
+    background-color: #ab8cf3;
+    color: black;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 15px;
+    z-index: 20;
+}
+
+div.renderBar span.renderBarText {
+    color: black;
+    padding-left: 5px;
+}

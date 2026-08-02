@@ -140,7 +140,7 @@ export default class CanvasRenderer extends Renderer {
     #particles(target) {
         if (!Engine.options.particleEngine.disabled && Engine.particleEngine.bitmap) {
             // draw particles to target
-            target.drawImage(Engine.particleEngine.bitmap, 0, 0);
+            this.surface.drawImage(Engine.particleEngine.bitmap, 0, 0);
         }        
     }
 
@@ -149,11 +149,14 @@ export default class CanvasRenderer extends Renderer {
      */
     postFrame() {
         if (this.config.doubleBuffered) {
+            // draw particles to offscreen framebuffer
+            this.#particles();
+
             // swap offscreen to visible context
-            this.#particles(this.surface);
             this.#blit.transferFromImageBitmap(this.#offscreen.transferToImageBitmap());
         } else {
-            this.#particles(this.surface);
+            // draw particles directly to screen
+            this.#particles();
         }
     }
 

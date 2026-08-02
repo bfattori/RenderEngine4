@@ -307,6 +307,10 @@ export default class RenderContext {
     this.config.renderPlanes.names = names.slice(0, names.length);
   }
 
+  get particleThreadingEnabled() {
+     return Engine.options.threading.particleEngine.enabled;
+  }
+
   //-------------------------------
   // Properties
   //-------------------------------
@@ -436,8 +440,8 @@ export default class RenderContext {
     // Clear active objects for this frame
     this.clearActiveObjects();
 
-    // start the particles rendering
-    if (Engine.particleThreading)
+    // start the particles rendering now, if threading
+    if (this.particleThreadingEnabled)
       Engine.particleEngine.renderParticles(time, deltaTime, null);
 
     if (this.#renderer && this.#renderer.constructor !== Renderer) {
@@ -503,7 +507,9 @@ export default class RenderContext {
       // render any pending instructions
       this.renderInstructions(time, deltaTime);
 
-      if (!Engine.particleThreading)
+      // render the particles directly to the 
+      // framebuffer if running on the main thread
+      if (!this.particleThreadingEnabled)
         Engine.particleEngine.renderParticles(time, deltaTime, null,  this.renderer.surface);
 
 

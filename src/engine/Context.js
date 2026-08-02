@@ -5,6 +5,7 @@ export default class Context {
     static #instance = null;
     #debug = true;
     #debugOpts = {};
+    #engineOpts = {};
     
     constructor() {}
 
@@ -29,5 +30,13 @@ export default class Context {
 
     get debugOpts() {
         return this.#debugOpts;
+    }
+
+    set engineOpts(opts) {
+        this.#engineOpts = opts;
+    }
+
+    get engineOpts() {
+        return this.#engineOpts;
     }
 }

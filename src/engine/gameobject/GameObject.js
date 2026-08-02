@@ -362,13 +362,13 @@ export default class GameObject {
 
     rc.popTransform();
 
-    if (ctx.debug && ctx.debugOpts.objectOrigin) {
+    PRAGMA('objectOrigins', () => {
         const mtx = Matrix2d.from(this.worldTransform);
         mtx.scaleSelf(3,3);
         rc.pushTransform(mtx);
         originShape(this.world.renderContext)
         rc.popTransform();
-    }
+    });
 
     this.#hooks.onAfterUpdate.call(time, deltaTime);
   }
