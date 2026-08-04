@@ -1,4 +1,4 @@
-
+import Engine from '../../core/Engine.js';
 import Context from '../../Context.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import LoadCounter from '../../ui/debug/LoadCounter.js';
@@ -35,7 +35,6 @@ export default class $ParticleEngine {
                         this.#readyToProcess = true;
                         break;
                     case 'updated':
-                        this.#metrics = event.data.metrics;
                         break;
                     case 'rendered':
                         this.bitmap = event.data.image;
@@ -48,8 +47,15 @@ export default class $ParticleEngine {
                         break;
                     case 'metrics':
                         PRAGMA('showParticleEngineLoad', () => {
+                            this.#engineLoadView.update('Update:Time', event.data.metrics.updateTime);
+                            this.#engineLoadView.update('Render:Time', event.data.metrics.renderTime);
+                            this.#engineLoadView.update('CPU:Time', event.data.metrics.cpuTime);
+                            this.#engineLoadView.update('Update:Load', (event.data.metrics.updateTime / Engine.engine.lastTime) * 100);
+                            this.#engineLoadView.update('Render:Load', (event.data.metrics.renderTime / Engine.engine.lastTime) * 100);
+                            this.#engineLoadView.update('CPU:Load', (event.data.metrics.cpuTime / Engine.engine.lastTime) * 100);
                             for (let i = 0; i < event.data.metrics.size; i++) {
-                                this.#engineLoadView.update(`worker${i}`, event.data.metrics[i].load * 100, true);
+                                this.#engineLoadView.update(`Workers:Thread ${i}`, event.data.metrics[i].load * 100);
+                                this.#engineLoadView.update(`Workers:Particles ${i}`, event.data.metrics[i].live);
                             }
                         });
                         break;
@@ -78,10 +84,26 @@ export default class $ParticleEngine {
         });
 
         PRAGMA('showParticleEngineLoad', () => {
-            const counters = [];
-            for (let i = 0; i < this.#initProps.threading.workers; i++)
-                counters.push(`worker${i}`);
-            this.#engineLoadView = new LoadCounter("Particle Engine Load", counters);
+            const config = {
+                left: 5,
+                counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'CPU:Load', 'CPU:Time'],
+                options: {
+                    'Update:Time': { suffix: ' ms' },
+                    'Render:Time': { suffix: ' ms' },
+                    'CPU:Time': { suffix: ' ms' },
+                    'Update:Load': { bar: true, suffix: '%' },
+                    'Render:Load': { bar: true, suffix: '%' },
+                    'CPU:Load': { bar: true, suffix: '%' }
+                }
+            };
+
+            for (let i = 0; i < this.#initProps.threading.workers; i++) {
+                config.counters.push(`Workers:Thread ${i}`);
+                config.counters.push(`Workers:Life ${i}`);
+                config.options[`Workers:Thread ${i}`] = { bar: true, suffix: '%' }
+                config.options[`Workers:Particles ${i}`] = { bar: true, suffix: 'p' }
+            }
+            this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
         });
 
         return new Promise((resolve) => {

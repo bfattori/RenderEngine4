@@ -1,6 +1,8 @@
 import RenderEngineError from '../core/RenderEngineError.js';
 import Context from '../Context.js';
 import Particle from '../particlesystem/Particle.js';
+import LoadCounter from '../ui/debug/LoadCounter.js';
+import Engine from '../core/Engine.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
 
@@ -43,7 +45,10 @@ export default class $ParticleEngine {
     // context in the main thread
     #offscreen = null;
     #surface = null;
-    
+
+    #engineLoadView = null;
+    #start = 0;
+
     /**
      * Get the instance of the ParticleEngine.  This method should be used instead of creating 
      * a new instance directly to enforce the singleton pattern.
@@ -73,7 +78,25 @@ export default class $ParticleEngine {
 
         // enforce singleton pattern
         $ParticleEngine.#useBuilder = true;
-        
+
+        PRAGMA('showParticleEngineLoad', () => {
+            if (!threading.enabled) {
+                const config = {
+                    left: 5,
+                    counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'CPU:Load', 'CPU:Time'],
+                    options: {
+                        'Update:Time': { suffix: ' ms' },
+                        'Render:Time': { suffix: ' ms' },
+                        'CPU:Time': { suffix: ' ms' },
+                        'Update:Load': { bar: true, suffix: '%' },
+                        'Render:Load': { bar: true, suffix: '%' },
+                        'CPU:Load': { bar: true, suffix: '%' }
+                    }
+                }
+                this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
+            }
+        });
+
         this.#config.merge(config);
         this.#threading.merge(threading);
 
@@ -298,6 +321,9 @@ export default class $ParticleEngine {
             effect.run([x, y], time, deltaTime);
     }
 
+    //------------------------------------
+    // Lifecycle methods
+
     /**
      * Update the particles within the render context, and for the specified time.
      *
@@ -314,6 +340,8 @@ export default class $ParticleEngine {
         }
 
         // add any particles that are queued...
+        this.#start = PERF('particlesUpdateStart');
+
         if (this.#buffered.length !== 0) {
             for (const p of this.#buffered) {
                 // spawn the particle
@@ -333,6 +361,18 @@ export default class $ParticleEngine {
 
         this.#liveParticles = lives;
         this.#newParticles = false;
+        PERF('particlesUpdateEnd');
+        MEASURE('Update Particles', 'particlesUpdateStart', 'particlesUpdateEnd');
+
+        PRAGMA('showParticleEngineLoad', () => {
+            if (!this.#threading.enabled) {
+                // using the last frame time, what
+                // is the overall load of the PE on the CPU?
+                const overall = performance.now() - this.#start;
+                this.#engineLoadView.update('Update:Load', (overall / Engine.engine.lastTime) * 100);
+                this.#engineLoadView.update('Update:Time', overall);
+            }
+        });
     }
 
     /**
@@ -366,12 +406,29 @@ export default class $ParticleEngine {
     renderParticles(time, deltaTime, occlusionMask = null, directSurface = null) {
         if (!this.enabled || this.liveParticles === 0) return;
 
+        const render = PERF('particlesRenderStart');
+
         let surf = directSurface || this.#surface;
         this.#memories.forEach((memory, i) => {
             if (memory !== null) {
                 const pType = this.getParticleType(memory.$pType);
                 pType.render(time, deltaTime, memory, 
                     this.#pPos[i], this.#pSpan[i], 'canvas', surf);
+            }
+        });
+
+        PERF('particlesRenderEnd');
+        MEASURE('Render Particles', 'particlesRenderStart', 'particlesRenderEnd');
+        PRAGMA('showParticleEngineLoad', () => {
+            if (!this.#threading.enabled) {
+                // using the last frame time, what
+                // is the overall load of the PE on the CPU?
+                const renderTime = performance.now() - render;
+                this.#engineLoadView.update('Render:Load', (renderTime / Engine.engine.lastTime) * 100);
+                this.#engineLoadView.update('Render:Time', renderTime);
+                const overall = performance.now() - this.#start;
+                this.#engineLoadView.update('CPU:Load', (overall / Engine.engine.lastTime) * 100);
+                this.#engineLoadView.update('CPU:Time', overall);
             }
         });
     }

@@ -22,14 +22,14 @@ const Constants = {
     
     // SoundComponent priority - handles audio playback independently
     SOUND_PRIORITY: 0.92,
-    
-    // Particle rendering priority
+
+    // Particle emitter priority
     PARTICLE_RENDER_PRIORITY: 0.98,
 
-    // No operation
+    /* No operation: () => {} */
     NOOP: NOP,
     
-    // Console error logging
+    /* Engine error logging */
     ERROR_LOGGER: ENGINE_ERRORS,
 
     VECTOR_DEFAULTS: {
@@ -46,22 +46,40 @@ const Constants = {
         FONT_SCALE: 2.0
     },
 
+    /* Default Point Size */
     POINT_SIZE: 0.5,
+
+    /* PI's cousins */
     TWO_PI: Math.PI * 2,
     HALF_PI: Math.PI / 2,
 
-    // Compilation
+    /* Function Compilation */
     COMPILATION: {
         FAILED: -1,
         NOT_SUPPORTED: -2
     },
 
-    // Paricle engine
+    /* Particle Engine */
     MAX_PARTICLES: 3000,
 
-
+    /* Base Vectors */
     UP_VECTOR: [1, -1],
-    DOWN_VECTOR: [1, 1]
+    DOWN_VECTOR: [1, 1],
+
+    /* Load Counters */
+    LOAD_COUNTER_DEFAULTS: {
+        top: 10,
+        width: 130,
+        filteringStrength: 10
+    },
+    DEFAULT_COUNTER_FORMAT: {
+        bar: false,
+        smoothing: true,
+        color: null,
+        prefix: '',
+        suffix: ''
+    },
+    DEFAULT_FILTER_STRENGTH: 10
 };
 
 export default Constants;

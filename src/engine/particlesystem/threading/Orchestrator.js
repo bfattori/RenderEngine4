@@ -1,4 +1,3 @@
-
 import Console from '../../core/Console.js';
 import Context from '../../Context.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
@@ -13,8 +12,9 @@ class Orchestrator {
     #workers = new Map();
     #particlesConfig;
     #threadingConfig;
-    #view;
     #compositor;
+    #timers = [];
+    #exUpdate = [];
 
     // the bitmaps returned from the worker threads are stored here until 
     // the orchestrator thread can combine them and send them to the main thread
@@ -29,7 +29,7 @@ class Orchestrator {
         this.#particlesConfig = particlesConfig;
         this.#threadingConfig = threadingConfig;
         this.#waitingWorkers = new Array(threadingConfig.workers).fill(true);
-        
+
         // initialize the context with the system options
         ctx.debugOpts = systemOpts.debugOpts;
         ctx.engineOpts = systemOpts.engineOpts;
@@ -62,8 +62,16 @@ class Orchestrator {
         return this.#expected;
     }
 
+    get updated() {
+        return this.#exUpdate;
+    }
+
     get workers() {
         return this.#workers;
+    }
+
+    get timers() {
+        return this.#timers;
     }
 
     /**
@@ -71,10 +79,14 @@ class Orchestrator {
      * @returns {ImageBitmap}
      */
     #compositeWorkers() {
+        PERF('compositeStart');
         for (let i = 0; i < this.#workerBitmaps.length; i++) {
             this.#compositor.getContext('2d').drawImage(this.#workerBitmaps[i], 0, 0);
         }
-        return this.#compositor.transferToImageBitmap();
+        const bitmap = this.#compositor.transferToImageBitmap();
+        PERF('compositeEnd');
+        MEASURE('Composite Bitmaps', 'compositeStart', 'compositeEnd');
+        return bitmap;
     }
 
     /**
@@ -92,22 +104,19 @@ class Orchestrator {
                     }
                     break;
                 case 'updated':
-                    // update the status of the worker thread in the orchestrator
-                    this.#workers.get(event.data.workerId).load = event.data.load;
-                    this.#workers.get(event.data.workerId).burden = event.data.burden;
-                    this.#workers.get(event.data.workerId).live = event.data.live;
+                    if (this.updated[event.data.workerId]) {
+                        this.#exUpdate[event.data.workerId] = false;
 
-                    // send the updated load metrics back to the main thread
-                    const metrics = {size: orchestratorInstance.workers.size};
-                    for (const [workerId, workerData] of orchestratorInstance.workers) {
-                        metrics[workerId] = {
-                            load: workerData.load,
-                            burden: workerData.burden,
-                            live: workerData.live
-                        };
+                        // update the status of the worker thread in the orchestrator
+                        this.#workers.get(event.data.workerId).load = event.data.load;
+                        this.#workers.get(event.data.workerId).burden = event.data.burden;
+                        this.#workers.get(event.data.workerId).live = event.data.live;
+
+                        if (this.updated.every((v) => v === false)) {
+                            // all threads have updated
+                            this.#timers[1] = performance.now();
+                        }
                     }
-                    postMessage({ re4: 'orchestrator', type: 'metrics', metrics: metrics });
-
                     break;
                 case 'rendered':
                     // the worker thread has rendered the particles and returned the bitmap
@@ -121,12 +130,35 @@ class Orchestrator {
                         });
 
                         if (this.#expected.every((v) => v === false)) {
-                            // all worker threads have returned their bitmaps, combine them and send to the main thread
+                            // all worker threads have rendered
                             const combinedBitmap = this.#compositeWorkers();
-                            postMessage({ re4: 'orchestrator', type: 'rendered', image: combinedBitmap }, [combinedBitmap]);
-                            
+                            postMessage({
+                                re4: 'orchestrator',
+                                type: 'rendered',
+                                image: combinedBitmap
+                            }, [combinedBitmap]);
+
                             // clear the array for the next render cycle
                             this.#workerBitmaps.length = 0;
+
+                            PRAGMA('showParticleEngineLoad', () => {
+                                // send the updated load metrics back to the main thread
+                                const metrics = {
+                                    size: orchestratorInstance.workers.size,
+                                    updateTime: (this.#timers[1] - this.#timers[0]) / this.#timers[10],
+                                    renderTime: (performance.now() - this.#timers[2]) / this.#timers[10],
+                                    cpuTime: (performance.now() - this.#timers[0]) / this.#timers[10]
+                                };
+                                for (const [workerId, workerData] of orchestratorInstance.workers) {
+                                    metrics[workerId] = {
+                                        load: workerData.load,
+                                        burden: workerData.burden,
+                                        live: workerData.live
+                                    };
+                                }
+                                postMessage({re4: 'orchestrator', type: 'metrics', metrics: metrics});
+
+                            });
                         }
                     }
                     break;
@@ -233,13 +265,22 @@ addEventListener('message', (event) => {
                     // forward to a worker
                     orchestratorInstance.toWorker(event.data);
                     break;
+                case 'update':
+                    orchestratorInstance.timers[0] = performance.now();
+                    orchestratorInstance.timers[10] = event.data.deltaTime;
+                    // completion flags
+                    for (const [i, worker] of orchestratorInstance.workers) {
+                        if (worker) {
+                            orchestratorInstance.updated[i] = true;
+                        }
+                    }
                 case 'type':
                 case 'addEffect':
-                case 'update':
                     // call update on, and add particle types and effects to, all workers
                     orchestratorInstance.broadcast(event.data);
                     break;
                 case 'render':
+                    orchestratorInstance.timers[2] = performance.now();
                     // completion flags
                     for (const [i, worker] of orchestratorInstance.workers) {
                         if (worker) {

@@ -67,10 +67,11 @@ self.onmessage = (event) => {
                 case 'type':
                     // create a proxy particle type in the worker thread
                     const p = new Particle(event.data.particle.props);
-                    p.spawn = new Function("$memory", "time", "type", "config", event.data.particle.f['spawn']).bind(self);
-                    p.update = new Function("time", "deltaTime", "$memory", "pos", "vel", "life", event.data.particle.f['update']).bind(self);
-                    p.render = new Function("time", "deltaTime", "$memory", "pos", "life", "target", "surface", event.data.particle.f['render']).bind(self);
-                    p.cleanUp = new Function("$memory", event.data.particle.f['cleanUp']).bind(self);
+                    const strict = '"use strict;"\n'; 
+                    p.spawn = new Function("$memory", "time", "type", "config", strict + event.data.particle.f['spawn']).bind(self);
+                    p.update = new Function("time", "deltaTime", "$memory", "pos", "vel", "life", strict + event.data.particle.f['update']).bind(self);
+                    p.render = new Function("time", "deltaTime", "$memory", "pos", "life", "target", "surface", strict + event.data.particle.f['render']).bind(self);
+                    p.cleanUp = new Function("$memory", strict + event.data.particle.f['cleanUp']).bind(self);
                     worker.instance.addParticleType(event.data.name, p);
                     break;
                 case 'addEffect':

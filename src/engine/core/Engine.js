@@ -1,4 +1,5 @@
 /**
+
  * Engine - Main render loop engine class
  * Implements simple rendering loop and game object management system
  */
@@ -108,6 +109,10 @@ export default class Engine {
   //---------------------------
   // Primary engine components
   //---------------------------
+
+  static get engine() {
+    return primary.ENGINE;
+  }
 
   /**
    * Get the Engine instance
@@ -355,8 +360,7 @@ export default class Engine {
     if (!this.world) return;
     
     this.time = currentTime;
-    this.lastTime = this.lastTime === 0 ? currentTime : this.lastTime;
-    this.deltaTime = currentTime - this.lastTime;
+    this.deltaTime = deltaTime;
 
     try {
       // update the particles
@@ -414,43 +418,45 @@ export default class Engine {
     const loop = () => {
       if (!this.isRunning) return;
 
-      const startTime = Date.now();
+      const startTime = performance.now();
 
       // start frame generation
       const frameStart = performance.now();
-      const currentTime = frameStart;
+      const currentTime = PERF('frameStart');
       lifecycleHooks?.onBeforeFrame(currentTime);
 
-      // Calculate delta time in milliseconds (convert seconds back to ms)
+      // Calculate delta time in milliseconds
       const deltaTime = currentTime - this.lastTime; // Cap at ~60fps
       this.lastTime = currentTime;
       
       // Update the scene
-      const updateStart = performance.now();
+      const updateStart = PERF('updateStart');
       lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
       this.update(currentTime, deltaTime);
-      const updateEnd = performance.now();
+      const updateEnd = PERF('updateEnd');
       lifecycleHooks?.onUpdate(updateEnd - frameStart, updateEnd - updateStart);
       
       // Render the world
-      const renderStart = performance.now();
+      const renderStart = PERF('renderStart');
       lifecycleHooks?.onPreRender(renderStart - frameStart);
       this.renderWorld(currentTime, deltaTime);
-      const renderEnd = performance.now();
+      const renderEnd = PERF('renderEnd');
       lifecycleHooks?.onRender(renderEnd - frameStart, renderEnd - renderStart);
 
       // one frame generated
       lifecycleHooks.onFrame(performance.now() - frameStart);
-      const frameEnd = performance.now();
+      const frameEnd = PERF('frameEnd');
 
       if (this.isRunning) {
+        MEASURE('Generate Frame', 'frameStart', 'frameEnd');
+        MEASURE('Update World', 'updateStart', 'updateEnd');
+        MEASURE('Render Scene', 'renderStart', 'renderEnd');
+        if (this.options.flags.showFps) {
+          this.#fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
+        }
+
         this.#animationFrameId = requestAnimationFrame(loop);
       }
-
-      if (this.options.flags.showFps) {
-        this.#fpsCounter.update(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
-      }
-
     };
     
     this.#animationFrameId = requestAnimationFrame(loop);

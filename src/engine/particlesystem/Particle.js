@@ -38,7 +38,7 @@ export default class Particle extends Config {
     }
 
     #getFuncBody(funcStr) {
-        let lines = funcStr.split('\r\n');
+        let lines = funcStr.split(/\r?\n/);
         lines.shift();
         lines.length -= 1;
         // remove comments

@@ -1,4 +1,5 @@
 /**
+
  * Console - Simple logging utility for RenderEngine4
  * Provides warn and error logging functionality
  */
@@ -65,13 +66,37 @@ function pragma(name, fn) {
     fn();
 }
 
+/**
+ * Set a performance mark in the profiler
+ * @param name
+ */
+function perf(name) {
+  if (ctx.debug)
+    return performance.mark(name).startTime;
+}
+
+/**
+ * Add a measurement to the profiler
+ * @param name
+ * @param startMark
+ * @param endMark
+ */
+function measure(name, startMark, endMark) {
+  if (ctx.debug)
+    return performance.measure(name, startMark, endMark).duration;
+}
+
 // Replace window.console or global.console 
 // with our console and assign the pragma directive
 const re4Console = new Console();
 if (typeof global !== 'undefined') {
   global.console = re4Console;
   global.PRAGMA = pragma;
+  global.PERF = perf;
+  global.MEASURE = measure;
 } else {
   self.console = re4Console;
   self.PRAGMA = pragma;
+  self.PERF = perf;
+  self.MEASURE = measure;
 }

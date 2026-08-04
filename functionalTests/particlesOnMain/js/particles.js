@@ -15,8 +15,13 @@ import $Math from '../../../src/engine/core/Math.js';
 // create a double-buffered canvas renderer
 await RenderEngine.init({
     flags: {
-        debugMode: false,
-        showFps: true
+        debugMode: true,
+        showFps: true,
+        debugOpts: {
+            objectOrigins: false,
+            showParticleWorkersPiP: true,
+            showParticleEngineLoad: true
+        }
     },
     world: {
         renderContext: new VectorRenderContext(
@@ -44,7 +49,7 @@ const particleName = 'expParticle';
 const effectName = 'explosion';
 
 const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 1000;
+pEffect.quantity = 3000;
 
 const exParticle = ExplosionParticle.getInstance();
 RenderEngine.particleEngine.addParticleType(particleName, exParticle);

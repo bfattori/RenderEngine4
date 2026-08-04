@@ -19,7 +19,7 @@ await RenderEngine.init({
         showFps: true,
         debugOpts: {
             objectOrigins: false,
-            showParticleWorkersPiP: true,
+            showParticleWorkersPiP: false,
             showParticleEngineLoad: true
         }
     },
@@ -55,7 +55,7 @@ const particleName = 'expParticle';
 const effectName = 'explosion';
 
 const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 1000;
+pEffect.quantity = 3000;
 
 const exParticle = ExplosionParticle.getInstance();
 RenderEngine.particleEngine.addParticleType(particleName, exParticle);
