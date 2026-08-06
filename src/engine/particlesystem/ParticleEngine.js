@@ -47,12 +47,6 @@ export { ParticleEngineConfig, ParticleEngineThreadingConfig };
 
 export default class ParticleEngine {
     static #particleEngine = null;
-    static #orchestratorThread = null;
-    static #orchestratorReady = false;
-
-    static get #orchestrator() {
-        return ParticleEngine.#orchestratorThread;
-    }
 
     /**
      * Get the instance of the particle engine
@@ -65,32 +59,20 @@ export default class ParticleEngine {
     static async getInstance(width, height, config, threading) {
         if (ParticleEngine.#particleEngine === null) {
             if (threading.enabled && self.Worker) {
-                // initialize the orchestrator
-                ParticleEngine.#particleEngine = await ParticleEngine.createParticleOrchestrator(width, height, config, threading);
+                console.debug('Loading particle thread manager');
+                const pEngine = await import(new URL(`./threading/$ParticleEngine.js${ctx.engineOpts.preventScriptCaching ? '?v=' + Date.now() : ''}`, import.meta.url));
+                const manager = new pEngine.default(width, height, config, threading, { engineOpts: ctx.engineOpts, debugOpts: ctx.debugOpts });
+                await manager.start();
+                ParticleEngine.#particleEngine = manager;
             } else {
                 // load the particle engine interface into the main thread
                 const pEngine = await import(new URL(`./$ParticleEngine.js${ctx.engineOpts.preventScriptCaching ? '?v=' + Date.now() : ''}`, import.meta.url));
                 ParticleEngine.#particleEngine = pEngine.default.getInstance(width, height, config, threading);
+                console.debug('Loaded particle engine')
             }
         }
 
         return ParticleEngine.#particleEngine;
-    }
-
-    static async createParticleOrchestrator(width, height, config, threading) {
-        console.debug('Creating particle manager');
-        const pEngine = await import(new URL(`./threading/$ParticleEngine.js${ctx.engineOpts.preventScriptCaching ? '?v=' + Date.now() : ''}`, import.meta.url));
-
-        // load the particle engine orchestrator thread
-        ParticleEngine.#orchestratorThread = new Worker(new URL(`./threading/Orchestrator.js${ctx.engineOpts.preventThreadCaching ? '?v=' + Date.now() : ''}`, import.meta.url), {
-            name: `${threading.name}_orchestrator`,
-            type: 'module'
-        });
-        
-        // initialize the particle manager
-        const manager = new pEngine.default(ParticleEngine.#orchestratorThread, width, height, config, threading, { engineOpts: ctx.engineOpts, debugOpts: ctx.debugOpts });
-        await manager.start();
-        return manager;
     }
 }
 

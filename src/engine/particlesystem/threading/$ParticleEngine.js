@@ -1,9 +1,13 @@
-import Engine from '../../core/Engine.js';
+import Constants from '../../Constants.js';
 import Context from '../../Context.js';
+import Engine from '../../core/Engine.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import LoadCounter from '../../ui/debug/LoadCounter.js';
 
+import OrchestratorError from './OrchestratorError.js';
+
 const ctx = Context.getInstance();
+
 
 export default class $ParticleEngine {
     #thread = null;
@@ -14,11 +18,11 @@ export default class $ParticleEngine {
     #debugView = null;
     #workerViews = [];
     #engineLoadView = null;
+    #particleTypes = new Map();
 
     #initProps = null;
 
-    constructor(particleThread, width, height, config, threading, opts) {
-        this.#thread = particleThread;
+    constructor(width, height, config, threading, opts) {
         this.#initProps = {
             width: width,
             height: height,
@@ -26,140 +30,20 @@ export default class $ParticleEngine {
             threading: threading,
             opts: opts
         };
-
-        console.debug('Setup orchestrator listener');
-        this.#thread.onmessage = (event) => {
-            if (event.data.re4 === 'orchestrator') {    // from the orchestrator thread
-                switch(event.data.type) {
-                    case 'ready':
-                        this.#readyToProcess = true;
-                        break;
-                    case 'updated':
-                        break;
-                    case 'rendered':
-                        this.bitmap = event.data.image;
-                        this.#ready = true;
-                        break;
-                    case 'workerRendered':
-                        PRAGMA('showParticleWorkersPiP:workerRender', () => {
-                            this.#workerViews[event.data.workerId].update(event.data.image);
-                        })
-                        break;
-                    case 'metrics':
-                        PRAGMA('showParticleEngineLoad', () => {
-                            this.#engineLoadView.update('Update:Time', event.data.metrics.updateTime);
-                            this.#engineLoadView.update('Render:Time', event.data.metrics.renderTime);
-                            this.#engineLoadView.update('CPU:Time', event.data.metrics.cpuTime);
-                            this.#engineLoadView.update('Update:Load', (event.data.metrics.updateTime / Engine.engine.lastTime) * 100);
-                            this.#engineLoadView.update('Render:Load', (event.data.metrics.renderTime / Engine.engine.lastTime) * 100);
-                            this.#engineLoadView.update('CPU:Load', (event.data.metrics.cpuTime / Engine.engine.lastTime) * 100);
-                            for (let i = 0; i < event.data.metrics.size; i++) {
-                                this.#engineLoadView.update(`Workers:Thread ${i}`, event.data.metrics[i].load * 100);
-                                this.#engineLoadView.update(`Workers:Particles ${i}`, event.data.metrics[i].live);
-                            }
-                        });
-                        break;
-                    case 'terminated':
-                        this.#thread.terminate();
-                        console.debug('Orchestrator thread shutdown');
-                        break;
-                    default:
-                        console.error('Unknown message type:', event.data.type);
-                }
-            }
-        };        
     }
 
     /**
-     * Set up the message handler for receiving messages from the orchestrator.
+     * Get the {@link Orchestrator} thread
+     * @returns {Worker}
      */
-    async start() {
-        PRAGMA('showParticleWorkersPiP', () => {
-            let top = 10;
-            if (this.#initProps.opts.debugOpts.showParticleEngineLoad)
-                top = 120;
-
-            for (let i = 0; i < this.#initProps.threading.workers; i++)
-                this.#workerViews[i] = new CanvasPIP(`worker`, top + (i * 160));
-        });
-
-        PRAGMA('showParticleEngineLoad', () => {
-            const config = {
-                left: 5,
-                counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'CPU:Load', 'CPU:Time'],
-                options: {
-                    'Update:Time': { suffix: ' ms' },
-                    'Render:Time': { suffix: ' ms' },
-                    'CPU:Time': { suffix: ' ms' },
-                    'Update:Load': { bar: true, suffix: '%' },
-                    'Render:Load': { bar: true, suffix: '%' },
-                    'CPU:Load': { bar: true, suffix: '%' }
-                }
-            };
-
-            for (let i = 0; i < this.#initProps.threading.workers; i++) {
-                config.counters.push(`Workers:Thread ${i}`);
-                config.counters.push(`Workers:Life ${i}`);
-                config.options[`Workers:Thread ${i}`] = { bar: true, suffix: '%' }
-                config.options[`Workers:Particles ${i}`] = { bar: true, suffix: 'p' }
-            }
-            this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
-        });
-
-        return new Promise((resolve) => {
-            console.debug('Initialize orchestrator');
-            // initialize the orchestator and wait for it to be ready
-            this.#thread.postMessage({ re4: 'particles', type: 'init', width: this.#initProps.width, height: this.#initProps.height, config: this.#initProps.config, threading: this.#initProps.threading, systemOpts: this.#initProps.opts });
-            const $this = this;
-            const waitFn = () => {
-                if ($this.readyToProcess) {
-                    console.debug('Orchestrator thread ready');
-                    resolve(true);
-                } else {
-                    // wait for the orchestrator to be ready
-                    setTimeout(waitFn, 500);
-                }
-            }
-            waitFn();
-        })
+    get thread() {
+        return this.#thread;
     }
 
     /**
-     * Terminate the thread. This will stop the particle engine and free up resources.
+     * Returns `true` when the Orchestrator is ready to process requests
      */
-    shutdown() {
-        this.#thread.postMessage({ re4: 'particles', type: 'shutdown' });
-    }
-
-    /**
-     * Send a message to the orchestrator thread
-     * @param {Object} data - Data to send to the thread 
-     * @param {Array<Object>} transfer - Optional array of objects to transfer ownership of to the thread 
-     */
-    #send(data, transfer) {
-        if (this.#readyToProcess)
-            this.#thread.postMessage({ re4: 'particles', ... data }, transfer);
-    }
-
-    /**
-     * Called when the bitmap is returned from the thread for rendering.
-     */
-    #notReady() {
-        this.#ready = false;
-    }
-
-    /**
-     * Get a primitive representation of a complex object that can be sent to the thread.
-     * The thread will reconstruct the object from this representation.
-     * @param {String} name - The name of the object type of the transferrable object
-     * @param {Object} obj - The object to get the transferrable representation of
-     * @returns {Object} The transferrable representation of the object
-     */
-    #getTransferrable(name, obj) {
-        return obj?.getTransferrable(name) || {};
-    }
-
-    get readyToProcess() {
+    get isStarted() {
         return this.#readyToProcess;
     }
 
@@ -182,10 +66,185 @@ export default class $ParticleEngine {
         return this.#bitmap;
     }
 
+    /**
+     * Set the bitmap received from the Orchestrator
+     */
     set bitmap(bitmap) {
         this.#bitmap = bitmap;
     }
 
+    /**
+     * Set up the message handler for receiving messages from the orchestrator.
+     */
+    async start() {
+        PRAGMA('showParticleWorkersPiP', () => {
+            let top = 10;
+            if (this.#initProps.opts.debugOpts.showParticleEngineLoad)
+                top = 120;
+
+            for (let i = 0; i < this.#initProps.threading.workers; i++)
+                this.#workerViews[i] = new CanvasPIP(`worker`, top + (i * 160));
+        });
+
+        PRAGMA('showParticleEngineLoad', () => {
+            const config = {
+                left: 5,
+                counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time'],
+                options: {
+                    'Update:Time': { suffix: ' ms' },
+                    'Render:Time': { suffix: ' ms' },
+                    'Update:Load': { bar: true, suffix: '%' },
+                    'Render:Load': { bar: true, suffix: '%' }
+                }
+            };
+
+            for (let i = 0; i < this.#initProps.threading.workers; i++) {
+                config.counters.push(`Workers:Thread ${i}`);
+                config.options[`Workers:Thread ${i}`] = { bar: true, suffix: '%' }
+                config.counters.push(`Particles:Thread ${i}`);
+                config.options[`Particles:Thread ${i}`] = { bar: false }
+            }
+            this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
+        });
+
+        return new Promise((resolve) => {
+            console.debug('Loading particle orchestrator');
+            
+            // load the particle engine orchestrator thread
+            this.#createOrchestrator();       
+
+            // initialize the orchestator and wait for it to be ready
+            this.#thread.postMessage({ 
+                re4: Constants.PARTICLE_MANAGER_MSG, 
+                type: Constants.MSG_INIT, 
+                width: this.#initProps.width, 
+                height: this.#initProps.height, 
+                config: this.#initProps.config, 
+                threading: this.#initProps.threading, 
+                systemOpts: this.#initProps.opts  
+            });
+            
+            // wait until the workers have all started
+            const $this = this;
+            const waitFn = () => {
+                if ($this.isStarted) {
+                    console.debug(`Particle orchestrator started with ${this.#initProps.threading.workers} workers`);
+                    resolve(true);
+                } else {
+                    // wait for the orchestrator to be ready
+                    setTimeout(waitFn, 500);
+                }
+            }
+            waitFn();
+        });
+    }
+
+    /**
+     * Terminate the thread. This will stop the particle engine and free up resources.
+     */
+    shutdown() {
+        this.#thread.postMessage({ re4: Constants.PARTICLE_MANAGER_EVENT, type: 'shutdown' });
+    }
+
+    #createOrchestrator() {
+        this.#thread = new Worker(new URL(`./Orchestrator.js${ctx.engineOpts.preventThreadCaching ? '?v=' + Date.now() : ''}`, import.meta.url), {
+            name: `${this.#initProps.threading.name}_orchestrator`,
+            type: 'module'
+        });
+
+        // setup event handlers
+        this.#thread.onmessage = (event) => {
+            this.#orchestratorInbound(event);     
+        }
+
+        this.#thread.onerror = (event) => {
+            this.#orchestratorError(event);
+        }
+    }
+
+    #orchestratorInbound(event) {
+        if (event.data.re4 === Constants.ORCHESTRATOR_MSG) {
+            switch(event.data.type) {
+                case Constants.MSG_READY:
+                    this.#readyToProcess = true;
+                    break;
+                case Constants.MSG_RENDERED:
+                    this.bitmap = event.data.image;
+                    this.#ready = true;
+
+                    PRAGMA('showParticleEngineLoad', () => {
+                        let update = 0, render = 0;
+                        const burden = (this.#initProps.config.maxParticles / this.#initProps.threading.workers);
+                        for (let i = 0; i < event.data.metrics.length; i++) {
+                            if (event.data.metrics[i]) {
+                                update += event.data.metrics[i].updateTime;
+                                render += event.data.metrics[i].renderTime;
+
+                                const live = event.data.metrics[i].live;
+                                this.#engineLoadView.update(`Workers:Thread ${i}`, (live !== 0 ? live / burden : 0) * 100);
+                                this.#engineLoadView.update(`Particles:Thread ${i}`, live);
+                            }
+                        }
+
+                        const updateLoad = update / event.data.deltaTime;
+                        const renderLoad = render / event.data.deltaTime;
+
+                        this.#engineLoadView.update('Update:Time', update);
+                        this.#engineLoadView.update('Render:Time', render);
+                        this.#engineLoadView.update('Update:Load', Math.min(updateLoad * 100, 100));
+                        this.#engineLoadView.update('Render:Load', Math.min(renderLoad * 100, 100));
+                    });
+
+                    break;
+                case Constants.MSG_WORKER_RENDERED:
+                    PRAGMA('showParticleWorkersPiP:workerRender', () => {
+                        this.#workerViews[event.data.workerId].update(event.data.image);
+                    })
+                    break;
+                case Constants.MSG_TERMINATED:
+                    this.#thread.terminate();
+                    console.debug('Orchestrator thread shutdown');
+                    break;
+                default:
+                    console.error('[Particle Manager] Unknown message type:', event.data.type);
+            }
+        }
+    }
+
+    #orchestratorError(event) {
+        console.error(event.message, event);
+        //throw new OrchestratorError(this.#thread, event.message, event);
+    }
+
+    /**
+     * Send a message to the orchestrator thread
+     * @param {Object} data - Data to send to the thread 
+     * @param {Array<Object>} transfer - Optional array of objects to transfer ownership of to the thread 
+     */
+    #send(data, transfer) {
+        if (this.isStarted)
+            this.#thread.postMessage({ 
+                re4: Constants.PARTICLE_MANAGER_MSG, 
+                ... data }, transfer);
+    }
+
+    /**
+     * Called when the bitmap is returned from the thread for rendering.
+     */
+    #notReady() {
+        this.#ready = false;
+    }
+
+    /**
+     * Get a primitive representation of a complex object that can be sent to the thread.
+     * The thread will reconstruct the object from this representation.
+     * @param {String} name - The name of the object type of the transferrable object
+     * @param {Object} obj - The object to get the transferrable representation of
+     * @returns {Object} The transferrable representation of the object
+     */
+    #getTransferrable(name, obj) {
+        return obj?.getTransferrable(name) || {};
+    }
 
     /**
      * Add a new particle type to the particle engine
@@ -194,7 +253,11 @@ export default class $ParticleEngine {
      */
     addParticleType(name, particle) {
         const tParticle = this.#getTransferrable(name, particle);
-        this.#send({ type: 'type', name: name, particle: tParticle });
+        this.#send({ 
+            type: Constants.MSG_ADD_TYPE, 
+            name: name, 
+            particle: tParticle 
+        });
     }
 
     /**
@@ -204,7 +267,11 @@ export default class $ParticleEngine {
      */
     addEffect(name, particleEffect) {
         const tEffect = this.#getTransferrable(name, particleEffect);
-        this.#send({ type: 'addEffect', name: name, effect: tEffect });
+        this.#send({ 
+            type: Constants.MSG_ADD_EFFECT, 
+            name: name, 
+            effect: tEffect 
+        });
     }
 
     /**
@@ -212,7 +279,10 @@ export default class $ParticleEngine {
      * @param {Array<Object>} particles - The set of particles to add, an array of objects containing `type`, and `pos` ([x, y] world position)
      */
     addParticles(particles) {
-        this.#send({ type: 'addParticles', particles: particles});
+        this.#send({ 
+            type: Constants.MSG_ADD_PARTICLES, 
+            particles: particles
+        });
     }
 
     /**
@@ -220,7 +290,10 @@ export default class $ParticleEngine {
      * @param {Object} particle - contains `type`, and `pos` ([x, y] world position)
      */
     addParticle(particle) {
-        this.#send({ type: 'addParticles', particles: [particle]});
+        this.#send({ 
+            type: Constants.MSG_ADD_PARTICLES, 
+            particles: [particle]
+        });
     }
 
     /**
@@ -232,7 +305,13 @@ export default class $ParticleEngine {
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
     runEffect([x, y], effectName, time, deltaTime) {
-        this.#send({ type: 'effect', pos: [x, y], name: effectName, time: time, deltaTime: deltaTime })
+        this.#send({ 
+            type: Constants.MSG_RUN_EFFECT, 
+            pos: [x, y], 
+            name: effectName, 
+            time: time, 
+            deltaTime: deltaTime 
+        });
     }
 
     /**
@@ -242,7 +321,11 @@ export default class $ParticleEngine {
      * @param {String} particleType - the type of particle to spawn 
      */
     spawnParticle(worldPos, particleType) {
-        this.#send({type: 'spawn', pos: worldPos, particle: particleType });
+        this.#send({
+            type: Constants.MSG_SPAWN, 
+            pos: worldPos, 
+            particle: particleType 
+        });
     }
 
     /**
@@ -252,7 +335,11 @@ export default class $ParticleEngine {
      *          in milliseconds.
      */
     update(time, deltaTime) {
-        this.#send({ type: 'update', time: time, deltaTime: deltaTime });
+        this.#send({ 
+            type: Constants.MSG_UPDATE, 
+            time: time, 
+            deltaTime: deltaTime 
+        });
     }
 
     /**
@@ -261,8 +348,5 @@ export default class $ParticleEngine {
      * @param {number} deltaTime - The time since the last frame
      * @param {Path2D} occlusionMask - Optional mask to clip areas that are occluded by objects
      */
-    renderParticles(time, deltaTime, occlusionMask = null) {
-        this.#notReady();
-        this.#send({ type: 'render', time: time, deltaTime: deltaTime, mask: occlusionMask });
-    }  
+    renderParticles(time, deltaTime, occlusionMask = null) {}
 }

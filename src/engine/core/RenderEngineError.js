@@ -5,6 +5,6 @@
  */
 export default class RenderEngineError extends Error {
   constructor(message, rootCause = null) {
-    super(`[RenderEngine4] ${message}`, rootCause);
+    super(message, rootCause);
   }
 }

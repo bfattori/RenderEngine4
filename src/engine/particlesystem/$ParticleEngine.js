@@ -83,14 +83,13 @@ export default class $ParticleEngine {
             if (!threading.enabled) {
                 const config = {
                     left: 5,
-                    counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'CPU:Load', 'CPU:Time'],
+                    counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'Particles'],
                     options: {
                         'Update:Time': { suffix: ' ms' },
                         'Render:Time': { suffix: ' ms' },
-                        'CPU:Time': { suffix: ' ms' },
                         'Update:Load': { bar: true, suffix: '%' },
                         'Render:Load': { bar: true, suffix: '%' },
-                        'CPU:Load': { bar: true, suffix: '%' }
+                        'Particles': {}
                     }
                 }
                 this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
@@ -201,6 +200,22 @@ export default class $ParticleEngine {
         this.#pVel = new Array(count).fill([0,0]);          // stores vX and vY as an array
         this.#pSpan = new Array(count).fill(0);               // single value for each lifespan as Number
         this.#memories = new Array(count).fill(null);        // array that will hold the particle memory
+    }
+
+    get state() {
+        const p = [], l = [], m = [];
+        for (let i = 0; i < this.#memories.length; i++) {
+            if (this.#memories[i] !== null) {
+                p.push(this.#pPos[i]);
+                l.push(this.#pSpan[i]);
+                m.push(this.#memories[i]);
+            }
+        }
+        return {
+            positions: p,
+            memory: m,
+            spans: l
+        };
     }
 
     /**
@@ -332,7 +347,7 @@ export default class $ParticleEngine {
      *          in milliseconds.
      */
     update(time, deltaTime) {
-        if (!this.enabled) return;
+        if (!this.enabled) return 0;
 
         // If there are no new particles in the buffer, and no live particles, don't do anything
         if (!this.#newParticles && this.liveParticles === 0) {
@@ -364,15 +379,15 @@ export default class $ParticleEngine {
         PERF('particlesUpdateEnd');
         MEASURE('Update Particles', 'particlesUpdateStart', 'particlesUpdateEnd');
 
+        const overall = performance.now() - this.#start;
         PRAGMA('showParticleEngineLoad', () => {
             if (!this.#threading.enabled) {
-                // using the last frame time, what
-                // is the overall load of the PE on the CPU?
-                const overall = performance.now() - this.#start;
                 this.#engineLoadView.update('Update:Load', (overall / Engine.engine.lastTime) * 100);
                 this.#engineLoadView.update('Update:Time', overall);
             }
         });
+
+        return overall;
     }
 
     /**
@@ -417,20 +432,20 @@ export default class $ParticleEngine {
             }
         });
 
+        const renderTime = performance.now() - render;
         PERF('particlesRenderEnd');
         MEASURE('Render Particles', 'particlesRenderStart', 'particlesRenderEnd');
         PRAGMA('showParticleEngineLoad', () => {
             if (!this.#threading.enabled) {
                 // using the last frame time, what
                 // is the overall load of the PE on the CPU?
-                const renderTime = performance.now() - render;
                 this.#engineLoadView.update('Render:Load', (renderTime / Engine.engine.lastTime) * 100);
                 this.#engineLoadView.update('Render:Time', renderTime);
-                const overall = performance.now() - this.#start;
-                this.#engineLoadView.update('CPU:Load', (overall / Engine.engine.lastTime) * 100);
-                this.#engineLoadView.update('CPU:Time', overall);
+                this.#engineLoadView.update('Particles', this.liveParticles);
             }
         });
+
+        return renderTime;
     }
 
     /**

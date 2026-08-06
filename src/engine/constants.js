@@ -79,7 +79,24 @@ const Constants = {
         prefix: '',
         suffix: ''
     },
-    DEFAULT_FILTER_STRENGTH: 10
+    DEFAULT_FILTER_STRENGTH: 10,
+
+    PARTICLE_WORKER_MSG: 'pWorker',
+    ORCHESTRATOR_MSG: 'orchestrator',
+    PARTICLE_MANAGER_MSG: 'particles',
+
+    MSG_RENDERED: 'rendered',
+    MSG_WORKER_RENDERED: 'workerRendered',
+    MSG_READY: 'ready',
+    MSG_INIT: 'init',
+    MSG_TERMINATED: 'terminated',
+    MSG_ADD_TYPE: 'type',
+    MSG_ADD_EFFECT: 'addEffect',
+    MSG_ADD_PARTICLES: 'addParticles',
+    MSG_RUN_EFFECT: 'effect',
+    MSG_SPAWN: 'spawn',
+    MSG_UPDATE: 'update',
+
 };
 
 export default Constants;
