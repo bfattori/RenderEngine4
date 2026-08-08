@@ -10,6 +10,7 @@ The `VectorAPI` and `RasterAPI` provide the two high-level APIs and generate the
 ## **Intermediate Languages** - `VECTOR_IL` and `RASTER_IL`
 The intermediate languages (`IL`) consist of an operator and its operands, similar in style to assembler. One operator with its operands produces a single rendered element in the renderer. The elements may be simple (line, point, rectangle) or complex (`Shape`, `CompiledShape`, or `Sprite`), but the invocation is always the same. Examples:
 
+**A simple box**
 ```javascript
 // Draw a box
 LINESEG 0
@@ -20,6 +21,7 @@ LINEREL 20 80
 ENDSEG
 ```
 
+**A quadratic curve**
 ```javascript
 // Draw a quadratic curve
 PUSH
@@ -31,6 +33,14 @@ ENDCURVE
 POP
 ```
 
+**A compiled shape**
+```javascript
+// Draw a compiled shape
+PUSH
+TRANSFORM 0 0 1 0 0 1 10 50
+SHAPE 36
+POP
+```
 
 For the vector-stlye, the language emits `points`, `lines`, `arcs`, `circles`, `ovals`, `line-` and `curve-paths`. Text is provided in a simple vector-based font, drawn on a 10x10 grid and intended to look quite retro a la: **Asteroids**, **Battletank**, **Major Havoc**, etc. 
 
