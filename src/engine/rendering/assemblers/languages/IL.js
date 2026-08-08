@@ -12,22 +12,22 @@ const BASE_IL = {
   WIDTH:          0x02, // "WIDTH 5" would be a line-width of 5
 
   // Transformation matrix Instructions (State Modifiers)
-  TRANSFORM:      0x05, // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
-  ABS_TRANSFORM:  0x06, // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
-  XFORM_RESET:    0x07, // "XFORM_RESET" will reset the transformation matrix to the identity matrix
-  PUSH:           0x08, // "PUSH" will save the current renderer state
-  POP:            0x09, // "POP" will restore the previous renderer state 
+  TRANSFORM:      0x03, // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
+  ABS_TRANSFORM:  0x04, // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
+  XFORM_RESET:    0x05, // "XFORM_RESET" will reset the transformation matrix to the identity matrix
+  PUSH:           0x06, // "PUSH" will save the current renderer state
+  POP:            0x07, // "POP" will restore the previous renderer state 
 
   // Atomic transform manipulation instructions
-  TRANSLATE:      0x0a, // "TRANSLATE X Y" modifies the current transform by translating the current transform by X and Y
-  ROTATE:         0x0b, // "ROTATE ANGLE" modifies the current transform by rotating the current transform by ANGLE degrees
-  SCALE:          0x0c, // "SCALE X Y" modifies the current transform by scaling the current transform by X and Y
-  USCALE:         0x0d, // "USCALE SCALAR" modifies the current transform by uniformly scaling the current transform by SCALAR
-  SKEW:           0x0e, // "SKEW ANGLE X Y" modifies the current transform by skewing the current transform by ANGLE degrees along the X and Y axes
+  TRANSLATE:      0x10, // "TRANSLATE X Y" modifies the current transform by translating the current transform by X and Y
+  ROTATE:         0x11, // "ROTATE ANGLE" modifies the current transform by rotating the current transform by ANGLE degrees
+  SCALE:          0x12, // "SCALE X Y" modifies the current transform by scaling the current transform by X and Y
+  USCALE:         0x13, // "USCALE SCALAR" modifies the current transform by uniformly scaling the current transform by SCALAR
+  SKEW:           0x14, // "SKEW ANGLE X Y" modifies the current transform by skewing the current transform by ANGLE degrees along the X and Y axes
 
   // Rendering Instructions (Imperative)
-  POINT:          0x0f, // "POINT X Y" will draw a point at X, Y
-  LINE:           0x17
+  POINT:          0x20, // "POINT X Y" will draw a point at X, Y
+  LINE:           0x21  // "LINE X1 Y1 X2 Y2" will draw a line from X1, Y1 to X2, Y2
 }
 
 // language offsets
@@ -51,16 +51,16 @@ const VECTOR_IL = {
   BEZIER:         VECTOR_OFFSET + 0x07, // "BEZIER CX1 CY1 CX2 XY2 X Y" is a Bezier curve through the control points to the end point
   MOVETO:         VECTOR_OFFSET + 0x08, // "MOVETO X Y" would move the start of the next draw operation at X, Y
   LINEREL:        VECTOR_OFFSET + 0x09, // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
-  ARC:            VECTOR_OFFSET + 0x0A, // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
+  ARC:            VECTOR_OFFSET + 0x0a, // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
 
   // Rendering Instructions (Complex)
-  SHAPE:          VECTOR_OFFSET + 0x0B  // "SHAPE ID" draws a compiled shape with the given shape Id
+  SHAPE:          VECTOR_OFFSET + 0x0b  // "SHAPE ID" draws a compiled shape with the given shape Id
 };
 
 // Intermediate Language instruction types for raster rendering
 const RASTER_IL = {
   // Decorator Instructions (State Modifiers)
-  FONT:           RASTER_OFFSET, // "FONT FONTNAME FONTSIZE" would be a font with the given name and size
+  FONT:           RASTER_OFFSET,        // "FONT FONTNAME FONTSIZE" would be a font with the given name and size
   STYLE:          RASTER_OFFSET + 0x01, // "STYLE BOLD ITALICS UNDERLINE" toggles the given styles on/off (BOLD = 1/0, ITALICS = 1/0, UNDERLINE = 1/0)
   
   // Rendering Instructions (Imperative)
