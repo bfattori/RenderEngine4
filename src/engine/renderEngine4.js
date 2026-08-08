@@ -131,22 +131,26 @@ const RenderEngine = {
  * shut the engine down.
  */
 window.addEventListener('keyup', (event) => {
-    if (RenderEngine.paused && event.code === KeyboardInput.KEY_CODES.RESERVED_F2) {
-        console.warn(" - resuming...");
-        RenderEngine.start();
-    } else {
-        RenderEngine.pause();
-    }
+    if (event.code === KeyboardInput.KEY_CODES.RESERVED_F2)
+        if (RenderEngine.paused) {
+            console.warn(" - resuming...");
+            RenderEngine.start();
+        } else {
+            RenderEngine.pause();
+        }
     
-    if (RenderEngine.reset && event.code === KeyboardInput.KEY_CODES.RESERVED_F4) {
-        console.warn(" - shutting down...");
-        RenderEngine.shutdown();
-    } else {
-        RenderEngine.stop();
-    }
+    if (event.code === KeyboardInput.KEY_CODES.RESERVED_F4)
+        if (RenderEngine.reset) {
+            console.warn(" - shutting down...");
+            RenderEngine.shutdown();
+        } else {
+            RenderEngine.stop();
+        }
     
-    event.preventDefault = true;
-    return false;
+    if ([KeyboardInput.KEY_CODES.RESERVED_F2, KeyboardInput.KEY_CODES.RESERVED_F4].includes(event.code)) {
+        event.preventDefault = true;
+        return false;
+    }
 });
 
 // Shutdown the engine if the window is unloading

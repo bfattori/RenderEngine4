@@ -93,7 +93,7 @@ class Orchestrator {
             });
 
             // initialize the worker thread
-            const workerConfig = { ...pConfig, maxParticles: Math.floor(particlesConfig.maxParticles / tConfig.workers) };
+            const workerConfig = { ...pConfig, maxParticles: Math.floor(pConfig.maxParticles / tConfig.workers) };
             worker.postMessage({ 
                 re4: Constants.ORCHESTRATOR_MSG, 
                 type: Constants.MSG_INIT, 
