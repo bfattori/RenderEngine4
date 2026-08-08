@@ -2,12 +2,15 @@
  * Render Engine 4 bootstrapper
  */
 import Engine from './core/Engine.js';
+import KeyboardInput from './parts/input/KeyboardInput.js';
+
 
 // Render Engine 4 instance
 let engineOptions = null;
 const RenderEngine = {
     RE4: null,
     paused: false,
+    reset: false,
 
     /**
      * Initialize the Render Engine 4.
@@ -51,75 +54,106 @@ const RenderEngine = {
      */
     start(seedTime = 0) {
         RE4.start(engineOptions.world.fps, seedTime);
-        console.info("Started", RE4.engine.options, seedTime);
+        console.info(" - started", RE4.engine.options, seedTime);
         RenderEngine.paused = false;
     },
 
     /**
-     * Pause the engine
+     * Pause (halt) the engine without resetting it.
      */
     pause() {
-        console.warn("Pausing...");
+        console.warn(" - paused");
         RE4.stop();
         RenderEngine.paused = true;
     },
 
     /**
-     * Stop and reset the engine
+     * Stop and reset the engine.
      */
     stop() {
         RE4.reset();
-        console.error("Stopped");
+        console.info(" - stopped & reset");
+        RenderEngine.reset = true;
     },
 
     /**
-     * Shutdown the engine
+     * Shutdown the engine.
      */
     shutdown() {
+        console.info(" - shutting down");
         RE4.destroy();
-        console.info("Shutting down...");
     },
 
+    /**
+     * The game world instance
+     * @returns {GameWorld}
+     */
     get world() {
         return RE4.world;
     },
 
+    /**
+     * The event engine instance
+     * @returns {EventEngine}
+     */
     get eventEngine() {
         return RE4.eventEngine;
     },
 
+    /**
+     * The game world primary camera
+     * @returns {Camera}
+     */
     get camera() {
         return this.world.camera;
     },
 
+    /**
+     * The render context for the game
+     * @return {RenderContext}
+     */
     get renderContext() {
         return this.world.renderContext;
     },
 
+    /**
+     * The particle engine instance
+     * @returns {ParticleEngine}
+     */
     get particleEngine() {
         return RE4.particleEngine;
     }
 }
 
-// Reserved keyboard hook to shutdown the engine
+/**
+ * `F2` while the engine is running will pause it. Pressing it again will resume the engine.
+ * Pressing `F4` while the engine is running will stop and reset the engine. Pressing it again will 
+ * shut the engine down.
+ */
 window.addEventListener('keyup', (event) => {
-    if (event.key === 'F9')
+    if (RenderEngine.paused && event.code === KeyboardInput.KEY_CODES.RESERVED_F2) {
+        console.warn(" - resuming...");
+        RenderEngine.start();
+    } else {
+        RenderEngine.pause();
+    }
+    
+    if (RenderEngine.reset && event.code === KeyboardInput.KEY_CODES.RESERVED_F4) {
+        console.warn(" - shutting down...");
+        RenderEngine.shutdown();
+    } else {
         RenderEngine.stop();
+    }
+    
+    event.preventDefault = true;
     return false;
 });
 
-// Reserved keyboard hook to pause the engine
-window.addEventListener('keyup', (event) => {
-    if (event.key === 'F2')
-        if (RenderEngine.paused) {
-            console.warn("Resuming...");
-            RenderEngine.start();
-        } else
-            RenderEngine.pause();
-    if (event.key === 'F4') {
-        RenderEngine.shutdown();
-    }
-    return false;
+// Shutdown the engine if the window is unloading
+// HOPEFULLY cleaning up threads so they stop 
+// hanging around after restarts!!
+window.addEventListener('beforeunload', (event) => {
+    RenderEngine.shutdown();
 });
 
 console.info("Bootstrapper loaded");

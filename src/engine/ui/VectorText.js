@@ -1,5 +1,5 @@
 import Constants from '../Constants.js';
-import { VECTOR_IL } from '../rendering/assemblers/IntermediateLanguages.js';
+import { IL as VECTOR_IL } from '../rendering/assemblers/IntermediateLanguages.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import { RenderContextError } from '../rendering/contexts/RenderContext.js';
 import { Matrix2d } from '../core/Matrix.js';

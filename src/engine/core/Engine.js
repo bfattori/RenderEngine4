@@ -477,7 +477,6 @@ export default class Engine {
 
     // call stop hook
     this.#ENGINE_OPTIONS.hooks.onStop();
-    console.log('Stopped.');
   }
     
   /**

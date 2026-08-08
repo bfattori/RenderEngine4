@@ -39,4 +39,20 @@ export default class Context {
     get engineOpts() {
         return this.#engineOpts;
     }
+
+    /**
+     * Prevents script caching if enabled
+     * @returns {String}
+     */
+    static preventScriptCache() {
+        return Context.#instance.engineOpts.preventScriptCaching ? '?v=' + Date.now() : '';
+    }
+
+    /**
+     * Prevents thread caching if enabled
+     * @returns {String}
+     */
+    static preventThreadCache() {
+        return Context.#instance.engineOpts.preventThreadCaching ? '?v=' + Date.now() : '';
+    }
 }

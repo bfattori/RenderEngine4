@@ -7,7 +7,7 @@ import Engine from '../../core/Engine.js';
 import { CanvasConfig } from '../../core/Config.js';
 import VectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
 import RasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
-import { VECTOR_IL, RASTER_IL } from '../assemblers/IntermediateLanguages.js';
+import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 
 const ctx = Context.getInstance();
 

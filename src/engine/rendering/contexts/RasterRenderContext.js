@@ -1,16 +1,156 @@
 /**
- * RasterRenderContext - Renders raster-style graphics (sprites, tilemaps, etc.) using an intermediate language
+ * VectorRenderContext - Renders vector-style graphics using an intermediate language
  * Consumed by subclasses (Canvas, WebGL) for actual frame output
  * 
  * @extends RenderContext
  */
+import Constants from '../../Constants.js';
 import RenderContext from './RenderContext.js';
+import processText from '../../ui/RasterText.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
-import { RASTER_IL } from '../assemblers/IntermediateLanguages.js';
+import { RASTER_IL } from '../assemblers/dIntermediateLanguages.js';
+import getAPI from './api/RasterAPI.js';
 
-export default class RasterRenderContext extends RenderContext {
-    constructor(renderer) {
-        super(renderer);
-        this.pushTransform(new Matrix2d(IdentityMatrix[0], IdentityMatrix[1], IdentityMatrix[2]));
+/**
+ * @class ResterRenderContext
+ * 
+ * Provides vector-style graphics rendering using an intermediate language format
+ * that is consumed by a rendering engine to produce the visual output. During scene
+ * generation, the class will generate primitive instructions that reproduce vector
+ * drawing operations. This simplifies the communication, allowing for a variety of
+ * rendering engines. 
+ * 
+ * This approach reduces the complexity of rendering operations and
+ * simplifies integration, supporting shape container instructions for grouping multiple 
+ * shapes into a single instruction, which can be useful for optimizing performance by 
+ * reducing the number of draw calls.
+ * 
+ * @extends RenderContext
+ * @module RenderContext/VectorRenderContext
+ */
+export default class ResterRenderContext extends RenderContext {
+  static get DEFAULT_COLOR() {
+    return Constants.VECTOR_DEFAULTS.LINE_COLOR;
+  }
+
+  static get DEFAULT_FILL_COLOR() {
+    return Constants.VECTOR_DEFAULTS.FILL_COLOR;
+  }
+
+  static get DEFAULT_LINE_WIDTH() {
+    return Constants.VECTOR_DEFAULTS.LINE_WIDTH;
+  }
+
+  static get DEFAULT_FONT_SIZE() {
+    return Constants.VECTOR_DEFAULTS.FONT_SIZE;
+  }
+
+  static get MAX_FONT_SIZE() {
+    return Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
+  }
+
+  #screenDimensions = [800, 600];
+  #worldDimensions = [800, 600];
+  #api = null;
+
+  /**
+   * Creates a new VectorRenderContext instance
+   * @constructor
+   * @param {Renderer} renderer - The renderer for the context
+   * @param {RenderConfig} options - Configuration options for the render context
+   */
+  constructor(renderer, options) {
+    super(renderer, options);
+  }
+
+  get cursor() {
+    return super.cursor;
+  }
+
+  // Adjust transformation
+  set cursor([x, y]) {
+    super.cursor = [x, y];
+    this.setCursorPosition(x, y);
+  }
+
+  set viewport(dims) {
+    super.viewport = dims;
+    this.renderer.init(this);
+  }
+
+  get viewport() {
+    return super.viewport;
+  }
+
+  /**
+   * Reset all render context state for a new frame
+   */
+  reset() {
+    super.reset();
+    this.clearInstructionBuffer();
+    if (this.world?.stackDepth > 1) {
+      console.warn('Stack depth is greater than 1 at frame reset.')
     }
+  }
+
+  pushTransform(transform) {
+    super.pushTransform(transform);
+    this.addInstruction(`${VECTOR_IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
+  }
+
+  popTransform() {
+    const xfm = super.popTransform();
+    this.addInstruction(`${VECTOR_IL.POP}`);
+    return xfm;
+  }
+
+  resetTransforms() {
+    super.resetTransforms();
+    this.addInstruction(`${VECTOR_IL.XFORM_RESET}`);
+  }
+
+  setCursorPosition(x, y) {
+    this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+  }
+
+  getAPI() {
+    return getAPI.call(this);
+  }
+
+  renderCompiledShape(opaqueId) {
+    super.renderCompiledShape(opaqueId);
+    this.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+  }
+
+
+  //--------------------------------------
+  // HIGH-LEVEL VECTOR API
+  //--------------------------------------
+
+  get API() {
+    if (!this.#api) {
+      this.#api = this.getAPI();
+    }
+    return this.#api;
+  }
+
+    //-------------------------------
+  // Properties
+  //-------------------------------
+
+  get properties() {
+      return { ...super.properties, ...{
+        API: this.API,
+
+        _screenDimensions: this.#screenDimensions,
+        _worldDimensions: this.#worldDimensions,
+
+        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
+        DEFAULT_LINE_WIDTH: VectorRenderContext.DEFAULT_LINE_WIDTH,
+        DEFAULT_FILL_COLOR: VectorRenderContext.DEFAULT_FILL_COLOR,
+        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
+        DEFAULT_FONT_SIZE: VectorRenderContext.DEFAULT_FONT_SIZE,
+      }};
+  }
+
 }

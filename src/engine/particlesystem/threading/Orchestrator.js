@@ -10,6 +10,7 @@ const ctx = Context.getInstance();
 
 class Orchestrator {
     #workers = new Map();
+    #viewPort = [];
     #particlesConfig;
     #threadingConfig;
     #compositor;
@@ -22,6 +23,7 @@ class Orchestrator {
     #expected = [];
     #waitingWorkers = null;
     #workerState = [];
+    #systemOpts = null;
     #workerBurden = 0;
 
     #nextWorkerId = 0;
@@ -31,51 +33,16 @@ class Orchestrator {
         this.#compositor = new OffscreenCanvas(viewPort[0], viewPort[1]);
         this.#particlesConfig = particlesConfig;
         this.#threadingConfig = threadingConfig;
-        this.#waitingWorkers = new Array(threadingConfig.workers).fill(true);
+        
+        this.#viewPort = viewPort;
 
         // initialize the context with the system options
+        this.#systemOpts = systemOpts;
         ctx.debugOpts = systemOpts.debugOpts;
         ctx.engineOpts = systemOpts.engineOpts;
-
         this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
 
-        // spawn the worker threads for the particle engine
-        for (let i = 0; i < threadingConfig.workers; i++) {
-            const worker = new Worker(new URL(`./ParticleWorker.js${ctx.engineOpts.preventThreadCaching ? '?v=' + Date.now() : ''}`, import.meta.url), {
-                type: 'module',
-                name: `${threadingConfig.name}_worker${i}`
-            });
-
-            // listeners for messages from the worker thread
-            worker.onmessage = (event) => { 
-                this.#fromWorker(event); 
-            };
-            worker.onerror = (event) => {
-                console.error(event.message, event);
-                //throw new ParticleWorkerError(worker, event.message, event);
-            }
-
-            worker.$name = `${threadingConfig.name}_worker${i}`;
-
-            // retain worker information
-            this.#workers.set(i, { 
-                worker: worker, 
-                live: 0 
-            });
-
-            // initialize the worker thread
-            const workerConfig = { ...particlesConfig, maxParticles: Math.floor(particlesConfig.maxParticles / threadingConfig.workers) };
-            worker.postMessage({ 
-                re4: Constants.ORCHESTRATOR_MSG, 
-                type: Constants.MSG_INIT, 
-                workerId: i, 
-                width: viewPort[0], 
-                height: viewPort[1], 
-                config: workerConfig, 
-                threading: threadingConfig, 
-                systemOpts: systemOpts 
-            });
-        }
+        this.#spawnWorkers();
     }
 
     get expected() {
@@ -92,6 +59,53 @@ class Orchestrator {
 
     get timers() {
         return this.#timers;
+    }
+
+    #spawnWorkers() {
+        const pConfig = this.#particlesConfig;
+        const tConfig = this.#threadingConfig;
+        const vPort = this.#viewPort;
+
+        this.#waitingWorkers = new Array(tConfig.workers).fill(true);
+
+        // spawn the worker threads for the particle engine
+        for (let i = 0; i < tConfig.workers; i++) {
+            const worker = new Worker(new URL(`./ParticleWorker.js${ctx.preventThreadCache()}`, import.meta.url), {
+                type: 'module',
+                name: `${tConfig.name}_worker${i}`
+            });
+
+            // listeners for messages from the worker thread
+            worker.onmessage = (event) => { 
+                this.#fromWorker(event); 
+            };
+            worker.onerror = (event) => {
+                console.error(event.message, event);
+                //throw new ParticleWorkerError(worker, event.message, event);
+            }
+
+            worker.$name = `${tConfig.name}_worker${i}`;
+
+            // retain worker information
+            this.#workers.set(i, { 
+                worker: worker, 
+                live: 0 
+            });
+
+            // initialize the worker thread
+            const workerConfig = { ...pConfig, maxParticles: Math.floor(particlesConfig.maxParticles / tConfig.workers) };
+            worker.postMessage({ 
+                re4: Constants.ORCHESTRATOR_MSG, 
+                type: Constants.MSG_INIT, 
+                workerId: i, 
+                width: vPort[0], 
+                height: vPort[1], 
+                config: workerConfig, 
+                threading: tConfig, 
+                systemOpts: this.#systemOpts 
+            });
+        }
+
     }
 
     /**
@@ -117,19 +131,23 @@ class Orchestrator {
      */
     process(event) {
         switch(event.data.type) {
-            case 'addParticles':
-            case 'effect':
-            case 'spawn':
+            case Constants.MSG_ADD_PARTICLES:
+            case Constants.MSG_RUN_EFFECT:
+            case Constants.MSG_SPAWN:
                 // forward to a worker
-                orchestratorInstance.toWorker(event);
+                this.toWorker(event);
                 break;
-            case 'type':
-            case 'addEffect':
+            case Constants.MSG_ADD_TYPE:
+            case Constants.MSG_ADD_EFFECT:
                 // broadcast to all workers
-                orchestratorInstance.broadcast(event);
+                this.broadcast(event);
                 break;
-            case 'shutdown':
-                orchestratorInstance.shutdown();
+            case Constants.MSG_RESET:
+                // terminate the threads and restart them
+                this.reset();
+                break;
+            case Constants.MSG_SHUTDOWN:
+                this.shutdown();
                 break;
             default:
                 console.error('[Orchestrator] Unknown message type:', event.data.type);
@@ -246,11 +264,35 @@ class Orchestrator {
         }
     }
 
-    shutdown() {
-        // terminate the workers
+    /**
+     * Terminate running workers and clear the set
+     */
+    #terminateWorkers() {
         this.workers.forEach((worker) => {
             worker.worker.terminate();
+            worker.worker = null;
         });
+        this.workers.clear();
+    }
+
+    /**
+     * Terminate running workers, and respawn new workers
+     */
+    reset() {
+        // terminate and spawn new workers
+        this.#terminateWorkers();
+        this.#spawnWorkers();
+    }
+
+    /**
+     * Terminate the workers and stop the orchestrator
+     */
+    shutdown() {
+        // stop listening for new messages
+        removeEventListener(messageHandler);
+        
+        // terminate the workers
+        this.#terminateWorkers();
         console.debug('Workers terminated');
         postMessage({ 
             re4: Constants.ORCHESTRATOR_MSG, 
@@ -265,7 +307,7 @@ class Orchestrator {
  * particle engine operations, such as initialization, adding particle types, effects, and updating/rendering 
  * particles. It distributes tasks to worker threads based on their load and handles responses from workers.
  */
-addEventListener('message', (event) => {
+const messageHandler = addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.PARTICLE_MANAGER_MSG) {
         if (event.data.type === Constants.MSG_INIT) {
             console.debug('Starting particle orchestrator');

@@ -446,6 +446,12 @@ export default class $ParticleEngine {
         return renderTime;
     }
 
+    reset() {
+        this.#memories.fill(null);
+        this.#liveParticles = 0;
+        this.#newParticles = false;
+    }
+
     /**
      * Get the properties object for the particle engine
      * @return {Object}

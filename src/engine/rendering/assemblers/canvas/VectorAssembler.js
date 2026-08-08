@@ -1,7 +1,7 @@
 import Constants from '../../../Constants.js';
 import AssemblerError from '../AssemblerError.js';
 import Assembler from '../Assembler.js';
-import { VECTOR_IL } from '../IntermediateLanguages.js';
+import { IL as VECTOR_IL } from '../IntermediateLanguages.js';
 
 export default class CanvasVectorAssembler extends Assembler {
     static #instance = null;

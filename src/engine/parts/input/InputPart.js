@@ -9,7 +9,8 @@
  */
 
 import Constants from '../../Constants.js';
-import { ComponentPart, ComponentPartEvent, GameComponentError } from '../ComponentPart.js';
+import ComponentPart from '../ComponentPart.js';
+import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
 
 class InputEvent extends ComponentPartEvent {
     #inputState = null;
@@ -80,7 +81,7 @@ class InputPart extends ComponentPart {
     //--------------------------------
 
     resetState() {
-        throw new GameComponentError(this, 'Input.resetState() must be implemented by subclasses');
+        throw new ComponentPartError(this, 'Input.resetState() must be implemented by subclasses');
     }
 
     /**

@@ -5,7 +5,8 @@ This component interfaces with the system's keyboard event source and provides a
 @class KeyboardInput
 @extends InputPart 
 */
-import { InputPart, InputEvent } from './InputPart.js';
+import InputPart from './InputPart.js';
+import { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 
@@ -378,9 +379,7 @@ class KeyboardInput extends InputPart {
         KEY_INSERT: 45,
         KEY_DELETE: 46,
         KEY_F1: 112,
-        KEY_F2: 113,
         KEY_F3: 114,
-        KEY_F4: 115,
         KEY_F5: 116,
         KEY_F6: 117,
         KEY_F7: 118,
@@ -388,7 +387,11 @@ class KeyboardInput extends InputPart {
         KEY_F9: 120,
         KEY_F10: 121,
         KEY_F11: 122,
-        KEY_F12: 123
+        KEY_F12: 123,
+
+        // reserved for engine control
+        RESERVED_F2: 113,
+        RESERVED_F4: 115
     }
 
     /**

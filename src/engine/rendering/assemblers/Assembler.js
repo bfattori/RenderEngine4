@@ -1,5 +1,8 @@
+import Context from '../../Context.js';
 import Constants from '../../Constants.js';
 import AssemblerError from './AssemblerError.js';
+
+const ctx = Context.getInstance();
 
 /**
  * Base class for all assemblers. This class provides common functionality such as managing compiled shapes
@@ -73,8 +76,10 @@ export default class Assembler {
 
         // assemble the instructions
         instructions.forEach(i => {
-            i = i.trim();
-            if (i.charAt(0) !== '/' && i.charAt(1) !== '/') {
+            if (ctx.debug)
+                i = i.trim();
+
+            if (!ctx.debug || (i.charAt(0) !== '/' && i.charAt(1) !== '/')) {
                 // ignore comments
                 const assembled = this.assemble(renderer, i, shapeContext);
                 if (assembled !== null) {

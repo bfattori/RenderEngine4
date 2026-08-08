@@ -96,7 +96,9 @@ const Constants = {
     MSG_RUN_EFFECT: 'effect',
     MSG_SPAWN: 'spawn',
     MSG_UPDATE: 'update',
-    MSG_START: 'start'
+    MSG_START: 'start',
+    MSG_RESET: 'reset',
+    MSG_SHUTDOWN: 'shutdown'
 };
 
 export default Constants;

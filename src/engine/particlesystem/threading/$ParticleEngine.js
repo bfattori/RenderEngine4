@@ -139,15 +139,19 @@ export default class $ParticleEngine {
         });
     }
 
+    reset() {
+        this.#thread.postMessage({ re4: Constants.PARTICLE_MANAGER_MSG, type: Constants.MSG_RESET })
+    }
+
     /**
      * Terminate the thread. This will stop the particle engine and free up resources.
      */
     shutdown() {
-        this.#thread.postMessage({ re4: Constants.PARTICLE_MANAGER_EVENT, type: 'shutdown' });
+        this.#thread.postMessage({ re4: Constants.PARTICLE_MANAGER_MSG, type: Constants.MSG_SHUTDOWN });
     }
 
     #createOrchestrator() {
-        this.#thread = new Worker(new URL(`./Orchestrator.js${ctx.engineOpts.preventThreadCaching ? '?v=' + Date.now() : ''}`, import.meta.url), {
+        this.#thread = new Worker(new URL(`./Orchestrator.js${ctx.preventThreadCache()}`, import.meta.url), {
             name: `${this.#initProps.threading.name}_orchestrator`,
             type: 'module'
         });
@@ -203,7 +207,8 @@ export default class $ParticleEngine {
                     break;
                 case Constants.MSG_TERMINATED:
                     this.#thread.terminate();
-                    console.debug('Orchestrator thread shutdown');
+                    this.#thread = null;
+                    console.debug('Orchestrator thread terminated');
                     break;
                 default:
                     console.error('[Particle Manager] Unknown message type:', event.data.type);

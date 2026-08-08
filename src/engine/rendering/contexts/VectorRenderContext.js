@@ -8,7 +8,7 @@ import Constants from '../../Constants.js';
 import RenderContext from './RenderContext.js';
 import processText from '../../ui/VectorText.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
-import { VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
+import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 import getAPI from './api/VectorAPI.js';
 
 /**

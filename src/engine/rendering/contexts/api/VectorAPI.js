@@ -1,6 +1,6 @@
 import Constants from '../../../Constants.js';
 import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
-import { VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
+import { IL as VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
 import VectorTextParser from '../../../ui/VectorText.js';
 import Util from '../../../core/Util.js';
 import $Math from '../../../core/Math.js';
