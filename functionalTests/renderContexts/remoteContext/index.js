@@ -1,15 +1,15 @@
-import RenderEngine from '../../src/engine/renderEngine4.js';
-import RenderContextProjector from '../../src/engine/rendering/remote/RenderContextProjector.js';
-import VectorRenderContext from '../../src/engine/rendering/contexts/VectorRenderContext.js';
-import CanvasRenderer from '../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../../src/engine/renderEngine4.js';
+import RenderContextProjector from '../../../src/engine/rendering/remote/RenderContextProjector.js';
+import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
-import GameObject from '../../src/engine/gameobject/GameObject.js';
-import Transform2dPart from '../../src/engine/parts/transform/Transform2dPart.js';
-import VectorRendererPart from '../../src/engine/parts/render/VectorRendererPart.js';
+import GameObject from '../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
+import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
 
 import { StartupEvent } from './js/events.js';
 
-import { Matrix2d } from '../../src/engine/core/Matrix.js';
+import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 
 // create a double-buffered canvas renderer
 RenderEngine.init({

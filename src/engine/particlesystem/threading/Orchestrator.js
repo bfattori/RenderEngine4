@@ -22,6 +22,7 @@ class Orchestrator {
     #expected = [];
     #waitingWorkers = null;
     #workerState = [];
+    #workerBurden = 0;
 
     #nextWorkerId = 0;
 
@@ -35,6 +36,8 @@ class Orchestrator {
         // initialize the context with the system options
         ctx.debugOpts = systemOpts.debugOpts;
         ctx.engineOpts = systemOpts.engineOpts;
+
+        this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
 
         // spawn the worker threads for the particle engine
         for (let i = 0; i < threadingConfig.workers; i++) {
@@ -60,7 +63,7 @@ class Orchestrator {
                 live: 0 
             });
 
-            // initialize the worker thread to distribute particle handling
+            // initialize the worker thread
             const workerConfig = { ...particlesConfig, maxParticles: Math.floor(particlesConfig.maxParticles / threadingConfig.workers) };
             worker.postMessage({ 
                 re4: Constants.ORCHESTRATOR_MSG, 
@@ -108,6 +111,10 @@ class Orchestrator {
         return bitmap;
     }
 
+    /**
+     * Process events from the particle manager
+     * @param {Event} event 
+     */
     process(event) {
         switch(event.data.type) {
             case 'addParticles':
@@ -116,8 +123,6 @@ class Orchestrator {
                 // forward to a worker
                 orchestratorInstance.toWorker(event);
                 break;
-            case 'update':
-            case 'render':
             case 'type':
             case 'addEffect':
                 // broadcast to all workers
@@ -221,28 +226,24 @@ class Orchestrator {
         selected[workerId] = true;
         
         // select a worker
-        while(itr++ < 100) {
+        while(true) {
             const worker = this.#workers.get(workerId);
-            if (load < 1.0) {
-                if (worker.load < load) 
-                    return workerId;
+            const workerLoad = worker.live / this.#workerBurden;
+            if (load >= 100.0 || workerLoad < load) 
+                return workerId;
 
-                // try a different worker
-                workerId = $Math.randomRange(0, this.#workers.size, true);
-                selected[workerId] = true;
+            // try a different worker
+            workerId = $Math.randomRange(0, this.#workers.size, true);
+            selected[workerId] = true;
 
-                if (selected.every(e => e === true)) {
-                    // Increase load threshold if all workers are busy.
-                    // Eventually load goes above 100 and the next call will 
-                    // return a random worker, which is fine.
-                    load += this.#threadingConfig.loadFactor;
-                    selected.fill(false, 0, this.#workers.size - 1); 
-                }
+            if (selected.every(e => e === true)) {
+                // Increase load threshold if all workers have been tried.
+                // Eventually load goes above 100 and the next call will 
+                // return a random worker, which is fine.
+                load += this.#threadingConfig.loadFactor;
+                selected.fill(false); 
             }
         }
-
-        // return a random worker
-        return $Math.randomRange(0, this.#workers.size, true);
     }
 
     shutdown() {

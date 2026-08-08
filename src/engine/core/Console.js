@@ -73,6 +73,8 @@ function pragma(name, fn) {
 function perf(name) {
   if (ctx.debug)
     return performance.mark(name).startTime;
+  else
+    return performance.now();
 }
 
 /**
@@ -84,6 +86,8 @@ function perf(name) {
 function measure(name, startMark, endMark) {
   if (ctx.debug)
     return performance.measure(name, startMark, endMark).duration;
+  else
+    return 0;
 }
 
 // Replace window.console or global.console 

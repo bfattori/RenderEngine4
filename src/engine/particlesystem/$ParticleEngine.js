@@ -351,18 +351,16 @@ export default class $ParticleEngine {
 
         // If there are no new particles in the buffer, and no live particles, don't do anything
         if (!this.#newParticles && this.liveParticles === 0) {
-            return;
+            return 0;
         }
 
         // add any particles that are queued...
         this.#start = PERF('particlesUpdateStart');
 
-        if (this.#buffered.length !== 0) {
-            for (const p of this.#buffered) {
-                // spawn the particle
-                this.spawnParticle(p.pos, time, p.type);
-            }
-            this.#buffered = [];
+        while(this.#buffered.length > 0) {
+            // spawn the particle
+            const p = this.#buffered.shift();
+            this.spawnParticle(p.pos, time, p.type);
         }
 
         // run all particles
@@ -382,7 +380,7 @@ export default class $ParticleEngine {
         const overall = performance.now() - this.#start;
         PRAGMA('showParticleEngineLoad', () => {
             if (!this.#threading.enabled) {
-                this.#engineLoadView.update('Update:Load', (overall / Engine.engine.lastTime) * 100);
+                this.#engineLoadView.update('Update:Load', (overall / deltaTime) * 100);
                 this.#engineLoadView.update('Update:Time', overall);
             }
         });
@@ -418,8 +416,8 @@ export default class $ParticleEngine {
      * @param {number} deltaTime - The time since the last frame
      * @param {Path2D} occlusionMask - Optional mask to clip areas that are occluded by objects
      */
-    renderParticles(time, deltaTime, occlusionMask = null, directSurface = null) {
-        if (!this.enabled || this.liveParticles === 0) return;
+    async renderParticles(time, deltaTime, occlusionMask = null, directSurface = null) {
+        if (!this.enabled || this.liveParticles === 0) return -1;
 
         const render = PERF('particlesRenderStart');
 
@@ -439,7 +437,7 @@ export default class $ParticleEngine {
             if (!this.#threading.enabled) {
                 // using the last frame time, what
                 // is the overall load of the PE on the CPU?
-                this.#engineLoadView.update('Render:Load', (renderTime / Engine.engine.lastTime) * 100);
+                this.#engineLoadView.update('Render:Load', (renderTime / deltaTime) * 100);
                 this.#engineLoadView.update('Render:Time', renderTime);
                 this.#engineLoadView.update('Particles', this.liveParticles);
             }

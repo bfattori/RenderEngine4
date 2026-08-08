@@ -1,4 +1,4 @@
-import { Event } from '../../../src/engine/core/EventEngine.js';
+import { Event } from '../../../../src/engine/core/EventEngine.js';
 
 class StartupEvent extends Event {
     consume(consumer) {

@@ -227,7 +227,11 @@ class EngineConfig extends Config {
          * not add new particles if the buffer is full. Default is `true`.
          * @type {boolean}
          */
-        circularBuffer: true
+        circularBuffer: true,
+        /**
+         * Play nicely with the main thread
+         */
+        nice: 5
       },
       /**
        * Threading options.

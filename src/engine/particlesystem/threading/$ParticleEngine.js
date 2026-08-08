@@ -177,8 +177,8 @@ export default class $ParticleEngine {
                         const burden = (this.#initProps.config.maxParticles / this.#initProps.threading.workers);
                         for (let i = 0; i < event.data.metrics.length; i++) {
                             if (event.data.metrics[i]) {
-                                update += event.data.metrics[i].updateTime;
-                                render += event.data.metrics[i].renderTime;
+                                update += event.data.metrics[i].updateTime || 0;
+                                render += event.data.metrics[i].renderTime || 0;
 
                                 const live = event.data.metrics[i].live;
                                 this.#engineLoadView.update(`Workers:Thread ${i}`, (live !== 0 ? live / burden : 0) * 100);
@@ -191,8 +191,8 @@ export default class $ParticleEngine {
 
                         this.#engineLoadView.update('Update:Time', update);
                         this.#engineLoadView.update('Render:Time', render);
-                        this.#engineLoadView.update('Update:Load', Math.min(updateLoad * 100, 100));
-                        this.#engineLoadView.update('Render:Load', Math.min(renderLoad * 100, 100));
+                        this.#engineLoadView.update('Update:Load', isNaN(updateLoad) ? 0 : Math.min(updateLoad * 100, 100));
+                        this.#engineLoadView.update('Render:Load', isNaN(renderLoad) ? 0 : Math.min(renderLoad * 100, 100));
                     });
 
                     break;
@@ -334,12 +334,7 @@ export default class $ParticleEngine {
      * @param deltaTime {Number} The delta between the world time and the last time the world was updated
      *          in milliseconds.
      */
-    update(time, deltaTime) {
-        this.#send({ 
-            type: Constants.MSG_UPDATE, 
-            time: time, 
-            deltaTime: deltaTime 
-        });
+    update(time, deltaTime) { // no-op 
     }
 
     /**
@@ -348,5 +343,6 @@ export default class $ParticleEngine {
      * @param {number} deltaTime - The time since the last frame
      * @param {Path2D} occlusionMask - Optional mask to clip areas that are occluded by objects
      */
-    renderParticles(time, deltaTime, occlusionMask = null) {}
+    renderParticles(time, deltaTime, occlusionMask = null) { // no-op 
+    }
 }
