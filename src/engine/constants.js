@@ -5,7 +5,7 @@ function ENGINE_ERRORS(error, ...args) { console.error(error, ...args) }
  * Constants used throughout the RenderEngine4 engine
  */
 const Constants = {
-    // Component priorities (higher priority executes first)
+    // Component priorities (higher priority executes last)
     defaultPriority: 0.5,
     
     // InputComponent priority - highest priority for immediate response
