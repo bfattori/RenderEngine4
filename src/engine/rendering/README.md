@@ -34,8 +34,7 @@ POP
 
 For the vector-stlye, the language emits `points`, `lines`, `arcs`, `circles`, `ovals`, `line-` and `curve-paths`. Text is provided in a simple vector-based font, drawn on a 10x10 grid and intended to look quite retro a la: **Asteroids**, **Battletank**, **Major Havoc**, etc. 
 
-The raster-style language emits sprites, tiles, tilemaps, and text rendering provided by the renderer. It also supports a small set of vector
-operations, including points and lines.
+The raster-style language emits `sprites`, `tiles`, `tilemaps`, and text rendering provided by the renderer. It also supports a small set of vector operations, including `points` and `lines`.
 
 ## **Renderers** - The method of rendering
 A `Renderer` consumes the `IL` produced by the context and interprets it into the actual rendering code for the target renderer. 
