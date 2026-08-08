@@ -1,7 +1,7 @@
 # ComponentParts 
 > The building blocks of `GameObject`
 
-A component part is an atomic unit of functionality that a `GameObject` uses to perform some operation. The component parts are divided into functional areas including input, transform, and rendering for example. These differen parts are composed into the `GameObject` to give it its functionality. Rather than designing a monolithic object that contains all the functionality, `GameObjects` are intended to be light-weight containers that glue components together.
+A component part is an atomic unit of functionality that a `GameObject` uses to perform some operation. The component parts are divided into functional areas including input, transform, and rendering for example. These different parts are composed into the `GameObject` to give it its functionality. Rather than designing a monolithic object that contains all the functionality, `GameObjects` are intended to be light-weight containers that glue components together.
 
 ## Collision
 The `CollisionPart` creates an interface from a `GameObject` to the collision model provided by the `GameWorld`. Several collision models can be used, with different collision parts to match.
