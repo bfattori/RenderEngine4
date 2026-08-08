@@ -131,7 +131,7 @@ const RenderEngine = {
  * shut the engine down.
  */
 window.addEventListener('keyup', (event) => {
-    if (event.code === KeyboardInput.KEY_CODES.RESERVED_F2)
+    if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F2)
         if (RenderEngine.paused) {
             console.warn(" - resuming...");
             RenderEngine.start();
@@ -139,7 +139,7 @@ window.addEventListener('keyup', (event) => {
             RenderEngine.pause();
         }
     
-    if (event.code === KeyboardInput.KEY_CODES.RESERVED_F4)
+    if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F4)
         if (RenderEngine.reset) {
             console.warn(" - shutting down...");
             RenderEngine.shutdown();
@@ -147,7 +147,7 @@ window.addEventListener('keyup', (event) => {
             RenderEngine.stop();
         }
     
-    if ([KeyboardInput.KEY_CODES.RESERVED_F2, KeyboardInput.KEY_CODES.RESERVED_F4].includes(event.code)) {
+    if ([KeyboardInput.KEY_CODES.RESERVED_F2, KeyboardInput.KEY_CODES.RESERVED_F4].includes(event.keyCode)) {
         event.preventDefault = true;
         return false;
     }
