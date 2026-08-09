@@ -81,12 +81,12 @@ function explode() {
 // Fountains
 const wEffect1 = FountainEffect.getInstance(['waterParticle']);
 wEffect1.quantity = 5;
-wEffect1.angle = 5;
+wEffect1.angle = 0;
 wEffect1.spread = 5;
 
 const wEffect2 = FountainEffect.getInstance(['waterParticle']);
 wEffect2.quantity = 5;
-wEffect2.angle = -45;
+wEffect2.angle = -60;
 wEffect2.spread = 5;
 
 // add fountain particles and effects
