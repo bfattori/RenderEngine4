@@ -49,7 +49,6 @@ export default class LoadCounter {
             const viewName = inSection ? parts[0] : views[i];
 
             let container = document.createElement('div');
-            container.style.marginTop = `1px`;
         
             if (inSection && !structure[viewName]) {
                 structure[viewName] = container;

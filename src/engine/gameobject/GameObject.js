@@ -336,6 +336,8 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   update(time, deltaTime, cameraMatrix) {
+    const updateStart = PERF('gameObjectStart');
+
     const rc = this.world.renderContext.API;
     this.#hooks.onBeforeUpdate(time, deltaTime, cameraMatrix);
 
@@ -371,6 +373,9 @@ export default class GameObject {
     });
 
     this.#hooks.onAfterUpdate.call(time, deltaTime);
+
+    const updateEnd = PERF('gameObjectEnd');
+    MEASURE('Update Game Object', 'gameObjectStart', 'gameObjectEnd');
   }
 
   //-------------------------------

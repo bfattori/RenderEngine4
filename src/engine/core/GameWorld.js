@@ -184,6 +184,8 @@ class GameWorld {
     // Clear previous collision events
     this.#collisionEvents = [];
     
+    const worldUpdateStart = PERF('worldUpdateStart')
+
     //starting fresh
     this.resetTransforms();
 
@@ -211,6 +213,9 @@ class GameWorld {
     
     // Process collision events
     this.processCollisionEvents();
+
+    const worldUpdateEnd = PERF('worldUpdateEnd');
+    MEASURE('Game World Update', 'worldUpdateStart', 'worldUpdateEnd');
   }
 
   /**
@@ -277,6 +282,7 @@ class GameWorld {
    * Process and handle all pending collision events
    */
   processCollisionEvents() {
+    const collisionProcessStart = PERF('collisionProcessingStart');
     for (const event of this.#collisionEvents) {
       if (event.handler && typeof event.handler === 'function') {
         try {
@@ -287,6 +293,8 @@ class GameWorld {
       }
     }
     this.#collisionEvents = [];
+    const collisionProcessEnd = PERF('collisionProcessingEnd');
+    MEASURE('Collision Events', 'collisionProcessingStart', 'collisionProcessingEnd');
   }
   
   /**

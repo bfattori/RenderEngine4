@@ -40,7 +40,7 @@ await RenderEngine.init({
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 10000
+        maxParticles: 100000
     }
 });
 
@@ -49,22 +49,11 @@ const particleName = 'expParticle';
 const effectName = 'explosion';
 
 const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 1000;
+pEffect.quantity = 3000;
 
 const exParticle = ExplosionParticle.getInstance();
 RenderEngine.particleEngine.addParticleType(particleName, exParticle);
 RenderEngine.particleEngine.addEffect(effectName, pEffect);
-
-// game object and component parts
-// - set world position, rotation, and scale
-const gameObject = new GameObject();
-gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);

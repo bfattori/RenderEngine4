@@ -246,12 +246,19 @@ class Orchestrator {
         // select a worker
         while(true) {
             const worker = this.#workers.get(workerId);
-            const workerLoad = worker.live / this.#workerBurden;
-            if (load >= 100.0 || workerLoad < load) 
+            const workerState = this.#workerState[workerId];
+            let workerLoad = 0.0, live = 0;
+            if (workerState) {
+                live = workerState.live;
+                workerLoad = live / this.#workerBurden;
+            }
+
+            if (workerLoad < load) 
                 return workerId;
 
             // try a different worker
             workerId = $Math.randomRange(0, this.#workers.size, true);
+            //workerId++;
             selected[workerId] = true;
 
             if (selected.every(e => e === true)) {

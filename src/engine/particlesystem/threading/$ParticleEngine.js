@@ -83,7 +83,7 @@ export default class $ParticleEngine {
                 top = 120;
 
             for (let i = 0; i < this.#initProps.threading.workers; i++)
-                this.#workerViews[i] = new CanvasPIP(`worker`, top + (i * 160));
+                this.#workerViews[i] = new CanvasPIP(`Worker ${i}`, top + (i * 160));
         });
 
         PRAGMA('showParticleEngineLoad', () => {

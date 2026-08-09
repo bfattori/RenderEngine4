@@ -192,9 +192,12 @@ export default class RenderPart extends ComponentPart {
      * @param {Object} [options] - Optional configuration for the update
      */
     update(time, deltaTime, options = {}) {
+        PERF('renderPartStart');
         this.composeAndDraw(time, deltaTime);
         this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
         this.resetTransforms();
+        PERF('renderPartEnd');
+        MEASURE('Render Part Update', 'renderPartStart', 'renderPartEnd');
         return this;
     }
 
@@ -206,8 +209,11 @@ export default class RenderPart extends ComponentPart {
      * @returns {void}
      */
     composeAndDraw(time, deltaTime) {
+        PERF('composeDrawStart');
         this.draw(time, deltaTime);
         this.#committed = false;
+        PERF('composeDrawEnd');
+        MEASURE('Compose & Draw', 'composeDrawStart', 'composeDrawEnd');
     }
 
     /**

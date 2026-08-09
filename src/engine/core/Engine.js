@@ -405,7 +405,7 @@ export default class Engine {
    * @param {number} frameRate - Target frame rate in frames per second
    * @param {number} seed - The world timer seed
    */
-  start(frameRate = 60, seed = 0) {
+  async start(frameRate = 60, seed = 0) {
     if (this.isRunning) return;
 
     this.isRunning = true;
@@ -415,14 +415,12 @@ export default class Engine {
     // the frame lifecycle callbacks are called in a loop until the game is stopped
     const lifecycleHooks = this.options.hooks;
     
-    const loop = () => {
+    const loop = async () => {
       if (!this.isRunning) return;
 
-      const startTime = performance.now();
-
       // start frame generation
-      const frameStart = performance.now();
-      const currentTime = PERF('frameStart');
+      const frameStart = PERF('frameStart');
+      const currentTime = frameStart;
       lifecycleHooks?.onBeforeFrame(currentTime);
 
       // Calculate delta time in milliseconds
@@ -454,6 +452,13 @@ export default class Engine {
         if (this.options.flags.showFps) {
           this.#fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
         }
+
+        // const sleep = ((1000/this.frameRate) - (frameEnd-frameStart))
+        // if (sleep > 0) {
+        //   // lock down the FPS
+        //   await new Promise(resolve => setTimeout(resolve, sleep));
+        // }
+
 
         this.#animationFrameId = requestAnimationFrame(loop);
       }

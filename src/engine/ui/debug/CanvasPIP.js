@@ -13,16 +13,25 @@ export default class CanvasPIP {
      * @param {number} width - The width in pixels of the PiP (default: 160)
      * @param {number} height - The height in pixels of the PiP (default: 120) 
      */
-    constructor(name, top, width = 160, height = 120) {
+    constructor(title, top, width = 160, height = 120) {
+        const pictureInPicture = document.createElement('div');
+        pictureInPicture.classList.add('pip');
+        if (top) {
+            pictureInPicture.style.top = `${top}px`;
+        }
+
         this.#canvasPiP = document.createElement('canvas');
-        this.#canvasPiP.classList.add('pip');
-        this.#canvasPiP.classList.add(`${name}-view`);
         this.#canvasPiP.width = width;
         this.#canvasPiP.height = height;
-        if (top) {
-            this.#canvasPiP.style.top = `${top}px`;
+        pictureInPicture.appendChild(this.#canvasPiP);
+        document.body.appendChild(pictureInPicture);
+
+        if (title !== '') {
+            const titleEl = document.createElement('div');
+            titleEl.classList.add('title');
+            titleEl.textContent = title;
+            pictureInPicture.appendChild(titleEl);
         }
-        document.body.appendChild(this.#canvasPiP);
     }
 
     get width() {

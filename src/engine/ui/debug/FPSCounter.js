@@ -1,7 +1,7 @@
 import LoadCounter from './LoadCounter.js';
 export default class FPSCounter extends LoadCounter {
     constructor() {
-        super('Engine Load', {
+        super('Game Engine Load', {
                 top: 10,
                 right: 10,
                 filteringStrength: 1000,

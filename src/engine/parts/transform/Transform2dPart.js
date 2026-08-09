@@ -218,9 +218,12 @@ class Transform2dPart extends ComponentPart {
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
     update(time, deltaTime) {
+        const updateStart = PERF('transformPartStart');
         // Emit the computed local transform
         const emitTransform = Matrix2d.from(this.localTransform)
         this.emit(new TransformEvent(this, emitTransform, time, deltaTime));
+        const updateEnd = PERF('transformPartEnd');
+        MEASURE('Transform Part', 'transformPartStart', 'transformPartEnd');
         return this;
     }
 
