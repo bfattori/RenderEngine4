@@ -55,6 +55,65 @@ export default class $Math {
         return (whole ? Math.floor(v) : v);
     }
 
+    /**
+     * Return the median value for the set of values
+     * @param  {...number} values - The set of values 
+     * @returns {number} 
+     */
+    static median(...values) {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        
+        return sorted.length % 2 !== 0 
+            ? sorted[mid] 
+            : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    /**
+     * Return the mean value for the set of values
+     * @param  {...number} values - The set of values 
+     * @returns {number} 
+     */
+    static mean(...values) {
+        return values.reduce((a, b) => a + b, 0) / values.length;
+    }
+
+    /**
+     * Return the standard deviation for the set of values
+     * @param  {...number} values - The set of values 
+     * @returns {number} 
+     */
+    static stdDeviation(...values) {
+        const mean = $Math.mean(values);
+        const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+        return Math.sqrt(variance);
+    }
+
+    /**
+     * Returns the value given between 0 and a finite set of number of values.
+     * If no value is provided, or the value is not a number or `Array`, it will 
+     * return `0`. If one value is provided, it will return a value between 0.0 
+     * and that number. If an array of two values are provided, it returns a 
+     * value between the two values. If there are three or more values, it 
+     * returns the mean of the provided values. If any values are NaN, returns `0`.
+     * @param  {...any} v - value(s)
+     * @returns {number}
+     */
+    static getRangeValue(v) {
+        if (v && Array.isArray(v) && v.every(e => !isNaN(e))) {
+            if (v.length === 1) {
+                return Math.random() * v[0];
+            } else if (v.length === 2) {
+                return $Math.randomRange(v[0], v[1]);
+            } else {
+                return $Math.mean(v);
+            }
+        } else if (v && !isNaN(v)) {
+            return Math.random() * v;
+        }
+        return 0.0;
+    }
+
     //------------------------------------
     // Vector & Point Functions
 

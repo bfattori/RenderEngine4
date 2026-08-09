@@ -6,6 +6,7 @@ import $Math from '../../core/Math.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
 
 let orchestratorInstance = null;
+let messageHandler = null;
 const ctx = Context.getInstance();
 
 class Orchestrator {
@@ -297,10 +298,12 @@ class Orchestrator {
     shutdown() {
         // stop listening for new messages
         removeEventListener(messageHandler);
+
+        // tell workers to stop processing, 
+        // they will clean up and close
+        console.debug('[Orchestrator] Shutdown workers');
+        this.broadcast({ type: Constants.MSG_SHUTDOWN });
         
-        // terminate the workers
-        this.#terminateWorkers();
-        console.debug('Workers terminated');
         postMessage({ 
             re4: Constants.ORCHESTRATOR_MSG, 
             type: Constants.MSG_TERMINATED 
@@ -314,7 +317,7 @@ class Orchestrator {
  * particle engine operations, such as initialization, adding particle types, effects, and updating/rendering 
  * particles. It distributes tasks to worker threads based on their load and handles responses from workers.
  */
-const messageHandler = addEventListener('message', (event) => {
+messageHandler = addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.PARTICLE_MANAGER_MSG) {
         if (event.data.type === Constants.MSG_INIT) {
             console.debug('Starting particle orchestrator');

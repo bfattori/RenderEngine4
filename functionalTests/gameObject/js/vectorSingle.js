@@ -12,7 +12,10 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 await RenderEngine.init({
     flags: {
         debugMode: true,
-        showFps: true
+        showFps: true,
+        debugOpts: {
+            objectOrigins: false
+        }
     },
     world: {
         renderContext: new VectorRenderContext(

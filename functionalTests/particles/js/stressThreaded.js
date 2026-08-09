@@ -6,15 +6,11 @@ import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
 import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../src/engine/particlesystem/ParticleEffect.js';
+import ParticleEffect from '../../../src/engine/particlesystem/effects/ParticleEffect.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
 
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
-import Util from '../../../src/engine/core/Util.js';
-
-// number of objects to create
-const numObjects = 500;
 
 // create a double-buffered canvas renderer
 await RenderEngine.init({
@@ -44,7 +40,7 @@ await RenderEngine.init({
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 100000,
+        maxParticles: 200000,
         circularBuffer: true
     },
     threading: {
@@ -60,7 +56,7 @@ const particleName = 'expParticle';
 const effectName = 'explosion';
 
 const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 3000;
+pEffect.quantity = 4000;
 
 const exParticle = ExplosionParticle.getInstance();
 RenderEngine.particleEngine.addParticleType(particleName, exParticle);
@@ -93,38 +89,36 @@ function explode() {
     setTimeout(explode, $Math.randomRange(80, 100, true));
 }
 
-// create game objects
-for (let i = 0; i < numObjects; i++) {
-    // game object and component parts
-    // - set world position, rotation, and scale
-    const gameObject = new GameObject(`MultiObject${i}`);
-    const scale = $Math.randomRange(0.25, 1.5);
-    gameObject
-        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-        .worldTransform = Matrix2d.identity().setTo({
-            position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)],
-            rotation: 0,
-            scale: [scale, scale]
-        });
+// game object and component parts
+// - set world position, rotation, and scale
+const gameObject2 = new GameObject();
+gameObject2
+    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
+    .worldTransform = Matrix2d.identity().update({
+        position: [400, 300],
+        rotation: 0,
+        scale: [1, 1]
+    });
 
-    // add the object to the world - before making any modifications to it
-    RenderEngine.world.addObject(gameObject);
+// add the object to the world - before making any modifications to it
+RenderEngine.world.addObject(gameObject2);
 
-    // vector renderer
-    const color = Util.getColor(Math.random(), Math.random(), Math.random());
-    const renderer = gameObject.getComponentByName("renderer");
-    renderer.API
-        .color(color)
-        .width($Math.randomRange(1, 4))
-        .regularPolygon(0, 0, $Math.randomRange(3, 12, true), false);
-    renderer.compile();
+// vector renderer draws out the word "Colorful"
+// capture the text sizing to set the origin
+let textBox = [0,0];
+const renderer = gameObject2.getComponentByName("renderer");
+renderer.API
+    .fontSize(20)
+    .text("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l", {}, textBox);
+renderer.compile();
 
-    // fires before each update of the object
-    const rotate = $Math.randomRange(0, 4) - 2.0;
-    gameObject.onBeforeUpdate = (time, deltaTime) => {
-        gameObject.worldTransform.rotateSelf(rotate);
-    };
-}
+// set the origin at the center of the text
+//gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
+
+// fires before each update of the object
+gameObject2.onBeforeUpdate = (time, deltaTime) => {
+    gameObject2.worldTransform.rotateSelf(1);
+};
 
 explode();
 

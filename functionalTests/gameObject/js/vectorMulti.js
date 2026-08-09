@@ -11,7 +11,7 @@ import $Math from '../../../src/engine/core/Math.js';
 import Util from '../../../src/engine/core/Util.js';
 
 // number of objects to create
-const numObjects = 500;
+const numObjects = 200;
 
 // create a double-buffered canvas 
 // renderer with the compiler enabled

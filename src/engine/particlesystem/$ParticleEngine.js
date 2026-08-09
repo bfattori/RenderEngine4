@@ -1,6 +1,6 @@
 import RenderEngineError from '../core/RenderEngineError.js';
 import Context from '../Context.js';
-import Particle from '../particlesystem/Particle.js';
+import BasicParticle from './types/BasicParticle.js';
 import LoadCounter from '../ui/debug/LoadCounter.js';
 import Engine from '../core/Engine.js';
 
@@ -105,7 +105,7 @@ export default class $ParticleEngine {
         this.#initializeParticles(config.maxParticles);
 
         // add the `basicParticle` type
-        this.addParticleType('basicParticle', new Particle());
+        this.addParticleType('basicParticle', new BasicParticle());
     }
 
     /**
@@ -281,26 +281,18 @@ export default class $ParticleEngine {
      * 
      * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
      * @param {number} time - The current world time in milliseconds
-     * @param {String} particleType - the type of particle to spawn 
+     * @param {Object} particle - Initialized particle data 
      */
-    spawnParticle(worldPos, time, particleType) {
+    spawnParticle(worldPos, time, particle) {
         this.#newParticles = true;
-        const pType = this.getParticleType(particleType);
-        if (pType) {
             const idx = this.#nextIndex;
             if (idx !== -1) {
-                this.#memories[idx] = {};
-                const spawn = pType.spawn(this.#memories[idx], time, particleType, pType.opts);
-                
                 this.#pPos[idx] = [worldPos[0], worldPos[1]];
-                this.#pVel[idx] = [spawn.vel[0], spawn.vel[1]];
-                this.#pSpan[idx] = spawn.life;
+                this.#pVel[idx] = [particle.vel[0], particle.vel[1]];
+                this.#pSpan[idx] = particle.life;
+                this.#memories[idx] = particle.memory;                        
             } else if (ctx.debug)
-                console.warn(`Failed to spawn particle: ${particleType} - no available memory`);
-            
-        } else if (ctx.debug)
-            console.warn(`Unknown particle type: ${particleType}`);
-        
+                console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
     }
 
     /**
@@ -450,6 +442,12 @@ export default class $ParticleEngine {
         this.#memories.fill(null);
         this.#liveParticles = 0;
         this.#newParticles = false;
+    }
+
+    shutdown() {
+        this.reset();
+        this.#particleEffects.clear();
+        this.#particleTypes.clear();
     }
 
     /**

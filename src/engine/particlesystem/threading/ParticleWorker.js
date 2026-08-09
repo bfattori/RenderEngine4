@@ -5,8 +5,9 @@ import Constants from '../../Constants.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
 
 import $ParticleEngine from '../$ParticleEngine.js';
-import Particle from '../Particle.js';
-import ParticleEffect from '../ParticleEffect.js';
+import ParticleEffect from '../effects/ParticleEffect.js';
+
+import BasicParticle from '../types/BasicParticle.js';
 
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
@@ -15,12 +16,13 @@ import { Matrix2d } from '../../core/Matrix.js';
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
 
-let worker = null;
+self.$$worker = null;
 const ctx = Context.getInstance();
 
 export default class ParticleWorker {
     #engineInstance = null;
     #workerId = null;
+    #classMap = new Map();
 
     constructor(workerId, width, height, config, threading, systemOpts) {
         this.#engineInstance = $ParticleEngine.getInstance(width, height, config, threading);
@@ -29,6 +31,9 @@ export default class ParticleWorker {
         // initialize the context with the system options
         ctx.debugOpts = systemOpts.debugOpts;
         ctx.engineOpts = systemOpts.engineOpts;
+
+        // add the root particle type
+        this.#classMap.set('BasicParticle', BasicParticle);
     
         this.readyUp(workerId);
     }
@@ -45,6 +50,10 @@ export default class ParticleWorker {
      */
     get workerId() {
         return this.#workerId;
+    }
+
+    get classMap() {
+        return this.#classMap;
     }
 
     /**
@@ -75,12 +84,20 @@ export default class ParticleWorker {
                 const strict = '"use strict;"\n'; 
 
                 // create a proxy particle type in the worker thread
-                const p = new Particle(data.particle.props);
-                p.spawn = new Function("$memory", "time", "type", "config", strict + data.particle.f['spawn']);
-                p.update = new Function("time", "deltaTime", "$memory", "pos", "vel", "life", strict +  data.particle.f['update']);
-                p.render = new Function("time", "deltaTime", "$memory", "pos", "life", "target", "surface", strict +  data.particle.f['render']);
-                p.cleanUp = new Function("$memory", strict +  data.particle.f['cleanUp']);
+                const p = new BasicParticle(data.particle.props);
+
+                // inheritance
+                this.#classMap.set(data.particle.clazz, p);
+                if (this.#classMap.get(data.particle.inheritance[0])) {
+                    p.constructor = this.#classMap.get(data.particle.inheritance[0]);
+                }
+
+                p.spawn = new Function("type", "time", "config", strict + data.particle.f['spawn']);
+                p.update = new Function("time", "deltaTime", "$memory", "pos", "vel", "life", strict + data.particle.f['update']);
+                p.render = new Function("time", "deltaTime", "$memory", "pos", "life", "target", "surface", strict + data.particle.f['render']);
+                p.cleanUp = new Function("$memory", "$sup", strict + data.particle.f['cleanUp']);
                 this.instance.addParticleType(data.name, p);
+
                 break;
             case Constants.MSG_ADD_EFFECT:
                 // create a proxy particle effect in the worker thread
@@ -97,6 +114,11 @@ export default class ParticleWorker {
                 break;
             case Constants.MSG_SPAWN:
                 this.instance.spawnParticle(data.pos, data.particle);
+                break;
+            case Constants.MSG_SHUTDOWN:
+                this.instance.shutdown();
+                console.debug(`[ParticleWorker] Worker${this.#workerId} terminated`);
+                self.close();
                 break;
             default:
                 console.error('[ParticleWorker] Unknown message type:', data.type);
@@ -152,9 +174,9 @@ addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.ORCHESTRATOR_MSG) {
         if (event.data.type === Constants.MSG_INIT) {
             console.debug(`Starting ParticleWorker ${event.data.workerId}`);
-            worker = new ParticleWorker(event.data.workerId, event.data.width, event.data.height, event.data.config, event.data.threading, event.data.systemOpts);
-        } else if (worker) {
-            worker.process(event.data);
+            self.$$worker = new ParticleWorker(event.data.workerId, event.data.width, event.data.height, event.data.config, event.data.threading, event.data.systemOpts);
+        } else if (self.$$worker) {
+            self.$$worker.process(event.data);
         }
     }
 });

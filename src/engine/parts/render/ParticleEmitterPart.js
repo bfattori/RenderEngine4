@@ -1,6 +1,6 @@
 import Engine from '../../core/Engine.js';
 import RenderPart from './RenderPart.js';
-import ParticleEffect from '../../particlesystem/ParticleEffect.js';
+import ParticleEffect from '../../particlesystem/effects/ParticleEffect.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 export default class ParticleEmitterPart extends RenderPart {

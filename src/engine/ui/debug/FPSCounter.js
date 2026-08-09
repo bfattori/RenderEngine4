@@ -5,12 +5,12 @@ export default class FPSCounter extends LoadCounter {
                 top: 10,
                 right: 10,
                 filteringStrength: 1000,
-                counters: ['FPS', 'Update', 'Render', 'CPU'],
+                counters: ['FPS', 'Update', 'Render', 'Frame'],
                 options: {
                     'FPS': { suffix: ' fps' },
                     'Update': { bar: true, suffix: '%', color: '#f17783'},
                     'Render': { bar: true, suffix: '%', color: '#9978e6' },
-                    'CPU': { bar: true, suffix: '%', color: '#8de977' }
+                    'Frame': { bar: true, suffix: '%', color: '#8de977' }
                 }
             });
     }
@@ -24,6 +24,6 @@ export default class FPSCounter extends LoadCounter {
         super.update('FPS', instantFPS);
         super.update('Update', Math.min(updateTick, 100));
         super.update('Render', Math.min(renderTick, 100));
-        super.update('CPU', Math.min(totalTick, 100));
+        super.update('Frame', Math.min(totalTick, 100));
     }
 }

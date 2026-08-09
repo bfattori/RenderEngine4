@@ -1,7 +1,7 @@
-import Particle from '../Particle.js';
+import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
-export default class SprayParticle extends Particle {
+export default class SprayParticle extends BasicParticle {
     constructor(spread, spreadVariance, angle, angleVariance) {
         super({
             colors: ['#ff0', '#fff', '#f90'],

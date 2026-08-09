@@ -6,22 +6,22 @@ import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
 import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../src/engine/particlesystem/ParticleEffect.js';
+import ParticleEffect from '../../../src/engine/particlesystem/effects/ParticleEffect.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
 
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
-import Util from '../../../src/engine/core/Util.js';
-
-
-// number of objects to create
-const numObjects = 500;
 
 // create a double-buffered canvas renderer
 await RenderEngine.init({
     flags: {
-        debugMode: false,
-        showFps: true
+        debugMode: true,
+        showFps: true,
+        debugOpts: {
+            objectOrigins: false,
+            showParticleWorkersPiP: true,
+            showParticleEngineLoad: true
+        }
     },
     world: {
         renderContext: new VectorRenderContext(
@@ -38,9 +38,6 @@ await RenderEngine.init({
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
-    },
-    particleEngine: {
-        maxParticles: 100000
     }
 });
 
@@ -49,11 +46,22 @@ const particleName = 'expParticle';
 const effectName = 'explosion';
 
 const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 3000;
+pEffect.quantity = 100;
 
 const exParticle = ExplosionParticle.getInstance();
 RenderEngine.particleEngine.addParticleType(particleName, exParticle);
 RenderEngine.particleEngine.addEffect(effectName, pEffect);
+
+// game object and component parts
+// - set world position, rotation, and scale
+const gameObject = new GameObject();
+gameObject
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
+    .worldTransform = Matrix2d.identity().update({
+        position: [400, 300],
+        rotation: 0,
+        scale: [1, 1]
+    });
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -65,43 +73,10 @@ emitter.effect = effectName;
 // every few seconds we'll generate an explosion
 function explode() {
     gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
+        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
     });
     emitter.emit();
-    setTimeout(explode, $Math.randomRange(10, 100, true));
-}
-
-// create game objects
-for (let i = 0; i < numObjects; i++) {
-    // game object and component parts
-    // - set world position, rotation, and scale
-    const gameObject = new GameObject(`MultiObject${i}`);
-    const scale = $Math.randomRange(0.25, 1.5);
-    gameObject
-        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-        .worldTransform = Matrix2d.identity().setTo({
-            position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)],
-            rotation: 0,
-            scale: [scale, scale]
-        });
-
-    // add the object to the world - before making any modifications to it
-    RenderEngine.world.addObject(gameObject);
-
-    // vector renderer
-    const color = Util.getColor(Math.random(), Math.random(), Math.random());
-    const renderer = gameObject.getComponentByName("renderer");
-    renderer.API
-        .color(color)
-        .width($Math.randomRange(1, 4))
-        .regularPolygon(0, 0, $Math.randomRange(3, 12, true), false);
-    renderer.compile();
-
-    // fires before each update of the object
-    const rotate = $Math.randomRange(0, 4) - 2.0;
-    gameObject.onBeforeUpdate = (time, deltaTime) => {
-        gameObject.worldTransform.rotateSelf(rotate);
-    };
+    setTimeout(explode, $Math.randomRange(500, 2000, true));
 }
 
 explode();

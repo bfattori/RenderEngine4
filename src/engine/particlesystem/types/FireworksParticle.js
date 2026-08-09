@@ -1,4 +1,4 @@
-import Particle from '../Particle.js';
+import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
 export default class FireworksParticle extends Particle {

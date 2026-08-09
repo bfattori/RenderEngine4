@@ -59,8 +59,8 @@ const Constants = {
         NOT_SUPPORTED: -2
     },
 
-    /* Particle Engine */
-    MAX_PARTICLES: 3000,
+    /* Particle Engine - keep it low to keep it responsive! */
+    MAX_PARTICLES: 10000,
 
     /* Base Vectors */
     UP_VECTOR: [1, -1],

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Particle Engine (multi-object threaded)</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <script src="../../src/engine/renderEngine4.js" type="module"></script>
+        <script type="module">
+            await (async () => {
+                const params = new URLSearchParams(window.location.search);
+                const jsFile = params.get("js"); // is the number 123
+                const module = await import(new URL(`js/${jsFile}.js`, import.meta.url));
+                return module.default; 
+            })();
+        </script>
+    </head>
+    <body>
+        <div id="context"></div>        
+    </body>
+</html>

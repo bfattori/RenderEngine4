@@ -122,6 +122,14 @@ const RenderEngine = {
      */
     get particleEngine() {
         return RE4.particleEngine;
+    },
+
+    /**
+     * The engine hooks
+     * @returns {Object}
+     */
+    get hooks() {
+        return RE4.hooks;
     }
 }
 

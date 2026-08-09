@@ -175,6 +175,14 @@ export default class Engine {
     return this.#WORLD.renderContext;
   }
 
+  /**
+   * Returns the hooks configuration of the engine.
+   * @returns {Object}
+   */
+  get hooks() {
+    return this.#ENGINE_OPTIONS.hooks;
+  }
+
   //---------------------------------
 
   /**

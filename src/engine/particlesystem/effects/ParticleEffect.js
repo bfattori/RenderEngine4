@@ -1,6 +1,6 @@
-import Constants from '../Constants.js';
-import $Math from '../core/Math.js';
-import Particle from './Particle.js';
+import Constants from '../../Constants.js';
+import $Math from '../../core/Math.js';
+import BasicParticle from '../types/BasicParticle.js';
 
 export default class ParticleEffect {
     #particleCount = 20;
@@ -115,7 +115,7 @@ export default class ParticleEffect {
     run(worldPos, time, deltaTime) {
         const freq = this.#frequency + $Math.randomRange(-this.#frequencyVariance, this.#frequencyVariance, true);
         if (time - this.#lastTime > freq) {
-            this.generateParticles(worldPos, time, this.#types);
+            this.#generateParticles(worldPos, time, this.#types);
             this.#lastTime = time;
         }
     }
@@ -126,12 +126,32 @@ export default class ParticleEffect {
      * @param time {Number} The current world time
      * @param deltaTime {Number} The time between the last world frame and current time
      */
-    generateParticles(worldPos, time, types) {
+    #generateParticles(worldPos, time, types) {
         const count = this.#particleCount + $Math.randomRange(-this.#particleCountVariance, this.#particleCountVariance, true);
         for (let i = 0; i < count; i++) {
             const typeIdx = $Math.randomRange(0, types.length - 1, true);
             const type = types.at(typeIdx);
-            this.#engine.spawnParticle(worldPos, time, type);
+            const pType = this.#engine.types.get(type);
+            if (pType) {
+                let particle = pType.spawn(type, time, pType.opts);
+                particle = this.spawnParticle(particle, pType.opts);
+                this.#engine.spawnParticle(worldPos, time, particle);
+            }
         }
+    }
+
+    /**
+     * Modify a spawned particle, calculating the spawn angle from
+     * the velocity scalar value.
+     * 
+     * @param {Object} particle - Particle instantiation config
+     * @param {Object} options - The particle configuration options 
+     */
+    spawnParticle(particle, options) {
+        particle.vel = $Math.vecMulScalar(
+            $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
+            $Math.getRangeValue(options.velocity)
+        );
+        return particle;
     }
 }

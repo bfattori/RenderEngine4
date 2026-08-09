@@ -6,7 +6,7 @@ import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
 import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../src/engine/particlesystem/ParticleEffect.js';
+import ParticleEffect from '../../../src/engine/particlesystem/effects/ParticleEffect.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
 
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
