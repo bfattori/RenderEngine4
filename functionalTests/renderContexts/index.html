@@ -13,6 +13,10 @@
                 width: 700px;
             }
 
+            ul.tests {
+                list-style-type: none;    
+            }
+
             li a {
                 font-weight: bold;
             }
@@ -29,7 +33,7 @@
     </head>
     <body>
         <h1>Render Contexts</h1>
-        <ul>
+        <ul class="tests">
             <li><a href="runner.html?js=vectorCanvas">Vector Rendering w/Canvas</a>
                 <div class="test-description">
                     A very simple example showing the <code>VectorRenderContext</code> and its capabilities. Vector rendering
@@ -47,7 +51,7 @@
         </ul>        
 
         <h1>Stress Testing</h1>
-        <ul>
+        <ul class="tests">
             <li><a href="runner.html?js=stressVector">Stress 1 - <code>Canvas</code> & <code>VectorRenderContext</code></a>
                 <div class="test-description">
                     Stress testing of the vector context and canvas renderer.

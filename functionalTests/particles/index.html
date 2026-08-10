@@ -13,6 +13,10 @@
                 width: 700px;
             }
 
+            ul.tests {
+                list-style-type: none;    
+            }
+
             li a {
                 font-weight: bold;
             }
@@ -29,78 +33,82 @@
     </head>
     <body>
         <h1>Particle System</h1>
-        <ul>
-            <li><a href="runner.html?js=particles">Particle Engine</a>
+        <ul class="tests">
+            <li><a href="runner.html?js=particles">Single Effect and Particle Type</a>
                 <div class="test-description">
-                    Demonstrates the particle engine, running on the main thread, bound to the engine's update/render loop.
-                    Keeping particle limits low and effect sizes limited reduces overhead to an acceptable performance level.
+                    <p>Demonstrates the particle engine, running on the main thread, bound to the engine's update/render loop.
+                    Keeping particle limits low and effect sizes limited reduces overhead to an acceptable performance level. Limited
+                    to 150 particles per burst.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=particleThreads">WebWorkers</a>
+            <li><a href="runner.html?js=particleThreads">Above example using WebWorkers</a>
                 <div class="test-description">
-                    The particle engine can utilize <b><code>WebWorkers</code></b> if the browser supports them. The particle engine is distributed
-                    to worker threads, sharing the burden, with an <b><code>Orchestrator</code></b> to manage the load and the 
-                    particle coalesce and render operation.<br/>
-                    Running with <code>WebWorkers</code> can free up load in the engine's update/render loop for more active 
-                    objects in the scene.
+                    <p>The particle engine can utilize <b><code>WebWorkers</code></b> if the browser supports them. The particle engine is distributed
+                    to worker threads, each sharing the burden, utilizing an <b><code>Orchestrator</code></b> to manage the distribution load and the
+                    coalescing and rendering of particles for the main thread.</p>
+                    <p>Running with <b><code>WebWorkers</code></b> can free up load in the engine's update/render loop for more active 
+                    objects in the scene. This example increases the particles to 400 per burst.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=typesAndEffects">Particle types &amp; effect</a>
+            <li><a href="runner.html?js=typesAndEffects">Included particle types &amp; effects</a>
                 <div class="test-description">
-                    The particle engine is flexible with base types for particles and effects, but extensible with a simple inehritance scheme.
-                    Particle types reduce the amount of state data needed, per particle, keeping the update/render operation fast.
-                    <br/>
-                    Particle effects generate particles and influence their spawing behavior to give the ultimate flexibility in the design and
-                    generation of repeatable particle effects.
-                    <br/>
-                    <b>Included types:</b>
+                    <p>The particle engine is flexible with base types for particles and effects, but extensible with a simple inehritance scheme.
+                    <b>Particle types</b> reduce the amount of state data needed, per particle, keeping the update/render operation fast.</p>
+                    <p><b>Particle effects</b> generate particles and influence their spawning behavior to give the ultimate flexibility in the design and
+                    generation of repeatable particle effects.</p>
+                    <p>
+                    <b>Included particle types:</b>
                     <ul>
-                        <li><code>BasicParticle</code> - position, velocity, drag, dragRate, and gravity</li>
-                        <li><code>AffectedParticle</code> - Like basic, but affected by repulsors and colliders (increased CPU load)</li>
+                        <li><b><code>BasicParticle</code></b> - position, velocity, drag, dragRate, and gravity</li>
+                        <li><b><code>AffectedParticle</code></b> - Like basic, but affected by repulsors and colliders (increased CPU load)</li>
                     </ul>
-                    <b>Included effects:</b>
+                    </p>
+                    <p>
+                    <b>Included particle effects:</b>
                     <ul>
-                        <li><code>Explosion</code> - Configurable color palette, particle sizes, origin smoke properties, renders with points, 360&deg; emission</li>
-                        <li><code>Puff</code> - Configurable color palette, particle sizes, renders with diffuse points, 360&deg; emission</li>
-                        <li><code>Fountain</code> - Configurable color palette, particle sizes, renders with points or sprites, spread-angle emission</li>
-                        <li><code>Fireworks</code> - Pre-defined color palettes, uses points to render, spawns sub-particles, built-in types: <b>Peony, palm, brocade, comet, etc.</b></li>
-                        <li><code>Spark</code> - Configurable color palette, streak length, renders with lines and points, spread-angle emission</li>
-                        <li><code>Smoke</code> - Configurable color palette, renders with diffuse points, rises slowly with a narrow spread-angle emission</li>
+                        <li><b><code>Spark</code></b> - Configurable color palette, streak length, renders as lines, spawns sub-particle points, narrow spread-angle emission</li>
+                        <li><b><code>Burst</code></b> - Configurable color palette, particle sizes, renders as points, 360&deg; emission</li>
+                        <li><b><code>Puff</code></b> - Configurable color palette, particle sizes, renders as diffuse points, 360&deg; emission</li>
+                        <li><b><code>Explosion</code></b> - Configurable color palette, particle sizes, origin smoke properties, gravity influenced, renders as points, 360&deg; emission</li>
+                        <li><b><code>Fountain</code></b> - Configurable color palette, particle sizes, renders as points or sprites, spread-angle emission</li>
+                        <li><b><code>Fireworks</code></b> - Pre-defined color palettes, renders as points, particles spawn sub-particles, built-in types: <b>Peony, chrysanthemum, comet, palm, brocade, willow, pistil, tourbillion, fish, and strobe.</b></li>
+                        <li><b><code>Smoke</code></b> - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission. This is an <b><code>AffectedParticle</code></b>.</li>
                     </ul>
+                    </p>
                 </div>
             </li>
-            <li><a href="runner.html?js=repulsors">Particle repulsors</a>
+            <li><a href="runner.html?js=repulsors">Repulsors</a>
                 <div class="test-description">
-                    Particle repulsors are diffuse areas of influence over live particles. Each repulsor adds impulse to the particles that are within
+                    <p>Particle repulsors are diffuse areas of influence over live particles. Each repulsor adds impulse to the particles that are within
                     its range of influence. Repulsors are circular in shape with an effective strength that is greater near the origin of the repulsor.
                     Repulsors add impulse to the particles via simple alteration of values, or a complex function that can generate turbulence or other effects.
-                    Additional processing always imposes extra CPU overhead.
+                    Additional processing always imposes extra CPU overhead.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=colliders">Particle colliders</a>
+            <li><a href="runner.html?js=colliders">Colliders</a>
                 <div class="test-description">
-                    Particle colliders are areas where particles cannot enter. Defined as rectangles or circles, when particles encounter a collider their movement
+                    <p>Particle colliders are areas where particles cannot enter. Defined as rectangles or circles, when particles encounter a collider their movement
                     stops or reflects, based on the collider's properies. Colliders allow for particles to visually interact with the game environment.
-                    Additional processing imposes extra CPU overhead.
+                    Additional processing imposes extra CPU overhead.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=occlusion">Particle occlusion</a>
+            <li><a href="runner.html?js=occlusion">Occlusion</a>
                 <div class="test-description">
                     <p>The particle engine runs separate from the game engine. Its only purpose is to move and render particles, so it doesn't care about the game's
                     objects or surfaces. You can use repulsors and colliders, sparingly, to create the effects of environment interaction, but particles just render
                     across the entire viewport unless blocked.</p>
-                    <p>That's where occlusion comes in... When objects in the game update, they can utilize the <b><code>ParticleOccluder</code></b> component to automatically 
-                    generate an occlusion shape. With <b><code>RenderContexts</code></b> supporting multi-planar rendering (for parallax support or depth-of-field) objects
-                    with a <code>ParticleOccluder</code> component will generate an occluder based on their rendering-plane: none for <i>background</i>, hinted for <i>middle</i>, 
-                    and assumed on for <i>front</i>.</p>
-                    <p>Occluders are collected into an occlusion mask that is applied to the particles as they are rendered into the scene. Occluders can create the effect of
+                    <p>That's where occlusion comes in. When objects in the game update, they can utilize the <b><code>ParticleOccluder</code></b> component to automatically 
+                    generate an occlusion shape. With <b><code>RenderContexts</code></b> supporting multi-planar rendering (for parallax support or depth-of-field), objects
+                    with a <code>ParticleOccluder</code> component will generate an occluder shape based on their rendering-plane: none for <i>background</i>, hinted for <i>middle</i>, 
+                    and assumed on for <i>front</i>. You can configure this per-object to override the default behavior.</p>
+                    <p>Occluders are collected into an "occlusion mask" that is applied to the particles as they are rendered into the scene. Occluders can create the effect of
                     depth for the particles generated.</p>
                 </div>
             </li>
         </ul>        
 
         <h1>Stress Testing</h1>
-        <ul>
+        <ul class="tests">
             <li><a href="runner.html?js=stressOnMain">Stress 1 - Main Thread</a>
                 <div class="test-description">
                     <ul>

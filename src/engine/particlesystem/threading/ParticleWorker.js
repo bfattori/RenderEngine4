@@ -1,4 +1,3 @@
-import Console from '../../core/Console.js';
 import Context from '../../Context.js';
 import Constants from '../../Constants.js';
 

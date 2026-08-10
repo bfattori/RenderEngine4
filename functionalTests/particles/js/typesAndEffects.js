@@ -4,12 +4,13 @@ import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRender
 
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
-import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../src/engine/particlesystem/effects/ParticleEffect.js';
-import WaterParticle from '../../../src/engine/particlesystem/types/WaterParticle.js';
-import FountainEffect from '../../../src/engine/particlesystem/effects/FountainEffect.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
+
+import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
+import BurstEffect from '../../../src/engine/particlesystem/effects/BurstEffect.js';
+import FountainEffect from '../../../src/engine/particlesystem/effects/FountainEffect.js';
+import BurstParticle from '../../../src/engine/particlesystem/types/BurstParticle.js';
+import WaterParticle from '../../../src/engine/particlesystem/types/WaterParticle.js';
 
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
@@ -54,13 +55,13 @@ await RenderEngine.init({
 });
 
 // set up the explosion effect
-const eParticle = new ExplosionParticle();
+const eParticle = new BurstParticle();
 const wParticle = new WaterParticle({
     gravity: [0.0, 0.005],
     lifeSpan: [2000, 4000]
 });
 
-const pEffect = new ParticleEffect({
+const pEffect = new BurstEffect({
     count: 180,
     particleTypes: [eParticle]
 });
@@ -80,7 +81,7 @@ const wEffect2 = new FountainEffect({
 });
 
 // we're using the same effect with different configurations
-// so assigning a name will differentiate them to the particle engine
+// assigning a name will differentiate them to the particle engine
 wEffect1.$name = 'fountain1';
 wEffect2.$name = 'fountain2';
 

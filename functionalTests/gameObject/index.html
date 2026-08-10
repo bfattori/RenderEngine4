@@ -13,6 +13,10 @@
                 width: 700px;
             }
 
+            ul.tests {
+                list-style-type: none;    
+            }
+
             li a {
                 font-weight: bold;
             }
@@ -29,11 +33,28 @@
             code {
                 font-weight: bold;
             }
+
+            table {
+                border: 1px solid;
+            }
+
+            th {
+                background-color: silver;
+            }
+
+            td {
+                padding-left: 8px; 
+                padding-right: 5px;  
+            }
+
+            td.state {
+                background-color: #ddf;
+            }
         </style>
     </head>
     <body>
         <h1>GameObject</h1>
-        <ul>
+        <ul class="tests">
             <li><a href="runner.html?js=vectorSingle">Single GameObject (Vector Text)</a>
                 <div class="test-description">
                     This demonstrates the creation of a single <code>GameObject</code> using <code>VectorText</code> and inline text formatting. 
@@ -49,10 +70,72 @@
                     between 3 and 12 sides and rotates clockwise or counterclockwise at varying speeds with per-frame-driven updates.
                 </div>
             </li>
+            <li><a href="runner.html?js=vectorShape">Vector Shape Animation</a>
+                <div class="test-description">
+                    <p>In vector graphics, animations are comprised of separate vector shapes bundled into a single render component.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=rasterSingle">Single Sprite</a>
+                <div class="test-description">
+                    <p>Sprites are the basic type used in the raster rendering context.</p>    
+                </div>
+            </li>
+            <li><a href="runner.html?js=rasterMulti">200 Sprites &amp; Tiles</a>
+                <div class="test-description">
+                    <p>This shows how multiple sprites and tiles are manipulated in the <b><code>GameWorld</code></b> at once.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=rasterStateful">Stateful Sprite Objects</a>
+                <div class="test-description">
+                    <p><b><code>StatefulSprites</code></b> are sprites that include states for animation transitions. The sprite
+                    animations are stored in a look-up table that define the transition states. Changing from one state
+                    to another automatically transitions without needing to manually time and specify the states.</p>
+                    <p>To break this down, let's assume you have the following: a running, walking, standing, and crouched animation
+                    for the two horizontal directions (left &amp; right) and you want to go from standing to running, or running to a 
+                    crouch.</p>
+                    <p>The state table defines states and the valid entry states that allows the engine to calculate a transition
+                    graph through available states to achieve the desired state. An example state table for the left direction might 
+                    look like this:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                            <th>State</th>
+                            <th>Description</th>
+                            <th>Entry states</th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="state"><code>Run-Left</code></td>
+                                <td>Running to the left at full speed</td>
+                                <td><code>Walk-Left</code></td>
+                            </tr>
+                            <tr>
+                                <td class="state"><code>Stand-Left</code></td>
+                                <td>Standing, facing to the left</td>
+                                <td><code>Walk-Left</code> or <code>Crouched-Left</code></td>
+                            </tr>
+                            <tr>
+                                <td class="state"><code>Walk-Left</code></td>
+                                <td>Walking, facing to the left</td>
+                                <td><code>Run-Left</code> or <code>Stand-Left</code></td>
+                            </tr>
+                            <tr>
+                                <td class="state"><code>Crouched-Left</code></td>
+                                <td>The player drops into a crouched position, facing left</td>
+                                <td><code>Stand-Left</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><b>So, for example:</b> To go from a current state of <code>Crouched-Left</code> to the <code>Run-Left</code> state, with a smooth transition to achieve the end state, the
+                    the transition graph is calculated as: <code>Crouched-Left</code> &mdash;&gt; <code>Stand-Left</code> &mdash;&gt; <code>Walk-Left</code> &mdash;&gt; <code>Run-Left</code></p>
+                    <p>In the game, assuming a sprite in the "Crouched-Left" state, one would simply use <code>sprite.transitionTo('Run-Left');</code> and the engine fills in the animation
+                    to transitions for you.</p>
+                </div>
+            </li>
         </ul>        
 
         <h1>Stress Testing</h1>
-        <ul>
+        <ul class="tests">
             <li><a href="runner.html?js=stressVector">Stress 1 - <code>Canvas</code> & <code>VectorRenderContext</code></a>
                 <div class="test-description">
                     Stress testing of the vector context and canvas renderer.

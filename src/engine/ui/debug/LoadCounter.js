@@ -148,10 +148,18 @@ export default class LoadCounter {
             this.#smoothed[view] += (value - this.#smoothed[view]) / this.filteringStrength;
         }
         
-        const displayValue = [format.prefix, value.toFixed(0), format.suffix].filter(e => typeof e !== 'undefined').join('');
+        const displayValue = [format.prefix, format.clamp !== null ? Math.min(value, format.clamp).toFixed(format.fixedDigits) : value.toFixed(format.fixedDigits), format.suffix].filter(e => typeof e !== 'undefined').join('');
         this.#loadCounter[idx].textContent = displayValue;
 
         if (format.bar) {
+            if (format.clamp !== null && value > format.clamp && !this.#loadBar[idx].classList.contains('overload')) {
+                this.#loadBar[idx].classList.add('overload');
+                setTimeout(() => {
+                    this.#loadBar[idx].classList.remove('overload');    
+                }, 1000);
+            }
+                
+
             this.#loadBarText[idx].textContent = displayValue;
             this.#loadBar[idx].style.width = displayValue;
         }

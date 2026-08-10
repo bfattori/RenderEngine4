@@ -93,8 +93,8 @@ export default class $ParticleEngine {
                 options: {
                     'Update:Time': { suffix: ' ms' },
                     'Render:Time': { suffix: ' ms' },
-                    'Update:Load': { bar: true, suffix: '%' },
-                    'Render:Load': { bar: true, suffix: '%' }
+                    'Update:Load': { bar: true, suffix: '%', clamp: 100.0 },
+                    'Render:Load': { bar: true, suffix: '%', clamp: 100.0 }
                 }
             };
 
@@ -195,8 +195,8 @@ export default class $ParticleEngine {
 
                         this.#engineLoadView.update('Update:Time', update);
                         this.#engineLoadView.update('Render:Time', render);
-                        this.#engineLoadView.update('Update:Load', isNaN(updateLoad) ? 0 : Math.min(updateLoad * 100, 100));
-                        this.#engineLoadView.update('Render:Load', isNaN(renderLoad) ? 0 : Math.min(renderLoad * 100, 100));
+                        this.#engineLoadView.update('Update:Load', isNaN(updateLoad) ? 0 : updateLoad * 100);
+                        this.#engineLoadView.update('Render:Load', isNaN(renderLoad) ? 0 : renderLoad * 100);
                     });
 
                     break;

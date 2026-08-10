@@ -5,11 +5,9 @@ import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRender
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
-import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../src/engine/particlesystem/effects/ParticleEffect.js';
+import BurstParticle from '../../../src/engine/particlesystem/types/BurstParticle.js';
+import BurstEffect from '../../../src/engine/particlesystem/effects/BurstEffect.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
-import WaterParticle from '../../../src/engine/particlesystem/types/WaterParticle.js';
-import FountainEffect from '../../../src/engine/particlesystem/effects/FountainEffect.js';
 
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
@@ -49,11 +47,11 @@ await RenderEngine.init({
     }
 });
 
-const exParticle = new ExplosionParticle();
+const exParticle = new BurstParticle();
 RenderEngine.particleEngine.addParticleType(exParticle);
 
 // set up the particles and effects we'll use
-const pEffect = new ParticleEffect({
+const pEffect = new BurstEffect({
     count: 400,
     particleTypes: [exParticle]
 });

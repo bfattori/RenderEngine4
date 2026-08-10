@@ -41,6 +41,7 @@ div.pip div.title {
     position: absolute;
     left: 3px;
     bottom: 3px;
+    background-color: #eeeeee8f;
 }
 
 /** Load Counter */
@@ -128,6 +129,24 @@ div.loadContainer div.loadBar {
     left: 50px;
     height: 15px;
     z-index: 20;
+}
+
+div.loadContainer div.loadBar.overload {
+    background-color: #f00;
+    /* Name | Duration | Timing | Iteration | Direction */
+    animation: borderColorFade 1s ease-out forwards;
+}
+
+@keyframes borderColorFade {
+  0% {
+    background-color: #800;
+  }
+  50% {
+    background-color: #f00;
+  }
+  100% {
+    background-color: rgba(255, 0, 0, 0);
+  }
 }
 
 div.loadBar span.loadBarText {

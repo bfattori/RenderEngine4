@@ -1,7 +1,7 @@
 import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
-export default class ExplosionParticle extends BasicParticle {
+export default class BurstParticle extends BasicParticle {
     constructor(opts = {}, url = import.meta.url) {
         super({
             colors: ['#ff8', '#ff0', '#fff', '#888', '#f00', '#f90'],

@@ -8,9 +8,9 @@ export default class FPSCounter extends LoadCounter {
                 counters: ['FPS', 'Update', 'Render', 'Frame'],
                 options: {
                     'FPS': { suffix: ' fps' },
-                    'Update': { bar: true, suffix: '%', color: '#f17783'},
-                    'Render': { bar: true, suffix: '%', color: '#9978e6' },
-                    'Frame': { bar: true, suffix: '%', color: '#8de977' }
+                    'Update': { bar: true, suffix: '%', color: '#f17783', clamp: 100.0 },
+                    'Render': { bar: true, suffix: '%', color: '#9978e6', clamp: 100.0 },
+                    'Frame': { bar: true, suffix: '%', color: '#8de977', clamp: 100.0 }
                 }
             });
     }
@@ -22,8 +22,8 @@ export default class FPSCounter extends LoadCounter {
         const instantFPS = 1000 / frameTime;
 
         super.update('FPS', instantFPS);
-        super.update('Update', Math.min(updateTick, 100));
-        super.update('Render', Math.min(renderTick, 100));
-        super.update('Frame', Math.min(totalTick, 100));
+        super.update('Update', updateTick);
+        super.update('Render', renderTick);
+        super.update('Frame', totalTick);
     }
 }

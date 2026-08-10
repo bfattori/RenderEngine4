@@ -80,7 +80,9 @@ const Constants = {
         smoothing: true,
         color: null,
         prefix: '',
-        suffix: ''
+        suffix: '',
+        clamp: null,
+        fixedDigits: 0
     },
     DEFAULT_FILTER_STRENGTH: 10,
 

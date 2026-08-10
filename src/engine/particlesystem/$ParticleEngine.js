@@ -87,8 +87,8 @@ export default class $ParticleEngine {
                     options: {
                         'Update:Time': { suffix: ' ms' },
                         'Render:Time': { suffix: ' ms' },
-                        'Update:Load': { bar: true, suffix: '%' },
-                        'Render:Load': { bar: true, suffix: '%' },
+                        'Update:Load': { bar: true, suffix: '%', clamp: 100.0 },
+                        'Render:Load': { bar: true, suffix: '%', clamp: 100.0 },
                         'Particles': {}
                     }
                 }

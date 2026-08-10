@@ -127,18 +127,12 @@ export default class ParticleEffect extends TransferrableConfig {
     /**
      * Sub-classes can override this method to modify a spawned 
      * particle before it is introduced into the `ParticleSystem`.
-     * This instance multiplies a spawn angle, between 0 and 359, 
-     * with the velocity scalar value.
      * 
      * @param {Object} particle - Particle instantiation config
      * @param {Object} options - The particle configuration options
      * @return {Object} Particle spawn data
      */
     initParticle(particle, options) {
-        particle.vel = $Math.vecMulScalar(
-            $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
-            $Math.getRangeValue(options.velocity)
-        );
         return particle;
     }
 }
