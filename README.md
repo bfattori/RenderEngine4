@@ -55,7 +55,8 @@ An alternative is to use Python to run a simple webserver from the root folder t
 python -m http.server 8080
 ```
 
-
+#### Functional Testing
+Navigate to the `./functionalTests` folder after starting the server to see the engine in action.
 
 ### Basic Integration
 Import the core engine into your project:
