@@ -51,7 +51,7 @@ export default class $Math {
      * @memberof R.lang.Math2
      */
     static randomRange(low, high, whole = false) {
-        const v = low + (Math.random() * high);
+        const v = low + (Math.random() * (high - low));
         return (whole ? Math.floor(v) : v);
     }
 

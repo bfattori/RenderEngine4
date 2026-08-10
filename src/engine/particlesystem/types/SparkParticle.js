@@ -5,6 +5,7 @@ export default class SparkParticle extends SprayParticle {
     constructor(spread, spreadVariance, angle, angleVariance, delay, delayVariance) {
         super(spread, spreadVariance, angle, angleVariance);
         this.opts = {delay: delay, delayVariance: delayVariance, ...this.opts};
+        this.$name = 'sparkParticle';
     }
 
     static getInstance(spread, spreadVariance, angle, angleVariance, delay, delayVariance) {

@@ -151,7 +151,7 @@ export default class $ParticleEngine {
     }
 
     #createOrchestrator() {
-        this.#thread = new Worker(new URL(`./Orchestrator.js${ctx.preventThreadCache()}`, import.meta.url), {
+        this.#thread = new Worker(new URL(`./Orchestrator.js${ctx.preventThreadCache}`, import.meta.url), {
             name: `${this.#initProps.threading.name}_orchestrator`,
             type: 'module'
         });
@@ -241,28 +241,30 @@ export default class $ParticleEngine {
     }
 
     /**
-     * Get a primitive representation of a complex object that can be sent to the thread.
-     * The thread will reconstruct the object from this representation.
-     * @param {String} name - The name of the object type of the transferrable object
-     * @param {Object} obj - The object to get the transferrable representation of
-     * @returns {Object} The transferrable representation of the object
+     * Add multiple particle types to the engine at once
+     * @param  {...BasicParticle} particles - Particle types
      */
-    #getTransferrable(name, obj) {
-        return obj?.getTransferrable(name) || {};
+    addParticleTypes(...particles) {
+        particles.forEach(p => this.addParticleType(p));
     }
 
     /**
      * Add a new particle type to the particle engine
-     * @param {String} name 
      * @param {Particle} particle 
      */
-    addParticleType(name, particle) {
-        const tParticle = this.#getTransferrable(name, particle);
+    addParticleType(particle) {
         this.#send({ 
             type: Constants.MSG_ADD_TYPE, 
-            name: name, 
-            particle: tParticle 
+            particle: particle.transferrable 
         });
+    }
+
+    /**
+     * Add multiple particle effects to the engine at once
+     * @param  {...ParticleEffect} effects - Particle types
+     */
+    addEffects(...effects) {
+        effects.forEach(e => this.addEffect(e));
     }
 
     /**
@@ -270,12 +272,10 @@ export default class $ParticleEngine {
      * @param particleEffect
      * @return {ParticleEffect} The instance of the effect
      */
-    addEffect(name, particleEffect) {
-        const tEffect = this.#getTransferrable(name, particleEffect);
+    addEffect(particleEffect) {
         this.#send({ 
             type: Constants.MSG_ADD_EFFECT, 
-            name: name, 
-            effect: tEffect 
+            effect: particleEffect.transferrable 
         });
     }
 

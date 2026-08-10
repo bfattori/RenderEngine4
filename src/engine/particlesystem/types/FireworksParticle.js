@@ -6,6 +6,7 @@ export default class FireworksParticle extends Particle {
         super({
             
         });
+        this.$name = 'fireworksParticle';
     }
 
     static getInstance() {

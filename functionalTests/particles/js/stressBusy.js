@@ -20,8 +20,12 @@ const numObjects = 500;
 // create a double-buffered canvas renderer
 await RenderEngine.init({
     flags: {
-        debugMode: false,
-        showFps: true
+        debugMode: true,
+        showFps: true,
+        debugOpts: {
+            objectOrigins: false,
+            showParticleEngineLoad: true
+        }
     },
     world: {
         renderContext: new VectorRenderContext(
@@ -45,15 +49,14 @@ await RenderEngine.init({
 });
 
 // set up the particles and effects we'll use
-const particleName = 'expParticle';
-const effectName = 'explosion';
+const exParticle = new ExplosionParticle();
+const pEffect = new ParticleEffect({
+    count: 3000,
+    particleTypes: [exParticle]
+});
 
-const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 3000;
-
-const exParticle = ExplosionParticle.getInstance();
-RenderEngine.particleEngine.addParticleType(particleName, exParticle);
-RenderEngine.particleEngine.addEffect(effectName, pEffect);
+RenderEngine.particleEngine.addParticleType(exParticle);
+RenderEngine.particleEngine.addEffect(pEffect);
 
 // game object and component parts
 // - set world position, rotation, and scale
@@ -71,7 +74,7 @@ RenderEngine.world.addObject(gameObject);
 
 // configure the emitter to use the explosion effect
 const emitter = gameObject.getComponentByName("emitter");
-emitter.effect = effectName;
+emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {

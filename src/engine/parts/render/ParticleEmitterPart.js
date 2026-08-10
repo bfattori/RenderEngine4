@@ -69,7 +69,7 @@ export default class ParticleEmitterPart extends RenderPart {
 
         // convert to world coordinates
         const transform = Matrix2d.from(this.renderTransform).multiplySelf(this.world.currentTransform);
-        Engine.particleEngine.runEffect([transform.e, transform.f], this.effect, time, deltaTime);
+        Engine.particleEngine.runEffect([transform.e, transform.f], this.effect.$name, time, deltaTime);
         this.#active = false;
     }
 }

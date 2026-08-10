@@ -1,109 +1,92 @@
 import Constants from '../../Constants.js';
 import $Math from '../../core/Math.js';
+import TransferrableConfig from '../../core/TransferrableConfig.js';
 import BasicParticle from '../types/BasicParticle.js';
 
-export default class ParticleEffect {
-    #particleCount = 20;
-    #particleCountVariance = 0;
-    #frequency = 0;
-    #frequencyVariance = 0;
+export default class ParticleEffect extends TransferrableConfig {
     #lastTime = 0;
-    #types = [];
     #engine = null;
 
-    constructor(types) {
-        this.#types = types;
+    /**
+     * Create a `ParticleEffect` to use with the particle system. Particle effects
+     * generate particles and introduce them into the `ParticleSystem` with an initial
+     * position, velocity, and run-time options.
+     * 
+     * @param {String} name - The name of the effect to make it unique
+     * @param {Object} opts - Configuration options for the effect
+     * @param {Array<BasicParticle>} types - The type of particles this effect can select from 
+     */
+    constructor(opts = {}, url = import.meta.url) {
+        super({
+            /**
+             * Set the number of particles emitted per frame
+             * @type {number}
+             */
+            count: 20,
+            /**
+             * The variance of particle count, from frame-to-frame
+             * @type {number}
+             */
+            countVariance: 0,
+            /**
+             * The frequency at which particles are emitted. `0` is "always on".
+             * Otherwise, the value is a time delay between emissions.
+             * @type {number} - milliseconds
+             */
+            emissionFrequency: 0,
+            /**
+             * The variance, from frame-to-frame, of emission frequency
+             * @type {number} - milliseconds
+             */
+            frequencyVariance: 0,
+            /**
+             * The types of particles this effect uses to generate particles.
+             * The effect will randomly select from the available particles
+             * when it spawns a new particle.
+             * @type {Array<BasicParticle>}
+             */
+            particleTypes: []
+        }, url);
+        this.merge(opts);
+        this.$name = 'particleEffect';
     }
 
-    static getInstance(types) {
-        return new ParticleEffect(types);
-    }
-
-    getTransferrable(name) {
-        const t = {type:'ParticleEffect', name: name, props:{}};
-        for (const prop of ['quantity', 'quantityVariance', 'frequency', 'frequencyVariance']) {
-            t.props[prop] = this[prop];
-        }
-        t.types = this.#types;
-        return t;
-    }
-
+    /**
+     * Set the associated particle engine this effect will
+     * generate particles into.
+     * @param {ParticleEngine} pEngine - The particle engine instance
+     */
     set engine(pEngine) {
         this.#engine = pEngine;
     }
 
     /**
-     * Set the number of particles emitted per frame
-     * @param {number} particleCount - The number of particles to emit per frame
-     * @returns {*}
+     * Reduce the particle types to their names
+     * @returns {Object}
      */
-    set quantity(particleCount) {
-        this.#particleCount = particleCount;
-        return this;
+    dehydrate() {
+        const props = super.dehydrate();
+        props.particleTypes = props.particleTypes.map(e => e.$name);
+        return props;
     }
 
     /**
-     * The number of variables to emit per frame
-     * @returns {number}
+     * Replace particle types with their configured instances
+     * @returns 
      */
-    get quantity() {
-        return this.#particleCount;
+    rehydrate() {
+        const obj = super.rehydrate();
+        obj.particleTypes = obj.particleTypes.map(e => this.#engine.types.get(e));
+        return obj;
     }
 
     /**
-     * Set the variance amount for the count emitted at each frame
-     * @param {number} variance - The variance between emissions (+/-) this amount
+     * Add a particle to this effect. When the effect runs, it selects randomly
+     * from the particles provided.
+     * @param {BasicParticle} type - A particle available to this effect. 
      */
-    set quantityVariance(variance) {
-        this.#particleCountVariance = variance;
-    }
-
-    /**
-     * Get the variance in the number of particles emitted per frame
-     * @returns {number}
-     */
-    get quantityVariance() {
-        return this.#particleCountVariance;
-    }
-
-    /**
-     * Set the frequency at which particles will be emitted
-     * @param emitFrequency
-     */
-    set frequency(emitFrequency) {
-        this.#frequency = emitFrequency;
-    }
-
-    /**
-     * Get the frequency at which particles are emitted
-     * @returns {number} The frequency in milliseconds
-     */
-    get frequency() {
-        return this.#frequency;
-    }
-
-    /**
-     * Set the emission frequence variance
-     * @param {number} variance - The amount to vary the frequency of emission (+/-) each frame
-     */
-    set frequencyVariance(variance) {
-        this.#frequencyVariance = variance;
-    }
-
-    /**
-     * Get the variance in the frequency at which particles are emitted
-     * @return {number} Frequency variance in milliseconds (+/-) each frame
-     */
-    get frequencyVariance() {
-        return this.#frequencyVariance;
-    }
-
-    set particleTypes(types) {
-        this.#types = types;
-    }
-
     addParticleType(type) {
-        this.#types.push(type);
+        this.particleTypes.push(type);
     }
 
     /**
@@ -113,41 +96,45 @@ export default class ParticleEffect {
      * @param {Array<number>} worldPos - [x, y] the world position where to emit particles
      */
     run(worldPos, time, deltaTime) {
-        const freq = this.#frequency + $Math.randomRange(-this.#frequencyVariance, this.#frequencyVariance, true);
+        const freq = this.emissionFrequency + $Math.randomRange(-this.frequencyVariance, this.frequencyVariance, true);
         if (time - this.#lastTime > freq) {
-            this.#generateParticles(worldPos, time, this.#types);
+            this.#generateParticles(worldPos, time);
             this.#lastTime = time;
         }
     }
 
     /**
-     * Generate particles for the effect.
+     * Generate particles for the effect and introduce them into the `ParticleSystem`
      * @param worldPos {Array<number>} The world position where the particles are emitted from
      * @param time {Number} The current world time
-     * @param deltaTime {Number} The time between the last world frame and current time
+     * @param deltaTime {Number} The time between the last frame and current time
      */
-    #generateParticles(worldPos, time, types) {
-        const count = this.#particleCount + $Math.randomRange(-this.#particleCountVariance, this.#particleCountVariance, true);
+    #generateParticles(worldPos, time) {
+        const count = this.count + $Math.randomRange(-this.countVariance, this.countVariance, true);
         for (let i = 0; i < count; i++) {
-            const typeIdx = $Math.randomRange(0, types.length - 1, true);
-            const type = types.at(typeIdx);
-            const pType = this.#engine.types.get(type);
+            const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
+            const pType = this.particleTypes.at(typeIdx);
             if (pType) {
-                let particle = pType.spawn(type, time, pType.opts);
-                particle = this.spawnParticle(particle, pType.opts);
+                let particle = pType.spawn(time, pType.opts);
+                // give sub-classes an opportunity to modify 
+                // these values or introduce new ones
+                particle = this.initParticle(particle, pType.opts);
                 this.#engine.spawnParticle(worldPos, time, particle);
             }
         }
     }
 
     /**
-     * Modify a spawned particle, calculating the spawn angle from
-     * the velocity scalar value.
+     * Sub-classes can override this method to modify a spawned 
+     * particle before it is introduced into the `ParticleSystem`.
+     * This instance multiplies a spawn angle, between 0 and 359, 
+     * with the velocity scalar value.
      * 
      * @param {Object} particle - Particle instantiation config
-     * @param {Object} options - The particle configuration options 
+     * @param {Object} options - The particle configuration options
+     * @return {Object} Particle spawn data
      */
-    spawnParticle(particle, options) {
+    initParticle(particle, options) {
         particle.vel = $Math.vecMulScalar(
             $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
             $Math.getRangeValue(options.velocity)

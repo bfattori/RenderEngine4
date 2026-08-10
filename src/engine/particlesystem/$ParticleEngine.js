@@ -1,6 +1,6 @@
 import RenderEngineError from '../core/RenderEngineError.js';
 import Context from '../Context.js';
-import BasicParticle from './types/BasicParticle.js';
+
 import LoadCounter from '../ui/debug/LoadCounter.js';
 import Engine from '../core/Engine.js';
 
@@ -103,9 +103,6 @@ export default class $ParticleEngine {
         this.#offscreen = new OffscreenCanvas(width, height);
         this.#surface = this.#offscreen.getContext('2d');
         this.#initializeParticles(config.maxParticles);
-
-        // add the `basicParticle` type
-        this.addParticleType('basicParticle', new BasicParticle());
     }
 
     /**
@@ -239,13 +236,21 @@ export default class $ParticleEngine {
     }
 
     /**
+     * Add multiple particle types to the engine at once
+     * @param  {...BasicParticle} particles - Particle types
+     */
+    addParticleTypes(...particles) {
+        particles.forEach(p => this.addParticleType(p));
+    }
+
+    /**
      * Add a new particle type to the particle engine
      * @param {String} name 
      * @param {Particle} particle 
      */
-    addParticleType(name, particle) {
-        if (this.types.get(name) === undefined)
-            this.types.set(name, particle);
+    addParticleType(particle) {
+        if (this.types.get(particle.$name) === undefined)
+            this.types.set(particle.$name, particle);
     }
 
     /**
@@ -296,13 +301,21 @@ export default class $ParticleEngine {
     }
 
     /**
+     * Add multiple particle effects to the engine at once
+     * @param  {...ParticleEffect} effects - Particle types
+     */
+    addEffects(...effects) {
+        effects.forEach(e => this.addEffect(e));
+    }
+
+    /**
      * Add a particle effect
      * @param particleEffect
      * @return {ParticleEffect} The instance of the effect
      */
-    addEffect(name, particleEffect) {
+    addEffect(particleEffect) {
         particleEffect.engine = this;
-        this.effects.set(name, particleEffect);
+        this.effects.set(particleEffect.$name, particleEffect);
     }
 
     /**

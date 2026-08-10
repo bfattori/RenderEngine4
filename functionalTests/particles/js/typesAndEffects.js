@@ -40,16 +40,53 @@ await RenderEngine.init({
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
+    },
+    particleEngine: {
+        maxParticles: 200000,
+        circularBuffer: true
+    },
+    threading: {
+        particleEngine: {
+            enabled: true,
+            workers: 2
+        }
     }
 });
 
 // set up the explosion effect
-const pEffect = ParticleEffect.getInstance(['expParticle']);
-pEffect.quantity = 180;
+const eParticle = new ExplosionParticle();
+const wParticle = new WaterParticle({
+    gravity: [0.0, 0.005],
+    lifeSpan: [2000, 4000]
+});
+
+const pEffect = new ParticleEffect({
+    count: 180,
+    particleTypes: [eParticle]
+});
+
+const wEffect1 = new FountainEffect({
+    count: 5,
+    particleTypes: [wParticle],
+    angle: 20,
+    spread: 5
+});
+
+const wEffect2 = new FountainEffect({
+    count: 5,
+    particleTypes: [wParticle],
+    angle: -20,
+    spread: 5
+});
+
+// we're using the same effect with different configurations
+// so assigning a name will differentiate them to the particle engine
+wEffect1.$name = 'fountain1';
+wEffect2.$name = 'fountain2';
 
 // add the explosion perticle and effect to the particle engine
-RenderEngine.particleEngine.addParticleType('expParticle', ExplosionParticle.getInstance());
-RenderEngine.particleEngine.addEffect('explosion', pEffect);
+RenderEngine.particleEngine.addParticleTypes(eParticle, wParticle);
+RenderEngine.particleEngine.addEffects(pEffect, wEffect1, wEffect2);
 
 // Object used to position the explosions
 // - set world position, rotation, and scale
@@ -67,7 +104,7 @@ RenderEngine.world.addObject(explosionObject);
 
 // configure the emitter to use the explosion effect
 const explosionEmitter = explosionObject.getComponentByName("emitter");
-explosionEmitter.effect = 'explosion';
+explosionEmitter.effect = pEffect;
 
 // generate an explosion randomly
 function explode() {
@@ -78,21 +115,7 @@ function explode() {
     setTimeout(explode, $Math.randomRange(100, 1000, true));
 }
 
-// Fountains
-const wEffect1 = FountainEffect.getInstance(['waterParticle']);
-wEffect1.quantity = 5;
-wEffect1.angle = 0;
-wEffect1.spread = 5;
-
-const wEffect2 = FountainEffect.getInstance(['waterParticle']);
-wEffect2.quantity = 5;
-wEffect2.angle = -60;
-wEffect2.spread = 5;
-
-// add fountain particles and effects
-RenderEngine.particleEngine.addParticleType('waterParticle', WaterParticle.getInstance());
-RenderEngine.particleEngine.addEffect('fountainOne', wEffect1);
-RenderEngine.particleEngine.addEffect('fountainTwo', wEffect2);
+// Fountains -------------------------------
 
 // game object and component parts used for the fountains
 // - set world position, rotation, and scale
@@ -119,8 +142,8 @@ RenderEngine.world.addObject(fountain1);
 RenderEngine.world.addObject(fountain2);
 
 // configure the emitter to use the explosion effect
-fountain1.getComponentByName("emitter").effect = 'fountainOne';
-fountain2.getComponentByName("emitter").effect = 'fountainTwo';
+fountain1.getComponentByName("emitter").effect = wEffect1;
+fountain2.getComponentByName("emitter").effect = wEffect2;
 
 // start the explosions and fountains
 explode();

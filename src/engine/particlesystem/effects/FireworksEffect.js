@@ -106,6 +106,7 @@ export default class FireworksEffect extends ParticleEffect {
     constructor(types, config = {}) {
         super(types);
         this.#config.merge(config);
+        this.$name = 'fireworksEffect';
     }
 
     static getInstance(types, config) {

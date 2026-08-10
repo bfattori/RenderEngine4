@@ -6,8 +6,9 @@ import ParticleWorkerError from './ParticleWorkerError.js';
 
 import $ParticleEngine from '../$ParticleEngine.js';
 import ParticleEffect from '../effects/ParticleEffect.js';
-
 import BasicParticle from '../types/BasicParticle.js';
+
+import TransferrableConfig from '../../core/TransferrableConfig.js';
 
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
@@ -78,33 +79,15 @@ export default class ParticleWorker {
      * Process events from the Orchestrator thread
      * @param {Object} data 
      */
-    process(data) {
+    async process(data) {
         switch(data.type) {
             case Constants.MSG_ADD_TYPE:
-                const strict = '"use strict;"\n'; 
-
-                // create a proxy particle type in the worker thread
-                const p = new BasicParticle(data.particle.props);
-
-                // inheritance
-                this.#classMap.set(data.particle.clazz, p);
-                if (this.#classMap.get(data.particle.inheritance[0])) {
-                    p.constructor = this.#classMap.get(data.particle.inheritance[0]);
-                }
-
-                p.spawn = new Function("type", "time", "config", strict + data.particle.f['spawn']);
-                p.update = new Function("time", "deltaTime", "$memory", "pos", "vel", "life", strict + data.particle.f['update']);
-                p.render = new Function("time", "deltaTime", "$memory", "pos", "life", "target", "surface", strict + data.particle.f['render']);
-                p.cleanUp = new Function("$memory", "$sup", strict + data.particle.f['cleanUp']);
-                this.instance.addParticleType(data.name, p);
-
+                const particle = await TransferrableConfig.reconstruct(data.particle);
+                this.instance.addParticleType(particle);
                 break;
             case Constants.MSG_ADD_EFFECT:
-                // create a proxy particle effect in the worker thread
-                const e = new ParticleEffect(data.effect.types);
-                for (const prop in data.effect.props)
-                    e[prop] = data.effect.props[prop];
-                this.instance.addEffect(data.name, e);
+                const effect = await TransferrableConfig.reconstruct(data.effect, (obj) => {obj.engine = this.instance;});
+                this.instance.addEffect(effect);
                 break;
             case Constants.MSG_ADD_PARTICLES:
                 this.instance.addParticles(data.particles);

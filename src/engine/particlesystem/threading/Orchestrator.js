@@ -71,7 +71,7 @@ class Orchestrator {
 
         // spawn the worker threads for the particle engine
         for (let i = 0; i < tConfig.workers; i++) {
-            const worker = new Worker(new URL(`./ParticleWorker.js${ctx.preventThreadCache()}`, import.meta.url), {
+            const worker = new Worker(new URL(`./ParticleWorker.js${ctx.preventThreadCache}`, import.meta.url), {
                 type: 'module',
                 name: `${tConfig.name}_worker${i}`
             });
@@ -297,12 +297,12 @@ class Orchestrator {
      */
     shutdown() {
         // stop listening for new messages
-        removeEventListener(messageHandler);
+        removeEventListener('message', messageHandler);
 
         // tell workers to stop processing, 
         // they will clean up and close
         console.debug('[Orchestrator] Shutdown workers');
-        this.broadcast({ type: Constants.MSG_SHUTDOWN });
+        this.broadcast({data: { type: Constants.MSG_SHUTDOWN }});
         
         postMessage({ 
             re4: Constants.ORCHESTRATOR_MSG, 

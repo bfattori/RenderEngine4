@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Functional Testing</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <style>
+            div.tests {
+                border: 1px solid gray;
+                box-shadow: 2px 5px 8px rgba(39, 1, 1, 0.4);
+                margin: 5px 0 15px 0;
+                padding: 8px;
+                width: 700px;
+            }
+
+            li {
+                margin-bottom: 20px;
+            }
+
+            li a {
+                font-weight: bold;
+            }
+
+            div.notice {
+                border: 1px solid black;
+                margin: 5px;
+                padding: 8px;
+                position: fixed;
+                bottom: 5px;
+                background-color: white;
+            }
+
+            code {
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>RenderEngine4 - Functional Tests</h1>
+        <div class="tests">
+        <ul>
+            <li><a href="./renderContexts/index.html">Render Contexts</a> - The render context determines the type of game you'll make, either vector or raster. Contexts are paired with a renderer like Canvas 2d or WebGl for flexibility.</li>
+            <li><a href="./gameObject/index.html">Game Objects</a> - The core object for game building. It eliminates monolithic design through composition. The various component parts grant atomic functionality to game objects as needed.</li>
+            <li><a href="./particles/index.html">Particle Engine</a> - The RenderEngine4 comes with a full-featured particle system that runs in either the main thread or in WebWorkers which can improve performance.</li>
+        </ul>        
+        </div>
+        <div style="height: 50px;">&nbsp;</div>
+        <div class="notice">&copy;2026 - Brett Fattori, All rights reserved. Licensed with the <a href="https://www.gnu.org/licenses/gpl-3.0.html"><code>GNU General Public License v3.0 or Later (GPL-3.0)</code></a></div>       
+    </body>
+</html>

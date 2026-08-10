@@ -20,7 +20,7 @@ export default class Context {
      * Prevents script caching, if enabled
      * @returns {String}
      */
-    preventScriptCache() {
+    get preventScriptCache() {
         return this.engineOpts.preventScriptCaching ? '?v=' + Date.now() : '';
     }
 
@@ -28,7 +28,7 @@ export default class Context {
      * Prevents thread caching, if enabled
      * @returns {String}
      */
-    preventThreadCache() {
+    get preventThreadCache() {
         return this.engineOpts.preventThreadCaching ? '?v=' + Date.now() : '';
     }
 

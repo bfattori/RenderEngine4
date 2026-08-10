@@ -1,9 +1,20 @@
 import Constants from '../../Constants.js';
-import Config from '../../core/Config.js';
+import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
 
-export default class BasicParticle extends Config {
-    constructor(opts) {
+export default class BasicParticle extends TransferrableConfig {
+    #name = 'basicParticle';
+
+    /**
+     * Create a `BasicParticle` with options for colors, sizes, velocity range,
+     * drag, and other properties. Particles are the atomic unit represented in the `ParticleSystem`
+     * and have position, velocity, and run-time options. The run-time options allow a particle to
+     * change over time, such as changing size, introducing turbulence, or fading in and out.
+     *  
+     * @param {Object} opts - Configuration options for the particle
+     * @param {String} url - Module URL
+     */
+    constructor(opts = {}, url = import.meta.url) {
         super({
             /**
              * Colors of the particle
@@ -15,6 +26,11 @@ export default class BasicParticle extends Config {
              * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
              */
             particleSize: [0.5, 2.0],
+            /**
+             * Amount to decay the particle size over its lifetime
+             * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
+             */
+            sizeDecay: 0,
             /**
              * Velocity range - a scalar multiple to apply to the velocity
              * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
@@ -40,44 +56,15 @@ export default class BasicParticle extends Config {
              * particles feel unique
              * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
              */
-            lifeVariance: 80
-        });
+            lifeVariance: 80,
+            /**
+             * Gravity effect on the particle (can act in any dimension)
+             * @type {Array<number>} - vector of gravitational influence
+             */
+            gravity: [0.0, 0.0]
+        }, url);
         this.merge(opts);
-    }
-
-    /**
-     * Clean up the function body so it can 
-     * be serialized to WebWorkers
-     * @param {String} funcStr 
-     * @returns {String}
-     */
-    #getFuncBody(funcStr) {
-        let lines = funcStr.split(/\r?\n/);
-        lines.shift();
-        lines.length -= 1;
-        lines = lines.join('\r\n').replaceAll(/\/\/[^\r\n]*/g, '');
-        return lines;
-    }
-
-    getTransferrable(name) {
-        const t = {type:'Particle', name: name, props:{}, f: {}, url: import.meta.url };
-        for (const prop in this.opts) {
-            t.props[prop] = this[prop];
-        }
-
-        // the class name for the particle
-        t.clazz = this.constructor.name;
-
-        // t.f['spawn'] = this.#getFuncBody(this.spawn.toString());
-        // t.f['update'] = this.#getFuncBody(this.update.toString());
-        // t.f['render'] = this.#getFuncBody(this.render.toString());
-        // t.f['cleanup'] = this.#getFuncBody(this.cleanUp.toString());
-
-        return t;
-    }
-
-    static getInstance() {
-        return new Particle();
+        this.$name = 'basicParticle';
     }
 
     /**
@@ -88,17 +75,19 @@ export default class BasicParticle extends Config {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(type, time, config) {
+    spawn(time, config) {
         const $memory = {};
-        $memory.$pType = type;    // the particle type
+        $memory.$pType = this.$name;    // the particle type
         $memory.color = config.colors[$Math.randomRange(0, config.colors.length - 1, true)];
         $memory.size = $Math.getRangeValue(config.particleSize);
         $memory.startSize = $memory.size;
         $memory.drag = $Math.getRangeValue(config.drag);
         $memory.dragRate = $Math.getRangeValue(config.dragRate);
-    
+        $memory.gravity = config.gravity;
+        $memory.sizeDecay = config.sizeDecay;
+
         const life = $Math.getRangeValue(config.lifeSpan);
-        $memory.ttl = life - $Math.getRangeValue(config.lifeVariance);
+        $memory.ttl = (life - $Math.getRangeValue(config.lifeVariance));
         return {
             memory: $memory,
             life: life,
@@ -117,11 +106,20 @@ export default class BasicParticle extends Config {
      * @type {Function}
      */
     update(time, deltaTime, $memory, pos, vel, life) {
-        // standard update (add velocity to position)
+        // standard update:
+        //   add velocity to position then add gravity to velocity
         pos[0] += (vel[0] * (1 / $memory.drag));
         pos[1] += (vel[1] * (1 / $memory.drag));
+        vel[0] += $memory.gravity[0];
+        vel[1] += $memory.gravity[1];
+
+        // increase drag over time
         $memory.drag += $memory.dragRate;
-        $memory.size = (life / $memory.ttl) * $memory.startSize;
+
+        // shrink over the lifespan
+        if ($memory.sizeDecay > 0.0) {
+            $memory.size = ((life / $memory.ttl) * $memory.startSize) / $memory.sizeDecay;
+        }
     }
 
     /**

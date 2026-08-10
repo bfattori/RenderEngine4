@@ -1,4 +1,6 @@
 import Constants from '../Constants.js';
+import Context from '../Context.js';
+import RenderEngineError from '../core/RenderEngineError.js';
 import { NOP, ENGINE_ERRORS } from '../Constants.js';
 
 /**

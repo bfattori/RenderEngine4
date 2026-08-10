@@ -10,6 +10,7 @@ export default class SprayParticle extends BasicParticle {
             angle: angle,
             aVar: angleVariance
         });
+        this.$name = 'sprayParticle';
     }
 
     static getInstance() {

@@ -62,9 +62,12 @@ const Constants = {
     /* Particle Engine - keep it low to keep it responsive! */
     MAX_PARTICLES: 10000,
 
-    /* Base Vectors */
-    UP_VECTOR: [1, -1],
-    DOWN_VECTOR: [1, 1],
+    /* Basis Vectors */
+    UP_VECTOR: [0, -1],
+    DOWN_VECTOR: [0, 1],
+    LEFT_VECTOR: [-1, 0],
+    RIGHT_VECTOR: [1, 0],
+
 
     /* Load Counters */
     LOAD_COUNTER_DEFAULTS: {
