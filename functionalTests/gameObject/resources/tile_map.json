@@ -1,0 +1,69 @@
+{
+	"size": [50, 50],
+	"fill": ["ground", "grass"],
+	"terrain": {
+		"tileset": "ground",
+		"tiles": [
+			["road_ns", [[4, 1], [4, 2], [4, 4], [4, 5], [4,6], [9, 8], [3, 10], [3, 11], [9, 10], [9, 11]]],
+			["crossroad", [[4, 3], [9, 9]]],
+			["road_ew", [[1, 3], [2, 3], [3, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [11, 3],
+							 [5, 7], [6, 7], [7, 7], [8, 7], [4, 9], [5, 9], [6, 9], [7, 9], [8, 9], [10, 9], [11, 9]]],
+			["road_ne", [[4, 7]]],
+			["road_sw", [[9, 7]]],
+			["road_se", [[3, 9]]]
+		]
+	},
+	"objects": [
+		{
+			"tileset": "foliage",
+			"props": [
+				["oaktree", [[5, 5], [6, 5], [5, 6], [6, 6], [7, 6], [3, 6], [3, 7], [4, 8], [5, 8], [6, 8], [7.75, 4], [10, 5.35]]],
+				["mapletree", [[8, 1], [10, 4], [8, 10], [8, 11]]],
+				["deadtree", [[7, 2], [8, 2]]]
+			]
+		},
+		{
+			"tileset": "buildings",
+			"props": [
+				["gate", [[3, 0], [2, 10.5]]],
+				["tower", [[2.5, 1.5], [4, 1.5], [10, 7.5], [1.5, 10], [3, 10]]],
+				["townhouse1", [[7.25, 7.5]]],
+				["townhouse2", [[6, 9.5]]],
+				["hut", [[4, 10], [11, 10], [10, 11]]],
+				["villa", [[10, 10]]],
+				["church", [[9, 4]]],
+				["fountain", [[7, 4.5]]],
+				["keep", [[4, 3.5]]]
+			]
+		}
+	],
+	"tileSets": {
+		"ground": {
+			"grass": ["grass.png", [0, 0]],
+			"road_ns": ["road_ns.png", [0, 0]],
+			"road_ew": ["road_ew.png", [0, 0]],
+			"road_nw": ["road_nw.png", [0, 0]],
+			"road_ne": ["road_ne.png", [0, 0]],
+			"road_sw": ["road_sw.png", [0, 0]],
+			"road_se": ["road_se.png", [0, 0]],
+			"crossroad": ["road_cross.png", [0, 0]]
+		},
+		"buildings": {
+			"church": ["Church 1-b.png", [70, 90]],
+			"fountain": ["Fountain 2, Small.png", [40, 56]],
+			"hut": ["Hut 1-a.png", [40, 50]],
+			"keep": ["Keep 1-a.png", [82, 115]],
+			"gate": ["Gate 1, Left.png", [50, 62]],
+			"tower": ["Tower, Old 1-a.png", [80, 110]],
+			"townhouse1": ["Town 2-b.png", [85, 125]],
+			"townhouse2": ["Town 3-c.png", [68, 82]],
+			"townhouse3": ["Town 6-a.png", [75, 96]],
+			"villa": ["Village 5-a.png", [67, 76]]
+		},
+		"foliage": {
+			"oaktree": ["Tree 2.png", [132, 165]],
+			"mapletree": ["Tree 4.png", [112, 159]],
+			"deadtree": ["Tree 6.png", [122, 172]]
+		}
+	}
+}

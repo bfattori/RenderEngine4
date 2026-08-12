@@ -264,7 +264,7 @@ export default function getAPI() {
 
         setFillColor: (r, g = null, b = null, { a = 1 } = {}) => {
             const f = Util.getColor(r, g, b, a);
-            if (f !== state.currenrFillColor) {
+            if (f !== state.currentFillColor) {
                 state.currentFillColor = f;
                 context.addInstruction(`${VECTOR_IL.FILL} ${f}`);
             }

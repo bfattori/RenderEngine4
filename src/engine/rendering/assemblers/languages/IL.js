@@ -10,13 +10,14 @@ const BASE_IL = {
   // Decorator Instructions (State Modifiers)
   COLOR:          0x01, // "COLOR #ff0000" would be a red color
   WIDTH:          0x02, // "WIDTH 5" would be a line-width of 5
+  FONTSIZE:       0x03, // "FONTSIZE 12" would be a font size of 12
 
   // Transformation matrix Instructions (State Modifiers)
-  TRANSFORM:      0x03, // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
-  ABS_TRANSFORM:  0x04, // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
-  XFORM_RESET:    0x05, // "XFORM_RESET" will reset the transformation matrix to the identity matrix
-  PUSH:           0x06, // "PUSH" will save the current renderer state
-  POP:            0x07, // "POP" will restore the previous renderer state 
+  TRANSFORM:      0x04, // "TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix
+  ABS_TRANSFORM:  0x05, // "ABS_TRANSFORM m00 m01 m10 m11 m02 m12" would be a transformation matrix that replaces the current transform
+  XFORM_RESET:    0x06, // "XFORM_RESET" will reset the transformation matrix to the identity matrix
+  PUSH:           0x07, // "PUSH" will save the current renderer state
+  POP:            0x08, // "POP" will restore the previous renderer state 
 
   // Atomic transform manipulation instructions
   TRANSLATE:      0x10, // "TRANSLATE X Y" modifies the current transform by translating the current transform by X and Y
@@ -39,22 +40,21 @@ const VECTOR_IL = {
   ...BASE_IL,
 
   // Decorator Instructions (State Modifiers)
-  FONTSIZE:       VECTOR_OFFSET, // "FONTSIZE 12" would be a font size of 12
-  FILL:           VECTOR_OFFSET + 0x01, // "FILL #ff0000" would be a red fill color
+  FILL:           VECTOR_OFFSET,        // "FILL #ff0000" would be a red fill color
    
   // Rendering Instructions (Imperative)
-  LINESEG:        VECTOR_OFFSET + 0x02, // "LINESEG FILLED" starts a line segment, FILLED is a boolean indicating whether the shape is filled or not
-  ENDSEG:         VECTOR_OFFSET + 0x03, // "ENDSEG" ends the current line segment
-  CURVE:          VECTOR_OFFSET + 0x04, // "CURVE FILLED" draws a cubic Bezier curve, FILLED is a boolean indicating whether the shape is filled or not
-  ENDCURVE:       VECTOR_OFFSET + 0x05, // "ENDCURVE" ends the current curve
-  QUAD:           VECTOR_OFFSET + 0x06, // "QUAD CX1 CY1 X Y" is a quadratric curve through the control point to the end point
-  BEZIER:         VECTOR_OFFSET + 0x07, // "BEZIER CX1 CY1 CX2 XY2 X Y" is a Bezier curve through the control points to the end point
-  MOVETO:         VECTOR_OFFSET + 0x08, // "MOVETO X Y" would move the start of the next draw operation at X, Y
-  LINEREL:        VECTOR_OFFSET + 0x09, // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
-  ARC:            VECTOR_OFFSET + 0x0a, // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
+  LINESEG:        VECTOR_OFFSET + 0x01, // "LINESEG FILLED" starts a line segment, FILLED is a boolean indicating whether the shape is filled or not
+  ENDSEG:         VECTOR_OFFSET + 0x02, // "ENDSEG" ends the current line segment
+  CURVE:          VECTOR_OFFSET + 0x03, // "CURVE FILLED" draws a cubic Bezier curve, FILLED is a boolean indicating whether the shape is filled or not
+  ENDCURVE:       VECTOR_OFFSET + 0x04, // "ENDCURVE" ends the current curve
+  QUAD:           VECTOR_OFFSET + 0x05, // "QUAD CX1 CY1 X Y" is a quadratric curve through the control point to the end point
+  BEZIER:         VECTOR_OFFSET + 0x06, // "BEZIER CX1 CY1 CX2 XY2 X Y" is a Bezier curve through the control points to the end point
+  MOVETO:         VECTOR_OFFSET + 0x07, // "MOVETO X Y" would move the start of the next draw operation at X, Y
+  LINEREL:        VECTOR_OFFSET + 0x08, // "LINEREL DX DY" is a line from the last drawing position to (DX, DY)
+  ARC:            VECTOR_OFFSET + 0x09, // "ARC X Y X_RADIUS Y_RADIUS START_ANGLE END_ANGLE FILLED" draws an arc centered at (X, Y) with the given radii and angles, FILLED is a boolean indicating whether the shape is filled or not
 
   // Rendering Instructions (Complex)
-  SHAPE:          VECTOR_OFFSET + 0x0b  // "SHAPE ID" draws a compiled shape with the given shape Id
+  SHAPE:          VECTOR_OFFSET + 0x0a  // "SHAPE ID" draws a compiled shape with the given shape Id
 };
 
 // Intermediate Language instruction types for raster rendering

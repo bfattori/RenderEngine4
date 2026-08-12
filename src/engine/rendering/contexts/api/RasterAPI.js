@@ -1,13 +1,9 @@
 import Constants from '../../../Constants.js';
 import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
-import { $IL } from '../../assemblers/dIntermediateLanguages.js';
+import { IL as RASTER_IL } from '../../assemblers/IntermediateLanguages.js';
 import RasterTextParser from '../../../ui/RasterText.js';
 import Util from '../../../core/Util.js';
 import $Math from '../../../core/Math.js';
-
-if (IL !== null) {
-    
-}
 
 /**
  * Create an API reference for the raster context
@@ -26,9 +22,13 @@ export default function getAPI() {
         
         // Font state
         previousFont: [],
-        currentFont: Constants.RASTER_DEFAULTS.FONT,
+        currentFont: Constants.RASTER_DEFAULTS.FONT_NAME,
         lastFont: null, 
            
+        previousFontSize: [],
+        currentFontSize: Constants.RASTER_DEFAULTS.FONT_SIZE,
+        lastFontSize: null,
+
         // Font style state
         fontStyle: { ...Constants.RASTER_DEFAULTS.FONT_STYLE },
         previousFontStyle: [],
@@ -59,7 +59,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         translate: (x, y) => {
-            context.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+            context.addInstruction(`${RASTER_IL.TRANSLATE} ${x} ${y}`);
             state.currentTransform.translate(x, y);
             return context.API;
         },
@@ -70,7 +70,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         rotate: (angle) => {
-            context.addInstruction(`${VECTOR_IL.ROTATE} ${angle}`);
+            context.addInstruction(`${RASTER_IL.ROTATE} ${angle}`);
             state.currentTransform.rotate(angle);
             return context.API;
         },
@@ -82,7 +82,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         scale: (x, y) => {
-            context.addInstruction(`${x === y ? VECTOR_IL.USCALE + ' ' + x : VECTOR_IL.SCALE + ' ' + x + ' ' + y}`);
+            context.addInstruction(`${x === y ? RASTER_IL.USCALE + ' ' + x : RASTER_IL.SCALE + ' ' + x + ' ' + y}`);
             state.currentTransform.scale(x, y);
             return context.API;
         },
@@ -93,7 +93,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         uniformScale: (scalar) => {
-            context.addInstruction(`${VECTOR_IL.USCALE} ${scalar}`);
+            context.addInstruction(`${RASTER_IL.USCALE} ${scalar}`);
             state.currentTransform.uniformScale(scalar);
             return context.API;
         },
@@ -105,7 +105,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         skew: (sX, sY) => {
-            context.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY || 0}`);
+            context.addInstruction(`${RASTER_IL.SKEW} ${sX} ${sY || 0}`);
             state.currentTransform.skew(sX, sY);
             return context.API;
         },
@@ -116,7 +116,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         transform: (matrix) => {
-            context.addInstruction(`${VECTOR_IL.TRANSFORM} ${matrix.toCanvas()}`);
+            context.addInstruction(`${RASTER_IL.TRANSFORM} ${matrix.toCanvas()}`);
             state.currentTransform = matrix;
             return context.API;
         },
@@ -127,7 +127,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         absTransform: (matrix) => {
-            context.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${matrix.toCanvas()}`);
+            context.addInstruction(`${RASTER_IL.ABS_TRANSFORM} ${matrix.toCanvas()}`);
             state.currentTransform = matrix;
             return context.API;
         },
@@ -197,7 +197,7 @@ export default function getAPI() {
             }
             // Add color instruction
             if (!same)
-                context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`);
+                context.addInstruction(`${RASTER_IL.COLOR} ${state.currentColor}`);
             
             return context.API;
         },
@@ -214,7 +214,7 @@ export default function getAPI() {
             const c = Util.getColor(r, g, b, a);
             if (c !== state.currentColor) {
                 state.currentColor = c;
-                context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`)
+                context.addInstruction(`${RASTER_IL.COLOR} ${state.currentColor}`)
             }
             return context.API;
         },
@@ -226,7 +226,7 @@ export default function getAPI() {
         resetColor: () => {
             state.currentColor = Constants.VECTOR_DEFAULTS.FILL_COLOR;
             state.previousColor = [];
-            context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`);
+            context.addInstruction(`${RASTER_IL.COLOR} ${state.currentColor}`);
             return context.API;
         },
 
@@ -234,42 +234,38 @@ export default function getAPI() {
          * Set fill color with decorator pattern - tracks previous value. If no values are provided,
          * it will set the fill color to the previous color on the stack, until the stack is empty. Then
          * it will set to the default color.
-         * @param {number|string} r - Red value (0-1) or hex string E.g. "#da7d12"
-         * @param {number|string} g - Green value (0-1) 
-         * @param {number|string} b - Red value (0-1)
-         * @param {number|string} a - Alpha value (0-1)
+         * @param {String} fontName - The name of the font
+         * @param {number|String} fontSize - The size of the font. Number is treated as 'pixels' 
          * @returns {Object} Returns this for chaining
          */
-        fillColor: (r, g = null, b = null, { a = 1 } = {}) => {
-            const f = Util.getColor(r, g, b, a);
+        font: (fontName) => {
             let same = false;
-            if (f) {
-                if (f === state.currentFillColor) same = true;
-                state.previousFillColor.push(state.currentFillColor);
-                state.currentFillColor = f;
-            } else if (!f) {
-                state.currentFillColor = state.previousFillColor.length > 0 ? state.previousFillColor.pop() : Constants.VECTOR_DEFAULTS.DEFAULT_FILL_COLOR;
+            if (fontName) {
+                if (fontName === state.currentFont) same = true;
+                state.previousFont.push(state.currentFont);
+                state.currentFont = fontName;
+            } else if (!fontName) {
+                state.currentFont = state.previousFont.length > 0 ? state.previousFont.pop() : Constants.RASTER_DEFAULTS.FONT_NAME;
             }
 
             if (!same)
-                context.addInstruction(`${VECTOR_IL.FILL} ${state.currentFillColor}`);
+                context.addInstruction(`${RASTER_IL.FONT} ${state.currentFont}`);
             
             return context.API;
         },
         
         /**
-         * Get the current fill color
-         * @returns {String} The current fill color
+         * Get the current font
+         * @returns {String} The current font
          */
-        getFillColor: () => {
-            return state.currentFillColor;
+        getFont: () => {
+            return state.currentFont;
         },
 
-        setFillColor: (r, g = null, b = null, { a = 1 } = {}) => {
-            const f = Util.getColor(r, g, b, a);
-            if (f !== state.currenrFillColor) {
-                state.currentFillColor = f;
-                context.addInstruction(`${VECTOR_IL.FILL} ${f}`);
+        setFont: function (fontName) {
+            if (fontName !== state.currentFont) {
+                state.currentFont = fontName;
+                context.addInstruction(`${RASTER_IL.FONT} ${fontName}`);
             }
             return context.API;
         },
@@ -278,10 +274,10 @@ export default function getAPI() {
          * Reset fill color to default color and reset memory stack.
          * @returns {Object} Returns this for chaining
          */
-        resetFillColor: () => {
-            state.currentFillColor = Constants.VECTOR_DEFAULTS.FILL_COLOR;
-            state.previousFillColor = [];
-            context.addInstruction(`${VECTOR_IL.FILL} ${state.currentFillColor}`);
+        resetFont: () => {
+            state.currentFont = Constants.RASTER_DEFAULTS.FONT_NAME;
+            state.previousFont = [];
+            context.addInstruction(`${RASTER_IL.FONT} ${fontName}`);
             return context.API;
         },
 
@@ -302,7 +298,7 @@ export default function getAPI() {
 
             // Add width instruction
             if (!same)
-                context.addInstruction(`${VECTOR_IL.WIDTH} ${state.currentWidth}`);
+                context.addInstruction(`${RASTER_IL.WIDTH} ${state.currentWidth}`);
             
             return context.API;
         },
@@ -318,7 +314,7 @@ export default function getAPI() {
         setWidth: (w) => {
             if (w !== state.currenWidth) {
                 state.currentWidth = w;
-                context.addInstruction(`${VECTOR_IL.WIDTH} ${w}`);
+                context.addInstruction(`${RASTER_IL.WIDTH} ${w}`);
             }
             return context.API;
         },
@@ -328,9 +324,9 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         resetWidth: () => {
-            state.currentWidth = Constants.VECTOR_DEFAULTS.LINE_WIDTH;
+            state.currentWidth = Constants.RASTER_DEFAULTS.LINE_WIDTH;
             state.previousWidth = [];
-            context.addInstruction(`${VECTOR_IL.WIDTH} ${state.currentWidth}`);
+            context.addInstruction(`${RASTER_IL.WIDTH} ${state.currentWidth}`);
             return context.API;
         },
         
@@ -340,22 +336,19 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         fontSize: (s) => {
-            let same = false;
-            let last = state.currentFontSize;
-            let next = Math.max(0, Math.min(s, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
-            if (s && s > 0 && s <= Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE) {
-                if (s === state.currentFontSize) same = true;
+            let same = true;
+            if (s && s !== state.currentFontSize) {
+                same = false;
                 state.previousFontSize.push(state.currentFontSize);
-                next = s;
-                state.currentFontSize = next;
+                state.currentFontSize = s;
             } else if (!s) {
-                next = state.previousFontSize.length > 0 ? state.previousFontSize.pop() : Constants.VECTOR_DEFAULTS.FONT_SIZE;
-                state.currentFontSize = next;
+                same = false;
+                state.currentFontSize = state.previousFontSize.length > 0 ? state.previousFontSize.pop() : Constants.RASTER_DEFAULTS.FONT_SIZE;
             }
 
             // Add fontsize instruction
             if (!same) {
-                context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+                context.addInstruction(`${RASTER_IL.FONTSIZE} ${state.currentFontSize}`);
             }
             return context.API;
         },
@@ -369,10 +362,8 @@ export default function getAPI() {
         },
 
         setFontSize: (s) => {
-            let last = state.currentFontSize;
-            let next = Math.max(0, Math.min(s, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
-            if (next !== state.currentFontSize) {
-                context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+            if (s !== state.currentFontSize) {
+                context.addInstruction(`${RASTER_IL.FONTSIZE} ${s}`);
             }
             return context.API;
         },
@@ -383,9 +374,9 @@ export default function getAPI() {
          */
         resetFontSize: () => {
             const prev = state.currentFontSize;
-            state.currentFontSize = Constants.VECTOR_DEFAULTS.FONT_SIZE;
+            state.currentFontSize = Constants.RASTER_DEFAULTS.FONT_SIZE;
             state.previousFontSize = [];
-            context.addInstruction(`${VECTOR_IL.FONTSIZE} ${state.currentFontSize} ${prev}`);
+            context.addInstruction(`${RASTER_IL.FONTSIZE} ${state.currentFontSize}`);
             return context.API;
         },
         
@@ -439,8 +430,8 @@ export default function getAPI() {
          * @param {number} right 
          */
         setCursorMargins: (left, right) => {
-            state.limits.left = left;
-            state.limits.right = right;
+            state.margins.left = left;
+            state.margins.right = right;
         },
 
         /**
@@ -502,7 +493,7 @@ export default function getAPI() {
             }
             
             const pointInst = [];
-            context.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY}`);
+            context.addInstruction(`${RASTER_IL.POINT} ${pointX} ${pointY}`);
             return context.API;
         },
         
@@ -532,256 +523,53 @@ export default function getAPI() {
                 }
             }
             
-            context.addInstruction(`${VECTOR_IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
+            context.addInstruction(`${RASTER_IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
             return context.API;
         },
 
+        //-----------------------------------
+        // Sprites & Tiles
+
         /**
+         * Draw a sprite in the animation state provided. If state is not provided, the previous
+         * state is assumed for the sprite.
          * 
-         * @param {number} x - The x coordinate for the line 
-         * @param {number} y - The y coordinate for the line 
-         * @returns {Object} Returns this for chaining
+         * @param {Number} opaqueId - The Id representing the Sprite as returned from the assembler 
+         * @param {Number} state - Optional state number associated with the desired animation state
+         * @returns 
          */
-        lineRel: (x, y) => {
-            // Convert to screen coordinates if using world coordinates
-            let startScreen = [x, y];
-            
-            if (context.enableCulling) {
-                const startObj = context.worldToScreen(x, y);
-                
-                if (startObj) {
-                startScreen = [startObj[0], startObj[1]];
-                } else {
-                // Start or end point outside view bounds - skip rendering
-                return context.API;
-                }
-            }
-
-            context.addInstruction(`${VECTOR_IL.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
-            return context.API;
-        },
-        
-        /**
-         * Draw a line segment container for grouped lines
-         * @param {boolean} filled - Closed line segment will be filled with fill color
-         * @param {Array} [start=[x, y]] - Start point in screen/world space
-         * @param {...Array} [point=[x, y]] - Follow on points in screen/world space
-         * @returns {Object} Returns this for chaining
-         */
-        lineSegment: (filled, [x1, y1], ... coords) => {
-            context.addInstruction(`${VECTOR_IL.LINESEG} ${filled ? '1' : '0'}`);
-            
-            // first line of segment
-            const lineTo = coords.shift();
-            context.API.line(x1, y1, lineTo[0], lineTo[1]);
-
-            // run out the remainder of the coordinates in the line segment
-            for (let rel of coords) {
-                context.API.lineRel(rel[0], rel[1]);
-            }
-            
-            context.addInstruction(`${VECTOR_IL.ENDSEG}`);
+        sprite: (opaqueId, state = null) => {
+            context.addInstruction(`${RASTER_IL.SPRITE} ${opaqueId} ${state !== null ? state : ''}`);
             return context.API;
         },
 
         /**
-         * Helper to generate the appropriate structure for quadratic curves
-         * to use with the <code>curve()</code> method.
-         * @param {number} controlX - The X control point 
-         * @param {number} controlY - The Y control point
-         * @param {number} endX - The X end point of the curve
-         * @param {number} endY - The Y end point of the curve
-         * @returns {Array<number>} A 4-element Quadratic control and end points
+         * Draw a tile. Tiles are either static, or have animation, but no states.
+         * 
+         * @param {Number} opaqueId - The Id representing the Tile as returned from the assembler 
          */
-        quadratic: (controlX, controlY, endX, endY) => {
-            return [controlX, controlY, endX, endY];
-        },
-
-        /**
-         * Helper to generate the appropriate structure for Bezier curves
-         * to use with the <code>curve()</code> method.
-         * @param {number} controlX - The X control point 
-         * @param {number} controlY - The Y control point
-         * @param {number} endX - The X end point of the curve
-         * @param {number} endY - The Y end point of the curve
-         * @returns {Array<number>} A 4-element Quadratic control and end points
-         */
-        bezier: (controlX1, controlY1, controlX2, controlY2, endX, endY) => {
-            return [controlX1, controlY1, controlX2, controlY2, endX, endY];
-        },
-
-        /**
-         * Draw a curve from a starting point, and a set of control points, either
-         * filled or not. See the helper methods for generating points for the curve.
-         * {@link #quadratic} and {@link #bezier}
-         * @param {boolean} filled - True to fill the curve
-         * @param {Array<number>} [x1, y1] - The starting point of the curve 
-         * @param  {...any} coords - The remaining coordinates of the curve expressed as 
-         *                           either 4-element (quadratic) or 6-element (bezier) arrays
-         * @returns {Object} Returns the API for chaining
-         */
-        curve: (filled, [x1, y1], ... coords) => {
-            context.addInstruction(`${VECTOR_IL.CURVE} ${filled ? '1' : '0'} ${x1} ${y1}`);
-            
-            // the rest of the coordinates need to be either 4 coordinates (quadratic) or 6 coordinates (bezier)
-            for (let rel of coords) {
-                if (rel.length === 4) {
-                    context.addInstruction(`${VECTOR_IL.QUAD} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]}`)
-                } else if (rel.length === 6) {
-                    context.addInstruction(`${VECTOR_IL.BEZIER} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]} ${rel[4]} ${rel[5]} ${rel[6]}`);
-                } else {
-                    throw new RenderContextError(this, "Invalid number of coordinates for a curve (4 or 6)");
-                }
-            }
-            
-            context.addInstruction(`${VECTOR_IL.ENDCURVE}`);
-            return context.API;
-        },
-        
-        /**
-         * Draw an arc, or arc segment
-         * @param {number} cx - Center X coordinate in screen space
-         * @param {number} cy - Center Y coordinate in screen space
-         * @param {number} rX - X radius of the ellipse
-         * @param {number} rY - Y radius of the ellipse
-         * @param {number} startAngle - Starting angle in radians (0 = 3 o'clock)
-         * @param {number} endAngle - Ending angle in radians
-         * @param {boolean} filled - filled arc
-         * @returns {Object} Returns this for chaining
-         */
-        arc: (cx, cy, rX, rY, startAngle = 0, endAngle = $Math.TWO_PI, filled = false) => {
-            let center = [cx, cy]; 
-
-            if (context.enableCulling) {
-                const startObj = context.worldToScreen(cx, cy);
-                
-                if (startObj) {
-                center = [startObj[0], startObj[1]];
-                } else {
-                // Center is outside the context
-                return context.API;
-                }
-            }
-
-            context.addInstruction(`${VECTOR_IL.ARC} ${cx} ${cy} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
+        tile: (opaqueId) => {
+            context.addInstruction(`${RASTER_IL.TILE} ${opaqueId}`);
             return context.API;
         },
 
         /**
-         * Draw an ellipse
-         * @param {number} cx - Center X coordinate in screen space
-         * @param {number} cy - Center Y coordinate in screen space
-         * @param {number} rX - X radius of the arc
-         * @param {number} rY - Y radius of the arc
-         * @returns {Object} Returns this for chaining
+         * Draws a tilemap. TileMaps are a rectangular grid of proportionally-sized tiles.
+         * 
+         * @param {Number} opaqueId - The Id representing the TileMap as returned from the assembler
          */
-        ellipse: (cx, cy, rX, rY, filled) => {
-            return context.API.arc(cx, cy, rX, rY, 0, $Math.TWO_PI, filled);
-        },
-
-        /**
-         * Draw a circle
-         * @param {number} cx - Center X coordinate in screen space
-         * @param {number} cy - Center Y coordinate in screen space
-         * @param {number} r - Radius of the arc
-         * @returns {Object} Returns this for chaining
-         */
-        circle: (cx, cy, r, filled) => {
-            return context.API.arc(cx, cy, r, r, 0, $Math.TWO_PI, filled);
-        },
-        
-        /**
-         * Draw a rectangle using line segments
-         * @param {number} x1 - Left X coordinate (or top-left corner)
-         * @param {number} y1 - Top Y coordinate
-         * @param {number} x2 - Right X coordinate (or bottom-right corner)
-         * @param {number} y2 - Bottom Y coordinate
-         * @returns {Object} Returns this for chaining
-         */
-        rectangle: (x1, y1, x2, y2, filled) => {
-            // Convert to absolute coordinates from top-left corner
-            context.API.lineSegment(filled, 
-                [x1, y1],
-                [x2, y1],
-                [x2, y2],
-                [x1, y2],
-                [x1, y1]
-                );
-
-            return context.API;
-        },
-        
-        /**
-         * Draw a square at position with given side length
-         * @param {number} x - Center X coordinate or top-left corner
-         * @param {number} y - Center Y coordinate or top corner
-         * @param {number} side - Side length of the square
-         * @returns {Object} Returns this for chaining
-         */
-        square: (x, y, side, filled) => {
-            return context.API.rectangle(x, y, x + side, y + side, filled);
-        },
-        
-        /**
-         * Draw a polygon with variable vertices
-         * @param {...Array} vertices - Array of [x, y] vertex coordinates
-         * @returns {Object} Returns this for chaining
-         */
-        polygon: (filled, ...vertices) => {
-            // Close the shape by connecting last point to first
-            const [firstVertex, ...restVertices] = vertices;
-            
-            if (vertices.length === 0) {
-                return [];
-            }
-            
-            // close the polygon
-            restVertices.push(firstVertex);
-
-            // Draw each edge of the polygon
-            context.API.lineSegment(filled, firstVertex, ...restVertices);
-            return context.API;
-        },
-        
-        /**
-         * Draw a regular polygon
-         * @param {number} cx - Center X coordinate
-         * @param {number} cy - Center Y coordinate
-         * @param {number} sides - Number of sides
-         * @returns {Object} Returns this for chaining
-         */
-        regularPolygon: (cx, cy, sides, filled) => {
-            const vertices = [];
-            
-            // Calculate vertices for regular polygon
-            for (let i = 0; i < sides; i++) {
-                const angle = (Math.PI * 2 * i) / sides - Math.PI / 2; // Start from bottom
-                const x = cx + Math.cos(angle) * (100); // Use unit radius as placeholder
-                const y = cy + Math.sin(angle) * (100);
-                vertices.push([x, y]);
-            }
-            
-            context.API.polygon(filled, ...vertices)
-            return context.API;
-        },
-
-        shape: (opaqueId) => {
-            context.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+        tileMap: (opaqueId) => {
+            context.addInstruction(`${RASTER_IL.TILE} ${opaqueId}`);
             return context.API;
         },
 
         /**
          * Text rendering method - generates IL instructions for text content with formatting
          * @param {string} text - Text content to render
-         * @param {Object} options - Configuration options
-         * @param {Array<number>} textSize - After the text is processed this array will be populated with the overall size of the text rendered.
-         * @param {string|number} [options.color] - Initial color (hex string or RGB values) (Default: '#000000')
-         * @param {number} [options.lineWidth] - Initial line width (default: 1)
-         * @param {number} [options.fontsize] - Initial font size (Default: 10)
-         * @param {Object} [options.formatting] - Initial formatting states: {bold, italics, underline}
+         * @param {Object} style - Text styling options
          * @returns {Object} Returns this for chaining
          */
-        text(text, options, textSize = [0, 0]) {
+        text(text, style = {}) {
             // Validate input
             if (typeof text !== 'string' || text.length === 0) {
                 return context.API;

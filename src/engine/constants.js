@@ -46,6 +46,21 @@ const Constants = {
         FONT_SCALE: 2.0
     },
 
+    RASTER_DEFAULTS: {
+        LINE_COLOR: '#00000000',
+        FONT_NAME: 'Helvetica',
+        LINE_WIDTH: 1,
+        FONT_SIZE: '10pt',
+        
+        FONT_STYLE: {
+            BOLD: false,
+            ITALICS: false,
+            UNDERLINE: false,
+            LINE_HEIGHT: '15pt',
+            CHAR_SPACING: '3px'
+        }
+    },
+
     /* Default Point Size */
     POINT_SIZE: 0.5,
 

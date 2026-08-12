@@ -41,6 +41,17 @@ export default class $Math {
     }
 
     /**
+     * Clamp a value between a minimum and maximum value
+     * @param {Number} num - The value 
+     * @param {Number} min - The minimum value 
+     * @param {Number} max - The maximum value
+     * @returns 
+     */
+    static clamp(num, min, max) {
+        return Math.min(Math.max(num, min), max);
+    }
+ 
+    /**
      * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
      * optionally as an integer value only.
      *
