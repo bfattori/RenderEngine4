@@ -12,6 +12,10 @@ export default class Assembler {
     static #built = false;
 
     #compiledShapes = new Map();
+    #compiledSprites = new Map();
+    #compiledTiles = new Map();
+    #compiledTileMaps = new Map();
+
     #opaqueShapeId = 100;
 
     constructor() {
@@ -48,12 +52,20 @@ export default class Assembler {
         return this.#compiledShapes.get(opaqueId);
     }
 
+    getCompiledSprite(opaqueId) {
+        return this.#compiledSprites.get(opaqueId);
+    }
+
     /**
      * Destroy the compiled shape for the given opaque Id.
      * @param {number} opaqueId - The opaque Id of the shape
      */
     destroyCompiledShape(opaqueId) {
         this.#compiledShapes.delete(opaqueId);
+    }
+
+    destroyCompiledSprite(opaqueId) {
+        this.#compiledSprites.delete(opaqueId);
     }
 
     /**
@@ -111,6 +123,22 @@ export default class Assembler {
         return opaqueId;
     }
 
+    compileSprite(sprite, tag = null) {
+        const opaqueId = this.#nextShapeId;
+        
+        // in the future, we might wrape this in a self-contained function
+        
+        // identify stored procedures
+        // if (tag !== null) {
+        //     storedProcedure.tag = tag;
+        // }
+
+        // store the procedure that will run the instructions
+        this.#compiledSprites.set(opaqueId, sprite);
+        return opaqueId;
+    }
+
+
     /**
      * Assemble the instruction into a renderer-appropriate function call.
      * 
@@ -134,7 +162,8 @@ export default class Assembler {
      */
     get properties() {
         return {
-            compiledShapes: this.#compiledShapes
+            compiledShapes: this.#compiledShapes,
+            compiledSprites: this.#compiledSprites
         };
     }
 }

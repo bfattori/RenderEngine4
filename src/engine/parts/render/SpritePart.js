@@ -2,6 +2,7 @@ import RenderPart from './RenderPart.js';
 
 export default class SpritePart extends RenderPart {
     #currentSprite = null;
+    #opaqueId = null;
 
     /**
      * @private
@@ -35,15 +36,7 @@ export default class SpritePart extends RenderPart {
      */
     set sprite(sprite) {
         this.#currentSprite = sprite;
-
-        // if (this.getGameObject().jQ()) {
-        //     this.getGameObject().jQ().css({
-        //         width:sprite.getBoundingBox().len_x(),
-        //         height:sprite.getBoundingBox().len_y(),
-        //         background:"url('" + sprite.getSourceImage().src + "') no-repeat"
-        //     });
-        // }
-        // this.getGameObject().markDirty();
+        this.#opaqueId = this.context.compileSprite(sprite, null);
     }
 
     /**
@@ -55,27 +48,10 @@ export default class SpritePart extends RenderPart {
         return this.#currentSprite;
     }
 
-    /**
-     * Draw the sprite to the render context.  The frame, for animated
-     * sprites, will be automatically determined based on the current
-     * time passed as the second argument.
-     *
-     * @param renderContext {R.rendercontexts.AbstractRenderContext} The context to render to
-     * @param time {Number} The engine time in milliseconds
-     * @param dt {Number} The delta between the world time and the last time the world was updated
-     *          in milliseconds.
-     */
-    update(renderContext, time, dt) {
-
-        if (!this.base(renderContext, time, dt)) {
-            return;
-        }
-
-        if (this.sprite) {
-            this.transformOrigin(renderContext, true);
-            renderContext.drawSprite(this.currentSprite, time, dt, this.getGameObject());
-            this.transformOrigin(renderContext, false);
-        }
+    draw(time, deltaTime) {
+        if (this.#opaqueId)
+            this.context.renderSprite(this.#opaqueId, time, deltaTime);
+        
     }
 
 }

@@ -26,6 +26,8 @@ export default class Resource {
     #content = null;
     #loaded = false;
     #inError = false;
+    #type;
+    #rel;
 
     /**
      * Loads a resource from the given Url into a container. 
@@ -35,8 +37,10 @@ export default class Resource {
      * @param {String} resourceUrl - The resource URL to load
      * @param {String} type - The type of resource to load (text, json, blob)
      */
-    constructor(resourceUrl, type = text) {
-        this.#resourceUrl = new Url(resourceUrl, import.meta.url);
+    constructor(resourceUrl, type = Resource.TYPE.TEXT, rel = import.meta.url) {
+        this.#resourceUrl = new URL(resourceUrl, rel);
+        this.#type = type;
+        this.#rel = rel;
         this.#loadResource();
     }
 
@@ -68,6 +72,10 @@ export default class Resource {
         return this.#content;
     }
 
+    get rel() {
+        return this.#rel;
+    }
+
     /**
      * Load up that resource
      */
@@ -93,10 +101,14 @@ export default class Resource {
                     break;
             }
             this.#content = await this.postProcess(content);
-            this.loaded = true;
+            this.#loaded = true;
         } catch (ex) {
             throw new ResourceError(this, `An error occurred while loading the resource "${this.url}`, ex);
         }
+    }
+
+    postProcess(content) {
+        return content;
     }
 
     //-----------------------------
@@ -105,14 +117,16 @@ export default class Resource {
      * A promise that resolves when the resource has finished loading.
      * @returns {Promise<boolean>} `true` if the resource loaded without error, `false` otherwise
      */
-    async get loading() {
+    async loading() {
         return new Promise((resolve) => {
             const check = () => {
                 if (!this.loaded && !this.#inError) {
                     setTimeout(check, this.retryInterval);
+                    return;
                 }
                 resolve(!this.#inError);
-            }
+            };
+            check();
         })
     }
 }

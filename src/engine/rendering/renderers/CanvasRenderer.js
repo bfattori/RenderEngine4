@@ -5,8 +5,8 @@ import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
 import { CanvasConfig } from '../../core/Config.js';
-import VectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
-import RasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
+import CanvasVectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
+import CanvasRasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
 import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 
 const ctx = Context.getInstance();
@@ -56,9 +56,9 @@ export default class CanvasRenderer extends Renderer {
     get assembler() {
         if (!super.assembler) {
             if (this.renderContext.constructor.name === 'VectorRenderContext') {
-                super.assembler = VectorAssembler.getInstance();
+                super.assembler = CanvasVectorAssembler.getInstance();
             } else if (this.renderContext.constructor.name === 'RasterRenderContext') {
-                super.assembler = RasterAssembler.getInstance();
+                super.assembler = CanvasRasterAssembler.getInstance();
             } else {
                 throw new RenderEngineError("Unsupported render context type");
             }
@@ -160,8 +160,16 @@ export default class CanvasRenderer extends Renderer {
         }
     }
 
-    compile() {
-
+    /**
+     * Compile a set of render instructions into an assembly that is executed by the renderer. 
+     * 
+     * @param {String[]} instructions - A set of instructions to compile.
+     * @returns {number} An opaque Id that references the compiled shape.
+     * @private
+     */
+    compile(instructions, tag) {
+        if (!this.hasCompiler) { return Constants.COMPILATION.NOT_SUPPORTED; }
+        return this.assembler.compileShape(this, instructions, tag);
     }
 
     /**
@@ -177,6 +185,57 @@ export default class CanvasRenderer extends Renderer {
         } else if (opaqueId !== "undefined") {
             console.warn(`No compiled shape found for opaqueId: ${opaqueId}`);
         }
+    }
+    
+    /**
+     * Destroy a previously compiled shape. Does not destroy a compiled shape directly
+     * so it can be appropriately garbage collected.
+     * @param {number} opaqueId Destroy the shape at the opque index.
+     * @returns 
+     */
+    destroyCompiledShape(opaqueId) {
+        if (!this.hasCompiler) { return; }
+        this.assembler.destroyShape(opaqueId);
+    }
+
+    compileSprite(sprite, tag) {
+        return this.assembler.compileSprite(sprite, tag);
+    }
+
+    destroySprite(opaqueId) {
+        this.assembler.destroySprite(opaqueId);
+    }
+
+    renderSprite(opaqueId, time, deltaTime) {
+        const sprite = this.assembler.getCompiledSprite(parseInt(opaqueId));
+        if (sprite) {
+            // this might not be right, as it will be dependent on a transform and do transforms work with drawImage??
+            this.surface.putImageData(sprite.getFrameImage(time, deltaTime), 100, 100);
+        } else if (opaqueId !== "undefined") {
+            console.warn(`No compiled sprite found for opaqueId: ${opaqueId}`);
+        }
+    }
+
+    /**
+     * Compiles the set of render instructions into an assembly that will be executed by the renderer. 
+     * 
+     * @param {String[]} instructions - The render instructions.
+     * @param {String} tag - optional tag to apply to the assembly
+     * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
+     *                   the renderer does not support pre-compilation of renderable objects.
+     */
+    getCompiledSprite(sprite, tag) {
+        return this.assembler.compileSprite(this, sprite, tag);
+    }
+
+    /**
+     * Destroy a previously compiled shape. Does not destroy a compiled shape directly
+     * so it can be appropriately garbage collected.
+     * @param {number} opaqueId Destroy the shape at the opque index.
+     * @returns 
+     */
+    destroyCompiledSprite(opaqueId) {
+        this.assembler.destroySprite(opaqueId);
     }
 
     /**
@@ -297,6 +356,10 @@ export default class CanvasRenderer extends Renderer {
 
             case vector.SHAPE:
                 this.renderCompiledShape(args[0], time, deltaTime);
+                break;
+
+            case vector.SPRITE:
+                this.renderCompiledSprite(args[0], args[1], time, deltaTime);
                 break;
 
             //--------------------------------------------

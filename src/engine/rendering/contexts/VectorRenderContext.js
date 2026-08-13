@@ -6,7 +6,6 @@
  */
 import Constants from '../../Constants.js';
 import RenderContext from './RenderContext.js';
-import processText from '../../ui/VectorText.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
 import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 import getAPI from './api/VectorAPI.js';
@@ -117,11 +116,21 @@ export default class VectorRenderContext extends RenderContext {
     return getAPI.call(this);
   }
 
-  renderCompiledShape(opaqueId) {
-    super.renderCompiledShape(opaqueId);
-    this.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+  //-----------------------------
+  // vector shapes
+  //----------------------------
+  
+  getCompiledShape(instructions, tag) {
+    return this.renderer.compile(instructions, tag);
   }
 
+  destroyCompiledShape(opaqueId) {
+    this.renderer.destroyCompiledShape(opaqueId);
+  }
+
+  renderCompiledShape(opaqueId) {
+    this.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+  }
 
   //--------------------------------------
   // HIGH-LEVEL VECTOR API

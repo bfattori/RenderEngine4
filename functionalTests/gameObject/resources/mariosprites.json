@@ -1,7 +1,7 @@
 {
    "spriteSheet": true,
    "bitmap": {
-      "image": "smbtiles.png",
+      "image": "../tileset/smbtiles.png",
       "width": 320, 
       "height": 320
    },

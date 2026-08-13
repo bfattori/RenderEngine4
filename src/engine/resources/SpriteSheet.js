@@ -1,5 +1,7 @@
 import Resource from './Resource.js';
+import ImageResource from './ImageResource.js';
 import $Math from '../core/Math.js';
+import Sprite from './Sprite.js';
 
 /**
  * SpriteSheet
@@ -11,6 +13,7 @@ import $Math from '../core/Math.js';
 export default class SpriteSheet extends Resource {
     #name;
     #sprites = new Map();
+    #bitmapSheet = null;
 
     /**
      * Create a new `Sprite` resource.
@@ -18,8 +21,8 @@ export default class SpriteSheet extends Resource {
      * @param {String} name - The name of the sprite sheet
      * @param {String} sheetUrl - The Url to the sprite sheet
      */
-    constructor(name, sheetUrl) {
-        super(sheetUrl, Resource.TYPE.JSON);
+    constructor(name, sheetUrl, rel) {
+        super(sheetUrl, Resource.TYPE.JSON, rel);
         this.#name = name;
     }
 
@@ -28,19 +31,18 @@ export default class SpriteSheet extends Resource {
     }
 
     async postProcess(content) {
-        const bitmap = new ImageResource(content.bitmap.image, content.bitmap.width, content.bitmap.height);
+        this.#bitmapSheet = new ImageResource(content.bitmap.image, content.bitmap.width, content.bitmap.height, this.url);
         const assumeOpaque = content.assumeOpaque;
         const sprites = content.sprites;
 
         // this contains all the sprites
-        if (await bitmap.loading()) {
+        if (await this.#bitmapSheet.loading()) {
             // bitmap loaded, fill out the sprites
             Object.keys(sprites).forEach(key => {
-                this.#sprites.set(key, new Sprite(key, this.content, sprites[key]));
+                this.#sprites.set(key, new Sprite(key, this, sprites[key]));
             });
         }
-        const waitingFor = this.#sprites.values.forEach(sprite => sprite.loading());
-        return Promise.all(waitingFor);
+        return this;
     }
 
     /**
@@ -54,5 +56,9 @@ export default class SpriteSheet extends Resource {
 
     get sprites() {
         return this.#sprites;
+    }
+
+    get sheet() {
+        return this.#bitmapSheet;
     }
 }

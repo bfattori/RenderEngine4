@@ -2,36 +2,35 @@
 import Resource from './Resource.js';
 
 export default class ImageResource extends Resource {
-    #element = new HTMLImageElement();
-    #bitmap = null;
+    #offscreen = null;
+    #context = null;
     #width = 0;
     #height = 0;
 
-    constructor(resourceUrl, width, height) {
-        super(resourceUrl, Resource.TYPE.BLOB);
+    constructor(resourceUrl, width, height, rel) {
+        super(resourceUrl, Resource.TYPE.BLOB, rel);
+        this.#offscreen = new OffscreenCanvas(width, height);
+        this.#context = this.#offscreen.getContext('2d', {
+            willReadFrequently: true
+        });
         this.#width = width;
         this.#height = height;
     }
 
     async postProcess(content) {
-        // generate a DOM-accessible URL for the blob
-        const imageObjectURL = URL.createObjectURL(content);
+        // store the image to the offscreen
+        const bitmap = await createImageBitmap(content, 0, 0, this.#width, this.#height);
+        this.#context.drawImage(bitmap, 0, 0);
         
-        // assign it to the image element
-        this.#element.src = imageObjectURL;
-        this.#element.width = this.#width;
-        this.#element.height = this.#height;
-        
-        // extract the image bitmap
-        this.#bitmap = self.createImageBitmap(this.#container);
-        return this.#bitmap;
+        // get the underlying context
+        return this.image;
     }
     
     /**
-     * Get the bitmap
-     * @returns {ImageBitmap}
+     * Get the image
+     * @returns {CanvasRenderingContext2d}
      */
-    get bitmap() {
-        return this.content;
+    get image() {
+        return this.#offscreen.getContext('2d');
     }
 }

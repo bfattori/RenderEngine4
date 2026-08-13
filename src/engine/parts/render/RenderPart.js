@@ -38,6 +38,7 @@ export default class RenderPart extends ComponentPart {
     
     constructor(priority = Constants.RENDER_PRIORITY, name = 'RenderPart') {
         super(priority, name);
+        // todo: this might be better coming from the host, not the engine directly?
         this.#context = Engine.renderContext;
 
         // listen for events
@@ -210,6 +211,9 @@ export default class RenderPart extends ComponentPart {
      */
     composeAndDraw(time, deltaTime) {
         PERF('composeDrawStart');
+        /// step 1: Compose
+            // did we forget to compose?
+        /// step 2: Draw
         this.draw(time, deltaTime);
         this.#committed = false;
         PERF('composeDrawEnd');

@@ -6,9 +6,9 @@
  */
 import Constants from '../../Constants.js';
 import RenderContext from './RenderContext.js';
-import processText from '../../ui/RasterText.js';
+import RasterTextParser from '../../ui/RasterTextParser.js';
 import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
-import { RASTER_IL } from '../assemblers/dIntermediateLanguages.js';
+import { RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 import getAPI from './api/RasterAPI.js';
 
 /**
@@ -28,7 +28,7 @@ import getAPI from './api/RasterAPI.js';
  * @extends RenderContext
  * @module RenderContext/VectorRenderContext
  */
-export default class ResterRenderContext extends RenderContext {
+export default class RasterRenderContext extends RenderContext {
   static get DEFAULT_COLOR() {
     return Constants.VECTOR_DEFAULTS.LINE_COLOR;
   }
@@ -95,33 +95,79 @@ export default class ResterRenderContext extends RenderContext {
 
   pushTransform(transform) {
     super.pushTransform(transform);
-    this.addInstruction(`${VECTOR_IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
+    this.addInstruction(`${RASTER_IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
   }
 
   popTransform() {
     const xfm = super.popTransform();
-    this.addInstruction(`${VECTOR_IL.POP}`);
+    this.addInstruction(`${RASTER_IL.POP}`);
     return xfm;
   }
 
   resetTransforms() {
     super.resetTransforms();
-    this.addInstruction(`${VECTOR_IL.XFORM_RESET}`);
+    this.addInstruction(`${RASTER_IL.XFORM_RESET}`);
   }
 
   setCursorPosition(x, y) {
-    this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+    this.addInstruction(`${RASTER_IL.TRANSLATE} ${x} ${y}`);
   }
 
   getAPI() {
     return getAPI.call(this);
   }
 
-  renderCompiledShape(opaqueId) {
-    super.renderCompiledShape(opaqueId);
-    this.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+  //-----------------------------
+  // tiles & sprites
+  //-----------------------------
+
+  compileTiles(tiles) {
+    const results = {};
+    tiles.forEach(tile => {
+      results[tile.name] = this.compileTile(tile);
+    });
+    return results;
   }
 
+  compileTile(tile) {
+    return this.renderer.compileTile(tile);
+  }
+
+  renderTiles(tileIds, time, deltaTime) {
+    tileIds.forEach(opaqueId => this.renderTile(opaqueId, time, deltaTime));
+  }
+
+  renderTile(opaqueId, time, deltaTime) {
+    this.addInstruction(`${RASTER_IL.TILE} ${opaqueId}`)
+  }
+
+  compileTileMaps(tileMaps) {
+    const result = {};
+    tileMaps.forEach(tileMap => {
+      results[tileMap.name] = this.compileTileMap(tileMap);
+    });
+    return results;
+  }
+
+  compileTileMap(tileMap) {
+    return this.renderer.compileTileMap(tileMap);
+  }
+
+  renderTileMap(opaqueId, time, deltaTime) {
+    this.addInstruction(`${RASTER_IL.TILEMAP} ${opaqueId}`);
+  }
+
+  compileSprite(sprite, tag) {
+    return this.renderer.compileSprite(sprite, tag);
+  }
+
+  destroySprite(opaqueId) {
+    this.renderer.destroySprite(opaqueId);
+  }
+
+  renderSprite(opaqueId, time, deltaTime, state = 0) {
+    this.renderer.renderSprite(opaqueId, time, deltaTime);
+  }
 
   //--------------------------------------
   // HIGH-LEVEL VECTOR API
@@ -145,11 +191,11 @@ export default class ResterRenderContext extends RenderContext {
         _screenDimensions: this.#screenDimensions,
         _worldDimensions: this.#worldDimensions,
 
-        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
-        DEFAULT_LINE_WIDTH: VectorRenderContext.DEFAULT_LINE_WIDTH,
-        DEFAULT_FILL_COLOR: VectorRenderContext.DEFAULT_FILL_COLOR,
-        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
-        DEFAULT_FONT_SIZE: VectorRenderContext.DEFAULT_FONT_SIZE,
+        DEFAULT_COLOR: RasterRenderContext.DEFAULT_COLOR,
+        DEFAULT_LINE_WIDTH: RasterRenderContext.DEFAULT_LINE_WIDTH,
+        DEFAULT_FILL_COLOR: RasterRenderContext.DEFAULT_FILL_COLOR,
+        DEFAULT_COLOR: RasterRenderContext.DEFAULT_COLOR,
+        DEFAULT_FONT_SIZE: RasterRenderContext.DEFAULT_FONT_SIZE,
       }};
   }
 

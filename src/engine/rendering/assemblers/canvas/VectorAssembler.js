@@ -17,7 +17,7 @@ export default class CanvasVectorAssembler extends Assembler {
      * @static
      */
     static getInstance() {
-        if (!this.#instance) {
+        if (!CanvasVectorAssembler.#instance) {
             Assembler.getInstance();
             CanvasVectorAssembler.#instance = new CanvasVectorAssembler();
         }

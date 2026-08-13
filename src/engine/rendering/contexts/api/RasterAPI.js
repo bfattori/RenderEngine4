@@ -1,7 +1,7 @@
 import Constants from '../../../Constants.js';
 import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
 import { IL as RASTER_IL } from '../../assemblers/IntermediateLanguages.js';
-import RasterTextParser from '../../../ui/RasterText.js';
+import RasterTextParser from '../../../ui/RasterTextParser.js';
 import Util from '../../../core/Util.js';
 import $Math from '../../../core/Math.js';
 
@@ -11,6 +11,8 @@ import $Math from '../../../core/Math.js';
  */
 export default function getAPI() {
     const context = this;
+    const textParser = RasterTextParser.getInstance(context);
+
     const state = {
         // Color state - RGB values (0-1 range) with optional alpha
         previousColor: [],
@@ -615,7 +617,7 @@ export default function getAPI() {
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text to generate render instructions
-            const result = textParser.parse.call(context, text);
+            const result = textParser.parse(text);
             textSize[0] = result.width;
             textSize[1] = result.height;
 

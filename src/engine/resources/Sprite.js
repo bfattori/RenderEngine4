@@ -1,5 +1,8 @@
-import Resource from './Resouce.js';
+import Resource from './Resource.js';
+import { ResourceError } from './Resource.js';
 import $Math from '../core/Math.js';
+import Enum from '../core/Enum.js';
+import TransferrableConfig from '../core/TransferrableConfig.js';
 
 /**
  * @class A 2D sprite object.  Sprites are either a single frame, or an animation composed of
@@ -20,48 +23,35 @@ import $Math from '../core/Math.js';
  * @class
  * @extends Resource
  */
-export default class Sprite {
+export default class Sprite extends TransferrableConfig {
     
-    static MODE = {
+    static TYPE = new Enum({
+        /** 
+         * The sprite is a single frame
+         */
+        SINGLE: 'single',
+        /** 
+         * The sprite is an animation
+         */
+        ANIMATION: 'animation'
+    });
+
+    static MODE = new Enum({
         /** 
          * The animation loops (beginning to end, repeat)
          */
-        LOOP: 0,
+        LOOP: 'loop',
         /** 
          * The animation bounces, playing from the first to the last frame
          * then backwards from the last to the first, and repeats.
          */
-        TOGGLE: 1,
+        BOUNCE: 'bounce',
         /** 
          * The  animation plays once from the beginning then stops at the last frame
          */
-        ONCE: 2
-    };
-
-    static TYPE = {
-        /** 
-         * The sprite is a single frame
-         */
-        SINGLE: 0,
-        /** 
-         * The sprite is an animation
-         */
-        ANIMATION: 1
-    };
-
-    /** 
-     * The field indexes in the sprite definition file
-     */
-    static #INDEXES = {
-        LEFT: 0,
-        TOP: 1,
-        WIDTH: 2,
-        HEIGHT: 3,
-        FRAME_COUNT: 4,
-        ANIMATION_SPEED: 5,
-        ANIMATION_TYPE: 6,
-        FRAME_SYNC: 7
-    };
+        ONCE: 'once'
+    });
+    
     
     // The type of sprite: Single or Animation
     #type = Sprite.TYPE.SINGLE;
@@ -78,9 +68,6 @@ export default class Sprite {
     // The rect which defines the sprite frame
     #frameRect;
 
-    // The image map that contains the sprite(s)
-    #image;
-
     // The bounding box for the sprite
     #boundingBox;
 
@@ -90,65 +77,72 @@ export default class Sprite {
     #toggleDir;
     #frameNum = 0;
     #playing = false;
-    #resource = null;
-    #loader = null;
+    #spriteSheet = null;
+    #name;
 
-    #name = 'Sprite';
-
-/*
-    // sprite resource
-    var bitmap = this.base(name);
-    var sprite = {
-        resourceName:name,
-        image:bitmap,
-        info:this.sprites[name]
-    };
-    return sprite;
-
-    // sprite object is the definition from
-    See: functionalTests/gameObject/tileset/smbtiles.json
-
-*/
     /**
      * Create a new `Sprite` resource.
      * 
-     * @param {String} name - The name of the sprite sheet
-     * @param {String} sheetUrl - The Url to the sprite sheet
-     */
-    constructor(name, bitmap, [ left, top, width, height, frameCount, animationSpeed, animationType, unsynchronized = false ]) {
-        this.#name = name;
-        this.#resource = bitmap;
+     * @param {String} name - The name of the sprite
+     * @param {SpriteSheet} spriteSheet - The sprite sheet resource 
+     * @param {{ Number, Number, Number, Number, Number, String, Boolean }} [props] - The sprite info
+     * @param {Number} [left=0] - The left position of the sprite on the sprite sheet
+     * @param {Number} [top=0] - The top position of the sprite on the sprite sheet
+     * @param {Number} [width] - The width of the sprite
+     * @param {Number} [height] - The height of the sprite
+     * @param {Number} [frameCount=1] - The number of frames in the animation
+     * @param {String} [animationSpeed=""] - The speed of the animation
+     * @param {String} [animationType="single"] - The type of animation (single or toggle)
+     * @param {Boolean} [unsynchronized=false] - Whether the sprite is unsynchronized
 
+     */
+    constructor(name, spriteSheet, [ left = 0, top = 0, width, height, frameCount, animationSpeed, animationType, unsynchronized = false ]) {
+        super({
+            name: name || `SPRITE:${$Math.hexHash(date.now().toString())}`,
+            spriteSheet: spriteSheet,
+            shape: null
+        });
+
+        if (!spriteSheet)
+            throw new ResourceError(this, `An error occurred creating the sprite "${name}" - no sprite sheet`, ex);
+
+        this.initialize = [ left = 0, top = 0, width, height, frameCount, animationSpeed, animationType, unsynchronized ];
+    }
+
+    set initialize([ left = 0, top = 0, width, height, frameCount, animationSpeed, animationType, unsynchronized ]) {
+        if (!(width && height))
+                throw new ResourceError(this, `An error occurred creating the sprite "${this.name}"`, ex);
+
+        this.shape = [ left, top, width, height, frameCount, animationSpeed, animationType, unsynchronized ];
         const type = !frameCount ? Sprite.TYPE.SINGLE : Sprite.TYPE.ANIMATION;
+        this.#type = type;
         if (type === Sprite.TYPE.ANIMATION) {
             switch (animationType) {
-                case "loop" :
+                case `${Sprite.MODE.LOOP}` :
                     this.#mode = Sprite.MODE.LOOP;
                     break;
-                case "toggle" :
-                    this.#mode = Sprite.MODE.TOGGLE;
+                case `${Sprite.MODE.BOUNCE}` :
+                    this.#mode = Sprite.MODE.BOUNCE;
                     break;
-                case "once" :
+                case `${Sprite.MODE.ONCE}` :
                     this.#mode = Sprite.MODE.ONCE;
                     break;
             }
 
+            this.#sync = !unsynchronized;
             if (!unsynchronized) {
-                this.#sync = true;
                 this.#lastTime = null;
-                this.#toggleDir = -1;	// Trust me
-            } else {
-                this.#sync = false;
+                this.#toggleDir = -1;	// Trust me bro
             }
             this.#count = frameCount;
             this.#speed = animationSpeed;
         } else {
             this.#count = 1;
-            this.#speed = -1;
+            this.#speed = 0;
         }
 
         this.#frameRect = [left, top, width, height]; 
-        this.#boundingBox = [0, 0, width, height]; 
+        this.#boundingBox = [0, 0, width, height];
     }
 
     /**
@@ -156,16 +150,12 @@ export default class Sprite {
      */
     destroy() {
         this.#boundingBox = null;
-        this.#frame = null;
-        this.#bitmap = null;
+        this.#frameRect = null;
+        this.#spriteSheet = null;
     }
 
-    /**
-     * Get the resource this sprite originated from
-     * @return {Object}
-     */
-    get resource() {
-        return this.#resource;
+    get spriteSheet() {
+        return this.#spriteSheet;
     }
 
     get mode() {
@@ -200,15 +190,6 @@ export default class Sprite {
      */
     get frameSpeed() {
         return this.#speed;
-    }
-
-    /**
-     * The source image loaded by the {@link SpriteLoader} when the sprite was
-     * created.
-     * @return {HTMLImage} The source image the sprite is contained within
-     */
-    get sourceImage() {
-        return this.#image;
     }
 
     /**
@@ -252,7 +233,7 @@ export default class Sprite {
      * @return {Boolean} <tt>true</tt> if the sprite is an animation and loops
      */
     get isLoop() {
-        return (this.isAnimation() && this.mode === Sprite.MODE.LOOP);
+        return (this.isAnimation && this.mode === Sprite.MODE.LOOP);
     }
 
     /**
@@ -260,7 +241,7 @@ export default class Sprite {
      * @return {Boolean} <tt>true</tt> if the sprite is an animation and toggles
      */
     get isToggle() {
-        return (this.isAnimation() && this.mode === Sprite.MODE.TOGGLE);
+        return (this.isAnimation && this.mode === Sprite.MODE.TOGGLE);
     }
 
     /**
@@ -268,7 +249,7 @@ export default class Sprite {
      * @return {Boolean} <tt>true</tt> if the sprite is an animation and plays once
      */
     get isOnce() {
-        return (this.isAnimation() && this.mode === Sprite.MODE.ONCE);
+        return (this.isAnimation && this.mode === Sprite.MODE.ONCE);
     }
 
     get isFinished() {
@@ -309,8 +290,8 @@ export default class Sprite {
     }
 
     /**
-     * Gets the frame of the sprite. The frame is the rectangle defining what
-     * portion of the image map the sprite frame occupies, given the specified time.
+     * Gets the frame rectangle of the sprite. The frame is defines what
+     * portion of the sprite sheet the sprite frame occupies, given the specified time.
      *
      * @param time {Number} Current world time
      * @param dt {Number} The delta between the world time and the last time the world was updated
@@ -323,10 +304,23 @@ export default class Sprite {
             return [...this.frameRect];
         } else {
             const frame = [...this.frameRect];
-            const frameNum = this.#calcFrameNumber(time, dt);
+            const frameNum = this.calcFrameNumber(time, dt);
             frame[0] = this.frameRect[0] + (frameNum * this.frameRect[2]);
             return frame;
         }
+    }
+
+    /**
+     * Get the current frame image
+     * @param {number} time 
+     * @param {number} dt 
+     * @returns {ImageData}
+     */
+    getFrameImage(time, dt) {
+        const frameRect = this.getFrame(time, dt);
+        // extract the frame and draw to our buffer
+        const frame = this.spriteSheet.sheet.image.getImageData(frameRect[0], frameRect[1], frameRect[2], frameRect[3]);
+        return frame;
     }
 
     /**
@@ -336,7 +330,7 @@ export default class Sprite {
      *          in milliseconds.
      * @private
      */
-    #calcFrameNumber(time, dt) {
+    calcFrameNumber(time, dt) {
         if (!this.isPlaying) {
             return this.frameNum;
         }
@@ -353,10 +347,11 @@ export default class Sprite {
             // How much time has elapsed since the last frame update?
             if (dt > this.frameSpeed) {
                 // Engine is lagging, skip to correct frame
-                this.frameNum += (Math.floor(dt / this.frameSpeed) * this.#toggleDir);
+                this.frameNum = Math.floor((this.frameSpeed / dt) *  this.#count);
             } else {
                 this.frameNum += (time - this.#lastTime > this.frameSpeed ? this.#toggleDir : 0);
             }
+            this.#lastTime = time;
 
             // Modify the frame number for the animation mode
             if (this.isOnce) {
@@ -378,7 +373,7 @@ export default class Sprite {
             } else {
                 if (this.frameNum === this.frameCount - 1 || this.frameNum === 0) {
                     // Call event when animation toggles
-                    this.#toggleDir *= -1;
+                    this.#toggleDir *= this.#toggleDir;
                     this.frameNum += this.#toggleDir;
                     //this.triggerEvent("toggled");
                 }
@@ -413,6 +408,4 @@ export default class Sprite {
 
         return this.frameNum;
     }
-
-    onSpriteLoopRestart() {}
 }

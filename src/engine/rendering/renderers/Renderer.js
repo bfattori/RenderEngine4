@@ -148,52 +148,6 @@ export default class Renderer {
      */
     postFrame() {}
 
-    /**
-     * Compile a set of render instructions into an assembly that is executed by the renderer. 
-     * 
-     * @param {String[]} instructions - A set of instructions to compile.
-     * @returns {number} An opaque Id that references the compiled shape.
-     * @private
-     */
-    compile(instructions, tag) {
-        if (!this.#hasCompiler) { return Constants.COMPILATION.NOT_SUPPORTED; }
-        return this.assembler.compileShape(instructions, tag);
-    }
-
-    /**
-     * Render a compiled shape with the given opaque Id.
-     * 
-     * @param {number} opaqueId - The shape Id to render
-     * @param {number} time - The current world time
-     * @param {number} deltaTime - The time that has past since the last frame
-     */
-    renderCompiledShape(opaqueId, time, deltaTime) {
-    }
-
-    /**
-     * Compiles the set of render instructions into an assembly that will be executed by the renderer. 
-     * 
-     * @param {String[]} instructions - The render instructions.
-     * @param {String} tag - optional tag to apply to the assembly
-     * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
-     *                   the renderer does not support pre-compilation of renderable objects.
-     */
-    getCompiledShape(instructions, tag) {
-        if (!this.#hasCompiler) { return Constants.COMPILATION.NOT_SUPPORTED; }
-        return this.assembler.compileShape(this, instructions, tag);
-    }
-
-    /**
-     * Destroy a previously compiled shape. Does not destroy a compiled shape directly
-     * so it can be appropriately garbage collected.
-     * @param {number} opaqueId Destroy the shape at the opque index.
-     * @returns 
-     */
-    destroyCompiledShape(opaqueId) {
-        if (!this.#hasCompiler) { return; }
-        this.assembler.destroyShape(opaqueId);
-    }
-
     destroy() {
         this.#assembler = null;
         this.#renderContext = null;

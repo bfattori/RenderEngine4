@@ -2,13 +2,13 @@ import Constants from '../Constants.js';
 import Context from '../Context.js';
 import RenderEngineError from '../core/RenderEngineError.js';
 import { NOP, ENGINE_ERRORS } from '../Constants.js';
+import Util from './Util.js';
 
 /**
  * Options Configuation
  */
 export default class Config {
     #opts = {};
-    #getters = [];
 
     /**
      * Construction an options configuration. Each property of the `opts` 
@@ -49,19 +49,15 @@ export default class Config {
         return output;
     }
 
+    /**
+     * Merge this config with another object containing values that should override the current ones.
+     * It instruments the `Config` with getters and setters for the properties in the incoming configuration.
+     * @param {Object} incoming - Incoming config object
+     */
     merge(incoming = {}) {
         const merged = this.#deepMerge(this.#opts, incoming);
-        if (this.#getters.length !== 0) {
-            // remove getters for properties that no longer exist
-            const mKeys = Object.keys(merged);
-            const dKeys = mKeys.filter(key => !this.#getters.includes(key));
-            for (const dk of dKeys) {
-                delete this[dk];
-            } 
-        }
-        this.#getters = [];
         this.#opts = merged;
-        this.#lombok();
+        Util.lombok(this, merged);
     }
 
     /**
@@ -78,44 +74,6 @@ export default class Config {
      */
     set opts(options) {
         this.#opts = opts;
-    }
-
-    #lombok() {
-        const props = Object.keys(this.#opts);
-        for (const propName of props) {
-            if (propName !== 'opts') {  // "opts" is restricted
-                this.#getters.push(propName);
-                const descriptor = Object.getOwnPropertyDescriptor(this, propName);
-                if (!descriptor || typeof descriptor.get !== 'function') {
-                    // only create getters not already present
-                    Object.defineProperty(this, propName, {
-                        get() {
-                            return this.opts[propName];
-                        },
-                        set(val) {
-                            this.opts[propName] = val;
-                        },
-                        enumerable: true,
-                        configurable: true
-                    });
-                }
-            }
-        }
-    }
-
-    //-------------------------------
-    // Properties
-    //-------------------------------
-
-    /**
-     * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
-     * @returns {Object} An object containing the component's properties
-     */
-    get properties() {
-        return {
-            Options: this.#opts,
-            keys: this.#getters
-        };
     }
 }
 

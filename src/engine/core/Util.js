@@ -1,6 +1,8 @@
 import $Math from './Math.js';
 export default class Util {
     
+    static RESTRICTED_PROPERTIES = ['ordinal','opts'];
+
     /**
      * Get the color for the RBGA values, returning a hex value, or the color name if R is a string.
      * Returns black (#000) if color cannot be decoded
@@ -39,5 +41,88 @@ export default class Util {
         g = g/255;
         b = b/255;
         return Util.getColor($Math.randomRange(r, 0.9 - r), $Math.randomRange(g, 0.9 - g), $Math.randomRange(b, 0.9 - b));
+    }
+
+    /**
+     * Instrument an object with getters and setters specified either in an array (uninitialized), or with an object containing values
+     * @param {Object} target - The object to instrument with the getters and setters 
+     * @param {Array<String>|Object} values - An array of properties, or an object with properties and initial values
+     * @param {Array<String>|boolean} setters - A boolean indicating setters should be created for all properties, or an array of specific properties that should have setters.
+     */
+    static lombok(target, values, setters = true) {
+        target.$getters = target.$getters || [];
+
+        // remove getters for properties that no longer exist
+        if (target.$getters.length !== 0) {
+            const mKeys = Object.keys(values);
+            const dKeys = mKeys.filter(key => !target.$getters.includes(key));
+            for (const dk of dKeys) {
+                delete this[dk];
+            } 
+        }
+
+        // create getters and setters
+        if (Array.isArray(values)) {
+            target.$getters = [...target.$getters, ...values];
+            values.forEach(k => {
+                if (!Util.RESTRICTED_PROPERTIES.includes(k)) {
+                    const hasDescriptor = target.$getters.includes(k);
+                    if (!hasDescriptor || typeof hasDescriptor.get !== 'function') {
+                        // only create getters/setters not already present
+                        if ((Array.isArray(setters) && setters.includes(k)) || setters) {
+                            Object.defineProperty(target, k, {
+                                get() {
+                                    return values[k];
+                                },
+                                set(val) {
+                                    values[k] = val;
+                                },
+                                enumerable: true,
+                                configurable: true
+                            });
+                        } else {
+                            Object.defineProperty(target, k, {
+                                get() {
+                                    return values[k];
+                                },
+                                enumerable: true,
+                                configurable: true
+                            });
+                        }
+                    }
+                }
+            });
+        } else {
+            const props = Object.keys(values);
+            for (const propName of props) {
+                if (!Util.RESTRICTED_PROPERTIES.includes(propName)) {
+                    const hasDescriptor = target.$getters.includes(propName);
+                    if (!hasDescriptor || typeof hasDescriptor.get !== 'function') {
+                        // only create getters/setters not already present
+                        target.$getters.push(propName);
+                        if ((Array.isArray(setters) && setters.includes(propName)) || setters) {
+                            Object.defineProperty(target, propName, {
+                                get() {
+                                    return values[propName];
+                                },
+                                set(val) {
+                                    values[propName] = val;
+                                },
+                                enumerable: true,
+                                configurable: true
+                            });
+                        } else {
+                            Object.defineProperty(target, propName, {
+                                get() {
+                                    return values[propName];
+                                },
+                                enumerable: true,
+                                configurable: true
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
 }

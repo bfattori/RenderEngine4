@@ -543,6 +543,27 @@ export default class $Math {
         return points;
     }
 
+    /**
+     * Create a SHA-256 hash for the mesage
+     * @param {String} message - The message to digest
+     * @returns {Array<number>} The digest as an array of 32-bit integers.
+     */
+    static async hashDigest(message) {
+        // Encode the string as a Uint8Array
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        return Array.from(new Uint8Array(hashBuffer));
+    }
+
+    /**
+     * Returns a hexadecimal string representing the hash of the message
+     * @param {String} message - The message to digest 
+     * @returns {String} The hash as a hexadecimal string
+     */
+    static async hexHash(message) {
+        // Hash message and convert bytes to a hexadecimal string
+        return await $Math.hashDigest(message).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
 }
 
 // this may need to scale more...

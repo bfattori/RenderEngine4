@@ -336,21 +336,6 @@ export default class RenderContext {
   }
 
   //-----------------------------
-  // compiled shapes
-  //----------------------------
-  
-  getCompiledShape(instructions, tag) {
-    return this.#renderer.getCompiledShape(instructions, tag);
-  }
-
-  destroyCompiledShape(opaqueId) {
-    this.#renderer.destroyCompiledShape(opaqueId);
-  }
-
-  renderCompiledShape(opaqueId, time, deltaTime) {
-  }
-
-  //-----------------------------
   // viewport and world
   //------------------------------
 

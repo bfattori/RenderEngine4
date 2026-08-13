@@ -1,7 +1,7 @@
 import Constants from '../../../Constants.js';
 import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
 import { IL as VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
-import VectorTextParser from '../../../ui/VectorText.js';
+import VectorTextParser from '../../../ui/VectorTextParser.js';
 import Util from '../../../core/Util.js';
 import $Math from '../../../core/Math.js';
 
@@ -10,7 +10,7 @@ import $Math from '../../../core/Math.js';
  */
 export default function getAPI() {
     const context = this;
-    const textParser = new VectorTextParser;
+    const textParser = VectorTextParser.getInstance(context);
 
     const state = {
         // Color state - RGB values (0-1 range) with optional alpha
@@ -824,7 +824,7 @@ export default function getAPI() {
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text to generate render instructions
-            const result = textParser.parse.call(context, text);
+            const result = textParser.parse(text);
             textSize[0] = result.width;
             textSize[1] = result.height;
 
