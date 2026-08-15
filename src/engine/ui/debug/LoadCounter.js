@@ -109,7 +109,7 @@ export default class LoadCounter {
                 this.#loadBarText[i] = document.createElement('span');
                 this.#loadBarText[i].classList.add('loadBarText');
                 this.#loadBar[i].appendChild(this.#loadBarText[i]);
-                this.#loadBar[i].style.backgroundColor = format.color || Util.getRandomColor(200, 200, 200);
+                this.#loadBar[i].style.backgroundColor = format.color || Util.getRandomColor(180, 180, 180);
                 entry.appendChild(this.#loadBar[i]);
             }
 

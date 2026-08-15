@@ -40,7 +40,7 @@ export default class Util {
         r = r/255;
         g = g/255;
         b = b/255;
-        return Util.getColor($Math.randomRange(r, 0.9 - r), $Math.randomRange(g, 0.9 - g), $Math.randomRange(b, 0.9 - b), 1.0);
+        return Util.getColor($Math.randomRange(r, 1.0), $Math.randomRange(g, 1.0), $Math.randomRange(b, 1.0), 1.0);
     }
 
     /**
