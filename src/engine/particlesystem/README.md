@@ -12,5 +12,25 @@ _The engine has a simple task:_ **update and render particles.** It is either fr
 ## **Particle Effects** - particle generators
 A `ParticleEffect` is the way in which particles are generated. Effects contain options that apply to the particles used in the effect, thus pairing is important as to not create strange output. The effect has duration, frequency, quantity, and other configuration information that is applied to the particles as they are spawned, giving them their initial identity.
 
-### Types of `Particle`s and `ParticleEffect`s
+## Included `Particle` and `ParticleEffect` types
 There are several styles of particle and effect generators to select from, or to inherit and grow upon for even more interesting effects.
+
+#### Particle types:
+
+- **BasicParticle** - position, velocity, drag, dragRate, and gravity
+- **AffectedParticle** - like basic, but affected by repulsors and colliders (increased CPU load)
+- **BurstParticle** - Simple particle burst, outward 360&deg; emission
+- **FireworksParticle** - Used with the `FireworksEffect`, generates sub-particles to simulate embers
+- **SparkParticle** - Drawn as velocity-directed lines to simulate streaks of hot metal
+- **SprayParticle** - A narrow-spread angle emission particle
+- **WaterParticle** - A particle that simulates water
+
+#### Particle effects:
+- **SparkEffect** - Configurable color palette, streak length, renders as lines, spawns sub-particle points, narrow spread-angle emission
+- **BurstEffect** - Configurable color palette, particle sizes, renders as points, 360&deg; emission
+- **PuffEffect** - Configurable color palette, particle sizes, renders as diffuse points, 360&deg; emission
+- **ExplosionEffect** - Configurable color palette, particle sizes, origin smoke properties, gravity influenced, renders as points, 360&deg; emission
+- **FountainEffect** - Configurable color palette, particle sizes, renders as points or sprites, spread-angle emission
+- **FireworksEffect** - Pre-defined color palettes, renders as points, particles spawn sub-particles, built-in types: **Peony, chrysanthemum, comet, palm, brocade, willow, pistil, tourbillion, fish, and strobe.**
+- **SmokeEffect** - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission. Use an `AffectedParticle` for the best looking effect.
+

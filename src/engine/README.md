@@ -12,6 +12,6 @@
 
 ## Files
 - `Constants.js` - The game engine's constant values
-- `Context.js` - A shared context that is used to access debug configuration options at run-time
+- `Context.js` - A shared context that is used to access debug and engine options at run-time
 - `renderEngine4.js` - The engine bootstrapper
 - `README.md` - This file
