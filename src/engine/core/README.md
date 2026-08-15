@@ -20,7 +20,7 @@ The event engine is a pub/sub model, provided globally to the running environmen
 A basic fixed-point mathematics library for dealing with floating point as integers. It can be used when floating point is too heavy, or unsupported by hardware.
 
 ## `GameWorld`
-The game world orchestrates the objects within the world. It coordinates with the world camera, and manages GameObject instances, provides for and tests collisions against the world collision model, and retains references to the RenderContext and Camera.
+The game world orchestrates the objects within the world. It coordinates with the world camera, and manages `GameObject` instances, provides for and tests collisions against the world collision model, and retains references to the `RenderContext` and `Camera`.
 
 ## `$Math` (Math.js)
 The `$Math` library provides functions useful in game development. Random number generators, trigonometric functions, vector math, scalar operations, dot- and cross-product, and more.
