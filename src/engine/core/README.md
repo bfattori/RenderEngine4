@@ -32,7 +32,7 @@ The `Matrix2d` class extends the `DOMMatrix` object to implement additional meth
 The base class for all exceptions thrown by the **RenderEngine4**.
 
 ## `TransferrableConfig`
-WebWorker and Network safe configuration objects can dehydrate for transmission, then rehydrate for use in another location.
+WebWorker- and Network-safe configuration objects can dehydrate for transmission, then rehydrate for use in another location.
 
 ## `Util`
 Several useful utility functions for color manipulation, and a `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values. Setters are configurable.
