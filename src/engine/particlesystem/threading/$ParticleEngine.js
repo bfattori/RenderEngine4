@@ -89,12 +89,16 @@ export default class $ParticleEngine {
         PRAGMA('showParticleEngineLoad', () => {
             const config = {
                 left: 5,
-                counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time'],
+                width: 150,
+                counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'Render:Particles'],
                 options: {
                     'Update:Time': { suffix: ' ms' },
                     'Render:Time': { suffix: ' ms' },
                     'Update:Load': { bar: true, suffix: '%', clamp: 100.0 },
-                    'Render:Load': { bar: true, suffix: '%', clamp: 100.0 }
+                    'Render:Load': { bar: true, suffix: '%', clamp: 100.0 },
+                    'Render:Particles': { color: '#aaf', bar: true, 
+                        barCalc: (value) => `${(value / this.#initProps.config.maxParticles) * 100}%`,
+                        barContent: (value) => `${value}/${this.#initProps.config.maxParticles}` }
                 }
             };
 
@@ -104,6 +108,7 @@ export default class $ParticleEngine {
                 config.counters.push(`Particles:Thread ${i}`);
                 config.options[`Particles:Thread ${i}`] = { bar: false }
             }
+
             this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
         });
 
@@ -179,6 +184,7 @@ export default class $ParticleEngine {
                     PRAGMA('showParticleEngineLoad', () => {
                         let update = 0, render = 0;
                         const burden = (this.#initProps.config.maxParticles / this.#initProps.threading.workers);
+                        let totalLive = 0;
                         for (let i = 0; i < event.data.metrics.length; i++) {
                             if (event.data.metrics[i]) {
                                 update += event.data.metrics[i].updateTime || 0;
@@ -187,6 +193,7 @@ export default class $ParticleEngine {
                                 const live = event.data.metrics[i].live;
                                 this.#engineLoadView.update(`Workers:Thread ${i}`, (live !== 0 ? live / burden : 0) * 100);
                                 this.#engineLoadView.update(`Particles:Thread ${i}`, live);
+                                totalLive += live;
                             }
                         }
 
@@ -197,6 +204,7 @@ export default class $ParticleEngine {
                         this.#engineLoadView.update('Render:Time', render);
                         this.#engineLoadView.update('Update:Load', isNaN(updateLoad) ? 0 : updateLoad * 100);
                         this.#engineLoadView.update('Render:Load', isNaN(renderLoad) ? 0 : renderLoad * 100);
+                        this.#engineLoadView.update('Render:Particles', totalLive);
                     });
 
                     break;

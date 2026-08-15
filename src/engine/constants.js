@@ -97,7 +97,9 @@ const Constants = {
         prefix: '',
         suffix: '',
         clamp: null,
-        fixedDigits: 0
+        fixedDigits: 0,
+        barCalc: null,
+        barContent: null
     },
     DEFAULT_FILTER_STRENGTH: 10,
 

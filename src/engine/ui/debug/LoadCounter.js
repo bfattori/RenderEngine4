@@ -148,8 +148,9 @@ export default class LoadCounter {
             this.#smoothed[view] += (value - this.#smoothed[view]) / this.filteringStrength;
         }
         
-        const displayValue = [format.prefix, format.clamp !== null ? Math.min(value, format.clamp).toFixed(format.fixedDigits) : value.toFixed(format.fixedDigits), format.suffix].filter(e => typeof e !== 'undefined').join('');
-        this.#loadCounter[idx].textContent = displayValue;
+        const rValue = format.clamp !== null ? Math.min(value, format.clamp) : value;
+        const textContent = [format.prefix, rValue.toFixed(format.fixedDigits), format.suffix].filter(e => typeof e !== 'undefined').join('');
+        this.#loadCounter[idx].textContent = textContent;
 
         if (format.bar) {
             if (format.clamp !== null && value > format.clamp && !this.#loadBar[idx].classList.contains('overload')) {
@@ -160,8 +161,8 @@ export default class LoadCounter {
             }
                 
 
-            this.#loadBarText[idx].textContent = displayValue;
-            this.#loadBar[idx].style.width = displayValue;
+            this.#loadBarText[idx].textContent = format.barContent ? format.barContent(textContent) : textContent;
+            this.#loadBar[idx].style.width = format.barCalc ? format.barCalc(rValue) : textContent;
         }
     }
 }

@@ -36,7 +36,7 @@ export class Matrix2d extends DOMMatrix {
             super(mtxArgs[0]);
         } else if (mtxArgs.length > 1) { 
             // a 2d array
-            super([mtxArgs[0], mtxArgs[3], mtxArgs[1], mtxArgs[4], mtxArgs[2], mtxArgs[5]]);
+            super([mtxArgs[0], mtxArgs[1], mtxArgs[2], mtxArgs[3], mtxArgs[4], mtxArgs[5]]);
         } else {
             super();
         }
@@ -309,9 +309,7 @@ export class Matrix2d extends DOMMatrix {
 }
 
 // copies to export
-const IdentityMatrix = new Matrix2d(_IdentityMatrix[0][0], _IdentityMatrix[1][0], _IdentityMatrix[2][0], 
-                                    _IdentityMatrix[0][1], _IdentityMatrix[1][1], _IdentityMatrix[2][1],
-                                    _IdentityMatrix[0][2], _IdentityMatrix[1][2], _IdentityMatrix[2][2]);
+const IdentityMatrix = new Matrix2d(1,0,0,1,0,0);
 
 const NullMatrix = null;
 
