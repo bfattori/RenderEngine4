@@ -15,7 +15,7 @@ const numObjects = 200;
 
 // create a double-buffered canvas 
 // renderer with the compiler enabled
-await RenderEngine.init({
+await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: false,
         showFps: true

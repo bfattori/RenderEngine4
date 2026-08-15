@@ -318,9 +318,10 @@ class GameWorld {
    * @param {Matrix2d} transformation - The transformation to push
    */
   pushTransformation(transformation) {
-    this.#transformStack.push(transformation);
-    if (transformation) {
-      this.#currentTransform = transformation;
+    const copy = transformation ? Matrix2d.from(transformation) : this.#currentTransform;
+    this.#transformStack.push(copy);
+    if (copy) {
+      this.#currentTransform = copy;
     }
   }
   

@@ -229,7 +229,7 @@ export class Matrix2d extends DOMMatrix {
         if (Array.isArray(other)) {
             return Matrix2d.fromArray(other);
         } else if (other instanceof DOMMatrix) {
-            return new Matrix2d(other);
+            return new Matrix2d(other.a, other.b, other.c, other.d, other.e, other.f);
         } else if (typeof other === "string") {
             return Matrix2d.fromArray(other.split(' ').map(e => parseFloat(e)));
         }

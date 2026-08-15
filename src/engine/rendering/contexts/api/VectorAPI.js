@@ -57,7 +57,7 @@ export default function getAPI() {
          */
         translate: (x, y) => {
             context.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
-            state.currentTransform.translate(x, y);
+            state.currentTransform.translateSelf(x, y);
             return context.API;
         },
 
@@ -68,7 +68,7 @@ export default function getAPI() {
          */
         rotate: (angle) => {
             context.addInstruction(`${VECTOR_IL.ROTATE} ${angle}`);
-            state.currentTransform.rotate(angle);
+            state.currentTransform.rotateSelf(angle);
             return context.API;
         },
 
@@ -80,7 +80,7 @@ export default function getAPI() {
          */
         scale: (x, y) => {
             context.addInstruction(`${x === y ? VECTOR_IL.USCALE + ' ' + x : VECTOR_IL.SCALE + ' ' + x + ' ' + y}`);
-            state.currentTransform.scale(x, y);
+            state.currentTransform.scaleSelf(x, y);
             return context.API;
         },
 
@@ -91,7 +91,7 @@ export default function getAPI() {
          */
         uniformScale: (scalar) => {
             context.addInstruction(`${VECTOR_IL.USCALE} ${scalar}`);
-            state.currentTransform.uniformScale(scalar);
+            state.currentTransform.uniformScaleSelf(scalar);
             return context.API;
         },
 
@@ -103,7 +103,7 @@ export default function getAPI() {
          */
         skew: (sX, sY) => {
             context.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY || 0}`);
-            state.currentTransform.skew(sX, sY);
+            state.currentTransform.skewSelf(sX, sY);
             return context.API;
         },
 
@@ -130,22 +130,31 @@ export default function getAPI() {
         },
 
         /**
+         * Save the surface state
+         */
+        push: () => {
+            context.addInstruction(RASTER_IL.PUSH);
+            return context.API;
+        },
+
+        /**
          * Push the world transformation matrix onto the transform stack. This is useful for applying transformations to the entire scene.
          * @param {Matrix2d} transform - Optional matrix to push. If empty, the current world transform is pushed.
          */
         pushTransform: (transform) => {
             context.pushTransform(transform);
-            if (transform) 
-                state.currentTransform = transform;
-            else
-                state.currentTransform = Matrix2d.identity();
+            state.currentTransform = transform;
             return context.API;
         },
 
         /**
-         * Pop the last transformation matrix off the transform stack.
-         * @returns {Matrix2d|null} The previous transform matrix, or <code>null</code>
+         * Restore the surface state
          */
+        pop: () => {
+            context.addInstruction(RASTER_IL.POP);
+            return context.API;
+        },
+
         popTransform: () => {
             state.currentTransform = context.popTransform();
             return state.currentTransform;
@@ -470,17 +479,17 @@ export default function getAPI() {
          * @param {string|boolean} [options.square] - Use square (instead of round) coordinates
          * @returns {Object} Returns this for chaining
          */
-        point: ([x, y], { round = false, square = false } = {}) => {
+        point: (x, y, round) => {
             // Convert to screen coordinates if using world coordinates
             let screenPos = [x, y];
             
             if (context.enableCulling) {
                 const screenPosObj = context.worldToScreen(x, y);
                 if (screenPosObj && screenPosObj.screen) {
-                screenPos = [screenPosObj.screen.x, screenPosObj.screen.y];
+                    screenPos = [screenPosObj.screen.x, screenPosObj.screen.y];
                 } else {
-                // Object outside view bounds - skip rendering
-                return [];
+                    // Object outside view bounds - skip rendering
+                    return [];
                 }
             }
             
@@ -488,18 +497,7 @@ export default function getAPI() {
             let pointX = Math.round(screenPos[0]);
             let pointY = Math.round(screenPos[1]);
             
-            if (round === false && square) {
-                // Keep as-is but marked for square handling
-                pointX = screenPos[0];
-                pointY = screenPos[1];
-            } else if (square) {
-                // Use exact coordinates (no rounding)
-                pointX = screenPos[0];
-                pointY = screenPos[1];
-            }
-            
-            const pointInst = [];
-            context.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY}`);
+            context.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY} ${state.currentWidth} ${round ? 1 : 0}`);
             return context.API;
         },
         

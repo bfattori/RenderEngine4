@@ -1,4 +1,5 @@
 import RenderEngineError from '../core/RenderEngineError.js';
+import Paths from '../core/Paths.js';
 
 class ResourceError extends RenderEngineError {
     #resource = null;
@@ -19,7 +20,8 @@ export default class Resource {
     static TYPE = {
         TEXT: 'text',
         JSON: 'json',
-        BLOB: 'blob'
+        BLOB: 'blob',
+        CUSTOM: 'custom'
     };
 
     #resourceUrl = null
@@ -37,11 +39,14 @@ export default class Resource {
      * @param {String} resourceUrl - The resource URL to load
      * @param {String} type - The type of resource to load (text, json, blob)
      */
-    constructor(resourceUrl, type = Resource.TYPE.TEXT, rel = import.meta.url) {
+    constructor(resourceUrl, type = Resource.TYPE.TEXT, rel = null) {
+        rel = rel || Paths.game;
         this.#resourceUrl = new URL(resourceUrl, rel);
         this.#type = type;
         this.#rel = rel;
-        this.#loadResource();
+        if (type !== Resource.TYPE.CUSTOM) {
+            this.#loadResource();
+        }
     }
 
     destroy() {
@@ -76,6 +81,8 @@ export default class Resource {
         return this.#rel;
     }
 
+    async customLoadResource() {}
+
     /**
      * Load up that resource
      */
@@ -103,7 +110,7 @@ export default class Resource {
             this.#content = await this.postProcess(content);
             this.#loaded = true;
         } catch (ex) {
-            throw new ResourceError(this, `An error occurred while loading the resource "${this.url}`, ex);
+            throw new ResourceError(this, `An error occurred while loading the resource "${this.url}" - ${ex.message}`, ex);
         }
     }
 

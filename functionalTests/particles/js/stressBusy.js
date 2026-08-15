@@ -18,7 +18,7 @@ import Util from '../../../src/engine/core/Util.js';
 const numObjects = 500;
 
 // create a double-buffered canvas renderer
-await RenderEngine.init({
+await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: true,
         showFps: true,

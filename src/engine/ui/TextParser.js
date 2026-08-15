@@ -78,6 +78,14 @@ export default class TextParser {
         this.renderContext.formatting.underline = state;
     }
 
+    get spaceWidth() {
+        return Constants.VECTOR_DEFAULTS.SPACE_WIDTH + Constants.VECTOR_DEFAULTS.CHAR_SPACING;
+    }
+
+    get tabSize() {
+        return this.spaceWidth * 2;
+    }
+
     /**
      * Parse text with formatting into rendering instructions.
      * 
@@ -101,10 +109,10 @@ export default class TextParser {
                 if (text[i + 1] === ' ') {
                     consecutiveTrailingSpaces += /( +)/.exec(text.substring(i + 1))[0].length;
                 }
-                this.injectSpace(consecutiveTrailingSpaces * spaceWidth);
+                this.injectSpace(consecutiveTrailingSpaces * this.spaceWidth);
                 
                 i += consecutiveTrailingSpaces;
-                textWidth += consecutiveTrailingSpaces * spaceWidth;
+                textWidth += consecutiveTrailingSpaces * this.spaceWidth;
                 continue;
             }
 
@@ -123,8 +131,8 @@ export default class TextParser {
 
             // tab
             if (char === '\t') {
-                this.injectSpace(tabSize);
-                textWidth += tabSize;
+                this.injectSpace(this.tabSize);
+                textWidth += this.tabSize;
                 i++;
                 continue;
             }

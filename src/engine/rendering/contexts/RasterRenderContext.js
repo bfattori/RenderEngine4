@@ -130,7 +130,7 @@ export default class RasterRenderContext extends RenderContext {
   }
 
   compileTile(tile) {
-    return this.renderer.compileTile(tile);
+    return this.renderer.compileSprite(tile);
   }
 
   renderTiles(tileIds, time, deltaTime) {
@@ -138,7 +138,7 @@ export default class RasterRenderContext extends RenderContext {
   }
 
   renderTile(opaqueId, time, deltaTime) {
-    this.addInstruction(`${RASTER_IL.TILE} ${opaqueId}`)
+    this.renderer.renderTile(opaqueId, time, deltaTime);
   }
 
   compileTileMaps(tileMaps) {

@@ -56,6 +56,9 @@ const VECTOR_IL = {
 const RASTER_IL = {
   ...BASE_IL,
 
+  RSCALEU:        'RSCALEU',
+  RSCALE:         'RSCALE',
+
   // Decorator Instructions (State Modifiers)
   FONT:       'FONT',        // "FONT FONTNAME FONTSIZE" would be a font with the given name and size
   STYLE:      'STYLE',       // "STYLE BOLD ITALICS UNDERLINE" toggles the given styles on/off (BOLD = 1/0, ITALICS = 1/0, UNDERLINE = 1/0)

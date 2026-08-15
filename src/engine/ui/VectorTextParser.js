@@ -13,8 +13,6 @@ const CHARACTER_SPACE = {
     charWidth: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
     charHeight: Constants.VECTOR_DEFAULTS.SPACE_WIDTH,
 };
-const spaceWidth = Constants.VECTOR_DEFAULTS.SPACE_WIDTH + Constants.VECTOR_DEFAULTS.CHAR_SPACING;
-const tabSize = spaceWidth * 2;
 
 /**
  * Class with a static method to parse formatted text and populate the context's
@@ -105,7 +103,7 @@ export default class VectorTextParser extends TextParser {
                 if (!glyphCache.has(char)) {
                     // Compile the character shape and store in cache
                     if (char !== ' ') {
-                        const shapeId = this.renderContext.renderer.getCompiledShape(ci.instructions, `CHAR '${char}'`);
+                        const shapeId = this.renderContext.renderer.compile(ci.instructions, `CHAR '${char}'`);
                         glyphCache.set(char, shapeId);
                         this.renderContext.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
                     }
@@ -122,8 +120,8 @@ export default class VectorTextParser extends TextParser {
         }
 
         // bundle consecutive trailing spaces as one giant leap
-        this.renderContext.API.translate(ci.charWidth + (consecutiveTrailingSpaces * spaceWidth) + this.renderContext.letterSpacing, 0);
-        this.renderContext.API.cursorDelta(ci.charWidth + (consecutiveTrailingSpaces * spaceWidth) + this.renderContext.letterSpacing, 0);
+        this.renderContext.API.translate(ci.charWidth + (consecutiveTrailingSpaces * this.spaceWidth) + this.renderContext.letterSpacing, 0);
+        this.renderContext.API.cursorDelta(ci.charWidth + (consecutiveTrailingSpaces * this.spaceWidth) + this.renderContext.letterSpacing, 0);
 
         // keep this immutable
         if (ci === CHARACTER_SPACE) {

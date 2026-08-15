@@ -3,7 +3,7 @@ import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRe
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
 // create a double-buffered canvas renderer
-await RenderEngine.init({
+await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: false
     },

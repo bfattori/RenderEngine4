@@ -9,7 +9,7 @@ import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererP
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 
 // create a double-buffered canvas renderer
-await RenderEngine.init({
+await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: true,
         showFps: true,

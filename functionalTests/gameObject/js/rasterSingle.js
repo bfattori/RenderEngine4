@@ -12,7 +12,7 @@ import Sprite from '../../../src/engine/resources/Sprite.js';
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 
 // create a double-buffered canvas renderer
-await RenderEngine.init({
+await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: true,
         showFps: true,
@@ -42,7 +42,7 @@ await RenderEngine.init({
 });
 
 // load a sprite sheet
-const sheet = new SpriteSheet("smbtiles", "../resources/mariosprites.json", import.meta.url);
+const sheet = new SpriteSheet("smbtiles", "../../assets/resources/mariosprites.json");
 await sheet.loading();
 
 // game object and component parts

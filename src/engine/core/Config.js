@@ -24,7 +24,7 @@ export default class Config {
     }
 
     #isObject(item) {
-        return (item && item.constructor.name === 'Object' && !Array.isArray(item));
+        return (item && (item.constructor.name === 'Object' && `${item}` === '[object Object]') && !Array.isArray(item));
     }
 
     #deepMerge(target, source) {
@@ -386,6 +386,11 @@ class EngineConfig extends Config {
            * @param {number} frameTime - The total time to generate the frame.
            */
           onFrame: (frameTime) => {}
+      },
+      system: {
+        engineLocation: null,
+        startupLocation: null,
+        gameLocation: null
       }
     });
   }

@@ -16,7 +16,7 @@ import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
 
 // create a double-buffered canvas renderer
-await RenderEngine.init({
+await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: true,
         showFps: true,

@@ -1,0 +1,149 @@
+{
+	"tileMap": true,
+    "version": 1,
+	"definition": {
+		"name": "IsometricMap_1",
+		"projection": "isometric",
+		"height": false,
+		"sizes": {
+			"world": [1000, 1000],
+			"viewport": [50, 50]
+		}
+	},
+	"triggers": [
+		{
+			"type": "onTileEnter",
+			"event": "specialItem",
+			"triggers": ["player"],
+			"tiles": [[10,15], [36, 105]]
+		},
+		{
+			"type": "onTileExit",
+			"event": "whisper",
+			"triggers": ["player", "npc"],
+			"tiles": [[16,10], [42, 76], [800, 30]]
+		},
+		{
+			"type": "onTileNear",
+			"event": "growl",
+			"triggers": ["player"],
+			"tiles": [[10, 10], [20, 20]]
+		},
+		{
+			"type": "onTileEnter",
+			"event": "explosion",
+			"triggers": ["enemy", "npc", "monster"],
+			"tiles": [[200, 31], [17, 36], [50, 50]]
+		}
+	],
+	"terrain": {
+		"proceduralFills": {
+			"1.0": "grass",
+			"0.35": "dirt",
+			"0.1": "rocks",
+			"0.05": "water",
+			"0.025": "sand"
+		},
+		"tileSets": [
+			{
+				"name": "roads",
+				"uses": "ground",
+				"tiles": [
+					["road_ns", [[4, 1], [4, 2], [4, 4], [4, 5], [4,6], [9, 8], [3, 10], [3, 11], [9, 10], [9, 11]]],
+					["crossroad", [[4, 3], [9, 9]]],
+					["road_ew", [[1, 3], [2, 3], [3, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [11, 3],
+									[5, 7], [6, 7], [7, 7], [8, 7], [4, 9], [5, 9], [6, 9], [7, 9], [8, 9], [10, 9], [11, 9]]],
+					["road_ne", [[4, 7]]],
+					["road_sw", [[9, 7]]],
+					["road_se", [[3, 9]]]
+				]
+			},
+			{
+				"name": "trees",
+				"uses": "foliage",
+				"probability": 0.8,
+				"assets": ["oaktree", "mapletree"],
+				"cluster": true 
+			},
+			{
+				"name": "detritus",
+				"uses": "foliage",
+				"probability": 0.04,
+				"assets": ["deadtree"]
+			},
+			{
+				"name": "flowers",
+				"uses": "foliage",
+				"probability": 0.3,
+				"assets": ["tulip", "peony", "ivy", "daisies"],
+				"occursNear": ["trees"],
+				"cluster": true
+			}
+		]
+	},
+	"objects": [
+		{
+			"uses": "foliage",
+			"assets": {
+				"oaktree": [[5, 5], [6, 5], [5, 6], [6, 6], [7, 6], [3, 6], [3, 7], [4, 8], [5, 8], [6, 8], [7.75, 4], [10, 5.35]],
+				"mapletree": [[8, 1], [10, 4], [8, 10], [8, 11]],
+				"deadtree": [[7, 2], [8, 2]]
+			}
+		},
+		{
+			"uses": "buildings",
+			"assets": {
+				"gate": [[3, 0], [2, 10.5]],
+				"tower": [[2.5, 1.5], [4, 1.5], [10, 7.5], [1.5, 10], [3, 10]],
+				"townhouse1": [[7.25, 7.5]],
+				"townhouse2": [[6, 9.5]],
+				"hut": [[4, 10], [11, 10], [10, 11]],
+				"villa": [[10, 10]],
+				"church": [[9, 4]],
+				"fountain": [[7, 4.5]],
+				"keep": [[4, 3.5]]
+			}
+		}
+	],
+	"tileSets": {
+		"assetRoot": "./assets/images",
+		"sets": {
+			"ground": {
+				"assetRoot": "terrain/",
+				"assets": {
+					"grass": ["grass.png", [0, 0]],
+					"road_ns": ["road_ns.png", [0, 0]],
+					"road_ew": ["road_ew.png", [0, 0]],
+					"road_nw": ["road_nw.png", [0, 0]],
+					"road_ne": ["road_ne.png", [0, 0]],
+					"road_sw": ["road_sw.png", [0, 0]],
+					"road_se": ["road_se.png", [0, 0]],
+					"crossroad": ["road_cross.png", [0, 0]]
+				}
+			},
+			"buildings": {
+				"assetRoot": "buildings/",
+				"assets": {
+					"church": ["Church 1-b.png", [70, 90]],
+					"fountain": ["Fountain 2, Small.png", [40, 56]],
+					"hut": ["Hut 1-a.png", [40, 50]],
+					"keep": ["Keep 1-a.png", [82, 115]],
+					"gate": ["Gate 1, Left.png", [50, 62]],
+					"tower": ["Tower, Old 1-a.png", [80, 110]],
+					"townhouse1": ["Town 2-b.png", [85, 125]],
+					"townhouse2": ["Town 3-c.png", [68, 82]],
+					"townhouse3": ["Town 6-a.png", [75, 96]],
+					"villa": ["Village 5-a.png", [67, 76]]
+				}
+			},
+			"foliage": {
+				"assetRoot": "foliage/",
+				"assets": {
+					"oaktree": ["Tree 2.png", [132, 165]],
+					"mapletree": ["Tree 4.png", [112, 159]],
+					"deadtree": ["Tree 6.png", [122, 172]]
+				}
+			}
+		}
+	}
+}

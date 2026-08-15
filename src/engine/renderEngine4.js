@@ -8,6 +8,8 @@ import KeyboardInput from './parts/input/KeyboardInput.js';
 // Render Engine 4 instance
 let engineOptions = null;
 const RenderEngine = {
+    STARTUP_ROOT: import.meta.url,
+
     RE4: null,
     paused: false,
     reset: false,
@@ -15,11 +17,12 @@ const RenderEngine = {
     /**
      * Initialize the Render Engine 4.
      * 
+     * @param {String} gamePath - Typically pass `import.meta.url`
      * @param {Object} options - See {@link Engine} for engine configuration options.
      */
-    async init(options) {
+    async init(gamePath, options) {
         engineOptions = options;
-        RenderEngine.RE4 = await Engine.init(engineOptions);
+        RenderEngine.RE4 = await Engine.init(gamePath, import.meta.url, engineOptions);
 
         // also assign to Window and Global scope
         if (window) {
@@ -130,6 +133,14 @@ const RenderEngine = {
      */
     get hooks() {
         return RE4.hooks;
+    },
+
+    /**
+     * Game relative location
+     * @returns {String}
+     */
+    get relativeLocation() {
+        return this.STARTUP_ROOT;
     }
 }
 

@@ -69,7 +69,10 @@ const RASTER_IL = {
   // Rendering Instructions (Complex)
   SPRITE:         RASTER_OFFSET + 0x03, // "SPRITE 1 2 X Y" sprites have state, would be sprite 1, state 2, at X, Y
   TILE:           RASTER_OFFSET + 0x04, // "TILE 1 X Y" tiles are just images, would be tile 1, at X, Y
-  TILEMAP:        RASTER_OFFSET + 0x05  // "TILEMAP 1 X Y" tilemaps are comprised of tiles, would be tilemap 1 at X, Y
+  TILEMAP:        RASTER_OFFSET + 0x05, // "TILEMAP 1 X Y" tilemaps are comprised of tiles, would be tilemap 1 at X, Y
+
+  RSCALE:         RASTER_OFFSET + 0x06, // "RSCALE X Y" would be X and Y as scale factors
+  RSCALEU:        RASTER_OFFSET + 0x07, // "RSCALEU X" is a uniform scale
 };
 
 // This is only available with the numeric IL's

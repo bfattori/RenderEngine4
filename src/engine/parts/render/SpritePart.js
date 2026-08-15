@@ -20,13 +20,13 @@ export default class SpritePart extends RenderPart {
         this.#currentSprite = null;
     }
 
-    /**
-     * Calculate the bounding box from the set of
-     * points which comprise the shape to be rendered.
-     * @private
-     */
-    calculateBoundingBox() {
-        return this.sprite.boundingBox;
+    set stateName(stateName) {
+        this.sprite.currentState = stateName;
+        this.calculateBoundingBox();
+    }
+
+    get stateName() {
+        return this.this.sprite.currentState;
     }
 
     /**
@@ -36,7 +36,13 @@ export default class SpritePart extends RenderPart {
      */
     set sprite(sprite) {
         this.#currentSprite = sprite;
+        if (this.#opaqueId) {
+            // if this previously existed
+            this.context.destroySprite(this.#opaqueId);
+        }
+
         this.#opaqueId = this.context.compileSprite(sprite, null);
+        this.#calculateBoundingBox();
     }
 
     /**
@@ -48,10 +54,27 @@ export default class SpritePart extends RenderPart {
         return this.#currentSprite;
     }
 
+    get currentState() {
+        return this.sprite.states.get(this.sprite.currentState);
+    }
+
+    /**
+     * Calculate the bounding box from the set of
+     * points which comprise the shape to be rendered.
+     * @private
+     */
+    #calculateBoundingBox() {
+        return this.currentState.boundingBox = $Math.boundingBox([0,0],[this.currentState.width,this.currentState.height]);
+    }
+
+    update(time, deltaTime) {
+        this.sprite.update(time, deltaTime);
+        super.update(time, deltaTime);
+    }
+
     draw(time, deltaTime) {
         if (this.#opaqueId)
             this.context.renderSprite(this.#opaqueId, time, deltaTime);
-        
     }
 
 }

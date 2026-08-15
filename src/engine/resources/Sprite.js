@@ -1,30 +1,79 @@
-import Resource from './Resource.js';
 import { ResourceError } from './Resource.js';
 import $Math from '../core/Math.js';
 import Enum from '../core/Enum.js';
 import TransferrableConfig from '../core/TransferrableConfig.js';
+import Engine from '../core/Engine.js';
+import Tile from './Tile.js';
 
-/**
- * @class A 2D sprite object.  Sprites are either a single frame, or an animation composed of
- *        multiple frames run at a specified frame speed.  Animations can be run once, loop
- *        continuously, or toggle back and forth through the frames.  It is possible to start
- *        and stop animations, and also modify the speed at which each frame is played.
- *        <p/>
- *        In addition to the normal controls for an animation, a developer can also respond
- *        to events triggered on the sprite.  Linking to the events is done through
- *        {@link R.engine.BaseObject#addEvent}. The following are the events, and their
- *        descriptions:
- *        <ul>
- *           <li><tt>finished</tt> - A "run once" animation has played and completed</li>
- *           <li><tt>loopRestarted</tt> - A looping animation has begun a new cycle</li>
- *           <li><tt>toggled</tt> - A toggle animation has changed animation direction</li>
- *        </ul>
- *
- * @class
- * @extends Resource
- */
-export default class Sprite extends TransferrableConfig {
-    
+class SpriteState extends TransferrableConfig {
+    constructor(stateConfig) {
+        super({
+            name: Sprite.DEFAULT_STATE,
+            shape: null,
+            type: +Sprite.TYPE.SINGLE,
+            mode: +Sprite.MODE.STATIC,
+            sync: true,
+            lastTime: null,
+            direction: 1,
+            frameCount: 0,
+            framesPerSec: 0,
+            frameNum: 0,
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0,
+            frameRect: [0,0,1,1],
+            boundingBox: [0,0,1,1]
+        });
+        this.merge(stateConfig);
+    }
+
+    /**
+     * Returns <tt>true</tt> if the sprite is an animation.
+     * @return {Boolean} <tt>true</tt> if the sprite is an animation
+     */
+    get isAnimation() {
+        return (this.type === +Sprite.TYPE.ANIMATION);
+    }
+
+    /**
+     * Returns <tt>true</tt> if the sprite is static.
+     * @return {Boolean} <tt>true</tt> if the sprite is a single fame and static
+     */
+    get isStatic() {
+        return this.mode === +Sprite.MODE.STATIC;
+    }
+
+    /**
+     * Returns <tt>true</tt> if the sprite is an animation and loops.
+     * @return {Boolean} <tt>true</tt> if the sprite is an animation and loops
+     */
+    get isLoop() {
+        return (this.isAnimation && this.mode === +Sprite.MODE.LOOP);
+    }
+
+    /**
+     * Returns <tt>true</tt> if the sprite is an animation and toggles.
+     * @return {Boolean} <tt>true</tt> if the sprite is an animation and toggles
+     */
+    get isToggle() {
+        return (this.isAnimation && this.mode === +Sprite.MODE.TOGGLE);
+    }
+
+    /**
+     * Returns <tt>true</tt> if the sprite is an animation and plays once.
+     * @return {Boolean} <tt>true</tt> if the sprite is an animation and plays once
+     */
+    get isOnce() {
+        return (this.isAnimation && this.mode === +Sprite.MODE.ONCE);
+    }
+
+}
+
+export { SpriteState };
+
+export default class Sprite extends Tile {
+
     static TYPE = new Enum({
         /** 
          * The sprite is a single frame
@@ -37,6 +86,10 @@ export default class Sprite extends TransferrableConfig {
     });
 
     static MODE = new Enum({
+        /**
+         * The sprite is a single frame
+         */
+        STATIC: 'static',
         /** 
          * The animation loops (beginning to end, repeat)
          */
@@ -51,35 +104,9 @@ export default class Sprite extends TransferrableConfig {
          */
         ONCE: 'once'
     });
+
+    static DEFAULT_STATE = 'default';
     
-    
-    // The type of sprite: Single or Animation
-    #type = Sprite.TYPE.SINGLE;
-
-    // Animation mode: loop or toggle
-    #mode = Sprite.MODE.LOOP;
-
-    // Animation frame count
-    #count = 0;
-
-    // Animation speed
-    #speed = 0;
-
-    // The rect which defines the sprite frame
-    #frameRect;
-
-    // The bounding box for the sprite
-    #boundingBox;
-
-    #lastTime;
-    #sync = false;
-    #finished = false;
-    #toggleDir;
-    #frameNum = 0;
-    #playing = false;
-    #spriteSheet = null;
-    #name;
-
     /**
      * Create a new `Sprite` resource.
      * 
@@ -96,189 +123,117 @@ export default class Sprite extends TransferrableConfig {
      * @param {Boolean} [unsynchronized=false] - Whether the sprite is unsynchronized
 
      */
-    constructor(name, spriteSheet, [ left = 0, top = 0, width, height, frameCount, animationSpeed, animationType, unsynchronized = false ]) {
-        super({
-            name: name || `SPRITE:${$Math.hexHash(date.now().toString())}`,
-            spriteSheet: spriteSheet,
-            shape: null
+    constructor(name, spriteSheet, spriteDef) {
+        super(name || `SPRITE:${$Math.hexHash(date.now().toString())}`, spriteSheet, null);
+        this.merge({
+            currentState: Sprite.DEFAULT_STATE,
+            states: new Map(),
+            isPlaying: true,
+            isFinished: false
         });
 
-        if (!spriteSheet)
-            throw new ResourceError(this, `An error occurred creating the sprite "${name}" - no sprite sheet`, ex);
-
-        this.initialize = [ left = 0, top = 0, width, height, frameCount, animationSpeed, animationType, unsynchronized ];
+        this.initialize = spriteDef;
     }
 
-    set initialize([ left = 0, top = 0, width, height, frameCount, animationSpeed, animationType, unsynchronized ]) {
+    set state(stateName) {
+        if (!this.states.get(stateName))
+            throw new ResourceError(this, `State ${stateName} does not exist for sprite ${this.name}`);
+
+        this.currentState = stateName;
+    }
+
+    set initialize(spriteDef) {
+        if (Array.isArray(spriteDef)) {
+            this.addState(Sprite.DEFAULT_STATE, spriteDef);
+            this.currentState = Sprite.DEFAULT_STATE
+        } else {
+            for (const state in spriteDef) {
+                this.addState(state, spriteDef[state]);
+            }
+
+            // assume the first state on initialization
+            this.currentState = this.states.keys().next().value;
+        }
+
+        // this would be better if we had a reference of our own
+        this.opaqueId = Engine.renderContext.compileSprite(this);
+    }
+
+    /**
+     * 
+     * @param {String} stateName - The name of the sprite state
+     * @param {Array<any>} spriteDef - 
+     */
+    addState(stateName = 'default', [ left = 0, top = 0, width, height, frameCount = -1, animationSpeed, animationType, unsynchronized = false ]) {
         if (!(width && height))
                 throw new ResourceError(this, `An error occurred creating the sprite "${this.name}"`, ex);
 
-        this.shape = [ left, top, width, height, frameCount, animationSpeed, animationType, unsynchronized ];
-        const type = !frameCount ? Sprite.TYPE.SINGLE : Sprite.TYPE.ANIMATION;
-        this.#type = type;
-        if (type === Sprite.TYPE.ANIMATION) {
+        const state = new SpriteState({ 
+            name: stateName,
+            shape: [ left, top, width, height, frameCount, animationSpeed, animationType, unsynchronized ],
+            type: frameCount === -1 ? +Sprite.TYPE.SINGLE : +Sprite.TYPE.ANIMATION
+        });
+
+        state.frameNum = 0;
+        if (state.type === +Sprite.TYPE.ANIMATION) {
             switch (animationType) {
+                case `${Sprite.MODE.STATIC}` :
+                    state.mode = +Sprite.MODE.STATIC;
+                    break;
                 case `${Sprite.MODE.LOOP}` :
-                    this.#mode = Sprite.MODE.LOOP;
+                    state.mode = +Sprite.MODE.LOOP;
                     break;
                 case `${Sprite.MODE.BOUNCE}` :
-                    this.#mode = Sprite.MODE.BOUNCE;
+                    state.mode = +Sprite.MODE.BOUNCE;
                     break;
                 case `${Sprite.MODE.ONCE}` :
-                    this.#mode = Sprite.MODE.ONCE;
+                    state.mode = +Sprite.MODE.ONCE;
                     break;
             }
 
-            this.#sync = !unsynchronized;
+            state.sync = !unsynchronized;
             if (!unsynchronized) {
-                this.#lastTime = null;
-                this.#toggleDir = -1;	// Trust me bro
+                state.lastTime = null;
+                state.direction = -1;	// Trust me bro
             }
-            this.#count = frameCount;
-            this.#speed = animationSpeed;
+            state.frameCount = frameCount;
+            state.framesPerSec = animationSpeed;
         } else {
-            this.#count = 1;
-            this.#speed = 0;
+            state.frameCount = 1;
+            state.framesPerSec = 0;
         }
 
-        this.#frameRect = [left, top, width, height]; 
-        this.#boundingBox = [0, 0, width, height];
+        state.top = top;
+        state.left = left;
+        state.width = width;
+        state.height = height;
+        state.frameRect = [left, top, width, height]; 
+        state.boundingBox = [0, 0, width, height];
+
+        this.states.set(stateName, state);
     }
 
     /**
      * Destroy the sprite instance
      */
     destroy() {
-        this.#boundingBox = null;
-        this.#frameRect = null;
-        this.#spriteSheet = null;
-    }
-
-    get spriteSheet() {
-        return this.#spriteSheet;
-    }
-
-    get mode() {
-        return this.#mode;
-    }
-
-    get type() {
-        return this.#type;
-    }
-    
-    /**
-     * Get the number of frames in the sprite.
-     * @return {Number}
-     */
-    get frameCount() {
-        return this.#count;
-    }
-
-    /**
-     * Set the speed, in milliseconds, that an animation runs at.  If the sprite is
-     * not an animation, this has no effect.
-     *
-     * @param speed {Number} The number of milliseconds per frame of an animation
-     */
-    set frameSpeed(speed) {
-        this.#speed = Math.max(speed, 0);
-    }
-
-    /**
-     * Get the number of milliseconds each frame is displayed for an animation
-     * @return {Number} The milliseconds per frame
-     */
-    get frameSpeed() {
-        return this.#speed;
-    }
-
-    /**
-     * Get the bounding box for the sprite.
-     * @return {R.math.Rectangle2D} The bounding box which contains the entire sprite
-     */
-    get boundingBox() {
-        return this.#boundingBox;
-    }
-
-    get isPlaying() {
-        return this.#playing;
-    }
-
-    get frameNum() {
-        return this.#frameNum;
-    }
-
-    set frameNum(frame) {
-        this.#frameNum = frame;
-    }
-
-    get frameRect() {
-        return this.#frameRect;
-    }
-
-    set frameRect(rect) {
-        this.#frameRect = rect;
-    }
-
-    /**
-     * Returns <tt>true</tt> if the sprite is an animation.
-     * @return {Boolean} <tt>true</tt> if the sprite is an animation
-     */
-    get isAnimation() {
-        return (this.type === Sprite.TYPE.ANIMATION);
-    }
-
-    /**
-     * Returns <tt>true</tt> if the sprite is an animation and loops.
-     * @return {Boolean} <tt>true</tt> if the sprite is an animation and loops
-     */
-    get isLoop() {
-        return (this.isAnimation && this.mode === Sprite.MODE.LOOP);
-    }
-
-    /**
-     * Returns <tt>true</tt> if the sprite is an animation and toggles.
-     * @return {Boolean} <tt>true</tt> if the sprite is an animation and toggles
-     */
-    get isToggle() {
-        return (this.isAnimation && this.mode === Sprite.MODE.TOGGLE);
-    }
-
-    /**
-     * Returns <tt>true</tt> if the sprite is an animation and plays once.
-     * @return {Boolean} <tt>true</tt> if the sprite is an animation and plays once
-     */
-    get isOnce() {
-        return (this.isAnimation && this.mode === Sprite.MODE.ONCE);
-    }
-
-    get isFinished() {
-        return this.#finished;
-    }
-
-    set isFinished(finished) {
-        this.#finished = finished;
+        this.states.clear();
+        this.states = null;
+        this.spriteSheet = null;
     }
 
     /**
      * For animated sprites, play the animation if it is stopped.
      */
     play() {
-        this.#playing = true;
+        this.playing = true;
     }
 
     /**
      * For animated sprites, stop the animation if it is playing.
      */
     stop() {
-        this.#playing = false;
-    }
-
-    /**
-     * For animated sprites, reset the animation to frame zero.
-     */
-    reset() {
-        this.frameNum = 0;
+        this.playing = false;
     }
 
     /**
@@ -286,126 +241,78 @@ export default class Sprite extends TransferrableConfig {
      * @param frameNum {Number} The frame number to jump to
      */
     gotoFrame(frameNum) {
-        this.frameNum = Math.clamp(frameNum, 0, this.#count - 1);
+        const state = this.states.get(this.currentState);
+        state.frameNum = $Math.clamp(frameNum, 0, state.frameCount - 1);
+    }
+
+    get frameRect() {
+        return this.states.get(this.currentState).frameRect;
     }
 
     /**
-     * Gets the frame rectangle of the sprite. The frame is defines what
+     * Updates the frame rectangle of the sprite state. The frame is defines what
      * portion of the sprite sheet the sprite frame occupies, given the specified time.
      *
      * @param time {Number} Current world time
-     * @param dt {Number} The delta between the world time and the last time the world was updated
+     * @param deltaTime {Number} The delta between the world time and the last time the world was updated
      *          in milliseconds.
-     * @return {R.math.Rectangle2D} A rectangle which defines the frame of the sprite in
-     *         the source image map.
      */
-    getFrame(time, dt) {
-        if (!this.isAnimation) {
-            return [...this.frameRect];
-        } else {
-            const frame = [...this.frameRect];
-            const frameNum = this.calcFrameNumber(time, dt);
-            frame[0] = this.frameRect[0] + (frameNum * this.frameRect[2]);
-            return frame;
+    update(time, deltaTime) {
+        const state = this.states.get(this.currentState);
+        if (state.isAnimation && !state.isStatic) {
+            // set the frame to the correct sprite based on time
+            const frameNum = this.#calcFrameNumber(time, deltaTime, state);
+            state.frameRect[0] = (frameNum * state.width);
         }
-    }
-
-    /**
-     * Get the current frame image
-     * @param {number} time 
-     * @param {number} dt 
-     * @returns {ImageData}
-     */
-    getFrameImage(time, dt) {
-        const frameRect = this.getFrame(time, dt);
-        // extract the frame and draw to our buffer
-        const frame = this.spriteSheet.sheet.image.getImageData(frameRect[0], frameRect[1], frameRect[2], frameRect[3]);
-        return frame;
     }
 
     /**
      * Calculate the frame number for the type of animation.
      * @param time {Number} The current world time
-     * @param dt {Number} The delta between the world time and the last time the world was updated
+     * @param deltaTime {Number} The delta between the world time and the last time the world was updated
      *          in milliseconds.
      * @private
      */
-    calcFrameNumber(time, dt) {
+    #calcFrameNumber(time, deltaTime, state) {
         if (!this.isPlaying) {
-            return this.frameNum;
+            return 0;
         }
 
-        if (this.#sync) {
-            // Synchronized animations
+        const frameBudget = Math.ceil(1000 / state.framesPerSec);
 
-            if (this.#lastTime === null) {
-                // Note the time when the first frame is requested and just return frame zero
-                this.#lastTime = time;
+        let spriteFrame = 0;
+
+        // calcular the frame number
+        if (state.sync) {
+            // Synchronized animations run with the game clock
+            if (state.lastTime === null) {
+                // ... first frame
+                state.lastTime = time;
                 return 0;
             }
 
             // How much time has elapsed since the last frame update?
-            if (dt > this.frameSpeed) {
-                // Engine is lagging, skip to correct frame
-                this.frameNum = Math.floor((this.frameSpeed / dt) *  this.#count);
-            } else {
-                this.frameNum += (time - this.#lastTime > this.frameSpeed ? this.#toggleDir : 0);
-            }
-            this.#lastTime = time;
-
-            // Modify the frame number for the animation mode
-            if (this.isOnce) {
-                // Play animation once from beginning to end
-                if (this.frameNum >= this.frameCount) {
-                    this.frameNum = this.frameCount - 1;
-                    if (!this.isFinished) {
-                        // Call event when finished
-                        this.isFinished = true;
-                        //this.triggerEvent("finished");
-                    }
-                }
-            } else if (this.isLoop) {
-                if (this.frameNum > this.frameCount - 1) {
-                    // Call event when loop restarts
-                    this.frameNum = 0;
-                    //this.triggerEvent("loopRestarted");
-                }
-            } else {
-                if (this.frameNum === this.frameCount - 1 || this.frameNum === 0) {
-                    // Call event when animation toggles
-                    this.#toggleDir *= this.#toggleDir;
-                    this.frameNum += this.#toggleDir;
-                    //this.triggerEvent("toggled");
-                }
-            }
-
-            // Remember the last time a frame was requested
-            this.#lastTime = time;
-
+            spriteFrame = $Math.lerp(0, state.frameCount, (state.lastTime / time));
+            state.lastTime = time;
         } else {
             // Unsynchronized animations
-            const lastFrame = this.frameNum;
-            if (this.isLoop) {
-                this.frameNum = Math.floor(time / this.frameSpeed) % this.frameCount;
-                if (this.frameNum < lastFrame) {
-                    //this.triggerEvent("loopRestarted");
-                }
-            } else if (this.isOnce && !this.isFinished) {
-                this.frameNum = Math.floor(time / this.frameSpeed) % this.frameCount;
-                if (this.frameNum < lastFrame) {
-                    this.isFinished = true;
-                    this.frameNum = this.frameCount - 1;
-                    //this.triggerEvent("finished");
-                }
-            } else if (this.isToggle) {
-                this.frameNum = Math.floor(time / this.frameSpeed) % (this.frameCount * 2);
-                if (this.frameNum > this.frameCount - 1) {
-                    this.frameNum = this.frameCount - (this.frameNum - (this.frameCount - 1));
-                    //this.triggerEvent("toggled");
-                }
-            }
+            spriteFrame = state.frameNum++;
         }
 
-        return this.frameNum;
+        state.frameNum = spriteFrame;            
+
+
+        // alter based on mode
+        if ((state.isOnce || state.isStatic) && state.frameNum >= state.frameCount) {
+            // Play animation once from beginning to end
+            state.frameNum = state.frameCount - 1;
+            if (!this.isFinished)
+                this.isFinished = true;
+        } else if (state.isLoop && state.frameNum > state.frameCount - 1)
+            state.frameNum = 0;
+        else if (state.isToggle && (state.frameNum === state.frameCount - 1 || state.frameNum === 0))
+            state.direction *= -1;
+
+        return state.frameNum;
     }
 }

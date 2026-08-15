@@ -11,22 +11,28 @@ const ctx = Context.getInstance();
  * @extends Config
  */
 export default class TransferrableConfig extends Config {
-    #name = null;
-    #url = null;
+    #transferrable = {
+        name: null,
+        url: null
+    };
 
     constructor(opts, url) {
         super(opts);
-        this.#url = url;
+        this.#transferrable.url = url;
     }
 
     set $name(name) {
-        this.#name = name;
+        this.#transferrable.name = name;
     }
 
     get $name() {
-        return this.#name;
+        return this.#transferrable.name;
     }
-    
+
+    get $url() {
+        return this.#transferrable.url;
+    }
+
     /**
      * The type of object represented
      * @returns {String}
@@ -42,7 +48,7 @@ export default class TransferrableConfig extends Config {
      * @return {Object}
      */
     get transferrable() {
-        return { url: this.#url, props: { ...this.dehydrate() }, $type: this.$type, $name: this.$name };
+        return { url: this.$url, props: { ...this.dehydrate() }, $type: this.$type, $name: this.$name };
     }
 
     /**

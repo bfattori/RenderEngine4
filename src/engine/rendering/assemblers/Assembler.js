@@ -123,10 +123,10 @@ export default class Assembler {
         return opaqueId;
     }
 
-    compileSprite(sprite, tag = null) {
+    compileSprite(sprite) {
         const opaqueId = this.#nextShapeId;
         
-        // in the future, we might wrape this in a self-contained function
+        // in the future, we might wrap this in a self-contained function
         
         // identify stored procedures
         // if (tag !== null) {

@@ -6,6 +6,10 @@ body {
     height: 100vh;
 }
 
+img.image-resource {
+    display: none;
+}
+
 div#context {
     position: absolute;
     border: 1px solid black;

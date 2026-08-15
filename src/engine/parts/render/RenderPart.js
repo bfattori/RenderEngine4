@@ -192,7 +192,7 @@ export default class RenderPart extends ComponentPart {
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      * @param {Object} [options] - Optional configuration for the update
      */
-    update(time, deltaTime, options = {}) {
+    update(time, deltaTime) {
         PERF('renderPartStart');
         this.composeAndDraw(time, deltaTime);
         this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));

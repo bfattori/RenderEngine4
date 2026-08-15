@@ -1,6 +1,9 @@
 import RenderEngineError from './RenderEngineError.js';
 import Util from './Util.js';
 
+class EnumItem {
+}
+
 export default class Enum extends Map {
     constructor(values) {
         super();
@@ -17,8 +20,6 @@ export default class Enum extends Map {
                         } else if (hint === "string") {
                             return $this.get(ordinal).label;
                         }
-
-                        return null;
                     }
                 }            
             });
@@ -33,8 +34,6 @@ export default class Enum extends Map {
                         } else if (hint === "string") {
                             return $this.get(ordinal).label;
                         }
-
-                        return $this.get(ordinal).sym;
                     }
                 }             
             });
@@ -51,8 +50,6 @@ export default class Enum extends Map {
                         } else if (hint === "string") {
                             return $this.get(ordinal).label;
                         }
-
-                        return $this.get(ordinal).sym;
                     }
                 }
             });

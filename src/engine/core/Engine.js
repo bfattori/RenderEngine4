@@ -57,6 +57,9 @@ export default class Engine {
   #collisionModel = null;
   #fpsCounter = null;
 
+  #startupLocation = null;
+  #engineLocation = null;
+
   constructor(options) {
     if (!waitInit) {
       throw new RenderEngineError("Engine must be initialized before use. Please call 'init' first.")
@@ -104,6 +107,26 @@ export default class Engine {
 
     // call init hook
     this.#ENGINE_OPTIONS.hooks.onInit();
+  }
+
+  //---------------------------
+  // relative locations
+  //---------------------------
+
+  /**
+   * Get the URL to the main engine file
+   * @returns {string} - The URL to the main engine file.
+   */
+  get engineUrl() {
+    return this.options.engineLocation.toString();
+  }
+
+  /**
+   * Get the URL to the startup file
+   * @returns {string} - The URL to the startup file.
+   */
+  get startupUrl() {
+    return this.options.startupLocation.toString();
   }
 
   //---------------------------
@@ -337,11 +360,26 @@ export default class Engine {
 
   /**
    * Initialize the Engine.
+   * @param {String} gameLocation - The absolute Url where the game exists
    * @param {Object} engineOptions - See the {@link Engine} constructor for availble options
    * @returns {Engine} The current instance of Engine.
    */
-  static async init(engineOptions) {
+  static async init(gameLocation, startupLocation, engineOptions) {
     waitInit = true;
+
+    let engineUrl = new URL(import.meta.url);
+    let srcPath = engineUrl.pathname.split('/');
+    const srcLoc = srcPath.indexOf('src');
+    srcPath.splice(srcLoc + 1);
+    // this should give us 'http://.../src/engine/'
+    engineUrl.pathname = srcPath.join('/');
+  
+    engineOptions.system = {
+      engineLocation: new URL(engineUrl),
+      startupLocation: new URL(startupLocation),
+      gameLocation: new URL(gameLocation)
+    };
+
     // validate engine options
     // ...
     const e = new Engine(engineOptions);
@@ -399,6 +437,9 @@ export default class Engine {
     if (!this.world.renderContext) return false;
 
     try {
+      currentTime = currentTime || this.time;
+      deltaTime = deltaTime || this.deltaTime;
+      
       // Render context traverses its internal structure of GameObjects
       // to update the scene and then render the scene
       return !!this.world.renderContext.renderScene(this.world.allObjects, currentTime, deltaTime);

@@ -206,13 +206,24 @@ export default class CanvasRenderer extends Renderer {
         this.assembler.destroySprite(opaqueId);
     }
 
-    renderSprite(opaqueId, time, deltaTime) {
+    renderSprite(opaqueId, x, y, time, deltaTime) {
         const sprite = this.assembler.getCompiledSprite(parseInt(opaqueId));
         if (sprite) {
-            // this might not be right, as it will be dependent on a transform and do transforms work with drawImage??
-            this.surface.putImageData(sprite.getFrameImage(time, deltaTime), 100, 100);
+            sprite.update(time, deltaTime);
+            const frame = sprite.frameRect;
+            this.surface.drawImage(sprite.sourceImage, frame[0], frame[1], frame[2], frame [3], x, y, frame[2], frame[3]);
         } else if (opaqueId !== "undefined") {
             console.warn(`No compiled sprite found for opaqueId: ${opaqueId}`);
+        }
+    }
+
+    renderTile(opaqueId, x, y, time, deltaTime) {
+        const tile = this.assembler.getCompiledTile(parseInt(opaqueId));
+        if (tile) {
+            const frame = tile.frameRect;
+            this.surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], x, y, frame[2], frame[3]);
+        } else if (opaqueId !== "undefined") {
+            console.warn(`No compiled tile found for opaqueId: ${opaqueId}`);
         }
     }
 
@@ -259,10 +270,23 @@ export default class CanvasRenderer extends Renderer {
      * @returns {void}
      */
     #immediate(instruction, time, deltaTime) {
-        let fillSeg = "0";
+        let fillSeg = 0;
         const vector = VECTOR_IL;
         const parts = instruction.trim().split(' ');
-        const {operand, args} = {operand: parts.shift(), args: parts};
+        const {operand, strArgs} = {operand: parts.shift(), strArgs: parts};
+        // coerce args
+        const args = strArgs ? strArgs.map(arg => {
+                    if (arg === "true") return true;
+                    if (arg === "false") return false;
+                    if (!isNaN(arg)) {
+                        if (Number.isInteger(arg))
+                            return parseInt(arg);
+                        else
+                            return parseFloat(arg);
+                    }
+                    return arg;
+                }) : [];
+        
         switch (operand) {
             //-----------------------------------
             // State modifiers
@@ -288,7 +312,15 @@ export default class CanvasRenderer extends Renderer {
             // Imperative Drawing
 
             case vector.POINT:
-                this.surface.arc(parseInt(args[0]), parseInt(args[1]), Constants.POINT_SIZE, 0, Constants.TWO_PI);
+                // this little hack propagates the stroke style to the fill style, ONLY for the raster renderer
+                if (args[4] && args[4] === 1)
+                    this.surface.fillStyle = this.surface.strokeStyle;
+                
+                if (args[3] === 1)
+                    this.surface.arc(args[0], args[1], args[2], 0, Constants.TWO_PI);
+                else {
+                    this.surface.rect(args[0], args[1], args[2], args[2]);
+                }
                 this.surface.fill();
                 break;
             case vector.LINESEG:
@@ -302,12 +334,12 @@ export default class CanvasRenderer extends Renderer {
                 break;
             case vector.ENDCURVE:
             case vector.ENDSEG:
-                if (fillSeg === "1") {
+                if (fillSeg === 1) {
                     this.surface.fill(this.path);
                 } else {
                     this.surface.stroke(this.path);
                 }
-                fillSeg = "0"; // Reset fill to false after drawing the path
+                fillSeg = 0; // Reset fill to false after drawing the path
                 this.path = null;
                 break;
             case vector.LINE:
@@ -344,7 +376,7 @@ export default class CanvasRenderer extends Renderer {
             case vector.ARC:
                 this.surface.beginPath();
                 this.surface.ellipse(args[0], args[1], args[2], args[3], 0, args[4], args[5]);
-                if (args[6] === "1") {
+                if (args[6] === 1) {
                     this.surface.fill();
                 } else {
                     this.surface.stroke();
@@ -359,7 +391,15 @@ export default class CanvasRenderer extends Renderer {
                 break;
 
             case vector.SPRITE:
-                this.renderCompiledSprite(args[0], args[1], time, deltaTime);
+                this.renderSprite(args[0], args[1], args[2], time, deltaTime);
+                break;
+
+            case vector.TILE:
+                this.renderSprite(args[0], args[1], args[2], time, deltaTime);
+                break;
+
+            case vector.TILEMAP:
+                this.renderSprite(args[0], args[1], args[2], time, deltaTime);
                 break;
 
             //--------------------------------------------

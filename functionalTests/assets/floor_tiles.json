@@ -1,12 +1,13 @@
 {
-  "bitmapImage": "floor.png",
-  "bitmapSize": [
-    448,
-    32
-  ],
-  "version": 2,
+  "tileSheet": true,
+  "version": 1,
+  "bitmap": {
+    "image": "./images/tiles/floortiles.png",
+    "width": 448, 
+    "height": 32
+  },
   "assumeOpaque": true,
-  "sprites": {
+  "tiles": {
     "wires": [0,0,32,32],
     "glassblock": [32,0,32,32],
     "glassLeft": [64,0,32,32],
