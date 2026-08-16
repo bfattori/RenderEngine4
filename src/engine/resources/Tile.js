@@ -1,7 +1,5 @@
 import { ResourceError } from './Resource.js';
-import $Math from '../core/Math.js';
-import TransferrableConfig from '../core/TransferrableConfig.js';
-import Engine from '../core/Engine.js';
+import { Engine, TranserrableConfig, Util } from '../core/lib.js';
 
 class TileDef extends TransferrableConfig {
     constructor(tileConfig) {
@@ -36,7 +34,7 @@ export default class Tile extends TransferrableConfig {
      */
     constructor(name, spriteSheet, tileDef) {
         super({
-            name: name || `TILE:${$Math.hexHash(date.now().toString())}`,
+            name: name || `TILE:${Util.hexHash(date.now().toString())}`,
             spriteSheet: spriteSheet,
             tile: null
         });

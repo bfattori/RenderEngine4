@@ -12,6 +12,8 @@ import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererP
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
 
+import Slider from '../../../src/engine/ui/Slider.js';
+
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {

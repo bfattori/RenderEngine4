@@ -1,7 +1,7 @@
-import Constants from '../Constants.js';
-import { IL as RASTER_IL } from '../rendering/assemblers/IntermediateLanguages.js';
+import Constants from '../../Constants.js';
+import { IL as RASTER_IL } from '../../rendering/assemblers/IntermediateLanguages.js';
 import TextParser from './TextParser.js';
-import Context from '../Context.js';
+import Context from '../../Context.js';
 
 const ctx = Context.getInstance();
 const glyphCache = new Map();

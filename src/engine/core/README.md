@@ -1,6 +1,12 @@
 # System Core
 Herein lies the core functionality of the **RenderEngine4**. These classes and libraries provide the foundation for engine operation and base classes used throughout the engine.
 
+To include most of the core classes used throughout the game, import `lib.js` and
+select the classes you want from that. Example:
+```js
+import { Paths, RenderEngineError, Config } from './core/lib.js';
+```
+
 ## `Config`
 These are standardized containers to hold configuration data. The common pattern can be universally shared across different parts of the engine. `Config` objects utilize `Util.lombok` to instrument the fields defined in the configuration.
 

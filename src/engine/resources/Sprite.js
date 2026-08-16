@@ -1,9 +1,6 @@
 import { ResourceError } from './Resource.js';
-import $Math from '../core/Math.js';
-import Enum from '../core/Enum.js';
-import TransferrableConfig from '../core/TransferrableConfig.js';
-import Engine from '../core/Engine.js';
 import Tile from './Tile.js';
+import { Engine, Enum, TranserrableConfig, Util } from '../core/lib.js';
 
 class SpriteState extends TransferrableConfig {
     constructor(stateConfig) {
@@ -124,7 +121,7 @@ export default class Sprite extends Tile {
 
      */
     constructor(name, spriteSheet, spriteDef) {
-        super(name || `SPRITE:${$Math.hexHash(date.now().toString())}`, spriteSheet, null);
+        super(name || `SPRITE:${Util.hexHash(date.now().toString())}`, spriteSheet, null);
         this.merge({
             currentState: Sprite.DEFAULT_STATE,
             states: new Map(),

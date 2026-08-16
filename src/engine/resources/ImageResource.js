@@ -1,4 +1,3 @@
-
 import Resource from './Resource.js';
 
 export default class ImageResource extends Resource {

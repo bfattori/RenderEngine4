@@ -1,6 +1,15 @@
+import Config from './Config.js';
+import Console from './Console.js';
 import Engine from './Engine.js';
+import Enum from './Enum.js';
+import $Math from './Math.js';
+import { Matrix2d } from './Matrix.js';
+import Paths from './Paths.js';
+import RenderEngineError from './RenderEngineError.js';
+import TransferrableConfig from './TransferrableConfig.js';
+import Util from './Util.js';
 
-export default {
+const Paths = {
     /**
      * The engine Url: `./src/engine` 
      * @returns {String}
@@ -24,3 +33,18 @@ export default {
     }
 };
 
+
+export {
+    // engine classes
+    Console,
+    Config,
+    TransferrableConfig,
+    $Math,
+    Matrix2d,
+    RenderEngineError,
+    Util,
+    Engine,
+
+    // engine releative paths
+    Paths
+};

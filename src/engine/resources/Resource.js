@@ -1,5 +1,4 @@
-import RenderEngineError from '../core/RenderEngineError.js';
-import Paths from '../core/Paths.js';
+import { Paths, RenderEngineError } from '../core/lib.js';
 
 class ResourceError extends RenderEngineError {
     #resource = null;
