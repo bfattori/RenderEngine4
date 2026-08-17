@@ -10,6 +10,10 @@ import { Paths, RenderEngineError, Config } from './core/lib.js';
 ## `Config`
 These are standardized containers to hold configuration data. The common pattern can be universally shared across different parts of the engine. `Config` objects utilize `Util.lombok` to instrument the fields defined in the configuration.
 
+> ### `TransferrableConfig` Sub-class
+> WebWorker- and Network-safe configuration objects can dehydrate for transmission, then rehydrate for use in another location. This is useful for passing complex configuration objects, with non-primitive types, between different parts of the engine, across different processes, or across network boundaries.
+
+
 ## `Console`
 The **RenderEngine4** console decorates the built-in console, plus adds `PRAGMA` for debugging operations, and `PERF` for setting performance marks with `MEASURE` to record performance metrics in the browser's performance monitor for those marks. `PRAGMA`, `PERF`, and `MEASURE` are stripped from production builds.
 
@@ -36,9 +40,6 @@ The `Matrix2d` class extends the `DOMMatrix` object to implement additional meth
 
 ## `RenderEngineError`
 The base class for all exceptions thrown by the **RenderEngine4**.
-
-## `TransferrableConfig`
-WebWorker- and Network-safe configuration objects can dehydrate for transmission, then rehydrate for use in another location.
 
 ## `Util`
 Several useful utility functions for color manipulation, and a `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values. Setters are configurable.
