@@ -1,5 +1,4 @@
-import { Matrix2d, IdentityMatrix } from '../../core/Matrix.js';
-import RenderEngineError from '../../core/RenderEngineError.js';
+import { Matrix2d, RenderEngineError } from '../../core/lib.js';
 import { CameraConfig } from '../../core/Config.js';
 
 /**
@@ -12,7 +11,7 @@ import { CameraConfig } from '../../core/Config.js';
 export default class Camera {
     #name = 'Camera';
     #opts = new CameraConfig();
-    #matrix = new Matrix2d(IdentityMatrix);
+    #matrix = Matrix2d.identity();
     #viewport = null;
 
     constructor(name = 'Camera', options) {

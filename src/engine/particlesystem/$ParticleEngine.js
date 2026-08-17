@@ -1,8 +1,6 @@
-import RenderEngineError from '../core/RenderEngineError.js';
+import { RenderEngineError, Engine } from '../core/lib.js';
 import Context from '../Context.js';
-
 import LoadCounter from '../ui/debug/LoadCounter.js';
-import Engine from '../core/Engine.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
 

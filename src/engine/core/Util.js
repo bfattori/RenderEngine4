@@ -135,7 +135,7 @@ export default class Util {
         // Encode the string as a Uint8Array
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        return Array.from(new Uint8Array(hashBuffer));
+        return new Uint8Array(hashBuffer);
     }
 
     /**
@@ -145,6 +145,7 @@ export default class Util {
      */
     static async hexHash(message) {
         // Hash message and convert bytes to a hexadecimal string
-        return await $Math.hashDigest(message).map(b => b.toString(16).padStart(2, '0')).join('');
+        const values = await Util.hashDigest(message);
+        return values.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 }

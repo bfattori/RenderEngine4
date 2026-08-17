@@ -1,9 +1,7 @@
 import Constants from '../../../Constants.js';
-import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
+import { Matrix2d, Util, $Math } from '../../../core/lib.js';
 import { IL as RASTER_IL } from '../../assemblers/IntermediateLanguages.js';
 import RasterTextParser from '../../../ui/text/RasterTextParser.js';
-import Util from '../../../core/Util.js';
-import $Math from '../../../core/Math.js';
 
 /**
  * Create an API reference for the raster context
@@ -37,7 +35,7 @@ export default function getAPI() {
         currentFontStyle: { ...Constants.RASTER_DEFAULTS.FONT_STYLE },
 
         // Transform state
-        currentTransform: new Matrix2d(IdentityMatrix),
+        currentTransform: Matrix2d.identity(),
 
         // raster ops
         raster: {
@@ -183,7 +181,7 @@ export default function getAPI() {
          */
         resetTransforms: () => {
             context.resetTransforms();
-            state.currentTransform = new Matrix2d(IdentityMatrix);
+            state.currentTransform = Matrix2d.identity();
             return context.API;
         },
 

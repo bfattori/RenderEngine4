@@ -82,6 +82,18 @@ function explode() {
 
 explode();
 
+const s = new Slider(document.body, {
+    label: 'Particles Per Burst',
+    type: Slider.TYPE.RANGE,
+    maxValue: 10000,
+    initialValue: 150,
+    step: 100,
+    display: {
+        withInput: true,
+        class: 'per-burst'
+    }    
+});
+
 // Start the render loop   
 RenderEngine.start();
 

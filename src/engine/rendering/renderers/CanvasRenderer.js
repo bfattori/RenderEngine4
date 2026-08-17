@@ -1,6 +1,5 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
-import { IdentityMatrix } from '../../core/Matrix.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';

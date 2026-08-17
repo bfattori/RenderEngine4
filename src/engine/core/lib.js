@@ -2,9 +2,10 @@ import Config from './Config.js';
 import Console from './Console.js';
 import Engine from './Engine.js';
 import Enum from './Enum.js';
+import EventEngine from './EventEngine.js';
+import GameWorld from './GameWorld.js';
 import $Math from './Math.js';
 import { Matrix2d } from './Matrix.js';
-import Paths from './Paths.js';
 import RenderEngineError from './RenderEngineError.js';
 import TransferrableConfig from './TransferrableConfig.js';
 import Util from './Util.js';
@@ -44,6 +45,9 @@ export {
     RenderEngineError,
     Util,
     Engine,
+    Enum,
+    EventEngine,
+    GameWorld,
 
     // engine releative paths
     Paths

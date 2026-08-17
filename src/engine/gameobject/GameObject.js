@@ -1,11 +1,8 @@
-import RenderEngineError from '../core/RenderEngineError.js';
-import ComponentPart from '../parts/ComponentPart.js';
-import EventEngine from '../core/EventEngine.js';
-import { Matrix2d, IdentityMatrix } from '../core/Matrix.js';
-import Engine from '../core/Engine.js';
-
 import Context from '../Context.js';
-import { originShape } from '../ui/debug/DebugObjects.js';
+import ComponentPart from '../parts/ComponentPart.js';
+
+import { RenderEngineError, EventEngine, Matrix2d, Engine } from '../core/lib.js';
+import DebugObjects from '../ui/debug/DebugObjects.js';
 
 const ctx = Context.getInstance();
 
@@ -34,7 +31,7 @@ export default class GameObject {
   #componentMap = new Map();
   #hostEventContext = null;
   #world = null;
-  #localTransform = new Matrix2d(IdentityMatrix);
+  #localTransform = Matrix2d.identity();
   #worldTransform = null;
   #localOrigin = [0, 0];
 
@@ -368,7 +365,7 @@ export default class GameObject {
         const mtx = Matrix2d.from(this.worldTransform);
         mtx.scaleSelf(3,3);
         rc.pushTransform(mtx);
-        originShape(this.world.renderContext)
+        DebugObjects.Origin(this.world.renderContext)
         rc.popTransform();
     });
 

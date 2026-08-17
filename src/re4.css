@@ -30,7 +30,7 @@ div#debug-container {
     padding:10px;
 }
 
-/** Canvas Picture-in-Picture Views **/
+/*** Canvas Picture-in-Picture Views **/
 
 div.pip {
     position: absolute;
@@ -48,7 +48,7 @@ div.pip div.title {
     background-color: #eeeeee8f;
 }
 
-/** Load Counter */
+/*** Load Counter */
 
 div.loadView {
     position: absolute;
@@ -57,6 +57,7 @@ div.loadView {
     padding-left: 5px;
     background-color: #ededed;
     padding-top: 10px;
+    box-shadow:0 2px 4px rgba(39, 1, 1, 0.4);
 }
 
 div.loadView div.loadTitle {
@@ -156,4 +157,72 @@ div.loadContainer div.loadBar.overload {
 div.loadBar span.loadBarText {
     color: black;
     padding-left: 5px;
+}
+
+/*** Slider Input */
+div.slider {
+    position: absolute;
+    left: 500px;
+    top: 650px;
+    width: 400px;
+    height: 60px;
+    font-size: 9pt;
+    border: 1px solid;
+    box-shadow:0 2px 4px rgba(39, 1, 1, 0.4);
+}
+
+div.slider div.title {
+    background-color: lightblue;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid navy;
+}
+
+div.slider div.bar {
+    width: 260px;
+    height: 10px;
+    background: navy;
+    position: relative;
+    margin-top: 10px;
+    margin-left: 30px;
+}
+
+div.slider div.bar > div.thumb {
+    position: absolute;
+    left: 0px;
+    top: -6px;
+    width: 10px;
+    height: 20px;
+    background-color: red;
+    border-radius: 5px;
+    border: 1px solid black;
+}
+
+div.slider div.rangeLabel {
+    position: absolute;
+    top: 25px;
+    font-size: 8px;
+}
+
+div.slider div.rangeLabel.min {
+    left: 5px;
+}
+
+div.slider div.rangeLabel.max {
+    right: 80px;
+}
+
+div.slider input.slider-input {
+    position: absolute;
+    right: 10px;
+    width: 50px;
+    top: 21px;
+}
+
+div.slider div.bar div.tick {
+    position: absolute;
+    border-left: 1px solid;
+    width: 2px;
+    height: 8px;
+    bottom: -17px;
 }

@@ -6,8 +6,8 @@
  */
 import Constants from '../../Constants.js';
 import RenderContext from './RenderContext.js';
-import RasterTextParser from '../../ui/RasterTextParser.js';
-import { IdentityMatrix, Matrix2d } from '../../core/Matrix.js';
+import RasterTextParser from '../../ui/text/RasterTextParser.js';
+import { Matrix2d } from '../../core/Matrix.js';
 import { RASTER_IL } from '../assemblers/IntermediateLanguages.js';
 import getAPI from './api/RasterAPI.js';
 

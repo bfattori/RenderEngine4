@@ -1,9 +1,7 @@
 import Constants from '../../../Constants.js';
-import { Matrix2d, IdentityMatrix } from '../../../core/Matrix.js';
+import { Matrix2d, Util, $Math } from '../../../core/Matrix.js';
 import { IL as VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
 import VectorTextParser from '../../../ui/text/VectorTextParser.js';
-import Util from '../../../core/Util.js';
-import $Math from '../../../core/Math.js';
 
 /**
  * @returns {Object} Returns the high-level API methods for vector drawing.
@@ -32,7 +30,7 @@ export default function getAPI() {
         currentFillColor: Constants.VECTOR_DEFAULTS.FILL_COLOR,
 
         // Transform state
-        currentTransform: new Matrix2d(IdentityMatrix),
+        currentTransform: Matrix2d.identity(),
         
         // Text cursor state
         cursor: {
@@ -174,7 +172,7 @@ export default function getAPI() {
          */
         resetTransforms: () => {
             context.resetTransforms();
-            state.currentTransform = new Matrix2d(IdentityMatrix);
+            state.currentTransform = Matrix2d.identity();
             return context.API;
         },
 

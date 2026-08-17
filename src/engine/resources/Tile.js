@@ -1,5 +1,5 @@
 import { ResourceError } from './Resource.js';
-import { Engine, TranserrableConfig, Util } from '../core/lib.js';
+import { Engine, TransferrableConfig, Util } from '../core/lib.js';
 
 class TileDef extends TransferrableConfig {
     constructor(tileConfig) {

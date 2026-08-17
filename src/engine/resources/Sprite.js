@@ -1,6 +1,6 @@
 import { ResourceError } from './Resource.js';
 import Tile from './Tile.js';
-import { Engine, Enum, TranserrableConfig, Util } from '../core/lib.js';
+import { Engine, Enum, TransferrableConfig, Util } from '../core/lib.js';
 
 class SpriteState extends TransferrableConfig {
     constructor(stateConfig) {

@@ -1,6 +1,5 @@
 import Constants from '../../Constants.js';
-import TransferrableConfig from '../../core/TransferrableConfig.js';
-import $Math from '../../core/Math.js';
+import { TransferrableConfig, $Math } from '../../core/lib.js';
 
 export default class BasicParticle extends TransferrableConfig {
     #name = 'basicParticle';
