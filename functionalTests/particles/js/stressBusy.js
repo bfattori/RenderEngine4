@@ -44,14 +44,14 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 100000
+        maxParticles: 80000
     }
 });
 
 // set up the particles and effects we'll use
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 3000,
+    count: 2000,
     particleTypes: [exParticle]
 });
 
