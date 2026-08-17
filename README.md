@@ -24,6 +24,7 @@ RenderEngine4 is a sophisticated, high-performance graphics engine built for the
 ### Prerequisites
 *   A modern web browser (Chrome, Firefox, Edge, or Safari)
 *   A basic understanding of JavaScript
+*   Some understanding of game development concepts
 
 ### Installation
 Since this project is a client-side engine, no complex installation is required. You can include the engine directly in your project:
