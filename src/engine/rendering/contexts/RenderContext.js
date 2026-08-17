@@ -382,7 +382,7 @@ export default class RenderContext {
   
   /**
    * Push a transformation onto the world stack.
-   * @param {Array[Matrix4]} transformationMatrix The matrix to push onto the transform stack, or null to push the current world transform
+   * @param {Matrix2d} transformationMatrix The matrix to push onto the transform stack, or null to push the current world transform
    */
   pushTransform(transformationMatrix = null) {
     // multiply the new transform and store that

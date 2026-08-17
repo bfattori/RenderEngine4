@@ -1,9 +1,15 @@
 {
+  "scripts": {
+    "test": "jest",
+    "docs": "jsdoc -r -c ./build/config/jsdoc_config.json -d ./docs",
+    "build": "webpack --mode production"
+  },
   "dependencies": {
     "ws": "^8.21.1"
   },
   "devDependencies": {
-    "jest": "^30.4.2"
+    "jest": "^30.4.2",
+    "jsdoc": "^4.0.5"
   },
   "allowScripts": {
     "unrs-resolver@1.12.2": true

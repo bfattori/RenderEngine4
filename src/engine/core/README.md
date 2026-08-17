@@ -42,5 +42,5 @@ The `Matrix2d` class extends the `DOMMatrix` object to implement additional meth
 The base class for all exceptions thrown by the **RenderEngine4**.
 
 ## `Util`
-Several useful utility functions for color manipulation, hashing, and an `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values with configurable setters.
+Several useful utility functions for color manipulation, hashing,npm and an `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values with configurable setters.
 
