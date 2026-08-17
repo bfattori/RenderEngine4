@@ -8,7 +8,7 @@ Debug objects include:
   - `Origin` - A red line up and blue line to the right representing the origin of a shape.
   - `BoundingBox` - A bounding box around a shape, displaying width and height in pixels.
   - `SeparationLine` - A line representing the separation between two shapes, showing the distance in pixels.
-  - `ContactOverlap` - A polygon showing the overlap of two shaped based on collision type.
+  - `ContactOverlap` - A polygon showing the overlap of two shapes based on collision type.
 
 - `FPSCounter` - An FPS counter that display FPS, with update, render, and CPU loads. Extends `LoadCounter`.
 - `LoadCounter` - A generic load counter that can be configured to display a variety of information.
