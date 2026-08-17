@@ -8,7 +8,7 @@ import { Paths, RenderEngineError, Config } from './core/lib.js';
 ```
 
 ## `Config`
-These are standardized containers to hold configuration data. The common pattern can be universally shared across different parts of the engine. `Config` objects utilize `Util.lombok` to instrument the fields defined in the configuration.
+These are standardized containers to hold configuration data. The common pattern can be universally shared across different parts of the engine. `Config` objects utilize `Util.lombok` to instrument the fields defined in the configuration with setters and getters automatically, reducing the need to create them yourself.
 
 > ### `TransferrableConfig` Sub-class
 > WebWorker- and Network-safe configuration objects can dehydrate for transmission, then rehydrate for use in another location. This is useful for passing complex configuration objects, with non-primitive types, between different parts of the engine, across different processes, or across network boundaries.
@@ -42,5 +42,5 @@ The `Matrix2d` class extends the `DOMMatrix` object to implement additional meth
 The base class for all exceptions thrown by the **RenderEngine4**.
 
 ## `Util`
-Several useful utility functions for color manipulation, and a `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values. Setters are configurable.
+Several useful utility functions for color manipulation, hashing, and an `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values with configurable setters.
 
