@@ -33,7 +33,7 @@ A sprite sheet defines the bitmap image containing the sprites, the bitmap size,
 A sprite is a bitmap, or set of bitmaps, extracted from a `SpriteSheet`'s bitmap that are either static or animated. Sprites have states to control the appearance of the `Sprite` when rendered. The animation frame is either render-dependent (synchronized to the render loop), or render-independent (manual frame control), depending on the needs. Several animation types are supported (`loop`, `bounce`, and `once`). With different modifiers to affect frame generation (`ease-in`, `ease-out`, `ease-in-out`, and `linear`).
 
 ## `TileSheet`
-Tile sheets, like a sprite sheet, defines tiles. However, tiles are static and do not have animations. Animated tiles are sprites.
+Tile sheets, like a sprite sheet, defines tiles. However, tiles are static and do not have animations. Animated tiles are `Sprites`.
 
 ```json
 {
