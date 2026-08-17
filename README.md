@@ -1,6 +1,9 @@
 # RenderEngine4
 *A High-performance, modular graphics engine for the modern web.*
 
+>[!WARNING] 
+>This project is in active development and may not be fully functional or stable. Classes are either incomplete or not implemented. To know what is implemented, check in the `/functionalTests` folder. **Use at your own risk.**
+
 ## Overview
 RenderEngine4 is a sophisticated, high-performance graphics engine built for the web. It provides a modular, component-based architecture designed to empower developers to create complex 2D and 3D environments with ease. By leveraging a robust system of "Parts" and "Systems," it solves the complexity of manual engine management, allowing you to focus on creating unique game mechanics and interactive experiences.
 
