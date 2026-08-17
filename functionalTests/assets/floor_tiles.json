@@ -6,6 +6,7 @@
     "width": 448, 
     "height": 32
   },
+  "tileSize": [32, 32],
   "assumeOpaque": true,
   "tiles": {
     "wires": [0,0,32,32],

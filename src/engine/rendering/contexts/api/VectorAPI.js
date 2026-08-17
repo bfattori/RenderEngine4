@@ -1,5 +1,5 @@
 import Constants from '../../../Constants.js';
-import { Matrix2d, Util, $Math } from '../../../core/Matrix.js';
+import { Matrix2d, Util, $Math } from '../../../core/lib.js';
 import { IL as VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
 import VectorTextParser from '../../../ui/text/VectorTextParser.js';
 

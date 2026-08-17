@@ -4,9 +4,8 @@ import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRender
 import SpriteSheet from '../../../src/engine/resources/SpriteSheet.js';
 import Sprite from '../../../src/engine/resources/Sprite.js';
 import TileSheet from '../../../src/engine/resources/TileSheet.js';
-import Tile from '../../../src/engine/resources/Tile.js';
-import $Math from '../../../src/engine/core/Math.js';
-import Util from '../../../src/engine/core/Util.js';
+import TileMap from '../../../src/engine/resources/TileMap.js';
+import { $Math, Util } from '../../../src/engine/core/lib.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -45,40 +44,17 @@ const api = context.getAPI();
 const marioSprites = new SpriteSheet("SMBTiles", "../../assets/smb_sprites.json");
 await marioSprites.loading();
 
-const floorTiles = new TileSheet("Floor", "../../assets/floor_tiles.json");
-await floorTiles.loading();
-
-// draw some lines
-for (let i = 0; i < 20; i++) {
-    api
-        .color(Util.getRandomColor(230, 230, 230)).width($Math.randomRange(1, 5, true))
-        .line($Math.randomRange(5, 790, true), $Math.randomRange(5, 590, true), $Math.randomRange(5, 790, true), $Math.randomRange(5, 590, true));
-}
-
-// throw some confetti
-for (let i = 0; i < 100; i++) {
-    api
-        .color(Util.getRandomColor(80, 80, 80)).width($Math.randomRange(1, 5, true))
-        .point($Math.randomRange(5, 790, true), $Math.randomRange(5, 590, true));
-}
+const tileMap = new TileMap('platformer', '../../assets/platformer.json');
+await tileMap.loading();
 
 // drop some sprites in the playfield
-marioSprites.sprites.forEach(sprite => {
-    api
-        .push()
-        .scale($Math.randomRange(1, 4, true))
-        .sprite(sprite, $Math.randomRange(10, 600, true), $Math.randomRange(10, 500, true))
-        .pop();
-});
-
-// toss out some tiles
-floorTiles.tiles.forEach(tile => {
-    api
-        .push()
-        .scale($Math.randomRange(1, 2, true))
-        .tile(tile, $Math.randomRange(1, 15, true) * 32, $Math.randomRange(1, 15, true) * 32)
-        .pop();
-});
+// marioSprites.sprites.forEach(sprite => {
+//     api
+//         .push()
+//         .scale($Math.randomRange(1, 4, true))
+//         .sprite(sprite, $Math.randomRange(10, 600, true), $Math.randomRange(10, 500, true))
+//         .pop();
+// });
 
 
 // load up a tilemap
