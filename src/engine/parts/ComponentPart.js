@@ -43,7 +43,12 @@ class ComponentPartError extends RenderEngineError {
   }
 }
 
-class ComponentPart {
+export { 
+  ComponentPartError,
+  ComponentPartEvent
+};
+
+export default class ComponentPart {
   #priority = 0;
   #name = null;
   #host = null;
@@ -296,10 +301,3 @@ class ComponentPart {
     this.#localEventContext = null;
   }
 }
-
-export default ComponentPart;
-
-export { 
-  ComponentPartError,
-  ComponentPartEvent
-};

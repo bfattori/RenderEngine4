@@ -1,7 +1,9 @@
-import { ResourceError } from './Resource.js';
-import { Engine, TransferrableConfig, Util } from '../core/lib.js';
+import { ResourceError } from './loaders/ResourceLoader.js';
+import Engine from '../core/Engine.js';
+import Config from '../core/Config.js';
+import Util from '../core/Util.js';
 
-class TileDef extends TransferrableConfig {
+class TileDef extends Config {
     constructor(tileConfig) {
         super({
             shape: null,
@@ -18,7 +20,7 @@ class TileDef extends TransferrableConfig {
 
 export { TileDef };
 
-export default class Tile extends TransferrableConfig {
+export default class Tile extends Config {
     #opaqueId = null;
     
     /**

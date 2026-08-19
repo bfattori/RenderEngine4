@@ -1,7 +1,10 @@
 import Context from '../Context.js';
 import ComponentPart from '../parts/ComponentPart.js';
 
-import { RenderEngineError, EventEngine, Matrix2d, Engine } from '../core/lib.js';
+import RenderEngineError from '../core/RenderEngineError.js';
+import EventEngine from '../core/EventEngine.js';
+import { Matrix2d } from '../core/Matrix.js';
+import Engine from '../core/Engine.js';
 import DebugObjects from '../ui/debug/DebugObjects.js';
 
 const ctx = Context.getInstance();

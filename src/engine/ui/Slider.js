@@ -1,4 +1,7 @@
-import { Config, Enum, $Math, Util } from '../core/lib.js';
+import Config from '../core/Config.js';
+import Enum from '../core/Enum.js';
+import $Math from '../core/Math.js';
+import Util from '../core/Util.js';
 
 export default class Slider extends Config {
     #el = null;

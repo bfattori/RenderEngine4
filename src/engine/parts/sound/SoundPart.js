@@ -2,7 +2,7 @@
 @fileoverview ComponentPart subclass for Sound functionality
 Provides a way for game objects to playback sound effects with simple methods 
 */
-import { SOUND_PRIORITY } from '../../constants.js';
+import Constants from '../../constants.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
 import SoundSystemError from '../../sound/SoundSystem.js';
@@ -43,7 +43,7 @@ class SoundPart extends ComponentPart {
     };
     #source = null;
 
-    constructor(priority = SOUND_PRIORITY, name = 'SoundPart', soundSystem = null) {
+    constructor(priority = Constants.SOUND_PRIORITY, name = 'SoundPart', soundSystem = null) {
         super(priority, name);
         this.#audioSystem = soundSystem;
                 
@@ -257,7 +257,7 @@ class SoundPart extends ComponentPart {
      * @returns {void}
      */
     initAudio(system) {
-        this.#loopingaudioSystem = system;
+        this.#audioSystem = system;
         
         // Set default volume and pan
         this.setVolume(this.#volume);
@@ -357,7 +357,7 @@ class SoundPart extends ComponentPart {
         }
         
         this.#audioSystem.stop(this.sourcePath);
-        this.#isPlaying = false;
+        this.#playing = false;
         
         return Promise.resolve(true);
     }
@@ -372,7 +372,7 @@ class SoundPart extends ComponentPart {
         }
         
         await this.#audioSystem.resume(this.sourcePath);
-        this.#isPlaying = true;
+        this.#playing = true;
         
         return Promise.resolve(true);
     }

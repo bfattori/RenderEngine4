@@ -1,5 +1,6 @@
 import Constants from '../../Constants.js';
-import { $Math, TransferrableConfig } from '../../core/lib.js';
+import $Math from '../../core/Math.js';
+import TransferrableConfig from '../../core/TransferrableConfig.js';
 import BasicParticle from '../types/BasicParticle.js';
 
 export default class ParticleEffect extends TransferrableConfig {

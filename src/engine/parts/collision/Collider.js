@@ -8,19 +8,6 @@ import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
 import { TransformEvent } from '../transform/Transform2dPart.js';
 
-class ColliderEvent extends ComponentPartEvent {
-    #collisionData = null;
-    constructor(part, collisionData, time, deltaTime) {
-        super(part, time, deltaTime);
-        this.#collisionData = collisionData;
-    }
-
-    consume(consumer) {
-        super.consume(consumer);
-        return this.#collisionData;
-    }
-}
-
 /**
  * @class CollisionData
  * The event information for when a collision occurs.
@@ -56,6 +43,24 @@ class CollisionData {
     this.side = side;
   }
 };
+
+class ColliderEvent extends ComponentPartEvent {
+    #collisionData = null;
+    constructor(part, collisionData, time, deltaTime) {
+        super(part, time, deltaTime);
+        this.#collisionData = collisionData;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#collisionData;
+    }
+}
+
+export {
+  CollisionData,
+  ColliderEvent
+}
 
 /**
  * Creates a new Collider instance
@@ -284,9 +289,4 @@ export default class ColliderPart extends ComponentPart {
       this.#cachedTransform = null;
       super.destroy();
   }
-}
-
-export {
-  CollisionData,
-  ColliderEvent
 }

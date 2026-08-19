@@ -5,8 +5,7 @@ This component interfaces with the system's keyboard event source and provides a
 @class KeyboardInput
 @extends InputPart 
 */
-import InputPart from './InputPart.js';
-import { InputEvent } from './InputPart.js';
+import InputPart, { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 
@@ -19,16 +18,16 @@ class KeyboardEvent extends InputEvent {
 export { KeyboardEvent };
 
 class KeyboardInput extends InputPart {
-    
+    #lastKeyPressedTime = 0;
+    #keyHistory = [];
+    #repeatInterval = 300;
+
     /**
      * Constructor
      * @constructs KeyboardInput
      */
     constructor(priority = Constants.INPUT_PRIORITY, name = 'KeyboardInput') {
         super(priority, name);
-        this._lastKeyPressedTime = 0;
-        this._keyHistory = []; // Track recently pressed keys to prevent repeat flooding
-        this._repeatInterval = 300; // ms between key repeats
     }
     
     //--------------------------------
@@ -62,7 +61,7 @@ class KeyboardInput extends InputPart {
      * @returns {number} The key repeat interval
      */
     get repeatInterval() {
-        return this._repeatInterval;
+        return this.#repeatInterval;
     }
 
     /**
@@ -70,7 +69,7 @@ class KeyboardInput extends InputPart {
      * @param interval {number} The repeat interval delay in milliseconds
      */
     set repeatInterval(interval) {
-        this._repeatInterval = interval;
+        this.#repeatInterval = interval;
     }
 
     /**
@@ -78,11 +77,11 @@ class KeyboardInput extends InputPart {
      * @returns {boolean} True if any modifier is pressed
      */
     get isModifierKeyPressed() {
-        return this.modifiers.shift || 
-               this.modifiers.ctrl || 
-               this.modifiers.alt || 
-               this.modifiers.cmd || 
-               this.modifiers.option;
+        return this.state.modifiers.shift || 
+               this.state.modifiers.ctrl || 
+               this.state.modifiers.alt || 
+               this.state.modifiers.cmd || 
+               this.state.modifiers.option;
     }
 
     //-------------------------------
@@ -91,7 +90,7 @@ class KeyboardInput extends InputPart {
 
     get properties() {
         return {...super.properties, ...{
-            repeatInterval: this.repeatInterval
+            repeatInterval: this.#repeatInterval
         }};
     }
 
@@ -162,12 +161,12 @@ class KeyboardInput extends InputPart {
         this.state.repeat = false; // This is a new key press
         
         // Record timestamp for repeat logic
-        this._lastKeyPressedTime = Date.now();
+        this.#lastKeyPressedTime = performance.now();
         
         // Track in history to prevent flood
-        const timeSinceLastKey = Date.now() - (this._keyHistory.length > 0 ? this._keyHistory[this._keyHistory.length - 1] : 0);
-        if (timeSinceLastKey >= this._repeatInterval || this._keyHistory.length === 0) {
-            this._keyHistory.push(Date.now());
+        const timeSinceLastKey = performance.now() - (this.#keyHistory.length > 0 ? this.#keyHistory[this.#keyHistory.length - 1] : 0);
+        if (timeSinceLastKey >= this.#repeatInterval || this.#keyHistory.length === 0) {
+            this.#keyHistory.push(performance.now());
             
             // Emit key pressed event with new data
             Engine.eventEngine.emitGlobal(InputPart.INPUT_EVENTS.KEY_DOWN, {
@@ -209,8 +208,8 @@ class KeyboardInput extends InputPart {
         });
         
         // Remove from history if it's the most recent key
-        if (this._keyHistory.length > 0 && this._keyHistory[this.keyHistory.length - 1] === Date.now()) {
-            this._keyHistory.pop();
+        if (this.#keyHistory.length > 0 && this.#keyHistory[this.#keyHistory.length - 1] === performance.now()) {
+            this.#keyHistory.pop();
         }
     }
     
@@ -244,21 +243,21 @@ class KeyboardInput extends InputPart {
         switch (event.keyCode) {
             case KeyboardInput.KEY_CODES.KEY_LEFT_SHIFT:
             case KeyboardInput.KEY_CODES.KEY_RIGHT_SHIFT:
-                this.getCurrentState().modifier.shift = isPressed;
+                this.state.modifier.shift = isPressed;
                 break;
             case KeyboardInput.KEY_CODES.KEY_LEFT_CONTROL:
             case KeyboardInput.KEY_CODES.KEY_RIGHT_CONTROL:
-                this.getCurrentState().modifier.ctrl = isPressed;
+                this.state.modifier.ctrl = isPressed;
                 break;
             case KeyboardInput.KEY_CODES.KEY_LEFT_ALT:
             case KeyboardInput.KEY_CODES.KEY_RIGHT_ALT:
-                this.getCurrentState().modifier.alt = isPressed;
+                this.state.modifier.alt = isPressed;
                 break;
             case KeyboardInput.KEY_CODES.KEY_LEFT_WIN:
-                this.getCurrentState().modifier.cmd = isPressed; // Use cmd for Mac compatibility
+                this.state.modifier.cmd = isPressed; // Use cmd for Mac compatibility
                 break;
             case KeyboardInput.KEY_CODES.KEY_MENU:
-                this.getCurrentState().modifier.option = isPressed; // Mac/Windows option key
+                this.state.modifier.option = isPressed; // Mac/Windows option key
                 break;
         }
     }
@@ -272,21 +271,21 @@ class KeyboardInput extends InputPart {
         switch (event.keyCode) {
             case KeyboardInput.KEY_CODES.KEY_LEFT_SHIFT:
             case KeyboardInput.KEY_CODES.KEY_RIGHT_SHIFT:
-                this.getCurrentState().modifier.shift = false;
+                this.state.modifier.shift = false;
                 break;
             case KeyboardInput.KEY_CODES.KEY_LEFT_CONTROL:
             case KeyboardInput.KEY_CODES.KEY_RIGHT_CONTROL:
-                this.getCurrentState().modifier.ctrl = false;
+                this.state.modifier.ctrl = false;
                 break;
             case KeyboardInput.KEY_CODES.KEY_LEFT_ALT:
             case KeyboardInput.KEY_CODES.KEY_RIGHT_ALT:
-                this.getCurrentState().modifier.alt = false;
+                this.state.modifier.alt = false;
                 break;
             case KeyboardInput.KEY_CODES.KEY_LEFT_WIN:
-                this.getCurrentState().modifier.cmd = false;
+                this.state.modifier.cmd = false;
                 break;
             case KeyboardInput.KEY_CODES.KEY_MENU:
-                this.getCurrentState().modifier.option = false;
+                this.state.modifier.option = false;
                 break;
         }
     }

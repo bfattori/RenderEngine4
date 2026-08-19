@@ -1,15 +1,16 @@
- /**
+/**
 MouseInput
 Handles mouse input and emits events about the state of the mouse.
 This component interfaces with the system's mouse event source and provides a unified interface for game objects to respond to mouse input.
 @class MouseInput
-@extends Input */
+@extends InputPart 
+*/
 
-import { InputPart, InputEvent } from './InputPart.js';
+import InputPart, { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
 
-class MouseEvent extends MouseEvent {
+class MouseEvent extends InputEvent {
     constructor(mouseState, gameObject, time, timeDelta) {
         super(mouseState, gameObject, time, timeDelta);
     }
@@ -18,14 +19,13 @@ class MouseEvent extends MouseEvent {
 export { MouseEvent };
 
 class MouseInput extends InputPart {
+    #lastMouseMoveTime = 0;
+    #previousMousePosition = [0, 0];
+    #initialMousePosition = null;
+    #buttonPressPositions = [];  // Track where mouse buttons were pressed
 
     constructor(priority = Constants.INPUT_PRIORITY, name = 'MouseInput') {
         super(priority, name);
-    
-        this._lastMouseMoveTime = 0;
-        this._previousMousePosition = [0, 0];
-        this._initialMousePosition = null;
-        this._buttonPressPositions = []; // Track where mouse buttons were pressed
     }
     
     //--------------------------------
@@ -42,7 +42,7 @@ class MouseInput extends InputPart {
     }
 
     get previousPosition() {
-        return this._previousMousePosition;
+        return this.#previousMousePosition;
     }
     
     /**
@@ -78,7 +78,7 @@ class MouseInput extends InputPart {
      * @returns {boolean} True if mouse button is held in click position
      */
     get isClicking() {
-        const buttons = this.buttons;
+        const buttons = this.state.buttons;
         
         // Check if any button is pressed
         if (!buttons.left && !buttons.right && !buttons.middle) {
@@ -96,7 +96,7 @@ class MouseInput extends InputPart {
      * @returns {boolean} True if mouse button is held and has moved significantly
      */
     get isDragging() {
-        const buttons = this.buttons;
+        const buttons = this.state.buttons;
         
         // Check if any button is pressed
         if (!buttons.left && !buttons.right && !buttons.middle) {
@@ -114,7 +114,7 @@ class MouseInput extends InputPart {
      * @returns {Array} Array of click history entries
      */
     get clickHistory() {
-        return this._buttonPressPositions.slice(-10); // Return last 10 clicks for history
+        return this.#buttonPressPositions.slice(-10); // Return last 10 clicks for history
     }
 
     //-------------------------------
@@ -123,8 +123,8 @@ class MouseInput extends InputPart {
 
     get properties() {
         return {...super.properties, ...{
-            _lastMouseMoveTime: this._lastMouseMoveTime,
-            _previousPosition: this.previousPosition,
+            lastMouseMoveTime: this.#lastMouseMoveTime,
+            previousPosition: this.#previousMousePosition,
         }};
     }
     
@@ -190,8 +190,8 @@ class MouseInput extends InputPart {
         const buttonName = buttonMap[event.button] || 'unknown';
         
         // Record where the mouse was pressed for drag detection
-        if (this._initialMousePosition === null) {
-            this._initialMousePosition = [event.clientX, event.clientY];
+        if (this.#initialMousePosition === null) {
+            this.#initialMousePosition = [event.clientX, event.clientY];
         }
         
         // Update button state
@@ -199,7 +199,7 @@ class MouseInput extends InputPart {
         this.state.repeat = false; // This is a new mouse button press
         
         // Record the position for potential drag detection
-        this._buttonPressPositions.push({
+        this.#buttonPressPositions.push({
             x: event.clientX,
             y: event.clientY,
             button: buttonName,
@@ -255,7 +255,6 @@ class MouseInput extends InputPart {
         const deltaY = event.clientY - this.state.position[1];
         
         // Update mouse position
-        this._mousePosition = [event.clientX, event.clientY];
         this.state.delta = [deltaX, deltaY];
         this.state.position = [event.clientX, event.clientY];
         this.state.repeat = false; // This is new mouse movement data
@@ -267,7 +266,7 @@ class MouseInput extends InputPart {
             repeat: false
         });
         
-        this._lastMouseMoveTime = Date.now();
+        this.#lastMouseMoveTime = performance.now();
     }
     
     /**
@@ -281,7 +280,7 @@ class MouseInput extends InputPart {
         
         // Publish wheel event with new data
         Engine.eventEngine.emitGlobal(Input.INPUT_EVENTS.WHEEL, {
-            position: [...this.position],
+            position: [event.clientX, event.clientY],
             delta: wheelDelta,
             repeat: false
         });
@@ -329,14 +328,14 @@ class MouseInput extends InputPart {
         // Additional mouse-specific logic here if needed
         
         // Reset initial position after a short delay to handle click detection properly
-        if (Date.now() - this._lastMouseMoveTime > 100 && this._initialMousePosition) {
+        if (performance.now() - this.#lastMouseMoveTime > 100 && this.#initialMousePosition) {
             // Allow drag operations to complete before resetting
             if (this.state.buttons.left || 
                 this.state.buttons.right || 
                 this.state.buttons.middle) {
                 // Continue tracking position during drag
-            } else if (Date.now() - this._lastMouseMoveTime > 100) {
-                this._initialMousePosition = null;
+            } else if (performance.now() - this.#lastMouseMoveTime > 100) {
+                this.#initialMousePosition = null;
             }
         }
     };
@@ -345,9 +344,8 @@ class MouseInput extends InputPart {
      * Reset mouse state to default (override parent method)
      */
     resetState() {
-        this._mousePosition = [0, 0];
-        this._initialMousePosition = null;
-        this._buttonPressPositions = [];
+        this.#initialMousePosition = null;
+        this.#buttonPressPositions = [];
         this.state = {
             position: [0, 0],
             delta: [0, 0],
@@ -369,8 +367,8 @@ class MouseInput extends InputPart {
      * @method clearClickHistory
      */
     clearClickHistory() {
-        this._buttonPressPositions = [];
-        this._initialMousePosition = null;
+        this.#buttonPressPositions = [];
+        this.#initialMousePosition = null;
     }
         
 }

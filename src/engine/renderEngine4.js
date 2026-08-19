@@ -4,7 +4,6 @@
 import Engine from './core/Engine.js';
 import KeyboardInput from './parts/input/KeyboardInput.js';
 
-
 // Render Engine 4 instance
 let engineOptions = null;
 const RenderEngine = {
@@ -179,5 +178,5 @@ window.addEventListener('beforeunload', (event) => {
     RenderEngine.shutdown();
 });
 
-console.info("Bootstrapper loaded");
+console.debug("Bootstrapper loaded");
 export default RenderEngine;

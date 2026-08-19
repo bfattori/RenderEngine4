@@ -9,8 +9,7 @@
  */
 
 import Constants from '../../Constants.js';
-import ComponentPart from '../ComponentPart.js';
-import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
+import ComponentPart, { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
 
 class InputEvent extends ComponentPartEvent {
     #inputState = null;

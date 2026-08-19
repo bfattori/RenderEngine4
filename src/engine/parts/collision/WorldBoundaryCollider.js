@@ -1,7 +1,6 @@
-
 import Constants from '../../Constants.js';
-import ColliderPart from './Collider.js';
-import { ColliderEvent } from './Collider.js';
+import ColliderPart, { ColliderEvent } from './Collider.js';
+import Engine from '../../core/Engine.js';
 
 export default class WorldBoundaryCollider extends ColliderPart {
     #stopOnCollision = true;
@@ -11,10 +10,12 @@ export default class WorldBoundaryCollider extends ColliderPart {
         right: true,
         bottom: true
     }
+    #worldWidth = 0;
+    #worldHeight = 0;
 
     /**
      * Creates a WorldBoundaryCollider that detects collisions based on events
-     * from a {@link TransformPart}
+     * from a {@link Transform2dPart}
      * 
      * @constructor
      * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
@@ -22,6 +23,8 @@ export default class WorldBoundaryCollider extends ColliderPart {
      */
     constructor(priority = Constants.COLLIDER_PRIORITY, name = 'WorldBoundaryCollider') {
         super(priority, name);
+        this.#worldWidth = Engine.world.width;
+        this.#worldHeight = Engine.world.height;
     }
 
     get stopOnCollision() {

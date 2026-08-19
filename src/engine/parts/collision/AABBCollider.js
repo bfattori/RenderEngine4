@@ -1,4 +1,5 @@
 /**
+
  * AABBCollider - Axis-Aligned Bounding Box collision detection
  * 
  * This collider component focuses on optimized box-to-box collisions regardless of 
@@ -9,8 +10,8 @@
  * @extends ColliderPart
  */
 import Constants from '../../Constants.js';
-import ColliderPart from './ColliderPart.js';
-import AABBShape from '../../collisions/CollisionModel.js'
+import ColliderPart from './Collider.js';
+import AABBShape from '../../collisionModels/CollisionModel.js'
 
 /**
  * Creates a new AABBCollider instance
@@ -101,7 +102,7 @@ class AABBCollider extends ColliderPart {
     // Validate that the collision model type matches the collider component type
     if (!this._validateCollisionModelCompatibility(model)) {
       console.warn(`AABBCollider: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
-      this.isCollided() = false;
+      this.isCollided = false;
     }
   }
 

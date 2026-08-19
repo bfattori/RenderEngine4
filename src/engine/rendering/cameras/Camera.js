@@ -1,4 +1,5 @@
-import { Matrix2d, RenderEngineError } from '../../core/lib.js';
+import { Matrix2d } from '../../core/Matrix.js';
+import RenderEngineError from '../../core/RenderEngineError.js';
 import { CameraConfig } from '../../core/Config.js';
 
 /**

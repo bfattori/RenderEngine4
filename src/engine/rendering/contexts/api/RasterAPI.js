@@ -1,5 +1,7 @@
 import Constants from '../../../Constants.js';
-import { Matrix2d, Util, $Math } from '../../../core/lib.js';
+import { Matrix2d } from '../../../core/Matrix.js';
+import Util from '../../../core/Util.js';
+import $Math from '../../../core/Math.js'; 
 import { IL as RASTER_IL } from '../../assemblers/IntermediateLanguages.js';
 import RasterTextParser from '../../../ui/text/RasterTextParser.js';
 

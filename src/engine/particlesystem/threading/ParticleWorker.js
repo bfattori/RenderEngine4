@@ -7,7 +7,9 @@ import $ParticleEngine from '../$ParticleEngine.js';
 import ParticleEffect from '../effects/ParticleEffect.js';
 import BasicParticle from '../types/BasicParticle.js';
 
-import { TransferrableConfig, $Math, Matrix2d } from '../../core/lib.js';
+import TransferrableConfig from '../../core/TransferrableConfig.js';
+import $Math from '../../core/Math.js';
+import { Matrix2d } from '../../core/Matrix.js';
 
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;

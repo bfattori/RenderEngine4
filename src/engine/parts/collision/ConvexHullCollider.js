@@ -1,4 +1,5 @@
 /**
+
  * ConvexHullCollider - Convex hull collision detection
  * 
  * This collider component uses the world's convex hull collision model for collision detection
@@ -9,8 +10,8 @@
  * @extends ColliderPart
  */
 import Constants from '../../Constants.js';
-import ColliderPart from './ColliderPart.js';
-import ConvexHullCollisionModel from '../../collisions/models/ConvexHull.js';
+import ColliderPart from './Collider.js';
+import ConvexHullCollisionModel from '../../collisionModels/models/ConvexHull.js';
 
 /**
  * Creates a new ConvexHullCollider instance

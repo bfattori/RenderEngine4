@@ -2,7 +2,8 @@
  * RenderContext - Base class for all rendering contexts
  * Defines the common interface and capabilities for vector and raster rendering
  */
-import { Engine, RenderEngineError } from '../../core/lib.js';
+import Engine from '../../core/Engine.js';
+import RenderEngineError from '../../core/RenderEngineError.js';
 import { RenderContextConfig } from '../../core/Config.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderPart from '../../parts/render/RenderPart.js';

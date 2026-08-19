@@ -1,24 +1,27 @@
-import Resource from './Resource.js';
+import ResourceLoader from './ResourceLoader.js';
 
-export default class ImageResource extends Resource {
+export default class ImageResource extends ResourceLoader {
     #image = null;
-    #width = 0;
-    #height = 0;
 
-    constructor(resourceUrl, width, height, rel = null) {
-        super(resourceUrl, Resource.TYPE.CUSTOM, rel);
+    constructor(name, resourceUrl, width, height, rel = null) {
+        super(resourceUrl, ResourceLoader.TYPE.CUSTOM, rel);
+        this.merge({
+            name: name,
+            width: width,
+            height: height
+        });
+
+        // an element to load and hold the image
         this.#image = new Image(width, height);
         this.#image.addEventListener('load', () => { this.onLoad(); });
         this.#image.classList.add('image-resource');
-        this.#width = width;
-        this.#height = height;
         this.#image.src = this.url;
         document.body.appendChild(this.#image);
     }
 
     /**
      * Get the image
-     * @returns {CanvasRenderingContext2d}
+     * @returns {Image}
      */
     get image() {
         return this.#image;

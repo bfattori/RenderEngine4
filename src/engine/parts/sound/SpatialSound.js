@@ -1,9 +1,9 @@
- /**
+/**
 @fileoverview SpatialSound - Advanced spatialized sound component
 Uses position and orientation data for 3D audio positioning 
 */
 import SoundPart from './SoundPart.js';
-import { SOUND_PRIORITY } from '../../constants.js';
+import Constants from '../../constants.js';
 
 /**
  * @typedef {Object} PositionData - 2D or 3D position coordinates
@@ -17,7 +17,7 @@ import { SOUND_PRIORITY } from '../../constants.js';
  * position, orientation, and distance-based volume attenuation.
  */
 class SpatialSound extends SoundPart {
-    constructor(priority = SOUND_PRIORITY, name = 'SpatialSound', soundSystem = null, positionData = null) {
+    constructor(priority = Constants.SOUND_PRIORITY, name = 'SpatialSound', soundSystem = null, positionData = null) {
         super(priority, name, soundSystem);
         
         // Position tracking for spatialization
@@ -143,7 +143,7 @@ class SpatialSound extends SoundPart {
      * @param {number} max - Maximum distance (fully attenuated)
      * @returns {void}
      */
-    set distanceRange(min, max) {
+    set distanceRange([min, max]) {
         this._minDistance = Math.max(0, min || 1.0);
         this._maxDistance = Math.max(this._minDistance, max || 50.0);
     }

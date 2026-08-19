@@ -1,4 +1,5 @@
 /**
+
  * Mover2d - Physics-based 2D movement component
  * 
  * Extends Transform2d to provide simple "physics-like" movement
@@ -9,8 +10,8 @@
  * @extends Transform2d
  */
 
-import Transform2d from './Transform2d.js';
-import Constants from '../../constants.js';
+import Constants from '../../Constants.js';
+import Transform2dPart from './Transform2dPart.js';
 
 /**
  * Creates a new Mover2d instance
@@ -24,7 +25,7 @@ import Constants from '../../constants.js';
  * @param {number} [options.maxSpeed=null] - Maximum speed cap (disabled if null)
  * @param {number} [options.drag=0] - Linear drag coefficient (0 = no drag)
  */
-class Mover2dPart extends Transform2d {
+class Mover2dPart extends Transform2dPart {
     /**
      * Velocity vector for linear motion [x, y]
      * @private
@@ -173,7 +174,7 @@ class Mover2dPart extends Transform2d {
       * @param {number} rotationSpeed - New angular velocity in radians/frame
      */
     set angularVelocity(rotationSpeed) {
-        this.#accelerationangularVelocity = rotationSpeed || 0;
+        this.#angularVelocity = rotationSpeed || 0;
         this.rotation += this.#angularVelocity;
         // Normalize to 0-2π
         // const normalized = this.rotation % (Math.PI * 2);
@@ -228,12 +229,12 @@ class Mover2dPart extends Transform2d {
     }
 
     set maxSpeed(speed) {
-        this.#accelerationmaxSpeed = speed !== undefined ? speed : null;
+        this.#maxSpeed = speed !== undefined ? speed : null;
         if (this.#maxSpeed !== null) {
             const currentVelocity = Math.sqrt(
                 this.#velocity[0] ** 2 + this.#velocity[1] ** 2
             );
-            if (currentVelocity > this._maxSpeed) {
+            if (currentVelocity > this.#maxSpeed) {
                 const scale = this.#maxSpeed / currentVelocity;
                 this.#velocity[0] *= scale;
                 this.#velocity[1] *= scale;

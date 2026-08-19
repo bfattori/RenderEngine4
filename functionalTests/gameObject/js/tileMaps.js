@@ -1,8 +1,11 @@
 import RenderEngine from '../../../src/engine/renderEngine4.js';
 import RasterRenderContext from '../../../src/engine/rendering/contexts/RasterRenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
-import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
-import TileSheet from '../../../src/engine/resources/loaders/TileSheet.js';
+import SpriteSheet from '../../../src/engine/resources/SpriteSheet.js';
+import Sprite from '../../../src/engine/resources/Sprite.js';
+import TileSheet from '../../../src/engine/resources/TileSheet.js';
+import TileMap from '../../../src/engine/resources/TileMap.js';
+import { $Math, Util } from '../../../src/engine/core/lib.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -38,24 +41,27 @@ const context = RE4.world.renderContext;
 const api = context.getAPI();
 
 // load a couple sprite sheets
-const marioSprites = new SpriteSheet('SMBTiles', '../../assets/smb_sprites.json');
-const tiles = new TileSheet('Tiles', '../../assets/floor_tiles.json');
-
+const marioSprites = new SpriteSheet("SMBTiles", "../../assets/smb_sprites.json");
 await marioSprites.loading();
-await tiles.loading();
+
+const tileMap = new TileMap('platformer', '../../assets/platformer.json');
+await tileMap.loading();
 
 // drop some sprites in the playfield
-
-let x = 100, y = 50;
-marioSprites.sprites.forEach(sprite => {
-    api
-        .push()
-        .sprite(sprite, x, y)
-        .pop();
-
-    x += 38;
-});
+// marioSprites.sprites.forEach(sprite => {
+//     api
+//         .push()
+//         .scale($Math.randomRange(1, 4, true))
+//         .sprite(sprite, $Math.randomRange(10, 600, true), $Math.randomRange(10, 500, true))
+//         .pop();
+// });
 
 
-// Start the render loop   
-RenderEngine.start();
+// load up a tilemap
+
+
+
+// Run out one frame to render it   
+RE4.update(0, 0);
+RE4.renderWorld();
+

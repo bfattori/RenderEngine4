@@ -1,7 +1,6 @@
-import Resource from './Resource.js';
+import ResourceLoader, { ResourceError } from './ResourceLoader.js';
 import ImageResource from './ImageResource.js';
-import $Math from '../core/Math.js';
-import Tile from './Tile.js';
+import Tile from '../Tile.js';
 
 /**
  * SpriteSheet
@@ -10,8 +9,7 @@ import Tile from './Tile.js';
  * @class
  * @extends Resource
  */
-export default class TileSheet extends Resource {
-    #name;
+export default class TileSheet extends ResourceLoader {
     #tiles = new Map();
     #bitmapSheet = null;
 
@@ -22,27 +20,28 @@ export default class TileSheet extends Resource {
      * @param {String} sheetUrl - The Url to the sprite sheet
      */
     constructor(name, sheetUrl, rel = null) {
-        super(sheetUrl, Resource.TYPE.JSON, rel);
-        this.#name = name;
-    }
-
-    get name() {
-        return this.#name;
+        super(sheetUrl, ResourceLoader.TYPE.JSON, rel);
+        this.merge({
+            name: name,
+            assumeOpaque: false,
+            sheet: null,
+            tileDef: null
+        });
     }
 
     async postProcess(content) {
-        if (!content.tileSheet) 
+        if (!content['tileSheet'])
             throw new ResourceError(this, `The resource "${this.url}" is not a valid tile sheet.`);
 
-        this.sheet = new ImageResource(content.bitmap.image, content.bitmap.width, content.bitmap.height, this.url);
-        const assumeOpaque = content.assumeOpaque;
-        const tiles = content.tiles;
+        this.sheet = new ImageResource(this.name, content.bitmap.image, content.bitmap.width, content.bitmap.height, this.url);
+        this.assumeOpaque = content.assumeOpaque;
+        this.tileDef = content.tiles;
 
         // this contains all the tiles
         if (await this.sheet.loading()) {
             // bitmap loaded, fill out the tiles
-            Object.keys(tiles).forEach(key => {
-                this.addTile(key, new Tile(key, this, tiles[key]));
+            Object.keys(this.tileDef).forEach(key => {
+                this.addTile(key, new Tile(key, this, this.tileDef[key]));
             });
         }
         return this;
@@ -75,5 +74,9 @@ export default class TileSheet extends Resource {
 
     set sheet(sheet) {
         this.#bitmapSheet = sheet;
+    }
+
+    tile(name, tile) {
+        return new Tile(name, this, this.tileDef[tile]);    
     }
 }

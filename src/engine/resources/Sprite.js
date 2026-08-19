@@ -1,8 +1,11 @@
-import { ResourceError } from './Resource.js';
+import { ResourceError } from './loaders/ResourceLoader.js';
+import Engine from '../core/Engine.js';
+import Enum from '../core/Enum.js';
+import Util from '../core/Util.js';
+import Config from '../core/Config.js';
 import Tile from './Tile.js';
-import { Engine, Enum, TransferrableConfig, Util } from '../core/lib.js';
 
-class SpriteState extends TransferrableConfig {
+class SpriteState extends Config {
     constructor(stateConfig) {
         super({
             name: Sprite.DEFAULT_STATE,

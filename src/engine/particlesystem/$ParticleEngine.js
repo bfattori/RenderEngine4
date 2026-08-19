@@ -1,4 +1,5 @@
-import { RenderEngineError, Engine } from '../core/lib.js';
+import RenderEngineError from '../core/RenderEngineError.js';
+import Engine from '../core/Engine.js';
 import Context from '../Context.js';
 import LoadCounter from '../ui/debug/LoadCounter.js';
 

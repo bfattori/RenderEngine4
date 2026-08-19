@@ -1,4 +1,5 @@
 /**
+
  * CABCCollider - Center-Aligned Bounding Circle collision detection
  * 
  * This collider component uses the Transform2d's position and a radius to define
@@ -9,8 +10,8 @@
  * @extends ColliderPart
  */
 import Constants from '../../Constants.js';
-import ColliderPart from './ColliderPart.js';
-import CABCShape from '../../collisions/models/CABC.js';
+import ColliderPart from './Collider.js';
+import CABCShape from '../../collisionModels/models/CABC.js';
 
 /**
  * Creates a new CABBCollider instance

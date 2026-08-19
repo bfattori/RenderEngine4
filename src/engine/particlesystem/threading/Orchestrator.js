@@ -1,6 +1,7 @@
 import Context from '../../Context.js';
 import Constants from '../../Constants.js';
-import { Console, $Math } from '../../core/lib.js';
+import Console from '../../core/Console.js';
+import $Math from '../../core/Math.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
 
