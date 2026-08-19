@@ -3,7 +3,7 @@ The user interface package contains the text renderers, debug tools, and some us
 
 ## Debug
 Debug objects include:
-- `CanvasPIP` - A picture-in-picture style view for a canvas. Used by the particle engine when threaded.
+- `CanvasPIP` - A picture-in-picture style view for a canvas. Used by the particle engine for debugging when threaded.
 - `DebugObjects` - A set of renderable objects like origin, bounding box, etc.
   - `Origin` - A red line up and blue line to the right representing the origin of a shape.
   - `BoundingBox` - A bounding box around a shape, displaying width and height in pixels.
