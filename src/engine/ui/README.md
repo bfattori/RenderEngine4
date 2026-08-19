@@ -22,3 +22,4 @@ The text parsers are used for rendering text to the screen, while supporting a m
 
 ## User Interface Controls
 - `Slider` - A horizontal or vertical slider with a configurable range, labels, min and max values, tick marks, and stepsize for indexed sliders.
+- `SwitchPanel` - A panel with toggle and state switches, or sliders for rapid configuration of settings.
