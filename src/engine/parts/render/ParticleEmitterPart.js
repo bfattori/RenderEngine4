@@ -4,7 +4,7 @@ import ParticleEffect from '../../particlesystem/effects/ParticleEffect.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 export default class ParticleEmitterPart extends RenderPart {
-    #active = false;
+    #doEmit = false;
     #effect = new ParticleEffect();
 
     /**
@@ -21,19 +21,11 @@ export default class ParticleEmitterPart extends RenderPart {
     }
 
     /**
-     * Method to check if the emitter is active.
+     * Method to check if the emitter is set to emit.
      * @return {Boolean}
      */
-    get active() {
-        return this.#active;
-    }
-
-    /**
-     * Set the emitter to the active state, which emits particles.
-     * @params {boolean} state - `true` to make the emitter active
-     */
-    set active(state) {
-        this.#active = state;
+    get isEmit() {
+        return this.#doEmit;
     }
 
     /**
@@ -52,8 +44,17 @@ export default class ParticleEmitterPart extends RenderPart {
      * Enable the particle emitter.
      * Each invocation will cause the emitter to create particles until complete.
      */
-    emit() {
-        this.#active = true;
+    enable() {
+        this.#doEmit = true;
+        return this;
+    }
+
+    /**
+     * Reset the emitter for reuse.
+     */
+    reset() {
+        this.#effect.reset();
+        return this;
     }
 
     /**
@@ -65,11 +66,11 @@ export default class ParticleEmitterPart extends RenderPart {
      * @private
      */
     update(time, deltaTime) {
-        if (!this.active) return;
-
-        // convert to world coordinates
-        const transform = Matrix2d.from(this.renderTransform).multiplySelf(this.world.currentTransform);
-        Engine.particleEngine.runEffect([transform.e, transform.f], this.effect.$name, time, deltaTime);
-        this.#active = false;
+        if (this.#doEmit) {
+            // convert to world coordinates
+            const transform = Matrix2d.from(this.renderTransform).multiplySelf(this.world.currentTransform);
+            Engine.particleEngine.runEffect([transform.e, transform.f], this.effect.$name, this.effect.isReset, time, deltaTime, this.effect);
+            this.#doEmit = false;
+        }
     }
 }

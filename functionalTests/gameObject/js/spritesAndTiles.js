@@ -3,11 +3,20 @@ import RasterRenderContext from '../../../src/engine/rendering/contexts/RasterRe
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
 import TileSheet from '../../../src/engine/resources/loaders/TileSheet.js';
+import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
+import SpritePart from '../../../src/engine/parts/render/SpritePart.js';
+import { Matrix2d } from '../../../src/engine/core/Matrix.js';
+
+import GameObject from '../../../src/engine/gameobject/GameObject.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {
-        debugMode: false
+        debugMode: true,
+        debugOpts: {
+            objectOrigins: true,
+            boundingBoxes: false
+        }
     },
     world: {
         renderContext: new RasterRenderContext(
@@ -18,10 +27,7 @@ await RenderEngine.init(import.meta.url, {
                 }
             ),
             { 
-                enableCulling: false, 
-                text: {
-                    forceUpperCase: true
-                }
+                enableCulling: false
             }
         ),
         dimensions: {width: 800, height: 600},
@@ -45,15 +51,25 @@ await marioSprites.loading();
 await tiles.loading();
 
 // drop some sprites in the playfield
+let x = 100, y = 100;
 
-let x = 100, y = 50;
 marioSprites.sprites.forEach(sprite => {
-    api
-        .push()
-        .sprite(sprite, x, y)
-        .pop();
+   
+    const actor = new GameObject();
+    actor.addComponentParts(new Transform2dPart("transform"), new SpritePart("sprite"))
+        .worldTransform = Matrix2d.identity().update({
+            position: [x, y],
+            rotation: 0,
+            scale: [1, 1]
+        });
 
-    x += 38;
+    // add the object to the world - before making any modifications to it
+    RenderEngine.world.addObject(actor);
+    
+    const sprPart = actor.getComponentByName("sprite");
+    sprPart.sprite = sprite;
+    
+    x += 45;
 });
 
 

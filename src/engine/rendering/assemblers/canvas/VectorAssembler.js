@@ -41,6 +41,9 @@ export default class CanvasVectorAssembler extends Assembler {
         let _instruction;
 
         switch (operand) {
+            case vector.SYSTEXT:
+                break;
+
             //-----------------------------------
             // State modifiers
 

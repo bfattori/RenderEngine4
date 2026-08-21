@@ -314,16 +314,18 @@ export default class $ParticleEngine {
      * 
      * @param {Array<number>} worldPos - The [x,y] world coordinates where the effect should emit particles
      * @param {String} effectName - The name of the effect to run, effects contain the functionality to generate and modify particles emitted to the engine
+     * @param {boolean} isReset - A flag indicating the effect needs to be reset before it is run (used in ParticleWorkers)
      * @param {number} time - Current world time in milliseconds 
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
-    runEffect([x, y], effectName, time, deltaTime) {
+    runEffect([x, y], effectName, isReset, time, deltaTime) {
         this.#send({ 
             type: Constants.MSG_RUN_EFFECT, 
             pos: [x, y], 
             name: effectName, 
             time: time, 
-            deltaTime: deltaTime 
+            deltaTime: deltaTime,
+            isReset: isReset
         });
     }
 

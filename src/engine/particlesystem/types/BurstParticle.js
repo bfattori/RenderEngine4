@@ -1,5 +1,4 @@
 import BasicParticle from './BasicParticle.js';
-import $Math from '../../core/Math.js';
 
 export default class BurstParticle extends BasicParticle {
     constructor(opts = {}, url = import.meta.url) {
@@ -13,10 +12,10 @@ export default class BurstParticle extends BasicParticle {
             velocity: [0.82, 1.79]
         }, url);
         this.merge(opts);
-        this.$name = 'explosionParticle';
+        this.name = 'burstParticle';
     }
 
     static getInstance() {
-        return new ExplosionParticle();
+        return new BurstParticle();
     }
 }

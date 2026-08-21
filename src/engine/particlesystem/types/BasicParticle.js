@@ -64,7 +64,25 @@ export default class BasicParticle extends TransferrableConfig {
             gravity: [0.0, 0.0]
         }, url);
         this.merge(opts);
-        this.$name = 'basicParticle';
+        this.name = 'basicParticle'
+    }
+
+    /**
+     * Override the name of the particle type. If you reuse a particle type, you need
+     * to differentiate them by name or the particle engine will use the first instance
+     * provided.
+     * @param {String} name - The particle name
+     */
+    set name(name) {
+        this.$name = name;
+    }
+
+    /**
+     * Get the name of this particle type.
+     * @returns {String} The name of the particle type
+     */
+    get name() {
+        return this.$name;
     }
 
     /**

@@ -2,15 +2,16 @@ import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
 export default class SprayParticle extends BasicParticle {
-    constructor(spread, spreadVariance, angle, angleVariance) {
+    constructor(opts = {}, url = import.meta.url) {
         super({
             colors: ['#ff0', '#fff', '#f90'],
-            spread: spread,
-            variance: spreadVariance,
-            angle: angle,
-            aVar: angleVariance
+            spread: 10,
+            variance: 5,
+            angle: 0,
+            angleVariance: 5
         });
-        this.$name = 'sprayParticle';
+        this.merge(opts);
+        this.name = 'sprayParticle';
     }
 
     static getInstance() {

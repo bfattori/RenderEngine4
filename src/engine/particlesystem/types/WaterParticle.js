@@ -1,5 +1,4 @@
 import BasicParticle from './BasicParticle.js';
-import $Math from '../../core/Math.js';
 
 export default class WaterParticle extends BasicParticle {
     constructor(opts = {}, url = import.meta.url) {
@@ -14,6 +13,6 @@ export default class WaterParticle extends BasicParticle {
             sizeDecay: 0.8,
         }, url);
         this.merge(opts);
-        this.$name = 'waterParticle';
+        this.name = 'sprayParticle';
     }
 }

@@ -6,6 +6,7 @@ import BasicParticle from '../types/BasicParticle.js';
 export default class ParticleEffect extends TransferrableConfig {
     #lastTime = 0;
     #engine = null;
+    #reset = false;
 
     /**
      * Create a `ParticleEffect` to use with the particle system. Particle effects
@@ -48,7 +49,15 @@ export default class ParticleEffect extends TransferrableConfig {
             particleTypes: []
         }, url);
         this.merge(opts);
-        this.$name = 'particleEffect';
+        this.name = 'particleEffect';
+    }
+
+    set name(name) {
+        this.$name = name;
+    }
+
+    get name() {
+        return this.$name;
     }
 
     /**
@@ -90,17 +99,34 @@ export default class ParticleEffect extends TransferrableConfig {
     }
 
     /**
-     * Run the particle effect, generating particles at the frequency, quantity, and variances specified
+     * Run the particle effect, generating particles at the frequency, quantity, and variances specified.
+     * A frequency of `0` is equivalent to running once. Call `reset()` to reuse the effect.
+     * 
      * @param {number} time - The current world time in milliseconds
-     * @param {number} deltaTime - The time since the last frame in milliseconds
      * @param {Array<number>} worldPos - [x, y] the world position where to emit particles
      */
-    run(worldPos, time, deltaTime) {
+    run(worldPos, time) {
         const freq = this.emissionFrequency + $Math.randomRange(-this.frequencyVariance, this.frequencyVariance, true);
         if (time - this.#lastTime > freq) {
             this.#generateParticles(worldPos, time);
-            this.#lastTime = time;
         }
+
+        if (this.#reset) {
+            // reset after run
+            this.#lastTime = 0;
+            this.#reset = false;
+        }
+    }
+
+    get isReset() {
+        return this.#reset;
+    }
+
+    /**
+     * Reset the effect for reuse.
+     */
+    reset() {
+        this.#reset = true;
     }
 
     /**
@@ -128,11 +154,11 @@ export default class ParticleEffect extends TransferrableConfig {
      * Sub-classes can override this method to modify a spawned 
      * particle before it is introduced into the `ParticleSystem`.
      * 
-     * @param {Object} particle - Particle instantiation config
-     * @param {Object} options - The particle configuration options
+     * @param {BasicParticle} particle - Particle config
+     * @param {Object} options - Optional particle configuration
      * @return {Object} Particle spawn data
      */
-    initParticle(particle, options) {
+    initParticle(particle, options = {}) {
         return particle;
     }
 }

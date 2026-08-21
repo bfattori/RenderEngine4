@@ -1,6 +1,7 @@
 import { ResourceError } from './loaders/ResourceLoader.js';
 import Engine from '../core/Engine.js';
 import Enum from '../core/Enum.js';
+import $Math from '../core/Math.js';
 import Util from '../core/Util.js';
 import Config from '../core/Config.js';
 import Tile from './Tile.js';
@@ -292,7 +293,7 @@ export default class Sprite extends Tile {
             }
 
             // How much time has elapsed since the last frame update?
-            spriteFrame = $Math.lerp(0, state.frameCount, (state.lastTime / time));
+            spriteFrame = Math.round($Math.lerp(0, state.frameCount - 1, (state.lastTime / time))) - 1;
             state.lastTime = time;
         } else {
             // Unsynchronized animations

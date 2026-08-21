@@ -81,7 +81,7 @@ function explode() {
     gameObject.worldTransform.setTo({
         position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
     });
-    emitter.emit();
+    emitter.reset().enable();
     setTimeout(explode, $Math.randomRange(10, 100, true));
 }
 

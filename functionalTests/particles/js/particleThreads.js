@@ -39,21 +39,50 @@ await RenderEngine.init(import.meta.url, {
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
+    particleEngine: {
+        maxParticles: 80000
+    },
     threading: {
         particleEngine: {
             enabled: true,
-            workers: 2
+            workers: 2,
+            framesPerSecond: 40
         }
     }
 });
 
-const exParticle = new BurstParticle();
-RenderEngine.particleEngine.addParticleType(exParticle);
+const eParticle2 = new BurstParticle({
+    colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
+    lifeSpan: [4000, 6000],
+    drag: 0.2,
+    velocity: [0.1, 0.19]
+});
+eParticle2.name = 'purples';
+
+const eParticle3 = new BurstParticle({
+    colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
+    drag: 0.1,
+    dragRate: 0.4,
+    lifeSpan: [2000, 8000],
+    velocity: [0.3, 0.35]
+});
+eParticle3.name = 'blues';
+
+const eParticle4 = new BurstParticle({
+    colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
+    lifeSpan: [8000, 12000],
+    drag: 0.01,
+    dragRate: 0.9,
+    velocity: [0.4, 0.6]
+});
+eParticle4.name = 'reds';
+
+RenderEngine.particleEngine.addParticleType(eParticle2, eParticle3, eParticle4);
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 1000,
-    particleTypes: [exParticle]
+    count: 10000,
+    particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
 
@@ -78,10 +107,10 @@ emitter.effect = pEffect;
 // every few seconds we'll generate an explosion
 function explode() {
     gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
+        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 590, true)]
     });
-    emitter.emit();
-    setTimeout(explode, $Math.randomRange(200, 800, true));
+    emitter.reset().enable();
+    setTimeout(explode, $Math.randomRange(60, 100, true));
 }
 
 explode();

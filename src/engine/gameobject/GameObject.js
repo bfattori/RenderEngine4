@@ -37,6 +37,7 @@ export default class GameObject {
   #localTransform = Matrix2d.identity();
   #worldTransform = null;
   #localOrigin = [0, 0];
+  #boundingBox = [0, 0, 1, 1];
 
   #fullSort = null;
   #sorted = false;
@@ -49,6 +50,10 @@ export default class GameObject {
     onBeforeUpdatePart: () => {},
     onAfterUpdatePart: () => {},
     onAfterUpdate: () => {},
+    onBeforeRender: () => {},
+    onBeforeRenderPart: () => {},
+    onAfterRenderPart: () => {},
+    onAfterRender: () => {},
     onPartAdded: () => {},
     onPartRemoved: () => {}
   };
@@ -150,6 +155,14 @@ export default class GameObject {
     this.#worldTransform = transform;
   }
 
+  get boundingBox() {
+    return this.#boundingBox;
+  }
+
+  set boundingBox(box) {
+    this.#boundingBox = box;
+  }
+
   /**
    * Gets the parts that are assigned to this host object, in no specific order.
    * @returns {Array<ComponentPart>} - Array of components assigned to this host object
@@ -238,6 +251,22 @@ export default class GameObject {
 
   set onAfterUpdatePart(hook) {
     this.#hooks.onAfterUpdatePart = hook;
+  }
+
+  set onBeforeRender(hook) {
+    this.#hooks.onBeforeRender = hook;
+  }
+
+  set onAfterRender(hook) {
+    this.#hooks.onAfterRender = hook;
+  }
+
+  set onBeforeRenderPart(hook) {
+    this.#hooks.onBeforeRenderPart = hook;
+  }
+
+  set onAfterRenderPart(hook) {
+    this.#hooks.onAfterRenderPart = hook;
   }
 
   set onPartAdded(hook) {
@@ -364,18 +393,69 @@ export default class GameObject {
 
     rc.popTransform();
 
-    PRAGMA('objectOrigins', () => {
-        const mtx = Matrix2d.from(this.worldTransform);
-        mtx.scaleSelf(3,3);
-        rc.pushTransform(mtx);
-        DebugObjects.Origin(this.world.renderContext)
-        rc.popTransform();
-    });
-
     this.#hooks.onAfterUpdate.call(time, deltaTime);
 
     const updateEnd = PERF('gameObjectEnd');
     MEASURE('Update Game Object', 'gameObjectStart', 'gameObjectEnd');
+  }
+
+  /**
+   * Updates the state of this game object based on time and delta time
+   * @param {number} time - Current world time
+   * @param {number} deltaTime - Time elapsed since last update
+   */
+  render(time, deltaTime, cameraMatrix) {
+    const renderStart = PERF('gameObjectRenderStart');
+
+    const rc = this.world.renderContext.API;
+    this.#hooks.onBeforeRender(time, deltaTime, cameraMatrix);
+
+    // Update all components in priority order
+    const sortedComponents = this.sortedComponentParts;
+
+    // transform out to world coordinates
+    const mtx = Matrix2d.from(this.worldTransform);
+    mtx.translateSelf(-this.origin[0], -this.origin[1]);
+    rc.pushTransform(mtx);
+
+    // Find the first transform component - this affects the object
+    for (const component of sortedComponents) {
+      if (typeof component.render === 'function') {
+        try {
+          this.#hooks.onBeforeRenderPart(component, time, deltaTime);
+          component.render(time, deltaTime);
+          this.#hooks.onAfterRenderPart(component, time, deltaTime);
+        } catch (error) {
+          console.error(`Error render component ${component.constructor.name}:`, error);
+        }
+      }
+    }
+
+    rc.popTransform();
+
+    PRAGMA('objectOrigins', () => {
+        const mtx = Matrix2d.from(this.worldTransform);
+        mtx.scaleSelf(1,1);
+        rc.pushTransform(mtx);
+        DebugObjects.Origin(this.world.renderContext, mtx.e, mtx.f, 
+          [this.localTransform.e, this.localTransform.f],
+          [this.worldTransform.e, this.worldTransform.f], 
+          this.worldTransform.rotation);
+        rc.popTransform();
+    });
+
+    PRAGMA('boundingBoxes', () => {
+        const mtx = Matrix2d.from(this.worldTransform);
+        mtx.scaleSelf(1,1);
+        rc.pushTransform(mtx);
+        DebugObjects.BoundingBox(this.boundingBox, this.world.renderContext);
+        rc.popTransform();
+    });
+
+    this.#hooks.onAfterRender.call(time, deltaTime);
+
+    const updateEnd = PERF('gameObjectRenderEnd');
+    MEASURE('Render Game Object', 'gameObjectRenderStart', 'gameObjectRenderEnd');
   }
 
   //-------------------------------
@@ -392,7 +472,6 @@ export default class GameObject {
       name: this.name,
       eventContext: this.eventContext,
       parts: this.sortedComponentParts,
-      _nextPartId: this.#nextId,
 
       // transform
       localTransform: this.localTransform,

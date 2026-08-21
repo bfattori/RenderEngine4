@@ -299,7 +299,13 @@ class EngineConfig extends Config {
            * is reached, the orchestrator will distribute particles to the next available worker by increasing
            * the threshold until it reaches 100%. Default is 0.1 (10%).
            */
-          loadFactor: 0.03
+          loadFactor: 0.03,
+          /**
+           * The threaded engine is running separate from the game engine so it will can run at
+           * frame rates higher than the game, causing effects to end sooner than desired. Tune this
+           * value to get better results from particle rendering.
+           */
+          framesPerSecond: 30 
         },
       },
       /**

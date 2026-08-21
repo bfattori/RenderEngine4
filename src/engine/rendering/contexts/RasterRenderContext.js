@@ -165,8 +165,8 @@ export default class RasterRenderContext extends RenderContext {
     this.renderer.destroySprite(opaqueId);
   }
 
-  renderSprite(opaqueId, time, deltaTime, state = 0) {
-    this.renderer.renderSprite(opaqueId, time, deltaTime);
+  renderSprite(opaqueId, x, y, time, deltaTime) {
+    this.renderer.renderSprite(opaqueId, x, y, time, deltaTime);
   }
 
   //--------------------------------------

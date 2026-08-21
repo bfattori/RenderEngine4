@@ -32,6 +32,8 @@ export default class CanvasRasterAssembler extends Assembler {
         const {operand, ...args} = {operand: parts.shift(), args: parts};
         const pid = renderer.pathId;
         switch (operand) {
+            case raster.SYSTEXT:
+                break;
             case raster.COLOR:
                 return `this.surface.strokeStyle = "${args[0]}";`;
                 break;

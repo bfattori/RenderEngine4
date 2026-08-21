@@ -14,6 +14,7 @@ import WaterParticle from '../../../src/engine/particlesystem/types/WaterParticl
 
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
+import Util from '../../../src/engine/core/Util.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -56,28 +57,57 @@ await RenderEngine.init(import.meta.url, {
 
 // set up the explosion effect
 const eParticle = new BurstParticle();
+const eParticle2 = new BurstParticle({
+    colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
+    lifeSpan: [3000, 8000]
+});
+eParticle2.name = 'purples';
+
+const eParticle3 = new BurstParticle({
+    colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
+    drag: 2.0,
+    dragRate: 0.1,
+    lifeSpan: [2000, 6000],
+    velocity: [0.3, 0.9]
+});
+eParticle3.name = 'blues';
+
+const eParticle4 = new BurstParticle({
+    colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
+    lifeSpan: [8000, 12000]
+});
+eParticle4.name = 'reds';
+
 const wParticle = new WaterParticle({
-    gravity: [0.0, 0.005],
-    lifeSpan: [2000, 4000]
+    gravity: [0.0, 0.012],
+    lifeSpan: [8000, 10000],
+    velocity: [0.4, 0.45]
 });
 
 const pEffect = new BurstEffect({
-    count: 180,
+    count: 3000,
     particleTypes: [eParticle]
 });
 
+const pEffect2 = new BurstEffect({
+    count: 1000,
+    particleTypes: [eParticle2, eParticle3, eParticle4]
+});
+pEffect2.name = 'glittery';
+
+
 const wEffect1 = new FountainEffect({
-    count: 5,
+    count: 10,
     particleTypes: [wParticle],
     angle: 20,
-    spread: 5
+    spread: 8
 });
 
 const wEffect2 = new FountainEffect({
-    count: 5,
+    count: 10,
     particleTypes: [wParticle],
     angle: -20,
-    spread: 5
+    spread: 8
 });
 
 // we're using the same effect with different configurations
@@ -86,8 +116,8 @@ wEffect1.$name = 'fountain1';
 wEffect2.$name = 'fountain2';
 
 // add the explosion perticle and effect to the particle engine
-RenderEngine.particleEngine.addParticleTypes(eParticle, wParticle);
-RenderEngine.particleEngine.addEffects(pEffect, wEffect1, wEffect2);
+RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle);
+RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2);
 
 // Object used to position the explosions
 // - set world position, rotation, and scale
@@ -105,15 +135,17 @@ RenderEngine.world.addObject(explosionObject);
 
 // configure the emitter to use the explosion effect
 const explosionEmitter = explosionObject.getComponentByName("emitter");
-explosionEmitter.effect = pEffect;
 
 // generate an explosion randomly
 function explode() {
     explosionObject.worldTransform.setTo({
         position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
     });
-    explosionEmitter.emit();
-    setTimeout(explode, $Math.randomRange(100, 1000, true));
+
+    // choose a random effect
+    explosionEmitter.effect = Util.selectRandom(pEffect, pEffect2);
+    explosionEmitter.reset().enable();
+    setTimeout(explode, $Math.randomRange(80, 200, true));
 }
 
 // Fountains -------------------------------
@@ -124,7 +156,7 @@ const fountain1 = new GameObject();
 fountain1
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [5, 500],
+        position: [5, 580],
         rotation: 0,
         scale: [1, 1]
     });
@@ -133,7 +165,7 @@ const fountain2 = new GameObject();
 fountain2
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [795, 500],
+        position: [795, 580],
         rotation: 0,
         scale: [1, 1]
     });
@@ -150,8 +182,8 @@ fountain2.getComponentByName("emitter").effect = wEffect2;
 explode();
 
 RenderEngine.hooks.onBeforeFrame = () => {
-    fountain1.getComponentByName("emitter").emit();
-    fountain2.getComponentByName("emitter").emit();
+    fountain1.getComponentByName("emitter").reset().enable();
+    fountain2.getComponentByName("emitter").reset().enable();
 };
 
 // Start the render loop   

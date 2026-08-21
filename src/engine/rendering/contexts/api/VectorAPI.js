@@ -47,6 +47,12 @@ export default function getAPI() {
     
     return {
         //-----------------------------------------------
+        systemText(str) {
+            context.addInstruction(`${VECTOR_IL.SYSTEXT} ${str}`);
+            return context.API;
+        },
+
+        //-----------------------------------------------
         // TRANSFORMATION & MOVEMENT
         
         /**

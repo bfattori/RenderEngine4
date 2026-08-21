@@ -1,4 +1,5 @@
 import RenderPart from './RenderPart.js';
+import $Math from '../../core/Math.js';
 
 export default class SpritePart extends RenderPart {
     #currentSprite = null;
@@ -74,7 +75,7 @@ export default class SpritePart extends RenderPart {
 
     draw(time, deltaTime) {
         if (this.#opaqueId)
-            this.context.renderSprite(this.#opaqueId, time, deltaTime);
+            this.context.renderSprite(this.#opaqueId, this.host.worldTransform.e, this.host.worldTransform.f - this.sprite.states.get(this.sprite.currentState).height, time, deltaTime);
     }
 
 }

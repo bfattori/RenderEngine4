@@ -13,6 +13,19 @@ import Context from '../../Context.js';
 
 const ctx = Context.getInstance();
 
+class ComposeEvent extends ComponentPartEvent {
+    #frameTime = 0;
+    constructor(part, frameTime, time, deltaTime) {
+        super(part, time, deltaTime);
+        this.#frameTime = frameTime;
+    }
+
+    consume(consumer) {
+        super.consume(consumer);
+        return this.#frameTime;
+    }
+}
+
 class RenderEvent extends ComponentPartEvent {
     #frameTime = 0;
     constructor(part, frameTime, time, deltaTime) {
@@ -26,7 +39,7 @@ class RenderEvent extends ComponentPartEvent {
     }
 }
 
-export { RenderEvent };
+export { ComposeEvent, RenderEvent };
 
 export default class RenderPart extends ComponentPart {
     #context = null;
@@ -193,31 +206,32 @@ export default class RenderPart extends ComponentPart {
      * @param {Object} [options] - Optional configuration for the update
      */
     update(time, deltaTime) {
-        PERF('renderPartStart');
-        this.composeAndDraw(time, deltaTime);
-        this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
-        this.resetTransforms();
-        PERF('renderPartEnd');
-        MEASURE('Render Part Update', 'renderPartStart', 'renderPartEnd');
+        PERF('updateStart');
+        this.compose(time, deltaTime);
+        this.emit(new ComposeEvent(this, performance.now() - time, time, deltaTime));
+//        this.resetTransforms();
+        PERF('updateEnd');
+        MEASURE('RenderPart Update', 'updateStart', 'updateEnd');
         return this;
     }
 
     /**
-     * Sets up the component for drawing to the Renderer then pops any 
-     * transforms applied by this component.
+     * Prepare for a component render by updating its state 
      * @param {number} time - Current world time
      * @param {number} deltaTime - Time since last update in seconds
      * @returns {void}
      */
-    composeAndDraw(time, deltaTime) {
-        PERF('composeDrawStart');
-        /// step 1: Compose
-            // did we forget to compose?
-        /// step 2: Draw
+    compose(time, deltaTime) {
+    }
+
+    render(time, deltaTime) {
+        PERF('renderStart');
+        /// step 2: Render
         this.draw(time, deltaTime);
-        this.#committed = false;
-        PERF('composeDrawEnd');
-        MEASURE('Compose & Draw', 'composeDrawStart', 'composeDrawEnd');
+        this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
+        this.resetTransforms();
+        PERF('renderEnd');
+        MEASURE('RenderPart Render', 'renderStart', 'renderEnd'); 
     }
 
     /**

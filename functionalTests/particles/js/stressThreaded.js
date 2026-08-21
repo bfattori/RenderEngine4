@@ -40,7 +40,7 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 80000,
+        maxParticles: 200000,
         circularBuffer: true
     },
     threading: {
@@ -55,7 +55,7 @@ await RenderEngine.init(import.meta.url, {
 
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 2000,
+    count: 10000,
     particleTypes: [exParticle]
 });
 
@@ -85,8 +85,8 @@ function explode() {
     gameObject.worldTransform.setTo({
         position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
     });
-    emitter.emit();
-    setTimeout(explode, $Math.randomRange(80, 100, true));
+    emitter.reset().enable();
+    setTimeout(explode, $Math.randomRange(20, 80, true));
 }
 
 // game object and component parts

@@ -489,6 +489,17 @@ export default class RenderContext {
       // Sort objects into their respective planes
       this.sortObjectsByPlanes();
 
+      // Render objects
+      for (const object of this.#activeObjects) {
+        try {
+          if (object.object.render) {
+            object.object.render(time, deltaTime);
+          }
+        } catch (error) {
+          console.error('RenderContext: Error rendering GameObject:', object.object.name || 'unnamed', error);
+        }
+      }
+
       // render any pending instructions
       this.renderInstructions(time, deltaTime);
 

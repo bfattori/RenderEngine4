@@ -48,7 +48,7 @@ RenderEngine.particleEngine.addParticleType(exParticle);
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 150,
+    count: 500,
     particleTypes: [exParticle]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
@@ -76,8 +76,8 @@ function explode() {
     gameObject.worldTransform.setTo({
         position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
     });
-    emitter.emit();
-    setTimeout(explode, $Math.randomRange(500, 1000, true));
+    emitter.reset().enable();
+    setTimeout(explode, $Math.randomRange(200, 800, true));
 }
 
 explode();

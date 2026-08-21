@@ -1,12 +1,12 @@
 import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
-export default class FireworksParticle extends Particle {
-    constructor() {
+export default class FireworksParticle extends BasicParticle {
+    constructor(opts = {}, url = import.meta.url) {
         super({
-            
         });
-        this.$name = 'fireworksParticle';
+        this.merge(opts);
+        this.name = 'fireworksParticle';
     }
 
     static getInstance() {

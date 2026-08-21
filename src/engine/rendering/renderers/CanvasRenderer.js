@@ -208,7 +208,6 @@ export default class CanvasRenderer extends Renderer {
     renderSprite(opaqueId, x, y, time, deltaTime) {
         const sprite = this.assembler.getCompiledSprite(parseInt(opaqueId));
         if (sprite) {
-            sprite.update(time, deltaTime);
             const frame = sprite.frameRect;
             this.surface.drawImage(sprite.sourceImage, frame[0], frame[1], frame[2], frame [3], x, y, frame[2], frame[3]);
         } else if (opaqueId !== "undefined") {
@@ -287,6 +286,21 @@ export default class CanvasRenderer extends Renderer {
                 }) : [];
         
         switch (operand) {
+            case vector.SYSTEXT:
+                const oFont = this.surface.font;
+                this.surface.font = '8px sans-serif';
+                this.surface.fillStyle = '#000';
+                let txt = args.join(' ');
+                txt = txt.split('\n');
+                let top = 10;
+                for (let i = 0; i < txt.length; i++) {
+                    this.surface.fillText(txt[i], 0, top);
+                    top += 10;
+                }
+                this.surface.font = oFont;
+
+                break;
+
             //-----------------------------------
             // State modifiers
 

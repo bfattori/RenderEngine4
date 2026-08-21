@@ -13,7 +13,7 @@ await RenderEngine.init(import.meta.url, {
         debugMode: true,
         showFps: true,
         debugOpts: {
-            objectOrigins: false
+            objectOrigins: true
         }
     },
     world: {

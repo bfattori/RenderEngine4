@@ -331,13 +331,17 @@ export default class $ParticleEngine {
      * 
      * @param {Array<number>} param0 - The [x,y] world coordinates where the effect should emit particles
      * @param {String} effectName - The name of the effect to run, effects contain the functionality to generate and modify particles emitted to the engine
+     * @param {boolean} isReset - A flag indicating if the effect has been reset (used in ParticleWorkers)
      * @param {number} time - Current world time in milliseconds 
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
-    runEffect([x, y], effectName, time, deltaTime) {
+    runEffect([x, y], effectName, isReset, time, deltaTime) {
+        //console.debug(x, y, effectName);
         const effect = this.getEffect(effectName);
-        if (effect)
+        if (effect) {
+            //if (isReset) effect.reset();
             effect.run([x, y], time, deltaTime);
+        }
     }
 
     //------------------------------------

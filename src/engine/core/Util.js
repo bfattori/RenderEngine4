@@ -44,6 +44,15 @@ export default class Util {
     }
 
     /**
+     * Select a random item from the provided set.
+     * @param  {...any} items - The set of values to choose from
+     * @returns {*}
+     */
+    static selectRandom(... items) {
+        return items[$Math.randomRange(0, items.length, true)];
+    }
+
+    /**
      * Instrument an object with getters and setters specified either in an array (uninitialized), or with an object containing values
      * @param {Object} target - The object to instrument with the getters and setters 
      * @param {Array<String>|Object} values - An array of properties, or an object with properties and initial values
@@ -55,9 +64,10 @@ export default class Util {
         // remove getters for properties that no longer exist
         if (target.$getters.length !== 0) {
             const mKeys = Object.keys(values);
-            const dKeys = mKeys.filter(key => !target.$getters.includes(key));
+            const dKeys = mKeys.filter(key => target.$getters.includes(key));
             for (const dk of dKeys) {
-                delete this[dk];
+                delete target[dk];
+                target.$getters.splice(target.$getters.indexOf[dk], 1);
             } 
         }
 

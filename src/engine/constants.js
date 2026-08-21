@@ -120,7 +120,9 @@ const Constants = {
     MSG_UPDATE: 'update',
     MSG_START: 'start',
     MSG_RESET: 'reset',
-    MSG_SHUTDOWN: 'shutdown'
+    MSG_SHUTDOWN: 'shutdown',
+    MSG_PAUSE: 'pause',
+    MSG_RUN: 'run'
 };
 
 export default Constants;

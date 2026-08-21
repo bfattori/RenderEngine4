@@ -57,6 +57,12 @@ export default function getAPI() {
 
  return {
         //-----------------------------------------------
+        systemText(str) {
+            context.addInstruction(`${RASTER_IL.SYSTEXT} ${str}`);
+            return context.API;
+        },
+
+        //-----------------------------------------------
         // TRANSFORMATION & MOVEMENT
         
         /**
@@ -151,7 +157,7 @@ export default function getAPI() {
          * Push the world transformation matrix onto the transform stack. This is useful for applying transformations to the entire scene.
          * @param {Matrix2d} transform - Optional matrix to push. If empty, the current world transform is pushed.
          */
-        pushTransform: (tranform) => {
+        pushTransform: (transform) => {
             context.pushTransform(transform);
             state.currentTransform = transform;
             return context.API;

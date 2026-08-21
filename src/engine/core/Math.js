@@ -53,7 +53,7 @@ export default class $Math {
  
     /**
      * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
-     * optionally as an integer value only.
+     * optionally as an integer value only (rounded down to nearest integer)
      *
      * @param low {Number} The low part of the range
      * @param high {Number} The high part of the range
@@ -64,6 +64,36 @@ export default class $Math {
     static randomRange(low, high, whole = false) {
         const v = low + (Math.random() * (high - low));
         return (whole ? Math.floor(v) : v);
+    }
+
+    /**
+     * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
+     * optionally as an integer value only (rounded to nearest integer)
+     *
+     * @param low {Number} The low part of the range
+     * @param high {Number} The high part of the range
+     * @param [whole] {Boolean} Return whole values only
+     * @return {Number}
+     * @memberof R.lang.Math2
+     */
+    static randomRangeRound(low, high, whole = false) {
+        const v = low + (Math.random() * (high - low));
+        return (whole ? Math.round(v) : v);
+    }
+
+    /**
+     * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
+     * optionally as an integer value only (next highest integer).
+     *
+     * @param low {Number} The low part of the range
+     * @param high {Number} The high part of the range
+     * @param [whole] {Boolean} Return whole values only
+     * @return {Number}
+     * @memberof R.lang.Math2
+     */
+    static randomRangeCeil(low, high, whole = false) {
+        const v = low + (Math.random() * (high - low));
+        return (whole ? Math.ceil(v) : v);
     }
 
     /**
@@ -130,19 +160,19 @@ export default class $Math {
     //------------------------------------
 
     static lerp(start, end, time) {
-        return start + (end - start) * t;
+        return start + (end - start) * time;
     }
 
-    static preciseLerp(start, end, t) {
-        return (1 - t) * start + t * end;
+    static preciseLerp(start, end, time) {
+        return (1 - time) * start + time * end;
     }
 
-    static invLerp(start, end, t) {
-        return  (t - start) / (end - start);
+    static invLerp(start, end, time) {
+        return  (time - start) / (end - start);
     }
 
     static rangeLerp(lowStart, lowEnd, hiStart, hiEnd, time) {
-        return $Math.lerp(hiStart, hiEnd, $Math.invlerp(lowStart, lowEnd, time));
+        return $Math.lerp(hiStart, hiEnd, $Math.invLerp(lowStart, lowEnd, time));
     }
 
     //------------------------------------
@@ -478,7 +508,7 @@ export default class $Math {
         let x1 = points[0].x, x2 = points[0].x, y1 = points[0].y, y2 = points[0].y;
         const rect = [0,0,1,1];
 
-        for (const p = 1; p < points.length; p++) {
+        for (let p = 1; p < points.length; p++) {
             const pt = points[p];
 
             if (pt.x < x1) {

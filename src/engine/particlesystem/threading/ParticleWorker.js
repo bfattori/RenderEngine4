@@ -21,6 +21,10 @@ export default class ParticleWorker {
     #engineInstance = null;
     #workerId = null;
     #classMap = new Map();
+    #running = false;
+    #lastTime = 0;
+    #fps = 0;
+    #startTime = 0;
 
     constructor(workerId, width, height, config, threading, systemOpts) {
         this.#engineInstance = $ParticleEngine.getInstance(width, height, config, threading);
@@ -32,8 +36,17 @@ export default class ParticleWorker {
 
         // add the root particle type
         this.#classMap.set('BasicParticle', BasicParticle);
+        this.#fps = Math.floor(1000 / threading.framesPerSecond);
     
         this.readyUp(workerId);
+    }
+
+    set startTime(time) {
+        this.#startTime = time;
+    }
+
+    set isRunning(state) {
+        this.#running = state;
     }
 
     /**
@@ -66,10 +79,7 @@ export default class ParticleWorker {
             workerId: workerId 
         });  // inform the orchestrator that the worker is ready
 
-        // this will run until the thread is terminated
-        setTimeout(() => {
-            this.updateParticles(performance.now());
-        }, 100);
+        this.#run();
     }
 
     /**
@@ -90,12 +100,19 @@ export default class ParticleWorker {
                 this.instance.addParticles(data.particles);
                 break;
             case Constants.MSG_RUN_EFFECT:
-                this.instance.runEffect(data.pos, data.name, data.time, data.deltaTime);
+                this.instance.runEffect(data.pos, data.name, data.isReset, data.time, data.deltaTime);
                 break;
             case Constants.MSG_SPAWN:
                 this.instance.spawnParticle(data.pos, data.particle);
                 break;
+            case Constants.MSG_PAUSE:
+                this.#running = false;
+                break;
+            case Constants.MSG_RUN:
+                this.#run();
+                break;
             case Constants.MSG_SHUTDOWN:
+                this.#running = false;
                 this.instance.shutdown();
                 console.debug(`[ParticleWorker] Worker${this.#workerId} terminated`);
                 self.close();
@@ -105,23 +122,30 @@ export default class ParticleWorker {
         }
     }
 
+    #run() {
+        // this will run until the thread is terminated or paused
+        setTimeout(() => {
+            this.isRunning = true;
+            this.startTime = performance.now();
+            this.updateParticles();
+        }, 100);
+    }
+
     /**
      * The main processing loop updates, renders, then draws the particles
      * to a bitmap and informs the orchestrator when done, then pauses before the next
      * frame.
      * @param {number} timeOrigin - The time at which the worker started
      */
-    async updateParticles(timeOrigin) {
+    async updateParticles() {
         try {
-            // start running until empty
-            let lastTime = 0, time = timeOrigin, deltaTime = time;
+            let time = performance.now(), deltaTime = time - this.#lastTime;
 
-            while(true) {
-                lastTime = time;
-                time = performance.now();
+            while(this.#running) {
+                this.#lastTime = time;
 
-                const updateTime = this.instance.update(time, time-lastTime);
-                const renderTime = await this.instance.renderParticles(time, time-lastTime, null);
+                const updateTime = this.instance.update(time, deltaTime);
+                const renderTime = await this.instance.renderParticles(time, deltaTime, null);
                 if (renderTime !== -1) {
                 const image = this.instance.bitmap;
                     postMessage({ 
@@ -129,7 +153,7 @@ export default class ParticleWorker {
                         type: Constants.MSG_RENDERED, 
                         workerId: this.#workerId,
                         time: time,
-                        deltaTime: time-lastTime, 
+                        deltaTime: deltaTime, 
                         image: image,
                         metrics: {
                             updateTime: updateTime,
@@ -139,7 +163,7 @@ export default class ParticleWorker {
                     }, [image]);
                 }
                 // free up to allow message handling and such
-                await new Promise(resolve => setTimeout(resolve, 17));
+                await new Promise(resolve => setTimeout(resolve, this.#fps));
             }
         } catch (ex) {
             throw new ParticleWorkerError(this, ex.message, ex);        

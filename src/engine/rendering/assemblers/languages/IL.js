@@ -19,6 +19,8 @@ const BASE_IL = {
   PUSH:           0x07, // "PUSH" will save the current renderer state
   POP:            0x08, // "POP" will restore the previous renderer state 
 
+  SYSTEXT:        0x09, // "SYSTEXT X Y 'text'" will render system text at X, Y
+
   // Atomic transform manipulation instructions
   TRANSLATE:      0x10, // "TRANSLATE X Y" modifies the current transform by translating the current transform by X and Y
   ROTATE:         0x11, // "ROTATE ANGLE" modifies the current transform by rotating the current transform by ANGLE degrees

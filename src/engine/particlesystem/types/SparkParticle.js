@@ -2,10 +2,13 @@ import SprayParticle from './SprayParticle.js';
 import $Math from '../../core/Math.js';
 
 export default class SparkParticle extends SprayParticle { 
-    constructor(spread, spreadVariance, angle, angleVariance, delay, delayVariance) {
-        super(spread, spreadVariance, angle, angleVariance);
-        this.opts = {delay: delay, delayVariance: delayVariance, ...this.opts};
-        this.$name = 'sparkParticle';
+    constructor(opts = {}, url = import.meta.url) {
+        super({
+            delay: 100,
+            delayVariance: 500
+        });
+        this.merge(opts);
+        this.name = 'sparkParticle';
     }
 
     static getInstance(spread, spreadVariance, angle, angleVariance, delay, delayVariance) {
