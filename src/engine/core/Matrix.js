@@ -219,6 +219,14 @@ export class Matrix2d extends DOMMatrix {
     }
 
     /**
+     * Get the matrix as an array of six values for use with the HTML Canvas element
+     * @returns {Array<number>}
+     */
+    asCanvas() {
+        return [this.a, this.b, this.c, this.d, this.e, this.f];
+    }
+
+    /**
      * Returns a Matrix2d from several different forms of input formats.
      * @param {Array<number>|String|DOMMatrix|Matrix2d} other - An object to cast to a new {@link Matrix2d}
      * @returns A new <code>Matrix2d</code> instance

@@ -1,6 +1,7 @@
 import PhysicalParticle from './PhysicalParticle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
+import { Matrix2d } from '../../core/Matrix.js';
 
 export default class SmokeParticle extends PhysicalParticle {
     #gradients = new Map();
@@ -17,6 +18,7 @@ export default class SmokeParticle extends PhysicalParticle {
             velocity: [0.8, 1.3],
             curl: [0.001,0.002],
             blurRadius: 1.0,
+            growth: 0.1
         }, url);
         this.merge(opts);
         this.name = 'smokeParticle';
@@ -64,11 +66,20 @@ export default class SmokeParticle extends PhysicalParticle {
         particle.memory.dir = Util.selectRandom(-1, 1);
         particle.memory.fade = this.fade;
         particle.memory.alpha = 1.0;
+
         if (this.tileSheet !== null) {
             // select a random tile
             const rando = $Math.randomRange(0, this.tileSheet.count, true);
             // compile the tile to get an opaqueId
             particle.memory.tile = this.tileSheet.getTileAt(rando).opaqueId;
+            particle.memory.mtx = Matrix2d.identity();    // start at 1,1
+            particle.memory.mtx.setTo({
+                position: [0, 0],
+                scale: [1, 1],
+                rotation: 0
+            });
+            particle.memory.scale = 1.0;
+            particle.memory.growth = this.growth;
         } else
             particle.memory.point = true;
 
@@ -92,6 +103,10 @@ export default class SmokeParticle extends PhysicalParticle {
         // apply curl
         vel[0] += ($memory.curl * Math.cos(($memory.ttl - life) / 1000)) * $memory.dir;
         vel[1] += $memory.curl * Math.sin(($memory.ttl - life) / 1000);
+
+        // grow tile-based particles in size
+        if (!$memory.point)
+            $memory.scale += $memory.growth;
 
         // if ($memory.fade > 0) {
         //     $memory.alpha -= $memory.fade;
@@ -128,7 +143,12 @@ export default class SmokeParticle extends PhysicalParticle {
                     // tiles?
                     const tile = pEngine.assembler.getCompiledSprite($memory.tile);
                     const frame = tile.frameRect;
+                    // $memory.mtx.setTo({
+                    //     scale: [$memory.scale, $memory.scale]
+                    // });
+                    // surface.transform.apply(surface, $memory.mtx.asCanvas());
                     surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pos[0], pos[1], frame[2], frame[3]);
+                    //surface.restore();
                 }
                 break;
             case 'webgl':

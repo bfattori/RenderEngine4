@@ -12,7 +12,8 @@ export default class SmokeEffect extends ParticleEffect {
     super({
       count: 10,
       emissionFrequency: 100,
-      frequencyVariance: 250
+      frequencyVariance: 250,
+      spread: 5
     }, url);
     this.merge(opts);
     this.$name = 'smokeEffect';
@@ -31,7 +32,7 @@ export default class SmokeEffect extends ParticleEffect {
   initParticle(particle, options) {
     // mostly straight up
     particle.vel = $Math.vecMulScalar(
-        $Math.getDirectionVector([0, 0], $Math.randomRange(-5, 5, true)), 
+        $Math.getDirectionVector([0, 0], $Math.randomRange(-this.spread, this.spread, true)), 
         $Math.getRangeValue(options.velocity)
     );
     return particle;

@@ -49,7 +49,7 @@ const sParticle = new SmokeParticle({
 });
 
 const sEffect = new SmokeEffect({
-  count: 1,
+  count: 6,
   particleTypes: [sParticle],
   angle: 0,
   spread: 10
