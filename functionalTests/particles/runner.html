@@ -8,7 +8,7 @@
             await (async () => {
                 const params = new URLSearchParams(window.location.search);
                 const jsFile = params.get("js"); // is the number 123
-                const module = await import(new URL(`js/${jsFile}.js`, import.meta.url));
+                const module = await import(new URL(`js/${jsFile}/index.js`, import.meta.url));
                 return module.default; 
             })();
         </script>

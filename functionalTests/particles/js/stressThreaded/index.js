@@ -1,16 +1,16 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
+import VectorRenderContext from '../../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
-import GameObject from '../../../src/engine/gameobject/GameObject.js';
-import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
-import BurstParticle from '../../../src/engine/particlesystem/types/BurstParticle.js';
-import BurstEffect from '../../../src/engine/particlesystem/effects/BurstEffect.js';
-import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
+import GameObject from '../../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
+import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
+import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
+import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
+import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
 
-import { Matrix2d } from '../../../src/engine/core/Matrix.js';
-import $Math from '../../../src/engine/core/Math.js';
+import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
+import $Math from '../../../../src/engine/core/Math.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -40,18 +40,25 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 80000
+        maxParticles: 200000,
+        circularBuffer: true
     },
+    threading: {
+        particleEngine: {
+            enabled: true,
+            workers: 4
+        }
+    }
 });
 
 // set up the particles and effects we'll use
+
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 2000,
+    count: 10000,
     particleTypes: [exParticle]
 });
 
-// inform the particle engine of the types
 RenderEngine.particleEngine.addParticleType(exParticle);
 RenderEngine.particleEngine.addEffect(pEffect);
 
@@ -79,9 +86,8 @@ function explode() {
         position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
     });
     emitter.reset().enable();
-    setTimeout(explode, $Math.randomRange(10, 100, true));
+    setTimeout(explode, $Math.randomRange(20, 80, true));
 }
-
 
 // game object and component parts
 // - set world position, rotation, and scale

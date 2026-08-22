@@ -44,6 +44,28 @@ export default class Util {
     }
 
     /**
+     * Get a color value with the alpha channel set to the value provided. If the color is already a hex code,
+     * it will be modified to include the alpha channel. Otherwise, a new hex color will be generated.
+     * 
+     * @param {number} alpha - The alpha channel component (0.0 to 1.0)
+     * @param {String|number} color - A hex color code (3 or 6 digits), or the red component (0.0 to 1.0)
+     * @param {number} g - The green component (0.0 to 1.0), ignored if color is a hex number
+     * @param {number} b - The blue component (0.0 to 1.0), ignored if color is a hex number
+     * @returns 
+     */
+    static setAlpha(alpha, color, g, b) {
+        let r = color;
+        if (isNaN(color)) {
+            const small = color.length === 4;
+            color = color.substring(1); // remove hash
+            r = parseInt(color.substring(0, small ? 1 : 2), 16) / 255;
+            g = parseInt(color.substring(small ? 1 : 2, small ? 2 : 4), 16) / 255;
+            b = parseInt(color.substring(small ? 2 : 4, small ? 3 : 6), 16) / 255;
+        }
+        return Util.getColor(r, g, b, alpha);
+    }
+
+    /**
      * Select a random item from the provided set.
      * @param  {...any} items - The set of values to choose from
      * @returns {*}
@@ -53,10 +75,16 @@ export default class Util {
     }
 
     /**
-     * Instrument an object with getters and setters specified either in an array (uninitialized), or with an object containing values
+     * Instrument an object with getters and setters specified either in an array (uninitialized), or with an 
+     * object containing values to initialize the properties. The instrumented object will have getter and setter 
+     * methods for each property. Globally disable the creation of setters by setting `setters` to `false`, or 
+     * create setters for _specific properties only_ by passing an array of properties to be assigned a setter.
+     * _This modifies the target object directly._
+     * 
      * @param {Object} target - The object to instrument with the getters and setters 
      * @param {Array<String>|Object} values - An array of properties, or an object with properties and initial values
-     * @param {Array<String>|boolean} setters - A boolean indicating setters should be created for all properties, or an array of specific properties that should have setters.
+     * @param {Array<String>|boolean} setters - A boolean indicating setters should be created for all properties, or 
+     * an array of specific properties that should have setters. The default is `true`.
      */
     static lombok(target, values, setters = true) {
         target.$getters = target.$getters || [];

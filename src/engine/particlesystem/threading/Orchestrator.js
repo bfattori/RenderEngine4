@@ -27,7 +27,7 @@ class Orchestrator {
     #systemOpts = null;
     #workerBurden = 0;
 
-    #nextWorkerId = 0;
+    #workersInitialized = 0;
 
 
     constructor(viewPort, particlesConfig, threadingConfig, systemOpts) {
@@ -68,6 +68,7 @@ class Orchestrator {
         const vPort = this.#viewPort;
 
         this.#waitingWorkers = new Array(tConfig.workers).fill(true);
+        this.#workersInitialized = 0;
 
         // spawn the worker threads for the particle engine
         for (let i = 0; i < tConfig.workers; i++) {
@@ -90,7 +91,9 @@ class Orchestrator {
             // retain worker information
             this.#workers.set(i, { 
                 worker: worker, 
-                live: 0 
+                live: 0,
+                ackEffects: [],
+                ackParticles: [] 
             });
 
             // initialize the worker thread
@@ -127,6 +130,35 @@ class Orchestrator {
     }
 
     /**
+     * Wait for an acknowledgement that an effect or particle
+     * was received by each worker
+     * @param {Event} event 
+     */
+    #waitAcknowledge(event) {
+        this.#workerState.forEach(worker => {
+            if (event.data.type === Constants.MSG_ADD_TYPE)
+                worker.ackParticles.push(event.data.particle.$name)
+            else
+                worker.ackEffects.push(event.data.effect.$name);
+        });
+    }
+
+    #testReady(workerId) {
+        const worker = this.#workers.get(workerId);
+        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0) {
+            this.#workersInitialized++;
+        }
+        
+        if (this.#workersInitialized === this.#workers.size && this.#waitingWorkers.every(e => e === false)) {
+            // the orchestrator is ready to handle requests
+            postMessage({ 
+                re4: Constants.ORCHESTRATOR_MSG, 
+                type: Constants.MSG_READY 
+            });    
+        }
+    }
+
+    /**
      * Process events from the particle manager
      * @param {Event} event 
      */
@@ -142,6 +174,7 @@ class Orchestrator {
             case Constants.MSG_ADD_EFFECT:
                 // broadcast to all workers
                 this.broadcast(event);
+                this.#waitAcknowledge(event);
                 break;
             case Constants.MSG_RESET:
                 // terminate the threads and restart them
@@ -165,12 +198,15 @@ class Orchestrator {
                 case Constants.MSG_READY:
                     // once all workers are ready...
                     this.#waitingWorkers[event.data.workerId] = false;
-                    if (this.#waitingWorkers.every(e => e === false)) {
-                        postMessage({ 
-                            re4: Constants.ORCHESTRATOR_MSG, 
-                            type: Constants.MSG_READY 
-                        });    // the orchestrator is ready to handle requests
+                    this.#testReady(event.data.workerId);
+                    break;
+                case Constants.MSG_ACK:
+                    const worker = this.#workers.get(event.data.workerId);
+                    switch (event.data.ack) {
+                        case 'particle': worker.ackParticles.splice(worker.ackParticles.indexOf(event.data.name), 1); break;
+                        case 'effect': worker.ackEffects.splice(worker.ackEffects.indexOf(event.data.name), 1); break;
                     }
+                    this.#testReady(event.data.workerId);
                     break;
                 case Constants.MSG_RENDERED:
                     // the worker thread has rendered the particles and returned a bitmap

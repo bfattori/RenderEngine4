@@ -1,4 +1,3 @@
-import Constants from '../../Constants.js';
 import $Math from '../../core/Math.js';
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import BasicParticle from '../types/BasicParticle.js';
@@ -109,6 +108,7 @@ export default class ParticleEffect extends TransferrableConfig {
         const freq = this.emissionFrequency + $Math.randomRange(-this.frequencyVariance, this.frequencyVariance, true);
         if (time - this.#lastTime > freq) {
             this.#generateParticles(worldPos, time);
+            this.#lastTime = time;
         }
 
         if (this.#reset) {

@@ -1,4 +1,3 @@
-import Constants from '../../Constants.js';
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
 
@@ -87,9 +86,7 @@ export default class BasicParticle extends TransferrableConfig {
 
     /**
      * Called when a particle is spawned to initialize its settings
-     * @param {Object} $memory - The memory object to store instantaneous properties
      * @param {number} time - The current world time in milliseconds
-     * @param {String} type - The particle type name
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
@@ -126,8 +123,9 @@ export default class BasicParticle extends TransferrableConfig {
     update(time, deltaTime, $memory, pos, vel, life) {
         // standard update:
         //   add velocity to position then add gravity to velocity
-        pos[0] += (vel[0] * (1 / $memory.drag));
-        pos[1] += (vel[1] * (1 / $memory.drag));
+        const drag = $memory.drag !== 0 ? (1 / $memory.drag) : 1;
+        pos[0] += (vel[0] * drag);
+        pos[1] += (vel[1] * drag);
         vel[0] += $memory.gravity[0];
         vel[1] += $memory.gravity[1];
 

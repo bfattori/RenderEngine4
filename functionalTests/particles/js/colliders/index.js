@@ -1,16 +1,16 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
+import VectorRenderContext from '../../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
-import GameObject from '../../../src/engine/gameobject/GameObject.js';
-import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import ParticleEmitterPart from '../../../src/engine/parts/render/ParticleEmitterPart.js';
+import GameObject from '../../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
+import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../src/engine/particlesystem/effects/ParticleEffect.js';
-import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
+import ParticleEffect from '../../../../src/engine/particlesystem/effects/ParticleEffect.js';
+import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
 
-import { Matrix2d } from '../../../src/engine/core/Matrix.js';
-import $Math from '../../../src/engine/core/Math.js';
+import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
+import $Math from '../../../../src/engine/core/Math.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {

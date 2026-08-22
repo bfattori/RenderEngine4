@@ -51,6 +51,9 @@ export default class $Math {
         return Math.min(Math.max(num, min), max);
     }
  
+    //-------------------------------
+    // Random functions
+
     /**
      * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
      * optionally as an integer value only (rounded down to nearest integer)
@@ -97,6 +100,34 @@ export default class $Math {
     }
 
     /**
+     * Returns the value given between 0 and a finite set of number of values.
+     * If no value is provided, or the value is not a number or `Array`, it will 
+     * return `0`. If one value is provided, it will return a value between 0.0 
+     * and that number. If an array of two values are provided, it returns a 
+     * value between the two values. If there are three or more values, it 
+     * returns the mean of the provided values. If any values are NaN, returns `0`.
+     * @param  {...any} v - value(s)
+     * @returns {number}
+     */
+    static getRangeValue(v) {
+        if (v && Array.isArray(v) && v.every(e => !isNaN(e))) {
+            if (v.length === 1) {
+                return Math.random() * v[0];
+            } else if (v.length === 2) {
+                return $Math.randomRange(v[0], v[1]);
+            } else {
+                return $Math.mean(v);
+            }
+        } else if (v && !isNaN(v)) {
+            return Math.random() * v;
+        }
+        return 0.0;
+    }
+
+    //------------------------------------
+    // 
+
+    /**
      * Return the median value for the set of values
      * @param  {...number} values - The set of values 
      * @returns {number} 
@@ -130,47 +161,57 @@ export default class $Math {
         return Math.sqrt(variance);
     }
 
-    /**
-     * Returns the value given between 0 and a finite set of number of values.
-     * If no value is provided, or the value is not a number or `Array`, it will 
-     * return `0`. If one value is provided, it will return a value between 0.0 
-     * and that number. If an array of two values are provided, it returns a 
-     * value between the two values. If there are three or more values, it 
-     * returns the mean of the provided values. If any values are NaN, returns `0`.
-     * @param  {...any} v - value(s)
-     * @returns {number}
-     */
-    static getRangeValue(v) {
-        if (v && Array.isArray(v) && v.every(e => !isNaN(e))) {
-            if (v.length === 1) {
-                return Math.random() * v[0];
-            } else if (v.length === 2) {
-                return $Math.randomRange(v[0], v[1]);
-            } else {
-                return $Math.mean(v);
-            }
-        } else if (v && !isNaN(v)) {
-            return Math.random() * v;
-        }
-        return 0.0;
-    }
-
     //------------------------------------
     // Linear Interpolation
-    //------------------------------------
 
+    /**
+     * Interpolate a value from start to end based on the given time value
+     *
+     * @param {number} start - The starting value  
+     * @param {number} end - The ending value 
+     * @param {number} time - The time value between 0 and 1 
+     * @returns {number} The interpolated value
+     */
     static lerp(start, end, time) {
         return start + (end - start) * time;
     }
 
+    /**
+     * Interpolate a value from start to end based on the given time value
+     * with precision for floating point numbers
+     *
+     * @param {number} start - The starting value  
+     * @param {number} end - The ending value 
+     * @param {number} time - A value between 0 and 1 
+     * @returns {number} The interpolated value
+     */
     static preciseLerp(start, end, time) {
         return (1 - time) * start + time * end;
     }
 
+    /**
+     * Interpolate a value from start to end based on the inverse of the given time value
+     *
+     * @param {number} start - The starting value 
+     * @param {number} end - The ending value 
+     * @param {number} time - A value between 0 and 1 
+     * @returns {number} The interpolated value
+     */
     static invLerp(start, end, time) {
         return  (time - start) / (end - start);
     }
 
+    /**
+     * Interpolate a value between two ranges based on the given time value
+     * with precision for floating point numbers
+     * 
+     * @param {number} lowStart - The starting value for the lower range 
+     * @param {number} lowEnd - The ending value for the lower range 
+     * @param {number} hiStart - The starting value for the higher range 
+     * @param {number} hiEnd - The ending value for the higher range 
+     * @param {number} time - A value between 0 and 1 
+     * @returns {number} The interpolated value
+     */
     static rangeLerp(lowStart, lowEnd, hiStart, hiEnd, time) {
         return $Math.lerp(hiStart, hiEnd, $Math.invLerp(lowStart, lowEnd, time));
     }
@@ -309,6 +350,9 @@ export default class $Math {
         }
         return norm;
     }
+
+    //-----------------------------------
+    // Vector arithmetic
 
     static vecMulScalar(vec, scalar) {
         return vec.map(e => e * scalar);

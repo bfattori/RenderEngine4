@@ -12,7 +12,7 @@ export default class SparkParticle extends SprayParticle {
     }
 
     static getInstance(spread, spreadVariance, angle, angleVariance, delay, delayVariance) {
-        return new SparkParticle(spread, spreadVariance, angle, angleVariance, delay, delayVariance);
+        return new SparkParticle();
     }
 
     spawn($memory, time, type, config) {

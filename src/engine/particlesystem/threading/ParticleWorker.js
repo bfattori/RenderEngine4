@@ -83,6 +83,25 @@ export default class ParticleWorker {
     }
 
     /**
+     * Inform the orchestrator that we received a particle or effect so it will
+     * wait until all are installed before starting.
+     * 
+     * @param {BasicParticle|ParticleEffect} obj - The particle or effect received
+     * @param {String} type - 'particle' or 'effect'
+     */
+    #acknowledge(obj, type) {
+        // let the orchestrator know that a 
+        // particle or effect was received
+        postMessage({ 
+            re4: Constants.PARTICLE_WORKER_MSG, 
+            type: Constants.MSG_ACK, 
+            workerId: this.#workerId,
+            ack: type,
+            name: obj.$name 
+        });
+    }
+
+    /**
      * Process events from the Orchestrator thread
      * @param {Object} data 
      */
@@ -91,10 +110,12 @@ export default class ParticleWorker {
             case Constants.MSG_ADD_TYPE:
                 const particle = await TransferrableConfig.reconstruct(data.particle);
                 this.instance.addParticleType(particle);
+                this.#acknowledge(particle, 'particle');
                 break;
             case Constants.MSG_ADD_EFFECT:
                 const effect = await TransferrableConfig.reconstruct(data.effect, (obj) => {obj.engine = this.instance;});
                 this.instance.addEffect(effect);
+                this.#acknowledge(effect, 'effect');
                 break;
             case Constants.MSG_ADD_PARTICLES:
                 this.instance.addParticles(data.particles);
@@ -139,9 +160,8 @@ export default class ParticleWorker {
      */
     async updateParticles() {
         try {
-            let time = performance.now(), deltaTime = time - this.#lastTime;
-
             while(this.#running) {
+                let time = performance.now(), deltaTime = time - this.#lastTime;
                 this.#lastTime = time;
 
                 const updateTime = this.instance.update(time, deltaTime);

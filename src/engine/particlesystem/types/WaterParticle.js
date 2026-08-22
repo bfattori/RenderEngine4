@@ -13,6 +13,10 @@ export default class WaterParticle extends BasicParticle {
             sizeDecay: 0.8,
         }, url);
         this.merge(opts);
-        this.name = 'sprayParticle';
+        this.name = 'waterParticle';
+    }
+
+    static getInstance() {
+        return new BurstParticle();
     }
 }

@@ -219,6 +219,15 @@ class GameWorld {
   }
 
   /**
+   * Add a set of game objects into the world at once. This is a convenience 
+   * method that calls `addObject` multiple times.
+   * @param  {...GameObject} objects - Objects to add to the game world
+   */
+  addObjects(... objects) {
+    objects.forEach(o => this.addObject(o));
+  }
+
+  /**
   * Add a game object to the world
   * @param {GameObject} object - The GameObject to add
   * @returns {GameObject}

@@ -8,7 +8,6 @@ import OrchestratorError from './OrchestratorError.js';
 
 const ctx = Context.getInstance();
 
-
 export default class $ParticleEngine {
     #thread = null;
     #ready = false;
@@ -19,6 +18,7 @@ export default class $ParticleEngine {
     #workerViews = [];
     #engineLoadView = null;
     #particleTypes = new Map();
+    #initialized = false;
 
     #initProps = null;
 
@@ -38,6 +38,10 @@ export default class $ParticleEngine {
      */
     get thread() {
         return this.#thread;
+    }
+
+    get isInitialized() {
+        return this.#initialized;
     }
 
     /**
@@ -71,6 +75,10 @@ export default class $ParticleEngine {
      */
     set bitmap(bitmap) {
         this.#bitmap = bitmap;
+    }
+    
+    initialize() {
+        this.#initialized = true;
     }
 
     /**
