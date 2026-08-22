@@ -61,6 +61,8 @@ const pEffect = new BurstEffect({
 
 RenderEngine.particleEngine.addParticleType(exParticle);
 RenderEngine.particleEngine.addEffect(pEffect);
+RenderEngine.particleEngine.initialize();
+
 
 // game object and component parts
 // - set world position, rotation, and scale

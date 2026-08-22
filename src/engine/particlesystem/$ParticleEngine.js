@@ -186,6 +186,8 @@ export default class $ParticleEngine {
         return this.#offscreen.transferToImageBitmap();
     }
 
+    initialize() {}
+
     /**
      * Initialize the particle arrays.  This is also called if `maxParticles` is changed.
      * @param {number} count - The maximum number of particles the engine will create

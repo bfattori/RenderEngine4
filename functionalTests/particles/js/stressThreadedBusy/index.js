@@ -44,7 +44,7 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 200000,
+        maxParticles: 500000,
         circularBuffer: true
     },
     threading: {
@@ -64,6 +64,7 @@ const pEffect = new BurstEffect({
 
 RenderEngine.particleEngine.addParticleType(exParticle);
 RenderEngine.particleEngine.addEffect(pEffect);
+RenderEngine.particleEngine.initialize();
 
 // game object and component parts
 // - set world position, rotation, and scale

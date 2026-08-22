@@ -40,7 +40,7 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 80000
+        maxParticles: 100000
     },
     threading: {
         particleEngine: {
@@ -53,7 +53,7 @@ await RenderEngine.init(import.meta.url, {
 
 const eParticle2 = new BurstParticle({
     colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
-    lifeSpan: [4000, 6000],
+    lifeSpan: [1000, 2000],
     drag: 0.2,
     velocity: [0.1, 0.19]
 });
@@ -62,17 +62,15 @@ eParticle2.name = 'purples';
 const eParticle3 = new BurstParticle({
     colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
     drag: 0.1,
-    dragRate: 0.4,
-    lifeSpan: [2000, 8000],
+    lifeSpan: [1000, 3000],
     velocity: [0.3, 0.35]
 });
 eParticle3.name = 'blues';
 
 const eParticle4 = new BurstParticle({
     colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
-    lifeSpan: [8000, 12000],
+    lifeSpan: [2000, 8000],
     drag: 0.01,
-    dragRate: 0.9,
     velocity: [0.4, 0.6]
 });
 eParticle4.name = 'reds';
@@ -85,6 +83,11 @@ const pEffect = new BurstEffect({
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
+
+// let the threaded particle engine know when
+// the effects and particles have been sent
+RenderEngine.particleEngine.initialize();
+
 
 // game object and component parts
 // - set world position, rotation, and scale
