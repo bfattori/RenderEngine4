@@ -1,13 +1,13 @@
 {
-   "spriteSheet": true,
-   "version": 1,
-   "bitmap": {
+  "tileSheet": true,
+  "version": 1,
+     "bitmap": {
       "image": "./images/particles/smoke.png",
       "width": 200, 
       "height": 50
    },
    "assumeOpaque": true,
-   "sprites": {
+   "tiles": {
       "smoke1": [0,0,50,50],
       "smoke2": [50,0,50,50],
       "smoke3": [100,0,50,50],

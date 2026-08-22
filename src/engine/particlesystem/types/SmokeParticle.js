@@ -1,27 +1,55 @@
-import BasicParticle from './BasicParticle.js';
+import PhysicalParticle from './PhysicalParticle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
 
-export default class SmokeParticle extends BasicParticle {
+export default class SmokeParticle extends PhysicalParticle {
+    #gradients = new Map();
+    
     constructor(opts = {}, url = import.meta.url) {
         super({
             colors: ['#35352c','#686851','#878785','#919191'],
-            sprites: [],
-            lifeSpan: [60000, 120000],
+            tileSheet: null,
+            lifeSpan: [10000, 12000],
             drag: 0,
             dragRate: 0,
             particleSize: [2, 12],
             fade: 0.008,
-            velocity: [2.0, 3.8],
-            curl: [0.01, 0.04],
+            velocity: [0.8, 1.3],
+            curl: [0.001,0.002],
             blurRadius: 1.0,
         }, url);
         this.merge(opts);
         this.name = 'smokeParticle';
+
+        this.#createGradients();
     }
 
     static getInstance() {
         return new SmokeParticle();
+    }
+
+    #createGradients() {
+        if (this.tileSheet !== null) return;
+        
+        // for each color provided
+        const canvas = new OffscreenCanvas(this.particleSize[1] * 2, this.particleSize[1] * 2);
+        const surface = canvas.getContext('2d');
+        const center = this.particleSize[1];
+
+        this.colors.forEach((color, idx) => {
+            const gradient = surface.createRadialGradient(center, center, 0, center, center, this.particleSize[1] * 2);
+            const alphaOne = Util.setAlpha(1.0, color);
+            const alphaZero = Util.setAlpha(0, color);
+            gradient.addColorStop(0, alphaOne);
+            if (this.blurRadius < 1.0) {
+                const halfAlpha = Util.setAlpha(0.5, color);
+                gradient.addColorStop(this.blurRadius, halfAlpha);
+            }
+            gradient.addColorStop(1, alphaZero);
+
+            // replace the color with a gradient
+            this.colors[idx] = gradient;
+        });
     }
 
     /**
@@ -30,21 +58,20 @@ export default class SmokeParticle extends BasicParticle {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(time, config) {
-        const particle = super.spawn(time, config);
+    spawn(pEngine, time, config) {
+        const particle = super.spawn(pEngine, time, config);
         particle.memory.curl = $Math.randomRange(this.curl[0], this.curl[1]);
         particle.memory.dir = Util.selectRandom(-1, 1);
-        // add alpha channel
-        particle.memory.color = Util.setAlpha(1.0, particle.memory.color);
-        particle.memory.alpha = 1.0;
-        particle.memory.blurRadius = this.blurRadius;
-        particle.memory.point = this.sprites.length === 0;
         particle.memory.fade = this.fade;
-        if (this.sprites.length > 0) {
-            // select a random sprite
-            particle.memory.sprite = this.sprites[$Math.randomRange(0, this.sprites.length, true)].opaqueId;
+        particle.memory.alpha = 1.0;
+        if (this.tileSheet !== null) {
+            // select a random tile
+            const rando = $Math.randomRange(0, this.tileSheet.count, true);
+            // compile the tile to get an opaqueId
+            particle.memory.tile = this.tileSheet.getTileAt(rando).opaqueId;
+        } else
+            particle.memory.point = true;
 
-        }
 
         return particle
     }
@@ -59,18 +86,18 @@ export default class SmokeParticle extends BasicParticle {
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(time, deltaTime, $memory, pos, vel, life) {
-        super.update(time, deltaTime, $memory, pos, vel, life);
+    update(pEngine, time, deltaTime, $memory, pos, vel, life) {
+        super.update(pEngine, time, deltaTime, $memory, pos, vel, life);
 
         // apply curl
         vel[0] += ($memory.curl * Math.cos(($memory.ttl - life) / 1000)) * $memory.dir;
         vel[1] += $memory.curl * Math.sin(($memory.ttl - life) / 1000);
 
-        if ($memory.fade > 0) {
-            $memory.alpha -= $memory.fade;
-            $memory.alpha = Math.max(0.0, $memory.alpha);
-            $memory.color = Util.setAlpha($memory.alpha, $memory.color);
-        }
+        // if ($memory.fade > 0) {
+        //     $memory.alpha -= $memory.fade;
+        //     $memory.alpha = Math.max(0.0, $memory.alpha);
+        //     $memory.color = Util.setAlpha($memory.alpha, $memory.color);
+        // }
     }
 
     /**
@@ -84,37 +111,28 @@ export default class SmokeParticle extends BasicParticle {
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, $memory, pos, life, target, surface) {
+    render(pEngine, time, deltaTime, $memory, pos, life, target, surface) {
+        const sz = Math.ceil($memory.size / 2);
         switch (target) {
             case 'canvas':
                 if ($memory.point) {
-                    // const gradient = surface.createRadialGradient(0, 0, 1, 0, 0, $memory.size);
-                    // gradient.addColorStop(0, $memory.color);
-                    // if ($memory.blurRadius < 1.0) {
-                    //     gradient.addColorStop($memory.blurRadius, $memory.color);
-                    // }
-                    // gradient.addColorStop(1, Util.setAlpha(0.0, $memory.color));
                     const fill = surface.fillStyle;
                     surface.beginPath();
+                    surface.arc(pos[0], pos[1], $memory.size, 0, $Math.TWO_PI);
                     surface.fillStyle = $memory.color;
-                    surface.arc(pos[0], pos[1], $memory.size, 0, $Math.TWO_PI); 
-                    surface.fill();
-                    surface.fillStyle = fill;   
+                    surface.fill(); 
+                    surface.fillStyle = fill;
+                    surface.rect(pos[0] - sz, pos[1] - sz, $memory.size, $memory.size);
+                    surface.stroke();
                 } else {
-                    // sprites?
-                    
+                    // tiles?
+                    const tile = pEngine.assembler.getCompiledSprite($memory.tile);
+                    const frame = tile.frameRect;
+                    surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pos[0], pos[1], frame[2], frame[3]);
                 }
                 break;
             case 'webgl':
                 break;
         }
     }
-    
-    /**
-     * Called to clean up the particle, such as for freeing resources
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
-     * @type {Function}
-     */
-    cleanUp($memory) {
-    } 
 }

@@ -138,7 +138,6 @@ export default class Assembler {
         return opaqueId;
     }
 
-
     /**
      * Assemble the instruction into a renderer-appropriate function call.
      * 

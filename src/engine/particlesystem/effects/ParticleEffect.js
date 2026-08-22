@@ -68,6 +68,10 @@ export default class ParticleEffect extends TransferrableConfig {
         this.#engine = pEngine;
     }
 
+    get engine() {
+        return this.#engine;
+    }
+
     /**
      * Reduce the particle types to their names
      * @returns {Object}
@@ -141,7 +145,7 @@ export default class ParticleEffect extends TransferrableConfig {
             const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
             const pType = this.particleTypes.at(typeIdx);
             if (pType) {
-                let particle = pType.spawn(time, pType.opts);
+                let particle = pType.spawn(this.engine, time, pType.opts);
                 // give sub-classes an opportunity to modify 
                 // these values or introduce new ones
                 particle = this.initParticle(particle, pType.opts);

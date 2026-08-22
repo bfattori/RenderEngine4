@@ -66,6 +66,10 @@ export default class BasicParticle extends TransferrableConfig {
         this.name = 'basicParticle'
     }
 
+    static getInstance() {
+        return new BasicParticle();
+    }
+
     /**
      * Override the name of the particle type. If you reuse a particle type, you need
      * to differentiate them by name or the particle engine will use the first instance
@@ -90,10 +94,10 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(time, config) {
+    spawn(pEngine, time, config) {
         const $memory = {};
         $memory.$pType = this.$name;    // the particle type
-        $memory.color = config.colors[$Math.randomRange(0, config.colors.length - 1, true)];
+        $memory.color = config.colors && config.colors.length !== 0 ? config.colors[$Math.randomRange(0, config.colors.length - 1, true)] : '#000';
         $memory.size = $Math.getRangeValue(config.particleSize);
         $memory.startSize = $memory.size;
         $memory.drag = $Math.getRangeValue(config.drag);
@@ -120,7 +124,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(time, deltaTime, $memory, pos, vel, life) {
+    update(pEngine, time, deltaTime, $memory, pos, vel, life) {
         // standard update:
         //   add velocity to position then add gravity to velocity
         const drag = $memory.drag !== 0 ? (1 / $memory.drag) : 1;
@@ -140,6 +144,7 @@ export default class BasicParticle extends TransferrableConfig {
 
     /**
      * Render the particle
+     * @param {ParticleEngine} pEngine - The particle engine
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      * @param {Object} $memory - The memory object containing the particle's instantaneous properties
@@ -149,7 +154,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, $memory, pos, life, target, surface) {
+    render(pEngine, time, deltaTime, $memory, pos, life, target, surface) {
         const sz = Math.ceil($memory.size / 2);
         switch (target) {
             case 'canvas':
@@ -167,5 +172,6 @@ export default class BasicParticle extends TransferrableConfig {
      * @type {Function}
      */
     cleanUp($memory) {
+        $memory.color = null;
     }            
 }

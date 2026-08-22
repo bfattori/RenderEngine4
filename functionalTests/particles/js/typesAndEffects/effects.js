@@ -1,8 +1,7 @@
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
 import FountainEffect from '../../../../src/engine/particlesystem/effects/FountainEffect.js';
-import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffect.js';
 
-import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sParticle } from './particles.js';
+import { eParticle, eParticle2, eParticle3, eParticle4, wParticle } from './particles.js';
 
 // configure particle effects
 const pEffect = new BurstEffect({
@@ -35,17 +34,9 @@ const wEffect2 = new FountainEffect({
 wEffect1.name = 'fountain1';
 wEffect2.name = 'fountain2';
 
-const sEffect = new SmokeEffect({
-  count: 1,
-  particleTypes: [sParticle],
-  angle: 0,
-  spread: 10
-});
-
 export {
   pEffect,
   pEffect2,
   wEffect1,
-  wEffect2,
-  sEffect
+  wEffect2
 };

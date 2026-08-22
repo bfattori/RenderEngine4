@@ -56,18 +56,18 @@ export default class ParticleEngine {
      * @param {Object} threading - The threading configuration for the particle engine
      * @returns {Orchestrator} The particle engine
      */
-    static async getInstance(width, height, config, threading) {
+    static async getInstance(renderContext, width, height, config, threading) {
         if (ParticleEngine.#particleEngine === null) {
             if (threading.enabled && self.Worker) {
                 console.debug('Loading particle thread manager');
                 const pEngine = await import(new URL(`./threading/$ParticleEngine.js${ctx.preventScriptCache}`, import.meta.url));
-                const manager = new pEngine.default(width, height, config, threading, { engineOpts: ctx.engineOpts, debugOpts: ctx.debugOpts });
+                const manager = new pEngine.default(renderContext, width, height, config, threading, { engineOpts: ctx.engineOpts, debugOpts: ctx.debugOpts });
                 await manager.start();
                 ParticleEngine.#particleEngine = manager;
             } else {
                 // load the particle engine interface into the main thread
                 const pEngine = await import(new URL(`./$ParticleEngine.js${ctx.preventScriptCache}`, import.meta.url));
-                ParticleEngine.#particleEngine = pEngine.default.getInstance(width, height, config, threading);
+                ParticleEngine.#particleEngine = pEngine.default.getInstance(renderContext, width, height, config, threading);
                 console.debug('Loaded particle engine')
             }
         }

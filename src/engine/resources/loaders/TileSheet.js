@@ -14,10 +14,10 @@ export default class TileSheet extends ResourceLoader {
     #bitmapSheet = null;
 
     /**
-     * Create a new `Sprite` resource.
+     * Create a new `TileSheet` resource.
      * 
-     * @param {String} name - The name of the sprite sheet
-     * @param {String} sheetUrl - The Url to the sprite sheet
+     * @param {String} name - The name of the tile sheet
+     * @param {String} sheetUrl - The Url to the tile sheet
      */
     constructor(name, sheetUrl, rel = null) {
         super(sheetUrl, ResourceLoader.TYPE.JSON, rel);
@@ -58,6 +58,16 @@ export default class TileSheet extends ResourceLoader {
 
     addTile(tileName, tile) {
         this.#tiles.set(tileName, tile);
+    }
+
+    get tileNames() {
+        const names = [];
+        this.#tiles.keys().forEach(key => names.push(key));
+        return names;
+    }
+
+    getTileAt(idx) {
+        return this.#tiles.get(this.tileNames[idx]);
     }
 
     get tiles() {

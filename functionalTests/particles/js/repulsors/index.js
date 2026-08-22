@@ -1,16 +1,16 @@
 import RenderEngine from '../../../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import RasterRenderContext from '../../../../src/engine/rendering/contexts/RasterRenderContext.js';
 import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
+
+import TileSheet from '../../../../src/engine/resources/loaders/TileSheet.js';
 
 import GameObject from '../../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
-import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
-import ParticleEffect from '../../../../src/engine/particlesystem/effects/ParticleEffect.js';
-import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
+import SmokeParticle from '../../../../src/engine/particlesystem/types/SmokeParticle.js';
+import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffect.js';
 
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
-import $Math from '../../../../src/engine/core/Math.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -24,7 +24,7 @@ await RenderEngine.init(import.meta.url, {
         }
     },
     world: {
-        renderContext: new VectorRenderContext(
+        renderContext: new RasterRenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {
@@ -41,45 +41,39 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-// set up the particles and effects we'll use
-const particleName = 'expParticle';
-const effectName = 'explosion';
+const tiles = new TileSheet('smoke', '../../../assets/smoke_sprites.json');
+await tiles.loading();
 
-const pEffect = ParticleEffect.getInstance([particleName]);
-pEffect.quantity = 100;
+const sParticle = new SmokeParticle({
+    tileSheet: tiles
+});
 
-const exParticle = ExplosionParticle.getInstance();
-RenderEngine.particleEngine.addParticleType(particleName, exParticle);
-RenderEngine.particleEngine.addEffect(effectName, pEffect);
+const sEffect = new SmokeEffect({
+  count: 1,
+  particleTypes: [sParticle],
+  angle: 0,
+  spread: 10
+});
 
-// game object and component parts
-// - set world position, rotation, and scale
-const gameObject = new GameObject();
-gameObject
+RenderEngine.particleEngine.addParticleType(sParticle);
+RenderEngine.particleEngine.addEffect(sEffect);
+
+const smoker = new GameObject();
+smoker
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
+        position: [400, 580],
         rotation: 0,
         scale: [1, 1]
     });
 
-// add the object to the world - before making any modifications to it
-RenderEngine.world.addObject(gameObject);
+// add the smoker to the world
+RenderEngine.world.addObject(smoker);
 
-// configure the emitter to use the explosion effect
-const emitter = gameObject.getComponentByName("emitter");
-emitter.effect = effectName;
-
-// every few seconds we'll generate an explosion
-function explode() {
-    gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
-    });
-    emitter.emit();
-    setTimeout(explode, $Math.randomRange(500, 2000, true));
-}
-
-explode();
+// assign the smoke effect to the emitter
+const smokeEmitter = smoker.getComponentByName("emitter")
+smokeEmitter.effect = sEffect;
+smokeEmitter.enable();
 
 // Start the render loop   
 RenderEngine.start();

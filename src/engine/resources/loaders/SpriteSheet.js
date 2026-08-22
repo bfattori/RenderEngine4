@@ -34,6 +34,10 @@ export default class SpriteSheet extends TileSheet {
         return this.tiles;
     }
 
+    getSpriteAt(idx) {
+        return this.getTileAt(idx);
+    }
+
     tile(name, sprite) {
         return new Sprite(name, this, this.tileDef[sprite]);
     }

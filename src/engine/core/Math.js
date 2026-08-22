@@ -293,7 +293,7 @@ export default class $Math {
      * @param {Array<number>} vector2 A second point on the line
      * @return {number} the vector cross-product
      */
-    static xProduct([x1, y1], [x2, y2]) {
+    static xproduct([x1, y1], [x2, y2]) {
         return (x1 * y2) - (y1 * x2);
     }
 
@@ -351,31 +351,100 @@ export default class $Math {
         return norm;
     }
 
+    /**
+     * Calcular the angle between to vectors.
+     * @param {Array<number>} v1 - The first vector
+     * @param {Array<number>} v2 - The second vector
+     * @returns {number} The angle in degrees
+     */
+    static angleBetween(v1, v2) {
+        // 1. Calculate Dot Product
+        const dot = $Math.dot(v1, v2);
+
+        // 2. Calculate Magnitudes
+        const mag1 = $Math.magnitude(v1);
+        const mag2 = $Math.magnitude(v2);
+
+        // Handle division-by-zero for zero vectors
+        if (mag1 === 0 || mag2 === 0) return 0; 
+
+        // 3. Prevent floating-point errors from pushing the ratio outside [-1, 1]
+        const cosTheta = $Math.clamp(dotProduct / (mag1 * mag2), -1.0, 1.0);
+
+        // 4. Return angle in radians (To get degrees, multiply by 180 / Math.PI)
+        return $Math.radToDeg(Math.acos(cosTheta));
+    }
+
     //-----------------------------------
     // Vector arithmetic
 
+    /**
+     * Multiply the elements of `vec` by the scalar value.
+     * @param {Array<number>} vec - The vector 
+     * @param {number} scalar - The scalar value
+     * @returns {Array<number>} The result of the multiplication
+     */
     static vecMulScalar(vec, scalar) {
         return vec.map(e => e * scalar);
     }
 
+    /**
+     * Multiply the elements in `vec` by the corresponding elements in `vec2`
+     * @param {Array<number>} vec - The first vector
+     * @param {Array<number>} vec2 - The second vector
+     * @returns {Array<number>} The result of the multiplication
+     */
     static vecMul(vec, vec2) {
         return vec.map((e, i) => e * vec2[i]);
     }
 
+    /**
+     * Add the scalar value to each element of `vec`.
+     * @param {Array<number>} vec - The vector 
+     * @param {number} scalar - The scalar value
+     * @returns {Array<number>} The result of the addition
+     */
     static vecAddScalar(vec, scalar) {
         return vec.map(e => e + scalar);
     }
 
+    /**
+     * Add the elements in `vec` to the corresponding elements in `vec2`
+     * @param {Array<number>} vec - The first vector
+     * @param {Array<number>} vec2 - The second vector
+     * @returns {Array<number>} The result of the addition
+     */
     static vecAdd(vec, vec2) {
         return vec.map((e, i) => e + vec2[i]);
     }
 
+    /**
+     * Divide the elements of `vec` by the scalar value.
+     * @param {Array<number>} vec - The vector 
+     * @param {number} scalar - The scalar value
+     * @returns {Array<number>} The result of the division
+     */
     static vecDivScalar(vec, scalar) {
         return vec.map((e) => e / scalar);
     }
 
+    /**
+     * Divide the elements in `vec` by the corresponding elements in `vec2`
+     * @param {Array<number>} vec - The first vector
+     * @param {Array<number>} vec2 - The second vector
+     * @returns {Array<number>} The result of the division
+     */
     static vecDiv(vec, vec2) {
         return vec.map((e, i) => e / vec2[i]);
+    }
+
+    /**
+     * Invert the vector's elements.
+     * @param {Array<number>} vec - The vector 
+     * @returns {Array<number>} The inverted vector
+     */
+    static invVec(vec) {
+        return vec.map(e => { return e *= -1 });
     }
 
     //----------------------------------
@@ -386,21 +455,34 @@ export default class $Math {
      * in the direction of the normalized vector
      *
      * @param {Array<number>} point - The point to test
-     * @param {Array<number>} anchor - The anchor point of the line
-     * @param {Array<number>} unitVec - The normalized vector for the line
-     * @return {Boolean}
+     * @param {Array<number>} start - The start point of the line segment
+     * @param {Array<number>} end - The end point of the line segment
+     * @param {Array<number>} epsilon - Allowed error margin for floating-point values
+     * @return {Boolean} `true` if the point falls along the line
      */
-    static pointOnLine({point: [x, y], anchor: [aX, aY], unitVec: [vX, vY]}) {
-        // var l = Line.create(anchor._vec, vector._vec);
-        // return l.contains(point._vec);
-    }
+    static pointOnLine(point, start, end, epsilon = 0.01) {
+        // check collinearity 
+        const xprod = $Math.xproduct([point[1] - start[1], end[0] - start[0]], 
+                                     [point[0] - start[0], end[1] - start[1]]);
+
+        if (Math.abs(xprod) > epsilon) {
+            // the point is not on the line
+            return false;
+        }
+
+        // the point falls within the segment bounds (bounding box test)
+        const withinX = point[0] >= Math.min(start[0], end[0]) - epsilon && point[0] <= Math.max(start[0], end[0]) + epsilon;
+        const withinY = point[1] >= Math.min(start[1], end[1]) - epsilon && point[1] <= Math.max(start[1], end[1]) + epsilon;
+
+        return withinX && withinY;
+    }    
 
     /**
      * Determine if the given <code>point</code> is within the polygon defined by the array of
      * points in `poly`
      *
      * @param {Array<number>} point The point to test
-     * @param {Array<Array>} poly - An array of points comprising the polygon
+     * @param {Array<Array<number>>} poly - An array of points comprising the polygon. E.g. [[0,0], [10, 8], [46, 12], [3, 7], [0, 0]] (a closed poly)
      * @return {boolean} `true` if the point is inside the polygon
      */
     static pointInPoly(point, poly) {
@@ -429,7 +511,22 @@ export default class $Math {
     static pointInCircle(point, center, radius) {
         // Point to circle hull test
         const dSqr = $Math.distanceSqrd(point, center);
-        return (dSqr < radius*radius);
+        return (dSqr <= radius*radius);
+    }
+
+    /**
+     * 
+     * @param {Array<number>} point - The point to test 
+     * @param {number} top - The top boundary of the rectangle
+     * @param {number} left - The top boundary of the rectangle
+     * @param {number} width - The width of the rectangle
+     * @param {number} height - The height of the rectangle
+     * @returns {boolean} `true` if the point is within the rectangle's boundaries
+     */
+    static pointInRect(point, top, left, width, height) {
+        const x = point[0], y = point[1];
+        return (x >= left && x <= left + width) &&
+               (y >= top && y <= top + height);
     }
 
     /**
@@ -442,10 +539,7 @@ export default class $Math {
      * @param {Array<number>} [line2.end] - `[ x, y ]` end of line
      * @return {Boolean} `true` if the lines intersect
      */
-    static lineLineCollision({
-        line1: [[x1, y1], [x2, y2]], /* start1, end1 */
-        line2: [[x3, y3], [x4, y4]]} /* start2, end2 */
-    ) {
+    static lineLineCollision(anchor1, unitVec1, anchor2, unitVec2) {
         // const d = $Math.pointLeftOfLine(start1, )
         //     (end2[1] - start2[1]) * (end1[0] - start1[0])
         // ) - (

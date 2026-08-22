@@ -4,6 +4,8 @@ import Context from '../Context.js';
 import LoadCounter from '../ui/debug/LoadCounter.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
+import PhysicalParticle from '../particlesystem/types/PhysicalParticle.js';
+
 
 const ctx = Context.getInstance();
 
@@ -19,6 +21,9 @@ export default class $ParticleEngine {
 
     // particle effects the engine is configured to run
     #particleEffects = new Map();
+
+    // particle affectors that impact PhysicalParticles
+    #particleAffectors = new Map();
 
     // when new particles are added, this goes true
     #newParticles = false;
@@ -48,9 +53,15 @@ export default class $ParticleEngine {
     #engineLoadView = null;
     #start = 0;
 
+    #width = 0;
+    #height = 0;
+    #affectorGrid = null;
+    #assembler = null;
+
     /**
      * Get the instance of the ParticleEngine.  This method should be used instead of creating 
      * a new instance directly to enforce the singleton pattern.
+     * @param {RenderContext} renderContext - The render context this is paired with
      * @param {number} width - The width of the render context of the particle engine
      * @param {number} height - The height of the render context of the particle engine
      * @param {Object} config - The `particleEngine` portion of the engine configuration
@@ -58,10 +69,10 @@ export default class $ParticleEngine {
      * @returns {ParticleEngine} The `ParticleEngine` singleton instance
      * @static
      */
-    static getInstance(width, height, config, threading) {
+    static getInstance(renderContext, width, height, config, threading) {
         if ($ParticleEngine.#instance === null) {
             $ParticleEngine.#useBuilder = false;
-            $ParticleEngine.#instance = new $ParticleEngine(width, height, config, threading);
+            $ParticleEngine.#instance = new $ParticleEngine(renderContext, width, height, config, threading);
         }
 
         return $ParticleEngine.#instance;
@@ -71,7 +82,7 @@ export default class $ParticleEngine {
      * @private
      * Initialize the particle engine.
      */
-    constructor(width, height, config, threading) {
+    constructor(renderContext, width, height, config, threading) {
         if ($ParticleEngine.#useBuilder)
             throw new RenderEngineError("Cannot instantiate $ParticleEngine directly. Use getInstance() instead.");
 
@@ -97,6 +108,11 @@ export default class $ParticleEngine {
 
         this.#config.merge(config);
         this.#threading.merge(threading);
+
+        this.#width = width;
+        this.#height = height;
+
+        this.#assembler = renderContext.renderer.assembler;
 
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);
@@ -178,6 +194,14 @@ export default class $ParticleEngine {
     }
 
     /**
+     * The collection of particle affectors in the engine
+     * @returns {Map<String, Array<ParticleAffector>>} A map of particle affectors by type.
+     */
+    get affectors() {
+        return this.#particleAffectors;
+    }
+
+    /**
      * Get the bitmap image of the offscreen canvas, and reset it
      * for the next rendering.
      * @returns {ImageBitmap} The bitmap image of the offscreen canvas, and reset it
@@ -186,7 +210,20 @@ export default class $ParticleEngine {
         return this.#offscreen.transferToImageBitmap();
     }
 
-    initialize() {}
+    /**
+     * Get the associated render context assembler for particle engine tiles
+     * @returns {RenderContext}
+     */
+    get assembler() {
+        return this.#assembler;
+    }
+
+    /**
+     * Initialize the particle engine
+     */
+    initialize() {
+        this.#segmentAffectors();
+    }
 
     /**
      * Initialize the particle arrays.  This is also called if `maxParticles` is changed.
@@ -200,19 +237,25 @@ export default class $ParticleEngine {
         this.#memories = new Array(count).fill(null);        // array that will hold the particle memory
     }
 
+    /**
+     * Snapshot of the current state of the live particles in the engine.
+     * @returns {Object} The state of particles: `pos`(itions), `vel`(ocities), `mem`(ories), and `life`-spans remaining.
+     */
     get state() {
-        const p = [], l = [], m = [];
+        const p = [], l = [], v = [], m = [];
         for (let i = 0; i < this.#memories.length; i++) {
             if (this.#memories[i] !== null) {
                 p.push(this.#pPos[i]);
+                v.push(this.#pVel[i]);
                 l.push(this.#pSpan[i]);
                 m.push(this.#memories[i]);
             }
         }
         return {
-            positions: p,
-            memory: m,
-            spans: l
+            pos: p,
+            vel: v,
+            mem: m,
+            life: l
         };
     }
 
@@ -235,6 +278,51 @@ export default class $ParticleEngine {
 
         return this.#particleIdx;
     }
+
+    /**
+     * To speed testing for affectors vs physical particles, segment the world into a grid of cells and
+     * assign the affectors to those cells. When particles are executing the nearby affectors can be
+     * quickly accessed and processed without having to iterate over all effectors for each particle.
+     */
+    #segmentAffectors() {
+        const affectors = this.getAffectors();
+        const grid = new Array(this.#config.affectorCellSize);
+        grid.forEach(cell => cell = new Array(this.#config.affectorCellSize));
+        affectors.forEach(affector => {
+            const cell = this.cellForPoint(affector.pos[0], affector.pos[1]);
+            grid[cell[0]][cell[1]] = affector;
+        });
+
+        this.#affectorGrid = grid;
+    }
+
+    /**
+     * Get the corresponding affectors cell for the given point.
+     * @param {number} x - The x position 
+     * @param {number} y - The y position
+     * @returns {Array<number>} [X,Y] cell numbers
+     */
+    cellForPoint(x, y) {
+        const cellX = Math.round(x / this.#config.affectorCellSize), cellY = Math.round(y / this.#config.affectorCellSize);
+        return [cellX, cellY];
+    }
+
+    /**
+     * Returns an array of `ParticleAffectors` within the affector grid containing the point.
+     * @param {number} x - The x position to test
+     * @param {number} y - The y position to test
+     * @returns 
+     */
+    getAffectorsFor(x, y) {
+        const affectors = this.getAffectors();
+        if (affectors.length === 0) return [];
+
+        const cell = this.cellForPoint(x, y);
+        return this.#affectorGrid[cell[0]][cell[1]];
+    }
+
+    //-----------------------------------
+    // particle engine objects
 
     /**
      * Add multiple particle types to the engine at once
@@ -264,44 +352,6 @@ export default class $ParticleEngine {
     }
 
     /**
-     * Add a set of particles at once. Particles have two properties: `pos` and `type`
-     * @param {Array<Object>} particles The set of particles
-     */
-    addParticles(particles) {
-        this.#newParticles |= particles.length !== 0;
-        for (const particle of particles) {
-            this.addParticle(particle);
-        }
-    }
-
-    /**
-     * Add a single particle to the engine
-     * @param particle {Object} A particle contains `pos` ([x, y]) and `type`
-     */
-    addParticle(particle) {
-        if (!this.enabled) return;
-        this.#buffered.push(particle);
-    }
-
-    /**
-     * 
-     * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
-     * @param {number} time - The current world time in milliseconds
-     * @param {Object} particle - Initialized particle data 
-     */
-    spawnParticle(worldPos, time, particle) {
-        this.#newParticles = true;
-            const idx = this.#nextIndex;
-            if (idx !== -1) {
-                this.#pPos[idx] = [worldPos[0], worldPos[1]];
-                this.#pVel[idx] = [particle.vel[0], particle.vel[1]];
-                this.#pSpan[idx] = particle.life;
-                this.#memories[idx] = particle.memory;                        
-            } else if (ctx.debug)
-                console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
-    }
-
-    /**
      * Add multiple particle effects to the engine at once
      * @param  {...ParticleEffect} effects - Particle types
      */
@@ -326,6 +376,82 @@ export default class $ParticleEngine {
      */
     getEffect(name) {
         return this.effects.get(name);
+    }
+
+    /**
+     * Convience method to add several `ParticleAffectors` at once to the engine.
+     * @param  {ParticleAffector} affectors - A list of particle affectors
+     */
+    addAffectors(... affectors) {
+        affectors.forEach(affector => this.addAffector(affector));
+    }
+
+    /**
+     * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
+     * @param {ParticleAffector} affector - The particle affector 
+     */
+    addAffector(affector) {
+        const affectors = this.#particleAffectors.getOrInsert(`${affector.type}`, []);
+        affectors.push(affector);
+    }
+
+    /**
+     * Get the `ParticleAffectors` for the given type. If `type` is not provided, the
+     * set of all affectors are returned.
+     * @param {String} type - The affector type, or undefined for all affectors
+     * @returns {Array<ParticleAffector>} The affectors
+     */
+    getAffectors(type) {
+        if (type) {
+            return this.#particleAffectors.get(type);
+        }
+        
+        const allAffectors = [];
+        this.#particleAffectors.keys().forEach(key => {
+            allAffectors = [... allAffectors, this.#particleAffectors.get(key)];
+        });
+        return allAffectors;
+    }
+
+    //-------------------------------------
+    // particle creation
+
+    /**
+     * Add multiple particles into the engine simultaneously.
+     * @param {... BasicParticle} particles The set of particles
+     */
+    addParticles(... particles) {
+        this.#newParticles |= particles.length !== 0;
+        particles.forEach(particle => this.addParticle(particle));
+    }
+
+    /**
+     * Add a single particle into the engine.
+     * @param particle {BasicParticle} A particle contains `pos` ([x, y]) and `type`
+     */
+    addParticle(particle) {
+        if (!this.enabled) return;
+        this.#buffered.push(particle);
+    }
+
+    /**
+     * Spawn a particle in the engine. Particles are spawned from particles added
+     * to the engine. Adding particles puts them into an insertion queue. Spawing them
+     * creates the instance of the particle in the engine.
+     * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
+     * @param {number} time - The current world time in milliseconds
+     * @param {Object} particle - Initialized particle data 
+     */
+    spawnParticle(worldPos, time, particle) {
+        this.#newParticles = true;
+            const idx = this.#nextIndex;
+            if (idx !== -1) {
+                this.#pPos[idx] = [worldPos[0], worldPos[1]];
+                this.#pVel[idx] = [particle.vel[0], particle.vel[1]];
+                this.#pSpan[idx] = particle.life;
+                this.#memories[idx] = particle.memory;                        
+            } else if (ctx.debug)
+                console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
     }
 
     /**
@@ -410,14 +536,36 @@ export default class $ParticleEngine {
         const pType = this.getParticleType(memory.$pType);
         
         // update the particle and then age it
-        pType.update(time, deltaTime, memory, this.#pPos[idx], this.#pVel[idx], this.#pSpan[idx]);
+        pType.update(this, time, deltaTime, memory, this.#pPos[idx], this.#pVel[idx], this.#pSpan[idx]);
         this.#pSpan[idx] -= deltaTime;
+
+        // only physical particles are affected by repulsors and colliders
+        if (pType instanceof PhysicalParticle) {
+            this.#addImpulse(idx, time, deltaTime);
+        }
 
         // free-up space when dead
         if (this.#pSpan[idx] <= 0) {
-            pType.cleanUp(memory);
+            pType.cleanUp(this, memory);
             this.#memories[idx] = null;
         }
+    }
+
+    /**
+     * Adds impulse to physical particles based on particle affectors.
+     * @param {*} idx - The particle index
+     * @param {*} time - Current world time
+     * @param {*} deltaTime - Time since last frame
+     */
+    #addImpulse(idx, time, deltaTime) {
+        const affectors = this.getAffectorsFor(this.#pPos[0], this.#pPos[1]);
+        affectors.forEach(affector => {
+            const result = affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
+            if (result !== null) {
+                this.#pPos[idx] = result.pos;
+                this.#pVel[idx] = result.vel;
+            }
+        });
     }
 
     /**
@@ -435,7 +583,7 @@ export default class $ParticleEngine {
         this.#memories.forEach((memory, i) => {
             if (memory !== null) {
                 const pType = this.getParticleType(memory.$pType);
-                pType.render(time, deltaTime, memory, 
+                pType.render(this, time, deltaTime, memory, 
                     this.#pPos[i], this.#pSpan[i], 'canvas', surf);
             }
         });

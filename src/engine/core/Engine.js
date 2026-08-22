@@ -384,7 +384,7 @@ export default class Engine {
     // ...
     const e = new Engine(engineOptions);
     if (!e.options.particleEngine.disabled) {
-      e.particleEngine = await ParticleEngine.getInstance(e.width, e.height, e.options.particleEngine, e.options.threading.particleEngine);
+      e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, e.options.particleEngine, e.options.threading.particleEngine);
     }
     return e;
   }

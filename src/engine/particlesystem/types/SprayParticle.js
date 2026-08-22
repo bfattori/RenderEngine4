@@ -18,8 +18,8 @@ export default class SprayParticle extends BasicParticle {
         return new SprayParticle();
     }
 
-    spawn($memory, time, type, config) {
-        const p = super.spawn($memory, time, type, config);
+    spawn(pEngine, $memory, time, type, config) {
+        const p = super.spawn(pEngine, $memory, time, type, config);
         const sprayWidth = config.spread + $Math.randomRange(0, config.spreadVariance, true);
         const halfAngle = Math.floor(sprayWidth / 2);
         p.vel = $Math.vecMulScalar(

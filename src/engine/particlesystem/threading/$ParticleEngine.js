@@ -21,8 +21,9 @@ export default class $ParticleEngine {
     #initialized = false;
 
     #initProps = null;
+    #assembler = null;
 
-    constructor(width, height, config, threading, opts) {
+    constructor(renderContext, width, height, config, threading, opts) {
         this.#initProps = {
             width: width,
             height: height,
@@ -30,6 +31,7 @@ export default class $ParticleEngine {
             threading: threading,
             opts: opts
         };
+        this.#assembler = renderContext.renderer.assembler;
     }
 
     /**
@@ -292,6 +294,25 @@ export default class $ParticleEngine {
         this.#send({ 
             type: Constants.MSG_ADD_EFFECT, 
             effect: particleEffect.transferrable 
+        });
+    }
+
+    /**
+     * Convience method to add several `ParticleAffectors` at once to the engine.
+     * @param  {ParticleAffector} affectors - A list of particle affectors
+     */
+    addAffectors(... affectors) {
+        affectors.forEach(affector => this.addAffector(affector));
+    }
+
+    /**
+     * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
+     * @param {ParticleAffector} affector - The particle affector 
+     */
+    addAffector(affector) {
+        this.#send({ 
+            type: Constants.MSG_ADD_AFFECTOR, 
+            affector: affector.transferrable 
         });
     }
 

@@ -27,22 +27,22 @@ export default class Tile extends Config {
      * Create a new `Tile` resource.
      * 
      * @param {String} name - The name of the tile
-     * @param {SpriteSheet} spriteSheet - The sprite sheet resource 
+     * @param {TileSheet} tileSheet - The tile sheet resource 
      * @param {{ Number, Number, Number, Number, Number, String, Boolean }} [props] - The tile info
      * @param {Number} [left=0] - The left position of the sprite on the sprite sheet
      * @param {Number} [top=0] - The top position of the sprite on the sprite sheet
      * @param {Number} [width] - The width of the sprite
      * @param {Number} [height] - The height of the sprite
      */
-    constructor(name, spriteSheet, tileDef) {
+    constructor(name, tileSheet, tileDef) {
         super({
             name: name || `TILE:${Util.hexHash(date.now().toString())}`,
-            spriteSheet: spriteSheet,
+            tileSheet: tileSheet,
             tile: null
         });
 
-        if (!spriteSheet)
-            throw new ResourceError(this, `An error occurred creating the tile "${name}" - no sprite sheet`, ex);
+        if (!tileSheet)
+            throw new ResourceError(this, `An error occurred creating the tile "${name}" - no tile sheet`, ex);
 
         if (tileDef)
             this.initialize = tileDef;
@@ -67,8 +67,9 @@ export default class Tile extends Config {
                 frameRect: [tileDef[0], tileDef[1], tileDef[2], tileDef[3]],
                 boundingBox: [0, 0, tileDef[2], tileDef[3]]
             });
+
             // this would be better if we had a reference of our own
-            this.#opaqueId = Engine.renderContext.compileTile(this);
+            this.#opaqueId = Engine.renderContext.compileSprite(this);
         }
     }
 
@@ -76,7 +77,7 @@ export default class Tile extends Config {
      * Destroy the sprite instance
      */
     destroy() {
-        this.spriteSheet = null;
+        this.tileSheet = null;
     }
 
     /**
@@ -85,11 +86,15 @@ export default class Tile extends Config {
      */
     get sourceImage() {
         // extract the frame and draw to our buffer
-        return this.spriteSheet.sheet.image;
+        return this.tileSheet.sheet.image;
     }
 
     get frameRect() {
         return this.tile.frameRect;
+    }
+
+    get sheet() {
+        return this.tileSheet;
     }
 
     /**

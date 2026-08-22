@@ -21,8 +21,8 @@ export default class FireworksParticle extends BasicParticle {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn($memory, time, type, config) {
-        super.spawn($memory, time, type, config);
+    spawn(pEngine, $memory, time, type, config) {
+        super.spawn(pEngine, $memory, time, type, config);
         $memory.$pType = type;    // the particle type
         $memory.color = config.colorSets
         $memory.color = config.colors[$Math.randomRange(0, config.colors.length - 1, true)];
@@ -52,7 +52,7 @@ export default class FireworksParticle extends BasicParticle {
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(time, deltaTime, $memory, pos, vel, life) {
+    update(pEngine, time, deltaTime, $memory, pos, vel, life) {
         // standard update (add velocity to position)
         pos[0] += (vel[0] * (1 / $memory.drag));
         pos[1] += (vel[1] * (1 / $memory.drag));
@@ -72,7 +72,7 @@ export default class FireworksParticle extends BasicParticle {
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, $memory, pos, life, target, surface) {
+    render(pEngine, time, deltaTime, $memory, pos, life, target, surface) {
         const sz = Math.ceil($memory.size / 2);
         switch (target) {
             case 'canvas':
@@ -83,12 +83,4 @@ export default class FireworksParticle extends BasicParticle {
                 break;
         }
     }
-    
-    /**
-     * Called to clean up the particle, such as for freeing resources
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
-     * @type {Function}
-     */
-    cleanUp($memory) {
-    }    
 }

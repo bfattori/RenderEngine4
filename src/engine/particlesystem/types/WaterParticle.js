@@ -17,6 +17,6 @@ export default class WaterParticle extends BasicParticle {
     }
 
     static getInstance() {
-        return new BurstParticle();
+        return new WaterParticle();
     }
 }

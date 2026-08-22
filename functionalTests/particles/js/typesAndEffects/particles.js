@@ -1,6 +1,5 @@
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import WaterParticle from '../../../../src/engine/particlesystem/types/WaterParticle.js';
-import SmokeParticle from '../../../../src/engine/particlesystem/types/SmokeParticle.js';
 
 // configure particles
 const eParticle = new BurstParticle();
@@ -30,13 +29,10 @@ const wParticle = new WaterParticle({
     velocity: [0.4, 0.45]
 });
 
-const sParticle = new SmokeParticle();
-
 export {
   eParticle,
   eParticle2,
   eParticle3,
   eParticle4,
-  wParticle,
-  sParticle
+  wParticle
 };
