@@ -64,7 +64,7 @@ const sEffect2 = new SmokeEffect({
   count: 5,
   particleTypes: [sParticle2],
   angle: 0,
-  spread: 10
+  spread: 20
 });
 sEffect2.name = 'points';
 
