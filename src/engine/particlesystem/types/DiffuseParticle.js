@@ -56,7 +56,7 @@ export default class DiffuseParticle extends BasicParticle {
    * @returns 
    */
   #gradient($memory, pos) {
-    const gradient = this.#ctx.createRadialGradient(pos[0], pos[0], 0, pos[0], pos[0], $memory.size);
+    const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], $memory.size);
     const alphaOne = Util.setAlpha(1.0, $memory.color);
     const alphaZero = Util.setAlpha(0, $memory.color);
     gradient.addColorStop(0, alphaOne);

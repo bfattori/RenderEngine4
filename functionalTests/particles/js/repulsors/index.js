@@ -47,22 +47,40 @@ await tiles.loading();
 const sParticle = new SmokeParticle({
     tileSheet: tiles
 });
+sParticle.name = 'withTiles';
 
 const sEffect = new SmokeEffect({
-  count: 6,
+  count: 5,
   particleTypes: [sParticle],
   angle: 0,
   spread: 10
 });
+sEffect.name = 'withTiles';
 
-RenderEngine.particleEngine.addParticleType(sParticle);
-RenderEngine.particleEngine.addEffect(sEffect);
+const sParticle2 = new SmokeParticle();
+sParticle2.name = 'points';
 
+const sEffect2 = new SmokeEffect({
+  count: 5,
+  particleTypes: [sParticle2],
+  angle: 0,
+  spread: 10
+});
+sEffect2.name = 'points';
+
+RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
+RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
+
+// let the threaded particle engine know when
+// the effects and particles have been sent
+RenderEngine.particleEngine.initialize();
+
+// smoker using bitmaps (tiles)
 const smoker = new GameObject();
 smoker
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [400, 580],
+        position: [200, 580],
         rotation: 0,
         scale: [1, 1]
     });
@@ -73,7 +91,27 @@ RenderEngine.world.addObject(smoker);
 // assign the smoke effect to the emitter
 const smokeEmitter = smoker.getComponentByName("emitter")
 smokeEmitter.effect = sEffect;
+
+// smoker using diffuse particles
+const smoker2 = new GameObject();
+smoker2
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
+    .worldTransform = Matrix2d.identity().update({
+        position: [600, 580],
+        rotation: 0,
+        scale: [1, 1]
+    });
+
+// add the smoker to the world
+RenderEngine.world.addObject(smoker2);
+
+// assign the smoke effect to the emitter
+const smokeEmitter2 = smoker2.getComponentByName("emitter")
+smokeEmitter2.effect = sEffect2;
+
 smokeEmitter.enable();
+smokeEmitter2.enable();
+
 
 // Start the render loop   
 RenderEngine.start();

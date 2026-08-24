@@ -53,24 +53,6 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-// //-----------------------------------
-// // configure the particle engine with the particles and effects
-
-// const tiles = new TileSheet('smoke', '../../../assets/smoke_sprites.json');
-// await tiles.loading();
-
-// const sParticle = new SmokeParticle({
-//     tileSheet: tiles
-// });
-
-
-// const sEffect = new SmokeEffect({
-//   count: 1,
-//   particleTypes: [sParticle],
-//   angle: 0,
-//   spread: 10
-// });
-
 RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle); //, sParticle);
 RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2); // , sEffect);
 
