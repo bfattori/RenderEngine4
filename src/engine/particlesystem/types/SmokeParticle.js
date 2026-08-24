@@ -9,11 +9,12 @@ export default class SmokeParticle extends PhysicalParticle {
             lifeSpan: [10000, 12000],
             drag: 0,
             dragRate: 0,
-            particleSize: [2, 12],
+            particleSize: [10, 16],
             fade: 0.008,
             velocity: [0.8, 1.3],
             curl: [0.001,0.002],
-            growth: 0.1
+            growth: 0.1,
+            softness: 0.15
         }, url);
         this.merge(opts);
         this.name = 'smokeParticle';
