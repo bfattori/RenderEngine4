@@ -29,8 +29,7 @@ class Orchestrator {
 
     #workersInitialized = 0;
 
-
-    constructor(viewPort, particlesConfig, threadingConfig, systemOpts) {
+    constructor(assembler, viewPort, particlesConfig, threadingConfig, systemOpts) {
         this.#compositor = new OffscreenCanvas(viewPort[0], viewPort[1]);
         this.#particlesConfig = particlesConfig;
         this.#threadingConfig = threadingConfig;
@@ -43,7 +42,7 @@ class Orchestrator {
         ctx.engineOpts = systemOpts.engineOpts;
         this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
 
-        this.#spawnWorkers();
+        this.#spawnWorkers(assembler);
     }
 
     get expected() {
@@ -62,7 +61,7 @@ class Orchestrator {
         return this.#timers;
     }
 
-    #spawnWorkers() {
+    #spawnWorkers(assembler) {
         const pConfig = this.#particlesConfig;
         const tConfig = this.#threadingConfig;
         const vPort = this.#viewPort;
@@ -101,7 +100,8 @@ class Orchestrator {
             worker.postMessage({ 
                 re4: Constants.ORCHESTRATOR_MSG, 
                 type: Constants.MSG_INIT, 
-                workerId: i, 
+                workerId: i,
+                assembler: assembler,
                 width: vPort[0], 
                 height: vPort[1], 
                 config: workerConfig, 
@@ -357,11 +357,12 @@ messageHandler = addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.PARTICLE_MANAGER_MSG) {
         if (event.data.type === Constants.MSG_INIT) {
             console.debug('Starting particle orchestrator');
+            const assembler = event.data.assembler;
             const viewPort = [event.data.width, event.data.height];
             const particlesConfig = event.data.config;
             const threadingConfig = event.data.threading;
             const systemOpts = event.data.systemOpts;
-            orchestratorInstance = new Orchestrator(viewPort, particlesConfig, threadingConfig, systemOpts);
+            orchestratorInstance = new Orchestrator(assembler, viewPort, particlesConfig, threadingConfig, systemOpts);
         } else if (orchestratorInstance) {
             orchestratorInstance.process(event);
         }

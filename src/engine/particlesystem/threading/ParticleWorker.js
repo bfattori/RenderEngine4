@@ -11,8 +11,13 @@ import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
+import { CanvasRasterAssembler, CanvasVectorAssembler } from '../../rendering/assemblers/canvas/CanvasAssemblers.js';
+
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
+
+self.CanvasRasterAssembler = CanvasRasterAssembler;
+self.CanvasVectorAssembler = CanvasVectorAssembler;
 
 self.$$worker = null;
 const ctx = Context.getInstance();
@@ -25,9 +30,10 @@ export default class ParticleWorker {
     #lastTime = 0;
     #fps = 0;
     #startTime = 0;
+    #assembler = null;
 
-    constructor(workerId, width, height, config, threading, systemOpts) {
-        this.#engineInstance = $ParticleEngine.getInstance(width, height, config, threading);
+    constructor(workerId, assembler, width, height, config, threading, systemOpts) {
+        this.#engineInstance = $ParticleEngine.getWorkerInstance(width, height, config, threading);
         this.#workerId = workerId;
 
         // initialize the context with the system options
@@ -38,7 +44,7 @@ export default class ParticleWorker {
         this.#classMap.set('BasicParticle', BasicParticle);
         this.#fps = Math.floor(1000 / threading.framesPerSecond);
     
-        this.readyUp(workerId);
+        this.readyUp(workerId, assembler);
     }
 
     set startTime(time) {
@@ -68,11 +74,15 @@ export default class ParticleWorker {
     }
 
     /**
-     * Let the orchestrator know the worker is 
-     * ready to handle particles
-     * @param {number} workerId 
+     * Prepare the assembler for use by the worker. Let the orchestrator know the worker is ready to run.
+     * 
+     * @param {number} workerId - The worker's id for communicating back to the orchestrator
+     * @param {string} assemblerClass - The assembler class to instantiate
      */
-    readyUp(workerId) {
+    readyUp(workerId, assemblerClass) {
+        // create an assembler instance
+        this.#assembler = self[assemblerClass].getInstance();
+
         postMessage({ 
             re4: Constants.PARTICLE_WORKER_MSG, 
             type: Constants.MSG_READY, 
@@ -83,8 +93,9 @@ export default class ParticleWorker {
     }
 
     /**
-     * Inform the orchestrator that we received a particle or effect so it will
-     * wait until all are installed before starting.
+     * Inform the orchestrator that we received a particle or effect. The orchestrator
+     * will wait for workers to acknowledge all required assets before acknowledging readiness
+     * itself.
      * 
      * @param {BasicParticle|ParticleEffect} obj - The particle or effect received
      * @param {String} type - 'particle' or 'effect'
@@ -198,7 +209,15 @@ addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.ORCHESTRATOR_MSG) {
         if (event.data.type === Constants.MSG_INIT) {
             console.debug(`Starting ParticleWorker ${event.data.workerId}`);
-            self.$$worker = new ParticleWorker(event.data.workerId, event.data.width, event.data.height, event.data.config, event.data.threading, event.data.systemOpts);
+            self.$$worker = new ParticleWorker(
+                event.data.workerId, 
+                event.data.assembler, 
+                event.data.width, 
+                event.data.height, 
+                event.data.config, 
+                event.data.threading, 
+                event.data.systemOpts
+            );
         } else if (self.$$worker) {
             self.$$worker.process(event.data);
         }

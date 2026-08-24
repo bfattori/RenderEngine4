@@ -1,5 +1,6 @@
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
+import { Matrix2d } from '../../core/Matrix.js';
 
 export default class BasicParticle extends TransferrableConfig {
     #name = 'basicParticle';
@@ -20,6 +21,11 @@ export default class BasicParticle extends TransferrableConfig {
              * @type {String}
              */
             colors: ['#fff'],
+            /**
+             * Tiles (bitmaps) used in place of a simple colored shape.
+             * @type {}
+             */
+             tileSheet: null,
             /**
              * Size of the particle
              * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
@@ -104,9 +110,27 @@ export default class BasicParticle extends TransferrableConfig {
         $memory.dragRate = $Math.getRangeValue(config.dragRate);
         $memory.gravity = config.gravity;
         $memory.sizeDecay = config.sizeDecay;
+        $memory.fade = this.fade;
+        $memory.alpha = 1.0;
 
         const life = $Math.getRangeValue(config.lifeSpan);
         $memory.ttl = (life - $Math.getRangeValue(config.lifeVariance));
+
+        if (this.tileSheet !== null) {
+            // select a random tile
+            const tileNum = $Math.randomRange(0, this.tileSheet.count, true);
+            $memory.tile = this.tileSheet.getTileAt(tileNum).opaqueId;
+            $memory.mtx = Matrix2d.identity();    // start at 1,1
+            $memory.mtx.setTo({
+                position: [0, 0],
+                scale: [1, 1],
+                rotation: 0
+            });
+            $memory.scale = 1.0;
+            $memory.growth = this.growth;
+        } else
+            $memory.point = true;
+
         return {
             memory: $memory,
             life: life,
@@ -136,10 +160,20 @@ export default class BasicParticle extends TransferrableConfig {
         // increase drag over time
         $memory.drag += $memory.dragRate;
 
+        // grow tile-based particles in size
+        // if (!$memory.point)
+        //     $memory.scale += $memory.growth;
+
         // shrink over the lifespan
         if ($memory.sizeDecay > 0.0) {
             $memory.size = ((life / $memory.ttl) * $memory.startSize) / $memory.sizeDecay;
         }
+
+        // if ($memory.fade > 0) {
+        //     $memory.alpha -= $memory.fade;
+        //     $memory.alpha = Math.max(0.0, $memory.alpha);
+        //     $memory.color = Util.setAlpha($memory.alpha, $memory.color);
+        // }
     }
 
     /**
@@ -155,16 +189,56 @@ export default class BasicParticle extends TransferrableConfig {
      * @type {Function}
      */
     render(pEngine, time, deltaTime, $memory, pos, life, target, surface) {
-        const sz = Math.ceil($memory.size / 2);
         switch (target) {
             case 'canvas':
-                surface.fillStyle = $memory.color;
-                surface.fillRect(pos[0] - sz, pos[1] - sz, $memory.size, $memory.size);    
+                if ($memory.point) {
+                    this.drawShape(pEngine, time, deltaTime, surface, $memory, pos);
+                } else {
+                    this.drawTile(pEngine, time, deltaTime, surface, $memory, pos);
+                }
                 break;
             case 'webgl':
                 break;
         }
     }
+
+    /**
+     * Render the particle
+     * @param {ParticleEngine} pEngine - The particle engine
+     * @param {Number} time - The current world time in milliseconds
+     * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
+     * @param {CanvasRenderingContext2D} surface - The rendering context
+     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @param {Array<number>} pos - The current position of the particle
+     * @type {Function}
+     */
+    drawShape(pEngine, time, deltaTime, surface, $memory, pos) {
+        const sz = Math.ceil($memory.size / 2);
+        surface.fillStyle = $memory.color;
+        surface.fillRect(pos[0] - sz, pos[1] - sz, $memory.size, $memory.size);    
+    }
+
+    /**
+     * Render the particle
+     * @param {ParticleEngine} pEngine - The particle engine
+     * @param {Number} time - The current world time in milliseconds
+     * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
+     * @param {CanvasRenderingContext2D} surface - The rendering context
+     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @param {Array<number>} pos - The current position of the particle
+     * @type {Function}
+     */
+    drawTile(pEngine, time, deltaTime, surface, $memory, pos) {
+        // $memory.mtx.setTo({
+        //     scale: [$memory.scale, $memory.scale]
+        // });
+        // surface.transform.apply(surface, $memory.mtx.asCanvas());
+        const tile = pEngine.assembler.getCompiledSprite($memory.tile);
+        const frame = tile.frameRect;
+        surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pos[0], pos[1], frame[2], frame[3]);
+        //surface.restore();
+    }
+
     
     /**
      * Called to clean up the particle, such as for freeing resources

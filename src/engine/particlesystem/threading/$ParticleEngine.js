@@ -131,7 +131,8 @@ export default class $ParticleEngine {
             // initialize the orchestator and wait for it to be ready
             this.#thread.postMessage({ 
                 re4: Constants.PARTICLE_MANAGER_MSG, 
-                type: Constants.MSG_INIT, 
+                type: Constants.MSG_INIT,
+                assembler: this.#assembler.constructor.name,
                 width: this.#initProps.width, 
                 height: this.#initProps.height, 
                 config: this.#initProps.config, 

@@ -12,6 +12,7 @@ const ctx = Context.getInstance();
 export default class $ParticleEngine {
     static #instance = null;
     static #useBuilder = true;
+    
 
     #config = new ParticleEngineConfig();
     #threading = new ParticleEngineThreadingConfig();
@@ -59,8 +60,9 @@ export default class $ParticleEngine {
     #assembler = null;
 
     /**
-     * Get the instance of the ParticleEngine.  This method should be used instead of creating 
+     * Get the instance of the `ParticleEngine`.  This method should be used instead of creating 
      * a new instance directly to enforce the singleton pattern.
+     * 
      * @param {RenderContext} renderContext - The render context this is paired with
      * @param {number} width - The width of the render context of the particle engine
      * @param {number} height - The height of the render context of the particle engine
@@ -73,6 +75,26 @@ export default class $ParticleEngine {
         if ($ParticleEngine.#instance === null) {
             $ParticleEngine.#useBuilder = false;
             $ParticleEngine.#instance = new $ParticleEngine(renderContext, width, height, config, threading);
+        }
+
+        return $ParticleEngine.#instance;
+    }
+
+    /**
+     * Used by `ParticleWorker` to create an internal instance of the `ParticleEngine`. Particle workers
+     * will assign the assembler to use instead of getting it from the `RenderContext`.
+     * 
+     * @param {number} width - The width of the render context of the particle engine
+     * @param {number} height - The height of the render context of the particle engine
+     * @param {Object} config - The `particleEngine` portion of the engine configuration
+     * @param {Object} threading - The `particleEngine` portion of the engine threading configuration
+     * @returns {ParticleEngine} The `ParticleEngine` singleton instance
+     * @static
+     */
+    static getWorkerInstance(width, height, config, threading) {
+        if ($ParticleEngine.#instance === null) {
+            $ParticleEngine.#useBuilder = false;
+            $ParticleEngine.#instance = new $ParticleEngine(null, width, height, config, threading);
         }
 
         return $ParticleEngine.#instance;
@@ -112,7 +134,10 @@ export default class $ParticleEngine {
         this.#width = width;
         this.#height = height;
 
-        this.#assembler = renderContext.renderer.assembler;
+        if (renderContext !== null) {
+            // the workers will assign their cache
+            this.#assembler = renderContext.renderer.assembler;
+        }
 
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);

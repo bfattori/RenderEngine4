@@ -136,27 +136,6 @@ RenderEngine.world.addObjects(fountain1, fountain2);
 fountain1.getComponentByName("emitter").effect = wEffect1;
 fountain2.getComponentByName("emitter").effect = wEffect2;
 
-//-------------------------------------
-// smoke effect
-
-const smoker = new GameObject();
-smoker
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 580],
-        rotation: 0,
-        scale: [1, 1]
-    });
-
-// add the smoker to the world
-RenderEngine.world.addObject(smoker);
-
-// assign the smoke effect to the emitter
-const smokeEmitter = smoker.getComponentByName("emitter")
-smokeEmitter.effect = sEffect;
-
-// maybe we need to await the particle engine before starting??
-
 
 // start the particle effects
 explode();
@@ -165,8 +144,6 @@ RenderEngine.hooks.onBeforeFrame = () => {
     fountain1.getComponentByName("emitter").reset().enable();
     fountain2.getComponentByName("emitter").reset().enable();
 };
-
-smokeEmitter.enable();
 
 // Start the render loop   
 RenderEngine.start();

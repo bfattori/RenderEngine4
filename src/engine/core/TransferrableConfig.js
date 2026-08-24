@@ -52,11 +52,47 @@ export default class TransferrableConfig extends Config {
     }
 
     /**
-     * Convert this object's complex types into primitive values.
-     * @returns {Object}
+     * Convert this object's complex types into primitive values. Recursively
+     * dehydrates tranferrable objects contained in this object.
+     * @returns {Object} A primitives-only object representing the config
      */
     dehydrate() {
-        return this.opts;
+        const t = {};
+        Object.keys(this.opts).forEach(key => {
+            const value = this.opts[key];
+            if (Array.isArray(value)) {
+                t[key] = value.map(v => {
+                    if (v instanceof TransferrableConfig)
+                        return v.transferrable;
+                    else 
+                        return v;
+                });
+            } else if (value instanceof TransferrableConfig) {
+                t[key] = value.transferrable;
+            } else if (typeof value === 'object') {
+                let o = {};
+                if (value !== null)
+                    value.forEach((k, v) => {
+                        if (v instanceof TransferrableConfig) {
+                            o[k] = v.transferrable;
+                        } else if (Array.isArray(v)) {
+                            o[k] = v.map(val => {
+                                if (val instanceof TransferrableConfig)
+                                    return val.transferrable;
+                                else 
+                                    return v;
+                            });
+                        } else {
+                            o[k] = v;
+                        }
+                    })
+                else o = null;
+                t[key] = o;
+            } else {
+                t[key] = value;
+            }
+        });
+        return t;
     }
 
     /**

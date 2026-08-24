@@ -30,6 +30,7 @@ export default class Assembler {
      */
     static getInstance() {
         Assembler.#built = true;
+        return new Assembler();
     }
 
     //-------------------------------------------------

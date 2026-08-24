@@ -4,8 +4,8 @@ import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
 import { CanvasConfig } from '../../core/Config.js';
-import CanvasVectorAssembler from '../assemblers/Canvas/VectorAssembler.js';
-import CanvasRasterAssembler from '../assemblers/Canvas/RasterAssembler.js';
+import CanvasVectorAssembler from '../assemblers/canvas/CanvasVectorAssembler.js';
+import CanvasRasterAssembler from '../assemblers/canvas/CanvasRasterAssembler.js';
 import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 
 const ctx = Context.getInstance();

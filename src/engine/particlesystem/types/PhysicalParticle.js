@@ -1,4 +1,4 @@
-import BasicParticle from './BasicParticle.js';
+import DiffuseParticle from './DiffuseParticle.js';
 
 /**
  * `PhysicalParticle` is the base class for particles that interact with the game through `ParticleColliders` and `ParticleRepulsors`, providing visual response
@@ -9,7 +9,7 @@ import BasicParticle from './BasicParticle.js';
  * @param {Object} opts - Configuration options for the particle
  * @param {String} url - The module's Url
  */
-export default class PhysicalParticle extends BasicParticle {
+export default class PhysicalParticle extends DiffuseParticle {
     constructor(opts = {}, url = import.meta.url) {
         super({
             /**
