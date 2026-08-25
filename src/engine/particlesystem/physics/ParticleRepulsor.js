@@ -55,25 +55,20 @@ export default class ParticleRepulsor extends ParticleAffector {
    */
   affect(position, velocity, time, deltaTime) {
     // early out
-    if (!$Math.pointInCircle(position, this.pos, this.radius)) return null;
-    
     const dist = $Math.distance(position, this.pos);
-    const fallOff = this.#getFallOff(position[0], position[1], dist);
 
-    const pToA = $Math.vecSubtract(position, this.pos);
-    const pToAUnit = $Math.vecDivScalar(pToA, dist);
+    if (dist < this.radius && dist > 0) {
+      const normX = (position[0] - this.pos[0]) / dist;
+      const normY = (position[1] - this.pos[1]) / dist;
 
-    const aToP = $Math.vecSubtract(this.pos, position);
-    const aToPUnit = $Math.vecDivScalar(aToP, dist);
+      const fallOff = this.#getFallOff(this.pos[0], this.pos[1], dist);
+      const impulseVec = $Math.vecMulScalar($Math.vecMulScalar([normX, normY], fallOff), this.impulse);
 
-    const angleBetween = $Math.angleBetween(pToAUnit, aToPUnit);
-    let impulse = $Math.getDirectionVector(position, angleBetween);
-    impulse = $Math.invVec(impulse);
-
-    // nudge away from the repulsor
-    const v = $Math.vecAdd(velocity, $Math.vecMulScalar(impulse, fallOff * this.impulse));
-    velocity[0] = v[0];
-    velocity[1] = v[1];
+      // nudge away from the repulsor
+      const v = $Math.vecAdd(velocity, impulseVec);
+      velocity[0] = v[0] * this.friction;
+      velocity[1] = v[1] * this.friction;
+    }
   }
 
   /**

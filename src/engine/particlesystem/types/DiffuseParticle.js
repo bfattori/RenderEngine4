@@ -7,6 +7,10 @@ export default class DiffuseParticle extends BasicParticle {
 
   constructor(opts = {}, url = import.meta.url) {
     super({
+      /**
+       * The diffuse blurring of the particle. Higher values imply more blurring.
+       * @type {number}
+       */
       softness: 1.0
     }, url);
     this.merge(opts);

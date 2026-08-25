@@ -41,6 +41,10 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
+    },
+    particleEngine: {
+        affectorDensity: 2,
+        affectorCellSize: 10
     }
 });
 
@@ -53,10 +57,9 @@ const sParticle = new SmokeParticle({
 sParticle.name = 'withTiles';
 
 const sEffect = new SmokeEffect({
-  count: 5,
+  count: 2,
   particleTypes: [sParticle],
-  angle: 0,
-  spread: 10
+  angle: 0
 });
 sEffect.name = 'withTiles';
 
@@ -66,25 +69,24 @@ sParticle2.name = 'points';
 const sEffect2 = new SmokeEffect({
   count: 2,
   particleTypes: [sParticle2],
-  angle: 0,
-  spread: 20
+  angle: 0
 });
 sEffect2.name = 'points';
 
 // the particle repulsors
 const repulsor = new ParticleRepulsor({
     radius: 100,
-    pos: [150, 300],
-    impulse: 0.008
+    pos: [150, 380],
+    impulse: 0.07
 });
 
-// const repulsor2 = new ParticleRepulsor({
-//     radius: 150,
-//     pos: [600, 300],
-//     impulse: 0.005
-// });
+const repulsor2 = new ParticleRepulsor({
+     radius: 200,
+     pos: [500, 160],
+     impulse: 0.07
+});
 
-RenderEngine.particleEngine.addAffectors(repulsor);
+RenderEngine.particleEngine.addAffectors(repulsor, repulsor2);
 RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 

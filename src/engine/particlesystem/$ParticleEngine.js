@@ -314,7 +314,7 @@ export default class $ParticleEngine {
      */
     #segmentAffectors() {
         const affectors = this.getAffectors();
-        const grid = new Array(5).fill(null);
+        const grid = new Array(this.#config.affectorCellSize).fill(null);
         grid.forEach((cell, idx) => { grid[idx] = new Array(this.#config.affectorCellSize).fill(null); });
         affectors.forEach(affector => {
             const cell = this.cellForPoint(affector.pos[0], affector.pos[1]);
@@ -340,18 +340,63 @@ export default class $ParticleEngine {
     }
 
     /**
-     * Returns an array of `ParticleAffectors` within the affector grid containing the point.
+     * Returns an array of `ParticleAffectors` within the affector grid containing the point. The parameter `d`
+     * dictates the density of the returned grid cells. `0` is for the cell that matches X, Y and is a density of 1. `1` includes the
+     * polar cells (N, E, S, W) for a density of 5. `2` adds the diagonal cells (NE, SE, SW, NW) for a density of 9.
+     * 
      * @param {number} x - The x position to test
      * @param {number} y - The y position to test
-     * @returns 
+     * @param {number} d - The density of the returned array
+     * @returns {Array<ParticleAffector>} Array of `ParticleAffectors` within the affector grid cells for the given point
      */
-    getAffectorsFor(x, y) {
+    getAffectorsFor(x, y, d = 0) {
         const affectors = this.getAffectors();
         if (affectors.length === 0) return [];
 
         try {
             const cell = this.cellForPoint(x, y);
-            return this.#affectorGrid[cell[0]][cell[1]];
+            if (d === 0) {
+                return this.#affectorGrid[cell[0]][cell[1]];
+            } else {
+                // center cell
+                let affectors = [];
+                const cells = this.#config.affectorCellSize;
+
+                if (this.#affectorGrid[cell[0]][cell[1]]) {
+                    affectors = affectors.concat(this.#affectorGrid[cell[0]][cell[1]]);
+                }
+
+                // 4 polar cells
+                if (cell[0] > 0 && this.#affectorGrid[cell[0] - 1][cell[1]])
+                    affectors = affectors.concat(this.#affectorGrid[cell[0] - 1][cell[1]]); // west
+                
+                if (cell[0] < cells - 1 && this.#affectorGrid[cell[0] + 1][cell[1]])
+                    affectors = affectors.concat(this.#affectorGrid[cell[0] + 1][cell[1]]); // east
+                
+                if (cell[1] > 0 && this.#affectorGrid[cell[0][cell[1] - 1]])
+                    affectors = affectors.concat(this.#affectorGrid[cell[0][cell[1] - 1]]); // north
+
+                if (cell[1] < cells - 1 && this.#affectorGrid[cell[0][cell[1] + 1]])
+                    affectors = affectors.concat(this.#affectorGrid[cell[0][cell[1] + 1]]); // south
+                
+                if (d > 1) {
+                    // 4 diagonal cells
+                    if (cell[0] > 0 && cell[1] > 0 && this.#affectorGrid[cell[0] - 1][cell[1] - 1])
+                        affectors = affectors.concat(this.#affectorGrid[cell[0] - 1][cell[1] - 1]);  // nw
+
+                    if (cell[0] < cells - 1 && cell[1] > 0 && this.#affectorGrid[cell[0] + 1][cell[1] - 1])
+                        affectors = affectors.concat(this.#affectorGrid[cell[0] + 1][cell[1] - 1]);  // ne
+
+                    if (cell[0] > 0 && cell[1] < cells - 1 && this.#affectorGrid[cell[0] - 1][cell[1] + 1])
+                        affectors = affectors.concat(this.#affectorGrid[cell[0] - 1][cell[1] + 1]); // sw
+
+                    if (cell[0] < cells - 1 && cell[1] < cells - 1 && this.#affectorGrid[cell[0] + 1][cell[1] + 1])
+                        affectors = affectors.concat(this.#affectorGrid[cell[0] + 1][cell[1] + 1]); // se
+
+                }
+                
+                return affectors;
+            }
         } catch (ex) {
             console.error(ex);
         }
@@ -594,8 +639,8 @@ export default class $ParticleEngine {
      * @param {*} deltaTime - Time since last frame
      */
     #addImpulse(idx, time, deltaTime) {
-        const affectors = this.getAffectorsFor(this.#pPos[idx][0], this.#pPos[idx][1]);
-        if (affectors !== null) {
+        const affectors = this.getAffectors();
+        if (affectors && affectors.length) {
             affectors.forEach(affector => {
                 affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
             });

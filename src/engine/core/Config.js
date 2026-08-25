@@ -195,9 +195,20 @@ class EngineConfig extends Config {
          */
         nice: 5,
         /**
-         * Particle affector cell size
+         * Particle affector cell size. To increase efficiency of repulsor and collider calculations,
+         * the screen is divided into a sparse grid containing the repulsors grouped into the cells.
+         * The higher the number, the more dense the grid is meaning the repulsors are less likely to
+         * affect more particles.
+         * @type {number}
          */
-        affectorCellSize: 5
+        affectorCellSize: 5,
+        /**
+         * When determining the repulsors and colliders that affect a particle, checks can be performed
+         * at three levels: `0` returns just the grid cell that matches the particle location. `1` adds in
+         * the polar cells at N, E, W, and S for a total of 5 grid cells. `2` adds the diagonal cells, for 
+         * a total of 9 grid cells.
+         */
+        affectorDensity: 1
       },
       /**
        * Threading options.

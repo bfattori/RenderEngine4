@@ -14,7 +14,13 @@ export default class ParticleAffector extends TransferrableConfig {
     super({
       type: ParticleAffector.TYPE.AFFECTOR,
       pos: [0, 0],
-      impulse: 0.0
+      impulse: 0.0,
+      /**
+       * The amount of friction the affector imparts.
+       * @type {number} 0.0 - dead stop, 1.0 - no friction, 0.96 - about average
+       */
+      friction: 0.986,
+      restitution: 0.0
     }, url);
     this.merge(opts);
   }
