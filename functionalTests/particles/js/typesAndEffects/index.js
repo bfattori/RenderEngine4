@@ -48,7 +48,8 @@ await RenderEngine.init(import.meta.url, {
     threading: {
         particleEngine: {
             enabled: true,
-            workers: 2
+            workers: 2,
+            framesPerSecond: 60
         }
     }
 });

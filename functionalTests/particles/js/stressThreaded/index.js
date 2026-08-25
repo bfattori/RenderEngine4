@@ -40,7 +40,7 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     particleEngine: {
-        maxParticles: 200000,
+        maxParticles: 500000,
         circularBuffer: true
     },
     threading: {
