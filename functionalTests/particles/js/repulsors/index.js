@@ -98,7 +98,7 @@ const smoker = new GameObject();
 smoker
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [200, 580],
+        position: [200, 600],
         rotation: 0,
         scale: [1, 1]
     });
@@ -115,7 +115,7 @@ const smoker2 = new GameObject();
 smoker2
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [600, 580],
+        position: [600, 600],
         rotation: 0,
         scale: [1, 1]
     });
