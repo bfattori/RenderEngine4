@@ -10,10 +10,10 @@ eParticle2.name = 'purples';
 
 const eParticle3 = new BurstParticle({
     colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
-    drag: 2.0,
-    dragRate: 0.1,
-    lifeSpan: [2000, 6000],
-    velocity: [0.3, 0.9]
+    dragRate: 0.003,
+    lifeSpan: [1000, 4000],
+    velocity: [0.3, 0.86],
+    gravity: [0.0, 0.07]
 });
 eParticle3.name = 'blues';
 
@@ -24,9 +24,7 @@ const eParticle4 = new BurstParticle({
 eParticle4.name = 'reds';
 
 const wParticle = new WaterParticle({
-    gravity: [0.0, 0.012],
-    lifeSpan: [4000, 6000],
-    velocity: [0.4, 0.45]
+    lifeSpan: [6000, 8000]
 });
 
 export {

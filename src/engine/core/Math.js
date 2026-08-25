@@ -112,14 +112,14 @@ export default class $Math {
     static getRangeValue(v) {
         if (v && Array.isArray(v) && v.every(e => !isNaN(e))) {
             if (v.length === 1) {
-                return Math.random() * v[0];
+                return v[0];
             } else if (v.length === 2) {
                 return $Math.randomRange(v[0], v[1]);
             } else {
                 return $Math.mean(v);
             }
         } else if (v && !isNaN(v)) {
-            return Math.random() * v;
+            return v;
         }
         return 0.0;
     }

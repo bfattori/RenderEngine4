@@ -10,9 +10,9 @@ export default class SmokeParticle extends PhysicalParticle {
             drag: 0,
             dragRate: 0,
             particleSize: [10, 16],
-            fade: 0.008,
             velocity: 0.008,
             curl: [0.0003, 0.002],
+            curlIntensity: 0.8,
             growth: 0.1,
             softness: 0.15,
             gravity: [0.0, -0.004]
@@ -35,6 +35,7 @@ export default class SmokeParticle extends PhysicalParticle {
         const particle = super.spawn(pEngine, time, config);
         particle.memory.curl = $Math.randomRange(this.curl[0], this.curl[1]);
         particle.memory.dir = Util.selectRandom(-0.53, 0.53);
+        particle.memory.cI = this.curlIntensity * 1000;
         return particle
     }
 
@@ -52,7 +53,7 @@ export default class SmokeParticle extends PhysicalParticle {
         super.update(pEngine, time, deltaTime, $memory, pos, vel, life);
 
         // apply curl
-        vel[0] += ($memory.curl * Math.cos(($memory.ttl - life) / 500)) * $memory.dir;
-        vel[1] += $memory.curl * Math.sin(($memory.ttl - life) / 500);
+        vel[0] += ($memory.curl * Math.cos(($memory.ttl - life) / $memory.cI)) * $memory.dir;
+        vel[1] += $memory.curl * Math.sin(($memory.ttl - life) / $memory.cI);
     }
 }

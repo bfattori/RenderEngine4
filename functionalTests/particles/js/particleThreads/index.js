@@ -53,25 +53,26 @@ await RenderEngine.init(import.meta.url, {
 
 const eParticle2 = new BurstParticle({
     colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
-    lifeSpan: [1000, 2000],
-    drag: 0.2,
-    velocity: [0.1, 0.19]
+    lifeSpan: [800, 1000],
+    drag: [0.8, 1.8],
+    dragRate: 0.011,
+    velocity: [1.6, 3.0]
 });
 eParticle2.name = 'purples';
 
 const eParticle3 = new BurstParticle({
     colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
-    drag: 0.1,
-    lifeSpan: [1000, 3000],
-    velocity: [0.3, 0.35]
+    drag: [0.7, 1.8],
+    lifeSpan: [1000, 2000],
+    velocity: [1.6, 3.0]
 });
 eParticle3.name = 'blues';
 
 const eParticle4 = new BurstParticle({
     colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
-    lifeSpan: [2000, 8000],
-    drag: 0.01,
-    velocity: [0.4, 0.6]
+    lifeSpan: [1000, 2500],
+    drag: [0.65, 1.8],
+    velocity: [2.6, 4.0]
 });
 eParticle4.name = 'reds';
 

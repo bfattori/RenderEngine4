@@ -49,7 +49,8 @@ RenderEngine.particleEngine.addParticleType(exParticle);
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
     count: 500,
-    particleTypes: [exParticle]
+    particleTypes: [exParticle],
+    drag: 0
 });
 RenderEngine.particleEngine.addEffect(pEffect);
 

@@ -151,7 +151,9 @@ export default class BasicParticle extends TransferrableConfig {
     update(pEngine, time, deltaTime, $memory, pos, vel, life) {
         // standard update:
         //   add velocity to position then add gravity to velocity
-        const drag = $memory.drag !== 0 ? (1 / $memory.drag) : 1;
+        const drag = $memory.drag === 0 ? 1 : (1 / $memory.drag);
+        $memory.drag += $memory.dragRate;
+        
         const v = $Math.vecMulScalar(vel, drag);
         vel[0] = v[0] + this.gravity[0];
         vel[1] = v[1] + this.gravity[1];

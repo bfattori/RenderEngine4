@@ -128,7 +128,7 @@ const smokeEmitter2 = smoker2.getComponentByName("emitter")
 smokeEmitter2.effect = sEffect2;
 
 smokeEmitter.enable();
-//smokeEmitter2.enable();
+smokeEmitter2.enable();
 
 // Start the render loop   
 RenderEngine.start();
