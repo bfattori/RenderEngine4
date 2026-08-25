@@ -5,6 +5,9 @@ import LoadCounter from '../ui/debug/LoadCounter.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
 import PhysicalParticle from '../particlesystem/types/PhysicalParticle.js';
+import ParticleAffector from '../particlesystem/physics/ParticleAffector.js';
+
+import $Math from '../core/Math.js';
 
 
 const ctx = Context.getInstance();
@@ -311,11 +314,12 @@ export default class $ParticleEngine {
      */
     #segmentAffectors() {
         const affectors = this.getAffectors();
-        const grid = new Array(this.#config.affectorCellSize);
-        grid.forEach(cell => cell = new Array(this.#config.affectorCellSize));
+        const grid = new Array(5).fill(null);
+        grid.forEach((cell, idx) => { grid[idx] = new Array(this.#config.affectorCellSize).fill(null); });
         affectors.forEach(affector => {
             const cell = this.cellForPoint(affector.pos[0], affector.pos[1]);
-            grid[cell[0]][cell[1]] = affector;
+            grid[cell[0]][cell[1]] = grid[cell[0]][cell[1]] === null ? [] : grid[cell[0]][cell[1]];
+            grid[cell[0]][cell[1]].push(affector);
         });
 
         this.#affectorGrid = grid;
@@ -328,8 +332,11 @@ export default class $ParticleEngine {
      * @returns {Array<number>} [X,Y] cell numbers
      */
     cellForPoint(x, y) {
-        const cellX = Math.round(x / this.#config.affectorCellSize), cellY = Math.round(y / this.#config.affectorCellSize);
-        return [cellX, cellY];
+        x = $Math.clamp(x, 0, this.#width);
+        y = $Math.clamp(y, 0, this.#height);
+        const cellSizeX = Math.round(this.#width / this.#config.affectorCellSize), cellSizeY = Math.round(this.#height / this.#config.affectorCellSize);
+        return [$Math.clamp(Math.round(x / cellSizeX) - 1, 0, this.#config.affectorCellSize), 
+                $Math.clamp(Math.round(y / cellSizeY) - 1, 0, this.#config.affectorCellSize)];
     }
 
     /**
@@ -342,8 +349,12 @@ export default class $ParticleEngine {
         const affectors = this.getAffectors();
         if (affectors.length === 0) return [];
 
-        const cell = this.cellForPoint(x, y);
-        return this.#affectorGrid[cell[0]][cell[1]];
+        try {
+            const cell = this.cellForPoint(x, y);
+            return this.#affectorGrid[cell[0]][cell[1]];
+        } catch (ex) {
+            console.error(ex);
+        }
     }
 
     //-----------------------------------
@@ -416,7 +427,7 @@ export default class $ParticleEngine {
      * @param {ParticleAffector} affector - The particle affector 
      */
     addAffector(affector) {
-        const affectors = this.#particleAffectors.getOrInsert(`${affector.type}`, []);
+        const affectors = this.#particleAffectors.getOrInsert(+affector.type, []);
         affectors.push(affector);
     }
 
@@ -428,12 +439,12 @@ export default class $ParticleEngine {
      */
     getAffectors(type) {
         if (type) {
-            return this.#particleAffectors.get(type);
+            return this.#particleAffectors.get(+type);
         }
         
-        const allAffectors = [];
+        let allAffectors = [];
         this.#particleAffectors.keys().forEach(key => {
-            allAffectors = [... allAffectors, this.#particleAffectors.get(key)];
+            allAffectors = allAffectors.concat(this.#particleAffectors.get(key));
         });
         return allAffectors;
     }
@@ -583,14 +594,12 @@ export default class $ParticleEngine {
      * @param {*} deltaTime - Time since last frame
      */
     #addImpulse(idx, time, deltaTime) {
-        const affectors = this.getAffectorsFor(this.#pPos[0], this.#pPos[1]);
-        affectors.forEach(affector => {
-            const result = affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
-            if (result !== null) {
-                this.#pPos[idx] = result.pos;
-                this.#pVel[idx] = result.vel;
-            }
-        });
+        const affectors = this.getAffectorsFor(this.#pPos[idx][0], this.#pPos[idx][1]);
+        if (affectors !== null) {
+            affectors.forEach(affector => {
+                affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
+            });
+        }
     }
 
     /**
@@ -624,6 +633,16 @@ export default class $ParticleEngine {
                 this.#engineLoadView.update('Render:Time', renderTime);
                 this.#engineLoadView.update('Particles', this.liveParticles);
             }
+        });
+
+        PRAGMA('showParticleRepulsors', () => {
+            const repulsors = this.getAffectors(ParticleAffector.TYPE.REPULSOR);
+            repulsors.forEach(repulsor => {
+                surf.beginPath();
+                surf.fillStyle = '#5553';
+                surf.arc(repulsor.pos[0], repulsor.pos[1], repulsor.radius, 0, $Math.TWO_PI);
+                surf.fill();    
+            });
         });
 
         return renderTime;

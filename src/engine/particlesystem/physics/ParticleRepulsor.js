@@ -22,6 +22,7 @@ export default class ParticleRepulsor extends ParticleAffector {
   
   constructor(opts = {}, url = import.meta.url) {
     super({
+      type: ParticleAffector.TYPE.REPULSOR,
       /**
        * The affected radius for the repulsor.
        * @type {number} The distance from the center of the repulsor
@@ -31,7 +32,7 @@ export default class ParticleRepulsor extends ParticleAffector {
        * The type of falloff applied
        * @type {ParticleRepulsor#FALLOFF_TYPE} 
        */
-      falloffType: ParticleAffector.FALLOFF_TYPE.LINEAR,
+      falloffType: ParticleRepulsor.FALLOFF_TYPE.LINEAR,
       /**
        * The rolloff factor for attenuated falloff.
        * @type {number} The rolloff factor
@@ -56,24 +57,23 @@ export default class ParticleRepulsor extends ParticleAffector {
     // early out
     if (!$Math.pointInCircle(position, this.pos, this.radius)) return null;
     
-    const dist = $Math.dist(position[0], position[1], this.pos[0], this.pos[1]);
+    const dist = $Math.distance(position, this.pos);
     const fallOff = this.#getFallOff(position[0], position[1], dist);
 
-    const pToA = [position[0] - this.pos[0], position[1] - this.pos[1]];
-    const pToAUnit = [pToA[0]/dist, pToA[1]/dist];
+    const pToA = $Math.vecSubtract(position, this.pos);
+    const pToAUnit = $Math.vecDivScalar(pToA, dist);
 
-    const aToP = [this.pos[0] - position[0], this.pos[1] - position[1]];
-    const aToPUnit = [aToP[0]/dist, aToP[1]/dist];
+    const aToP = $Math.vecSubtract(this.pos, position);
+    const aToPUnit = $Math.vecDivScalar(aToP, dist);
 
     const angleBetween = $Math.angleBetween(pToAUnit, aToPUnit);
-    const impulse = $Math.getDirectionVector(position, angleBetween);
-    impulse = $Math.vecMulScalar(impulse, fallOff);
+    let impulse = $Math.getDirectionVector(position, angleBetween);
+    impulse = $Math.invVec(impulse);
 
     // nudge away from the repulsor
-    return {
-      pos: position,
-      vel: $Math.invVec(impulse)
-    };
+    const v = $Math.vecAdd(velocity, $Math.vecMulScalar(impulse, fallOff * this.impulse));
+    velocity[0] = v[0];
+    velocity[1] = v[1];
   }
 
   /**
@@ -86,13 +86,13 @@ export default class ParticleRepulsor extends ParticleAffector {
    * @returns 
    */
   #getFallOff(x, y, dist) {
-    switch (this.falloffType) {
+    switch (+this.falloffType) {
       case +ParticleRepulsor.FALLOFF_TYPE.LINEAR:
         return $Math.clamp(1.0 - (dist / this.radius), 0.0, 1.0);  
       case +ParticleRepulsor.FALLOFF_TYPE.SQUARED:
         return $Math.clamp(1.0 / (dist * dist), 0.0, 1.0);
       case +ParticleRepulsor.FALLOFF_TYPE.ATTENUATE:
-        return 1.0 / ((1.0 + this.falloff) * (dist - this.radius));
+        return 1.0 / ((1.0 + this.rolloffFactor) * (dist - this.radius));
       case +ParticleRepulsor.FALLOFF_TYPE.CUSTOM:
         return this.customFalloff(x, y, dist);
     }

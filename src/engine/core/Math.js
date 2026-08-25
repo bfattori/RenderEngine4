@@ -352,27 +352,21 @@ export default class $Math {
     }
 
     /**
-     * Calcular the angle between to vectors.
+     * Calculate the angle between to vectors.
      * @param {Array<number>} v1 - The first vector
      * @param {Array<number>} v2 - The second vector
      * @returns {number} The angle in degrees
      */
     static angleBetween(v1, v2) {
-        // 1. Calculate Dot Product
         const dot = $Math.dot(v1, v2);
+        const xprod = $Math.xproduct(v1, v2);
 
-        // 2. Calculate Magnitudes
-        const mag1 = $Math.magnitude(v1);
-        const mag2 = $Math.magnitude(v2);
+        const rad = Math.atan2(xprod, dot);
+        let degrees = $Math.radToDeg(rad);
+        if (degrees < 0)
+            degrees += 360;
 
-        // Handle division-by-zero for zero vectors
-        if (mag1 === 0 || mag2 === 0) return 0; 
-
-        // 3. Prevent floating-point errors from pushing the ratio outside [-1, 1]
-        const cosTheta = $Math.clamp(dotProduct / (mag1 * mag2), -1.0, 1.0);
-
-        // 4. Return angle in radians (To get degrees, multiply by 180 / Math.PI)
-        return $Math.radToDeg(Math.acos(cosTheta));
+        return degrees;
     }
 
     //-----------------------------------
@@ -417,6 +411,16 @@ export default class $Math {
     static vecAdd(vec, vec2) {
         return vec.map((e, i) => e + vec2[i]);
     }
+
+    static vecSubtractScalar(vec, scalar) {
+        return vec.map(e => e - scalar);
+    }
+
+    static vecSubtract(vec, vec2) {
+        return vec.map((e, i) => e - vec2[i]);
+    }
+
+
 
     /**
      * Divide the elements of `vec` by the scalar value.

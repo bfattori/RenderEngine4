@@ -98,7 +98,9 @@ class EngineConfig extends Config {
             collisionSep: false,
             charOrigin: false,
             showParticleWorkersPiP: false,
-            showParticleEngineLoad: false
+            showParticleEngineLoad: false,
+            showParticleRepulsors: false,
+            showParticleColliders: false
         },
         /**
          * Enable performance logging for rendering and collision events. Default is false.
@@ -191,7 +193,11 @@ class EngineConfig extends Config {
         /**
          * Play nicely with the main thread
          */
-        nice: 5
+        nice: 5,
+        /**
+         * Particle affector cell size
+         */
+        affectorCellSize: 5
       },
       /**
        * Threading options.

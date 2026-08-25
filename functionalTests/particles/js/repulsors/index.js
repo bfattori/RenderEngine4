@@ -10,6 +10,8 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import SmokeParticle from '../../../../src/engine/particlesystem/types/SmokeParticle.js';
 import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffect.js';
 
+import ParticleRepulsor from '../../../../src/engine/particlesystem/physics/ParticleRepulsor.js';
+
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 
 // create a double-buffered canvas renderer
@@ -20,7 +22,8 @@ await RenderEngine.init(import.meta.url, {
         debugOpts: {
             objectOrigins: false,
             showParticleWorkersPiP: true,
-            showParticleEngineLoad: true
+            showParticleEngineLoad: true,
+            showParticleRepulsors: true
         }
     },
     world: {
@@ -68,11 +71,24 @@ const sEffect2 = new SmokeEffect({
 });
 sEffect2.name = 'points';
 
+// the particle repulsors
+const repulsor = new ParticleRepulsor({
+    radius: 100,
+    pos: [150, 300],
+    impulse: 0.008
+});
+
+// const repulsor2 = new ParticleRepulsor({
+//     radius: 150,
+//     pos: [600, 300],
+//     impulse: 0.005
+// });
+
+RenderEngine.particleEngine.addAffectors(repulsor);
 RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 
-// let the threaded particle engine know when
-// the effects and particles have been sent
+// initialize the particle engine 
 RenderEngine.particleEngine.initialize();
 
 // smoker using bitmaps (tiles)
@@ -111,7 +127,6 @@ smokeEmitter2.effect = sEffect2;
 
 smokeEmitter.enable();
 smokeEmitter2.enable();
-
 
 // Start the render loop   
 RenderEngine.start();
