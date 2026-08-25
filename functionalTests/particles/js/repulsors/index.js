@@ -64,7 +64,7 @@ const sParticle2 = new SmokeParticle();
 sParticle2.name = 'points';
 
 const sEffect2 = new SmokeEffect({
-  count: 5,
+  count: 2,
   particleTypes: [sParticle2],
   angle: 0,
   spread: 20
@@ -126,7 +126,7 @@ const smokeEmitter2 = smoker2.getComponentByName("emitter")
 smokeEmitter2.effect = sEffect2;
 
 smokeEmitter.enable();
-smokeEmitter2.enable();
+//smokeEmitter2.enable();
 
 // Start the render loop   
 RenderEngine.start();
