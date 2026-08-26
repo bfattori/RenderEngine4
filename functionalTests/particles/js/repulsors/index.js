@@ -10,7 +10,7 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import SmokeParticle from '../../../../src/engine/particlesystem/types/SmokeParticle.js';
 import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffect.js';
 
-import ParticleRepulsor from '../../../../src/engine/particlesystem/physics/ParticleRepulsor.js';
+import ParticleAffector from '../../../../src/engine/particlesystem/physics/ParticleAffector.js';
 
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 
@@ -23,7 +23,7 @@ await RenderEngine.init(import.meta.url, {
             objectOrigins: false,
             showParticleWorkersPiP: true,
             showParticleEngineLoad: true,
-            showParticleRepulsors: true
+            showParticleAffectors: true
         }
     },
     world: {
@@ -73,20 +73,27 @@ const sEffect2 = new SmokeEffect({
 });
 sEffect2.name = 'points';
 
-// the particle repulsors
-const repulsor = new ParticleRepulsor({
+// particle repulsor affectors
+const repulsor = new ParticleAffector({
     radius: 100,
-    pos: [150, 380],
-    impulse: 0.07
+    pos: [160, 400],
+    restitution: 0.1
 });
 
-const repulsor2 = new ParticleRepulsor({
+const repulsor2 = new ParticleAffector({
      radius: 200,
-     pos: [500, 160],
-     impulse: 0.07
+     pos: [500, 80],
+     restitution: 0.1
 });
 
-RenderEngine.particleEngine.addAffectors(repulsor, repulsor2);
+const repulsor3 = new ParticleAffector({
+     radius: 80,
+     pos: [400, 300],
+     restitution: 0.4
+});
+
+
+RenderEngine.particleEngine.addAffectors(repulsor, repulsor2, repulsor3);
 RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 

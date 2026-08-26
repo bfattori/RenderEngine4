@@ -8,6 +8,8 @@ import CanvasVectorAssembler from '../assemblers/canvas/CanvasVectorAssembler.js
 import CanvasRasterAssembler from '../assemblers/canvas/CanvasRasterAssembler.js';
 import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 
+import { sysText } from '../../ui/text/RasterTextParser.js'; 
+
 const ctx = Context.getInstance();
 
 export default class CanvasRenderer extends Renderer {
@@ -287,18 +289,7 @@ export default class CanvasRenderer extends Renderer {
         
         switch (operand) {
             case vector.SYSTEXT:
-                const oFont = this.surface.font;
-                this.surface.font = '8px sans-serif';
-                this.surface.fillStyle = '#000';
-                let txt = args.join(' ');
-                txt = txt.split('\n');
-                let top = 10;
-                for (let i = 0; i < txt.length; i++) {
-                    this.surface.fillText(txt[i], 0, top);
-                    top += 10;
-                }
-                this.surface.font = oFont;
-
+                sysText(args.join(' '), this.surface);
                 break;
 
             //-----------------------------------

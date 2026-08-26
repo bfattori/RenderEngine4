@@ -63,4 +63,25 @@ export default class RasterTextParser extends TextParser {
     }
 }
 
+/**
+ * Render system text (8px sans-serif, black) to a surface.
+ * @param {String} text 
+ * @param {Canvasd2DRenderingContext} surface 
+ */
+const sysText = (text, surface, x = 0, y = 0) => {
+    surface.save();
+    surface.font = '8px sans-serif';
+    surface.fillStyle = '#000';
+    surface.translate(x, y);
+    text = text.split('\n');
+    let top = 10;
+    for (let i = 0; i < text.length; i++) {
+        surface.fillText(text[i], 0, top);
+        top += 10;
+    }
+    surface.restore();
+}
 
+export {
+    sysText
+};

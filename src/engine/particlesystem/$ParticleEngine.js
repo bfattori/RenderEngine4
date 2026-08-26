@@ -9,6 +9,7 @@ import ParticleAffector from '../particlesystem/physics/ParticleAffector.js';
 
 import $Math from '../core/Math.js';
 
+import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 
 const ctx = Context.getInstance();
 
@@ -27,7 +28,7 @@ export default class $ParticleEngine {
     #particleEffects = new Map();
 
     // particle affectors that impact PhysicalParticles
-    #particleAffectors = new Map();
+    #particleAffectors = [];
 
     // when new particles are added, this goes true
     #newParticles = false;
@@ -59,7 +60,6 @@ export default class $ParticleEngine {
 
     #width = 0;
     #height = 0;
-    #affectorGrid = null;
     #assembler = null;
 
     /**
@@ -250,7 +250,7 @@ export default class $ParticleEngine {
      * Initialize the particle engine
      */
     initialize() {
-        this.#segmentAffectors();
+       
     }
 
     /**
@@ -305,101 +305,6 @@ export default class $ParticleEngine {
         }
 
         return this.#particleIdx;
-    }
-
-    /**
-     * To speed testing for affectors vs physical particles, segment the world into a grid of cells and
-     * assign the affectors to those cells. When particles are executing the nearby affectors can be
-     * quickly accessed and processed without having to iterate over all effectors for each particle.
-     */
-    #segmentAffectors() {
-        const affectors = this.getAffectors();
-        const grid = new Array(this.#config.affectorCellSize).fill(null);
-        grid.forEach((cell, idx) => { grid[idx] = new Array(this.#config.affectorCellSize).fill(null); });
-        affectors.forEach(affector => {
-            const cell = this.cellForPoint(affector.pos[0], affector.pos[1]);
-            grid[cell[0]][cell[1]] = grid[cell[0]][cell[1]] === null ? [] : grid[cell[0]][cell[1]];
-            grid[cell[0]][cell[1]].push(affector);
-        });
-
-        this.#affectorGrid = grid;
-    }
-
-    /**
-     * Get the corresponding affectors cell for the given point.
-     * @param {number} x - The x position 
-     * @param {number} y - The y position
-     * @returns {Array<number>} [X,Y] cell numbers
-     */
-    cellForPoint(x, y) {
-        x = $Math.clamp(x, 0, this.#width);
-        y = $Math.clamp(y, 0, this.#height);
-        const cellSizeX = Math.round(this.#width / this.#config.affectorCellSize), cellSizeY = Math.round(this.#height / this.#config.affectorCellSize);
-        return [$Math.clamp(Math.round(x / cellSizeX) - 1, 0, this.#config.affectorCellSize), 
-                $Math.clamp(Math.round(y / cellSizeY) - 1, 0, this.#config.affectorCellSize)];
-    }
-
-    /**
-     * Returns an array of `ParticleAffectors` within the affector grid containing the point. The parameter `d`
-     * dictates the density of the returned grid cells. `0` is for the cell that matches X, Y and is a density of 1. `1` includes the
-     * polar cells (N, E, S, W) for a density of 5. `2` adds the diagonal cells (NE, SE, SW, NW) for a density of 9.
-     * 
-     * @param {number} x - The x position to test
-     * @param {number} y - The y position to test
-     * @param {number} d - The density of the returned array
-     * @returns {Array<ParticleAffector>} Array of `ParticleAffectors` within the affector grid cells for the given point
-     */
-    getAffectorsFor(x, y, d = 0) {
-        const affectors = this.getAffectors();
-        if (affectors.length === 0) return [];
-
-        try {
-            const cell = this.cellForPoint(x, y);
-            if (d === 0) {
-                return this.#affectorGrid[cell[0]][cell[1]];
-            } else {
-                // center cell
-                let affectors = [];
-                const cells = this.#config.affectorCellSize;
-
-                if (this.#affectorGrid[cell[0]][cell[1]]) {
-                    affectors = affectors.concat(this.#affectorGrid[cell[0]][cell[1]]);
-                }
-
-                // 4 polar cells
-                if (cell[0] > 0 && this.#affectorGrid[cell[0] - 1][cell[1]])
-                    affectors = affectors.concat(this.#affectorGrid[cell[0] - 1][cell[1]]); // west
-                
-                if (cell[0] < cells - 1 && this.#affectorGrid[cell[0] + 1][cell[1]])
-                    affectors = affectors.concat(this.#affectorGrid[cell[0] + 1][cell[1]]); // east
-                
-                if (cell[1] > 0 && this.#affectorGrid[cell[0][cell[1] - 1]])
-                    affectors = affectors.concat(this.#affectorGrid[cell[0][cell[1] - 1]]); // north
-
-                if (cell[1] < cells - 1 && this.#affectorGrid[cell[0][cell[1] + 1]])
-                    affectors = affectors.concat(this.#affectorGrid[cell[0][cell[1] + 1]]); // south
-                
-                if (d > 1) {
-                    // 4 diagonal cells
-                    if (cell[0] > 0 && cell[1] > 0 && this.#affectorGrid[cell[0] - 1][cell[1] - 1])
-                        affectors = affectors.concat(this.#affectorGrid[cell[0] - 1][cell[1] - 1]);  // nw
-
-                    if (cell[0] < cells - 1 && cell[1] > 0 && this.#affectorGrid[cell[0] + 1][cell[1] - 1])
-                        affectors = affectors.concat(this.#affectorGrid[cell[0] + 1][cell[1] - 1]);  // ne
-
-                    if (cell[0] > 0 && cell[1] < cells - 1 && this.#affectorGrid[cell[0] - 1][cell[1] + 1])
-                        affectors = affectors.concat(this.#affectorGrid[cell[0] - 1][cell[1] + 1]); // sw
-
-                    if (cell[0] < cells - 1 && cell[1] < cells - 1 && this.#affectorGrid[cell[0] + 1][cell[1] + 1])
-                        affectors = affectors.concat(this.#affectorGrid[cell[0] + 1][cell[1] + 1]); // se
-
-                }
-                
-                return affectors;
-            }
-        } catch (ex) {
-            console.error(ex);
-        }
     }
 
     //-----------------------------------
@@ -472,26 +377,7 @@ export default class $ParticleEngine {
      * @param {ParticleAffector} affector - The particle affector 
      */
     addAffector(affector) {
-        const affectors = this.#particleAffectors.getOrInsert(+affector.type, []);
-        affectors.push(affector);
-    }
-
-    /**
-     * Get the `ParticleAffectors` for the given type. If `type` is not provided, the
-     * set of all affectors are returned.
-     * @param {String} type - The affector type, or undefined for all affectors
-     * @returns {Array<ParticleAffector>} The affectors
-     */
-    getAffectors(type) {
-        if (type) {
-            return this.#particleAffectors.get(+type);
-        }
-        
-        let allAffectors = [];
-        this.#particleAffectors.keys().forEach(key => {
-            allAffectors = allAffectors.concat(this.#particleAffectors.get(key));
-        });
-        return allAffectors;
+        this.#particleAffectors.push(affector);
     }
 
     //-------------------------------------
@@ -639,12 +525,9 @@ export default class $ParticleEngine {
      * @param {*} deltaTime - Time since last frame
      */
     #addImpulse(idx, time, deltaTime) {
-        const affectors = this.getAffectors();
-        if (affectors && affectors.length) {
-            affectors.forEach(affector => {
-                affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
-            });
-        }
+        this.affectors.forEach(affector => {
+            affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
+        });
     }
 
     /**
@@ -680,13 +563,11 @@ export default class $ParticleEngine {
             }
         });
 
-        PRAGMA('showParticleRepulsors', () => {
-            const repulsors = this.getAffectors(ParticleAffector.TYPE.REPULSOR);
-            repulsors.forEach(repulsor => {
-                surf.beginPath();
-                surf.fillStyle = '#5553';
-                surf.arc(repulsor.pos[0], repulsor.pos[1], repulsor.radius, 0, $Math.TWO_PI);
-                surf.fill();    
+        PRAGMA('showParticleAffectors', () => {
+            const affectors = this.affectors;
+            affectors.forEach(affector => {
+                canvasDebugObjects.BoundingCircle(surf, affector.pos[0], affector.pos[1], affector.radius);
+                canvasDebugObjects.Origin(surf, affector.pos[0], affector.pos[1], `${affector.pos[0]}, ${affector.pos[1]} (r${affector.radius})\nf ${affector.friction}\nr ${affector.restitution}`);
             });
         });
 

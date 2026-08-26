@@ -220,19 +220,14 @@ export default class $Math {
     // Vector & Point Functions
 
     /**
-     * Transform a point or an array of points by the given matrix.  This method
-     * transforms the points by mutating them.
-     * @param points {Array<Array<number>>} A single point or an array of {@link R.math.Point2D}
+     * Mutates the points in the array by the given matrix.
+     * @param points {Array<Array<number>>} An array of [x, y]
      * @param matrix {Matrix2d} The matrix to transform the points with
      */
     static transformPoints(points, matrix) {
-        if (R.isArray(points)) {
-            for (var pt = 0; pt < points.length; pt++) {
-                points[pt].transform(matrix);
-            }
-            return points;
-        } else {
-            return points.transform(matrix);
+        for (const point of points) {
+            point[0] = matrix.a * point[0] + matrix.c * point[1] + matrix.e;
+            point[1] = matrix.b * point[0] + matrix.d * point[1] + matrix.f;
         }
     }
 
