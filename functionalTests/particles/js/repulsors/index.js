@@ -76,20 +76,20 @@ sEffect2.name = 'points';
 // particle repulsor affectors
 const repulsor = new ParticleAffector({
     radius: 100,
-    pos: [160, 400],
+    pos: [200, 300],
     restitution: 0.1
 });
 
 const repulsor2 = new ParticleAffector({
-     radius: 200,
-     pos: [500, 80],
-     restitution: 0.1
+    radius: 200,
+    pos: [500, 80],
+    restitution: 0.1
 });
 
 const repulsor3 = new ParticleAffector({
      radius: 80,
-     pos: [400, 300],
-     restitution: 0.4
+     pos: [380, 200],
+     restitution: 0.087
 });
 
 
@@ -105,7 +105,7 @@ const smoker = new GameObject();
 smoker
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [200, 600],
+        position: [190, 600],
         rotation: 0,
         scale: [1, 1]
     });
@@ -122,7 +122,7 @@ const smoker2 = new GameObject();
 smoker2
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
     .worldTransform = Matrix2d.identity().update({
-        position: [600, 600],
+        position: [530, 600],
         rotation: 0,
         scale: [1, 1]
     });
