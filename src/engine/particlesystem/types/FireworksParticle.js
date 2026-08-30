@@ -2,10 +2,10 @@ import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
 export default class FireworksParticle extends BasicParticle {
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
-        });
-        this.merge(opts);
+        }, url);
+        this.merge(overrides);
         this.name = 'fireworksParticle';
     }
 

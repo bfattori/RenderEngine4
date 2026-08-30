@@ -1,7 +1,21 @@
 import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import { RendererConfig } from '../../core/Config.js';
+import Config from '../../core/Config.js';
+
+class RendererConfig extends Config {
+    constructor(defaults = {}) {
+        super({
+            doubleBuffered: false,
+            useCompiler: true,
+            formatting: new Map()
+        }, defaults);
+    }
+
+    get varname() {
+        return 'RENDERER_OPTIONS';
+    }
+}
 
 /**
  * Renderer error class for low-level rendering errors.
@@ -18,6 +32,7 @@ class RendererError extends RenderEngineError {
 }
 
 export {
+    RendererConfig,
     RendererError
 };
 

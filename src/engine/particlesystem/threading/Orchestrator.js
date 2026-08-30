@@ -82,7 +82,7 @@ class Orchestrator {
             };
             worker.onerror = (event) => {
                 console.error(event.message, event);
-                //throw new ParticleWorkerError(worker, event.message, event);
+                throw new ParticleWorkerError(worker, event.message, event);
             }
 
             worker.$name = `${tConfig.name}_worker${i}`;
@@ -92,7 +92,8 @@ class Orchestrator {
                 worker: worker, 
                 live: 0,
                 ackEffects: [],
-                ackParticles: [] 
+                ackParticles: [],
+                ackAffectors: []
             });
 
             // initialize the worker thread
@@ -138,14 +139,16 @@ class Orchestrator {
         this.#workerState.forEach(worker => {
             if (event.data.type === Constants.MSG_ADD_TYPE)
                 worker.ackParticles.push(event.data.particle.$name)
-            else
+            else if (event.data.type === Constants.MSG_ADD_EFFECT)
                 worker.ackEffects.push(event.data.effect.$name);
+            else if (event.data.type === Constants.MSG_ADD_AFFECTOR)
+                worker.ackAffectors.push(event.data.affector.$name);
         });
     }
 
     #testReady(workerId) {
         const worker = this.#workers.get(workerId);
-        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0) {
+        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0 && worker.ackAffectors.length === 0) {
             this.#workersInitialized++;
         }
         
@@ -172,6 +175,7 @@ class Orchestrator {
                 break;
             case Constants.MSG_ADD_TYPE:
             case Constants.MSG_ADD_EFFECT:
+            case Constants.MSG_ADD_AFFECTOR:
                 // broadcast to all workers
                 this.broadcast(event);
                 this.#waitAcknowledge(event);

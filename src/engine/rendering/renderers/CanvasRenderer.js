@@ -3,7 +3,7 @@ import Context from '../../Context.js';
 import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
-import { CanvasConfig } from '../../core/Config.js';
+import { RendererConfig } from './Renderer.js';
 import CanvasVectorAssembler from '../assemblers/canvas/CanvasVectorAssembler.js';
 import CanvasRasterAssembler from '../assemblers/canvas/CanvasRasterAssembler.js';
 import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
@@ -11,6 +11,33 @@ import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
 import { sysText } from '../../ui/text/RasterTextParser.js'; 
 
 const ctx = Context.getInstance();
+
+class CanvasConfig extends RendererConfig {
+    constructor(defaults = {}) {
+        super({
+            defaults: {
+                filter: "none",
+                globalAlpha: 1.0,
+                globalCompositeOperation: "source-over",
+                lineDashOffset: 0.0,
+                lineJoin: "round",
+                lineCap: "round",
+                miterLimit: 10.0,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: "low",
+                font: "10px sans-serif",
+                letterSpacing: 0,
+                textRendering: "auto"
+            }
+        }, defaults);
+    }
+
+    get varname() {
+        return 'CANVAS_OPTIONS';
+    }
+}
+
+export { CanvasConfig }; 
 
 export default class CanvasRenderer extends Renderer {
     #blit = null;
@@ -139,7 +166,7 @@ export default class CanvasRenderer extends Renderer {
     }
 
     #particles(target) {
-        if (!Engine.options.particleEngine.disabled && Engine.particleEngine.bitmap) {
+        if (!Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
             // draw particles to target
             this.surface.drawImage(Engine.particleEngine.bitmap, 0, 0);
         }        

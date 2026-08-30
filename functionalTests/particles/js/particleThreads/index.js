@@ -7,10 +7,19 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
-import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
 
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
+
+self.PARTICLE_ENGINE_OPTIONS = {
+    maxParticles: 100000
+};
+
+self.PARTICLE_THREADING_OPTIONS = {
+    workers: 2,
+    framesPerSecond: 40
+};
+
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -21,6 +30,9 @@ await RenderEngine.init(import.meta.url, {
             objectOrigins: false,
             showParticleWorkersPiP: true,
             showParticleEngineLoad: true
+        },
+        threading: {
+            particles: true
         }
     },
     world: {
@@ -38,16 +50,6 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
-    },
-    particleEngine: {
-        maxParticles: 100000
-    },
-    threading: {
-        particleEngine: {
-            enabled: true,
-            workers: 2,
-            framesPerSecond: 40
-        }
     }
 });
 

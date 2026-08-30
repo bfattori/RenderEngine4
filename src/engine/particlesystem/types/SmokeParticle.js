@@ -3,7 +3,7 @@ import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
 
 export default class SmokeParticle extends PhysicalParticle {
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             colors: ['#35352c','#686851','#878785','#919191','#4e2424','#5c4b38','#793e3e'],
             lifeSpan: [10000, 12000],
@@ -33,7 +33,7 @@ export default class SmokeParticle extends PhysicalParticle {
              */
             curlVariance: 0.53,
         }, url);
-        this.merge(opts);
+        this.merge(overrides);
         this.name = 'smokeParticle';
     }
 

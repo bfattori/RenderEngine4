@@ -4,9 +4,92 @@
  */
 import Engine from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import { RenderContextConfig } from '../../core/Config.js';
+import Config from '../../core/Config.js';
 import Renderer from '../../rendering/renderers/Renderer.js';
 import RenderPart from '../../parts/render/RenderPart.js';
+
+class RenderContextConfig extends Config {
+  constructor(defaults = {}) {
+    super({
+      enableCulling: false,
+      immediateMode: false,
+      viewport: {
+        left: 0, 
+        top: 0, 
+        width: 800, 
+        height: 600
+      },
+      worldDimensions: {
+        width: 800, 
+        height: 600
+      },
+      renderPlanes: {
+        max: 3,
+        names: [
+          'background',      // Farthest plane (lowest priority)
+          'middle',          // Middle plane
+          'foreground'       // Closest plane (highest priority)
+        ]
+      },
+      cursor: {
+        x: 0, 
+        y: 0,
+        margins: {
+          left: 0, right: 800, 
+          top: 0, bottom: 600
+        }
+      },
+      text: {
+          formatting: {
+            bold: false,
+            italics: false,
+            underline: false
+          },
+          letterSpacing: 2,
+          lineHeight: 15,
+          forceUpperCase: false
+      }
+    }, defaults);
+  }
+
+  get varname() {
+      return 'RENDERCONTEXT_OPTIONS';
+  }
+}
+
+class RenderContextThreadingConfig extends Config {
+  constructor(defaults = {}) {
+    super({
+      /**
+       * Threading enabled
+       * @type {boolean}
+       */
+      enabled: false,
+      /**
+       * Operating priority for the rendering threads.
+       * The value is a number between 0 and 1. Zero means the thread does 
+       * not get any CPU time, and 1 means the thread gets all available 
+       * CPU time. Default is 1.
+       * @type {number}
+       */
+      nice: 1,
+      /**
+       * Name of the rendering thread. Default is 'RE4 Render Thread'.
+       * @type {String}
+       */
+      name: 'RE4Render',
+      /**
+       * Number of workers to use for the particle engine. Default is 4.
+       * @type {number}
+       */
+      workers: 4
+    }, defaults);
+  }
+
+  get varname() {
+      return 'RENDERCONTEXT_THREADING_OPTIONS';
+  }
+}          
 
 /**
  * Render context error class for rendering errors.
@@ -308,7 +391,7 @@ export default class RenderContext {
   }
 
   get particleThreadingEnabled() {
-     return Engine.options.threading.particleEngine.enabled;
+     return Engine.options.flags.threading.particles;
   }
 
   //-------------------------------

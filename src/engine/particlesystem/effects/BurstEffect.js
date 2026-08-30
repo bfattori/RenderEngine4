@@ -10,9 +10,9 @@ export default class BurstEffect extends ParticleEffect {
      * @param {Object} opts - Configuration options for the effect
      * @param {String} url - The URL for the class file
      */
-    constructor(opts = {}, url = import.meta.url) {
-        super(opts, url);
-        this.merge(opts);
+    constructor(overrides = {}, url = import.meta.url) {
+        super({}, url);
+        this.merge(overrides);
         this.$name = 'burstEffect';
     }
 

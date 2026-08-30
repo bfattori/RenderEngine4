@@ -78,17 +78,26 @@
                     </p>
                 </div>
             </li>
-            <li><a href="runner.html?js=repulsors">Repulsors</a>
+            <li><a href="runner.html?js=affectors">Affectors</a>
                 <div class="test-description">
+                    <p>Particle affectors are used to modify the behavior of `PhysicalParticles`. Primary examples of affectors are *repulsors* and *colliders* that push away particles, or
+                    provide a collision surface for particles. You can mix particle types so that only some particles are affected to improve overall performance.</p>
                     <p>Particle repulsors are diffuse areas of influence over live particles. Each repulsor adds impulse to the particles that are within
                     its range of influence. Repulsors are circular in shape with an effective strength that is greater near the origin of the repulsor.
-                    Repulsors add impulse to the particles via simple alteration of values, or a complex function that can generate turbulence or other effects.
-                    Additional processing always imposes extra CPU overhead.</p>
+                    Repulsors add impulse to the particles via simple alteration of values, or a complex function that can generate turbulence or other effects.</p>
+                    <p>Particle colliders are lines that include a normal indicating the collision surface. When particles encounter a collider their movement
+                    stops or reflects, based on the collider's properies. Colliders allow for particles to visually interact with the game environment.
+                    Additional processing imposes extra CPU overhead.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=colliders">Colliders</a>
+            <li><a href="runner.html?js=threadedAffectors">Affectors with WebWorkers</a>
                 <div class="test-description">
-                    <p>Particle colliders are areas where particles cannot enter. Defined as rectangles or circles, when particles encounter a collider their movement
+                    <p>Particle affectors are used to modify the behavior of live particles. Primary examples of affectors are *repulsors* and *colliders* that push away particles, or
+                    provide a collision surface for particles.</p>
+                    <p>Particle repulsors are diffuse areas of influence over live particles. Each repulsor adds impulse to the particles that are within
+                    its range of influence. Repulsors are circular in shape with an effective strength that is greater near the origin of the repulsor.
+                    Repulsors add impulse to the particles via simple alteration of values, or a complex function that can generate turbulence or other effects.</p>
+                    <p>Particle colliders are lines that include a normal indicating the collision surface. When particles encounter a collider their movement
                     stops or reflects, based on the collider's properies. Colliders allow for particles to visually interact with the game environment.
                     Additional processing imposes extra CPU overhead.</p>
                 </div>

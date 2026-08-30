@@ -114,6 +114,7 @@ const Constants = {
     MSG_TERMINATED: 'terminated',
     MSG_ADD_TYPE: 'type',
     MSG_ADD_EFFECT: 'addEffect',
+    MSG_ADD_AFFECTOR: 'addAffector',
     MSG_ADD_PARTICLES: 'addParticles',
     MSG_RUN_EFFECT: 'effect',
     MSG_SPAWN: 'spawn',

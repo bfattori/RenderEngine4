@@ -12,11 +12,10 @@ export default class ParticleEffect extends TransferrableConfig {
      * generate particles and introduce them into the `ParticleSystem` with an initial
      * position, velocity, and run-time options.
      * 
-     * @param {String} name - The name of the effect to make it unique
      * @param {Object} opts - Configuration options for the effect
-     * @param {Array<BasicParticle>} types - The type of particles this effect can select from 
+     * @param {String} url - The URL for the class file
      */
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             /**
              * Set the number of particles emitted per frame
@@ -47,7 +46,7 @@ export default class ParticleEffect extends TransferrableConfig {
              */
             particleTypes: []
         }, url);
-        this.merge(opts);
+        this.merge(overrides);
         this.name = 'particleEffect';
     }
 

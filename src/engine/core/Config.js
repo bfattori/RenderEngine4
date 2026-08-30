@@ -13,14 +13,26 @@ export default class Config {
     /**
      * Construction an options configuration. Each property of the `opts` 
      * object will be accessible by name as a getter.
-     * @param {Object} opts - The options
+     * @param {Object} defaults - The options with compile-time configured values
+     * @param {Object} overrides - The options to override the defaults
      */
-    constructor(opts = {}) {
-        if (opts instanceof Config) {
-            this.merge(opts.opts);
-        } else {
-            this.merge(opts);
-        }
+    constructor(defaults = {}) {    
+      if (defaults instanceof Config) {
+          this.merge(defaults.opts);
+      } else {
+          this.merge(defaults);
+      }
+
+      if (this.varname) {
+        // setting the variable name in the Window/global scope
+        // configures global-scoped runtime overrides
+        const overrides = self[this.varname];
+        this.merge(overrides);
+      }
+    }
+
+    get varname() {
+      return undefined;
     }
 
     #isObject(item) {
@@ -110,7 +122,21 @@ class EngineConfig extends Config {
          * Display the current FPS, target FPS, and frame time on screen. Default is false.
          * @type {boolean}
          */
-        showFps: false
+        showFps: false,
+        /**
+         * Disables the particle engine if not needed. Default is `false`.
+         * @type {boolean}
+         */
+        particleEngineDisabled: false,
+        
+        /**
+         * Enable and disable threading systems
+         */
+        threading: {
+          particles: false,
+          collisions: false,
+          rendering: false
+        }
       },
       engineOpts: {
         preventThreadCaching: true,
@@ -167,147 +193,6 @@ class EngineConfig extends Config {
          * @type {CollisionModel}
          */
         collisionModel: null
-      },
-      /**
-       * Particle Engine config
-       */
-      particleEngine: {
-        /**
-         * Disables the particle engine if not needed. Default is `false`.
-         * @type {boolean}
-         */
-        disabled: false,
-        /**
-         * Maximum number of particles to allow. Default is {@link Constants.MAX_PARTICLES}.
-         * @type {number}
-         */
-        maxParticles: Constants.MAX_PARTICLES,
-        /**
-         * Circular buffer for particles. If `true` particles are added to the buffer as they arrive.
-         * New particles will overwrite existing particles that are live. If `false` the particle engine will 
-         * not add new particles if the buffer is full. Default is `true`.
-         * @type {boolean}
-         */
-        circularBuffer: true,
-        /**
-         * Play nicely with the main thread
-         */
-        nice: 5
-      },
-      /**
-       * Threading options.
-       */
-      threading: {
-        /**
-         * Rendering threading options. These are used to configure the rendering threads which can be disabled, 
-         * the number of workers (default is 4), and the operating priority of the rendering threads (default is 1).
-         * @type {Object}
-         */
-        render: {
-          /**
-           * Threading enabled
-           * @type {boolean}
-           */
-          enabled: false,
-          /**
-           * Operating priority for the rendering threads.
-           * The value is a number between 0 and 1. Zero means the thread does 
-           * not get any CPU time, and 1 means the thread gets all available 
-           * CPU time. Default is 1.
-           * @type {number}
-           */
-          nice: 1,
-          /**
-           * Name of the rendering thread. Default is 'RE4 Render Thread'.
-           * @type {String}
-           */
-          name: 'RE4Render',
-          /**
-           * Number of workers to use for the particle engine. Default is 4.
-           * @type {number}
-           */
-          workers: 4
-        },
-        /**
-         * Collision threading options. These are used to configure the collision threads which can be disabled, 
-         * the number of workers (default is 4), and the operating priority of the collision threads (default is 1).
-         * @type {Object}
-         */
-        collision: {
-          /**
-           * Threading enabled
-           * @type {boolean}
-           */
-          enabled: false,
-          /**
-           * Operating priority for the collision threads.
-           * The value is a number between 0 and 1. Zero means the thread does 
-           * not get any CPU time, and 1 means the thread gets all available 
-           * CPU time. Default is 1.
-           * @type {number}
-           */
-          nice: 1,
-          /**
-           * Name of the collision threads. Default is 'RE4Collisions'.
-           * @type {String}
-           */
-          name: 'RE4Collisions',
-          /**
-           * Number of workers to use for the collision engine. Default is 2.
-           * @type {number}
-           */
-          workers: 2
-        },
-        /**
-         * Particle engine threading options. These are used to configure the particle engine threads which can be disabled, 
-         * the number of workers (default is 4), and the operating priority of the particle engine threads (default is 1).
-         * @type {Object}
-         */
-        particleEngine: {
-          /**
-           * Threading enabled. Default is `false`.
-           * @type {boolean}
-           */
-          enabled: false,
-          /**
-           * Operating priority for the particle threads.
-           * The value is a number between 0 and 1. Zero means the thread does 
-           * not get any CPU time, and 1 means the thread gets all available 
-           * CPU time. Default is 1.
-           * @type {number}
-           */
-          nice: 1,
-          /**
-           * Name of the particle threads. Default is 'RE4Particles'.
-           * @type {String}
-           */
-          name: 'RE4Particles',
-          /**
-           * Number of workers to use for the particle engine. Default is 4.
-           * @type {number}
-           */
-          workers: 4,
-          /**
-           * The threshold used by the orchestrator to determine particle distribution 
-           * during threading. As particles are added to the buffer, load determines the 
-           * distribution. For circular buffers, this ensures a more even distribution. 
-           * Default is 0.75 (75%).
-           */
-          loadThreshold: 0.75,
-          /**
-           * The load factor used in the orchestrator to determine particle distribution during threading.
-           * As particles are added to the buffer, load determines the distribution. But as the load threshold 
-           * is reached, the orchestrator will distribute particles to the next available worker by increasing
-           * the threshold until it reaches 100%. Default is 0.1 (10%).
-           */
-          loadFactor: 0.03,
-          /**
-           * The threaded engine is running separate from the game engine so it will can run at
-           * frame rates higher than the game, causing effects to end sooner than desired. Tune this
-           * value to get better results from particle rendering.
-           */
-          framesPerSecond: 30 
-        },
       },
       /**
        * Engine hooks. These are callback functions that can be used to hook into the engine lifecycle and runtime events.
@@ -401,101 +286,12 @@ class EngineConfig extends Config {
       }
     });
   }
-}
 
-class RenderContextConfig extends Config {
-  constructor() {
-    super({
-      enableCulling: false,
-      immediateMode: false,
-      viewport: {
-        left: 0, 
-        top: 0, 
-        width: 800, 
-        height: 600
-      },
-      worldDimensions: {
-        width: 800, 
-        height: 600
-      },
-      renderPlanes: {
-        max: 3,
-        names: [
-          'background',      // Farthest plane (lowest priority)
-          'middle',          // Middle plane
-          'foreground'       // Closest plane (highest priority)
-        ]
-      },
-      cursor: {
-        x: 0, 
-        y: 0,
-        margins: {
-          left: 0, right: 800, 
-          top: 0, bottom: 600
-        }
-      },
-      text: {
-          formatting: {
-            bold: false,
-            italics: false,
-            underline: false
-          },
-          letterSpacing: 2,
-          lineHeight: 15,
-          forceUpperCase: false
-      }
-    })
+  get varname() {
+    return 'ENGINE_OPTIONS';
   }
 }
 
-class RendererConfig extends Config {
-    constructor(defaults = {}) {
-        super({
-            doubleBuffered: false,
-            useCompiler: true,
-            formatting: new Map()
-        });
-        this.merge(defaults);
-    }
-}
-
-class CanvasConfig extends RendererConfig {
-    constructor(opts) {
-        super({
-            defaults: {
-                filter: "none",
-                globalAlpha: 1.0,
-                globalCompositeOperation: "source-over",
-                lineDashOffset: 0.0,
-                lineJoin: "round",
-                lineCap: "round",
-                miterLimit: 10.0,
-                imageSmoothingEnabled: true,
-                imageSmoothingQuality: "low",
-                font: "10px sans-serif",
-                letterSpacing: 0,
-                textRendering: "auto"
-            }
-        });
-        this.merge(opts);
-    }
-}
-
-class CameraConfig extends Config {
-    constructor() {
-        super({
-            position: [0, 0], 
-            viewport: {left: 0, top: 0, width: 800, height: 600 }, 
-            rotation: 0, 
-            scale:[1, 1]
-        });
-    }
-}
-
 export {
-    EngineConfig,
-    RenderContextConfig,
-    RendererConfig,
-    CanvasConfig,
-    CameraConfig
+    EngineConfig
 };

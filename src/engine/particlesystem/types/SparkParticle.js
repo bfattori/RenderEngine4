@@ -2,12 +2,12 @@ import SprayParticle from './SprayParticle.js';
 import $Math from '../../core/Math.js';
 
 export default class SparkParticle extends SprayParticle { 
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             delay: 100,
             delayVariance: 500
-        });
-        this.merge(opts);
+        }, url);
+        this.merge(overrides);
         this.name = 'sparkParticle';
     }
 

@@ -170,4 +170,24 @@ export default class ResourceLoader extends TransferrableConfig {
             check();
         })
     }
+
+    /**
+     * Change the enums to their ordinals
+     * @returns {Object}
+     */
+    dehydrate() {
+        const props = super.dehydrate();
+        props.resourceUrl = props.resourceUrl.toString();
+        return props;
+    }
+
+    /**
+     * Change the enums back to their values
+     * @returns 
+     */
+    rehydrate() {
+        const obj = super.rehydrate();
+        obj.resourceUrl = new URL(obj.resourceUrl);
+        return obj;
+    }
 }

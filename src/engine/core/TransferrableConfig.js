@@ -16,7 +16,7 @@ export default class TransferrableConfig extends Config {
         url: null
     };
 
-    constructor(opts, url) {
+    constructor(opts, url = import.meta.url) {
         super(opts);
         this.#transferrable.url = url;
     }
@@ -70,8 +70,9 @@ export default class TransferrableConfig extends Config {
             } else if (value instanceof TransferrableConfig) {
                 t[key] = value.transferrable;
             } else if (typeof value === 'object') {
-                let o = {};
-                if (value !== null)
+                let o = value;
+                if (value !== null && !value.enum && value.forEach) {
+                    o = {};
                     value.forEach((k, v) => {
                         if (v instanceof TransferrableConfig) {
                             o[k] = v.transferrable;
@@ -85,8 +86,8 @@ export default class TransferrableConfig extends Config {
                         } else {
                             o[k] = v;
                         }
-                    })
-                else o = null;
+                    });
+                }
                 t[key] = o;
             } else {
                 t[key] = value;
@@ -112,7 +113,7 @@ export default class TransferrableConfig extends Config {
     static async reconstruct(transferrable, binder = null) {
         try {
             // import the object class into the global scope
-            let obj = await import(new URL(`${transferrable.url}${ctx.preventScriptCache}`, import.meta.url));
+            let obj = await import(transferrable.url);
             self[transferrable.$type] = obj.default;
             obj = new self[transferrable.$type](transferrable.props);
             if (binder && typeof binder === 'function') binder(obj);

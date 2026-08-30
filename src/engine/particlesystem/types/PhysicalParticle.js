@@ -6,11 +6,11 @@ import DiffuseParticle from './DiffuseParticle.js';
  * during the `affect()` method, unique to `PhysicalParticles`. Use physical particle effects with caution as they will impose additional overhead during
  * particle calculation.
  * 
- * @param {Object} opts - Configuration options for the particle
+ * @param {Object} overrides - Configuration options for the particle
  * @param {String} url - The module's Url
  */
 export default class PhysicalParticle extends DiffuseParticle {
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             /**
              * Restitution (bounciness) is the coefficient of restitution, which is a measure of how much an object bounces back after colliding with another object.
@@ -35,7 +35,8 @@ export default class PhysicalParticle extends DiffuseParticle {
              */
             deadOnImpact: false
         }, url);
-        this.merge(opts);
+        this.merge(overrides);
+        this.name = 'physicalParticle';
     }
 
 

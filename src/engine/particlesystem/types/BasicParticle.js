@@ -3,18 +3,16 @@ import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 export default class BasicParticle extends TransferrableConfig {
-    #name = 'basicParticle';
-
     /**
      * Create a `BasicParticle` with options for colors, sizes, velocity range,
      * drag, and other properties. Particles are the atomic unit represented in the `ParticleSystem`
      * and have position, velocity, and run-time options. The run-time options allow a particle to
      * change over time, such as changing size, introducing turbulence, or fading in and out.
      *  
-     * @param {Object} opts - Configuration options for the particle
+     * @param {Object} overrides - Configuration options for the particle
      * @param {String} url - Module URL
      */
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             /**
              * Colors of the particle
@@ -68,7 +66,7 @@ export default class BasicParticle extends TransferrableConfig {
              */
             gravity: [0.0, 0.0]
         }, url);
-        this.merge(opts);
+        this.merge(overrides);
         this.name = 'basicParticle'
     }
 

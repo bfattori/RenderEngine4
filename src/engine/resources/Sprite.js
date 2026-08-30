@@ -7,7 +7,7 @@ import Config from '../core/Config.js';
 import Tile from './Tile.js';
 
 class SpriteState extends Config {
-    constructor(stateConfig) {
+    constructor(stateConfig = {}) {
         super({
             name: Sprite.DEFAULT_STATE,
             shape: null,

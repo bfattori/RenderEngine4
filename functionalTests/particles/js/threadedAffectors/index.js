@@ -14,6 +14,15 @@ import ParticleAffector from '../../../../src/engine/particlesystem/physics/Part
 
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 
+self.PARTICLE_ENGINE_OPTIONS = {
+    maxParticles: 100000
+};
+
+self.PARTICLE_THREADING_OPTIONS = {
+    workers: 2,
+    framesPerSecond: 40
+};
+
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {
@@ -24,6 +33,9 @@ await RenderEngine.init(import.meta.url, {
             showParticleWorkersPiP: true,
             showParticleEngineLoad: true,
             showParticleAffectors: true
+        },
+        threading: {
+            particles: true
         }
     },
     world: {
@@ -41,10 +53,6 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
-    },
-    particleEngine: {
-        affectorDensity: 2,
-        affectorCellSize: 10
     }
 });
 

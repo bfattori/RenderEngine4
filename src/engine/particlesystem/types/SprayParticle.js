@@ -2,15 +2,15 @@ import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 
 export default class SprayParticle extends BasicParticle {
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             colors: ['#ff0', '#fff', '#f90'],
             spread: 10,
             variance: 5,
             angle: 0,
             angleVariance: 5
-        });
-        this.merge(opts);
+        }, url);
+        this.merge(overrides);
         this.name = 'sprayParticle';
     }
 

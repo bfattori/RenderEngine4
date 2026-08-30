@@ -1,7 +1,7 @@
 import BasicParticle from './BasicParticle.js';
 
 export default class BurstParticle extends BasicParticle {
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             colors: ['#ff8', '#ff0', '#fff', '#888', '#f00', '#f90'],
             lifeSpan: [1000, 1500],
@@ -11,7 +11,7 @@ export default class BurstParticle extends BasicParticle {
             sizeDecay: 0.9,
             velocity: [1.3, 2.8]
         }, url);
-        this.merge(opts);
+        this.merge(overrides);
         this.name = 'burstParticle';
     }
 

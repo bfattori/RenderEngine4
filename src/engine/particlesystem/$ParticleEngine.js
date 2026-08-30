@@ -18,8 +18,8 @@ export default class $ParticleEngine {
     static #useBuilder = true;
     
 
-    #config = new ParticleEngineConfig();
-    #threading = new ParticleEngineThreadingConfig();
+    #config = null;
+    #threading = null;
 
     // particle types the engine is configured to render
     #particleTypes = new Map();
@@ -115,7 +115,7 @@ export default class $ParticleEngine {
         $ParticleEngine.#useBuilder = true;
 
         PRAGMA('showParticleEngineLoad', () => {
-            if (!threading.enabled) {
+            if (!threading) {
                 const config = {
                     left: 5,
                     counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'Particles'],
@@ -131,8 +131,12 @@ export default class $ParticleEngine {
             }
         });
 
+        this.#config = new ParticleEngineConfig();
         this.#config.merge(config);
-        this.#threading.merge(threading);
+        if (threading) {
+            this.#threading = new ParticleEngineThreadingConfig();
+            this.#threading.merge(threading);
+        }
 
         this.#width = width;
         this.#height = height;
@@ -410,15 +414,15 @@ export default class $ParticleEngine {
      * @param {Object} particle - Initialized particle data 
      */
     spawnParticle(worldPos, time, particle) {
-        this.#newParticles = true;
-            const idx = this.#nextIndex;
-            if (idx !== -1) {
-                this.#pPos[idx] = [worldPos[0], worldPos[1]];
-                this.#pVel[idx] = [particle.vel[0], particle.vel[1]];
-                this.#pSpan[idx] = particle.life;
-                this.#memories[idx] = particle.memory;                        
-            } else if (ctx.debug)
-                console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
+        const idx = this.#nextIndex;
+        if (idx !== -1) {
+            this.#pPos[idx] = [worldPos[0], worldPos[1]];
+            this.#pVel[idx] = [particle.vel[0], particle.vel[1]];
+            this.#pSpan[idx] = particle.life;
+            this.#memories[idx] = particle.memory;                        
+            this.#newParticles = true;
+        } else if (ctx.debug)
+            console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
     }
 
     /**
@@ -482,7 +486,7 @@ export default class $ParticleEngine {
 
         const overall = performance.now() - this.#start;
         PRAGMA('showParticleEngineLoad', () => {
-            if (!this.#threading.enabled) {
+            if (!this.thread) {
                 this.#engineLoadView.update('Update:Load', (overall / deltaTime) * 100);
                 this.#engineLoadView.update('Update:Time', overall);
             }
@@ -554,7 +558,7 @@ export default class $ParticleEngine {
         PERF('particlesRenderEnd');
         MEASURE('Render Particles', 'particlesRenderStart', 'particlesRenderEnd');
         PRAGMA('showParticleEngineLoad', () => {
-            if (!this.#threading.enabled) {
+            if (!this.thread) {
                 // using the last frame time, what
                 // is the overall load of the PE on the CPU?
                 this.#engineLoadView.update('Render:Load', (renderTime / deltaTime) * 100);

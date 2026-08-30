@@ -16,7 +16,7 @@ export default class ParticleAffector extends TransferrableConfig {
     RECTANGLE: 'rect'
   });
 
-  constructor(opts = {}, url = import.meta.url) {
+  constructor(overrides = {}, url = import.meta.url) {
     super({
       /**
        * The world position of the affector.
@@ -74,10 +74,29 @@ export default class ParticleAffector extends TransferrableConfig {
        */
       restitution: 0.0
     }, url);
-    this.merge(opts);
+    this.merge(overrides);
+    this.name = 'particleAffector';
   }
 
-/**
+  /**
+   * Override the name of the particle type. If you reuse a particle type, you need
+   * to differentiate them by name or the particle engine will use the first instance
+   * provided.
+   * @param {String} name - The particle name
+   */
+  set name(name) {
+    this.$name = name;
+  }
+
+  /**
+   * Get the name of this particle type.
+   * @returns {String} The name of the particle type
+   */
+  get name() {
+    return this.$name;
+  }
+
+  /**
    * Impact a particle's position and velocity based on the
    * affector's properties. Return an object with updated position
    * and velocity for the particle.
@@ -203,4 +222,27 @@ export default class ParticleAffector extends TransferrableConfig {
   customFalloff(x, y, dist) {
     return 0.0;
   }
+
+  /**
+   * Change the enums to their ordinals
+   * @returns {Object}
+   */
+  dehydrate() {
+      const props = super.dehydrate();
+      props.falloffType = +props.falloffType;
+      props.shape = +props.shape;
+      return props;
+  }
+
+  /**
+   * Change the enums back to their values
+   * @returns 
+   */
+  rehydrate() {
+      const obj = super.rehydrate();
+      obj.falloffType = ParticleAffector.FALLOFF_TYPE.at(obj.falloffType);
+      obj.shape = ParticleAffector.SHAPE.at(obj.shape);
+      return obj;
+  }
+
 }

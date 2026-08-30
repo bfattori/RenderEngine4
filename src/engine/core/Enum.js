@@ -92,6 +92,9 @@ export default class Enum extends Map {
             } else if (hint === "string") {
               return capturedValue;
             }
+          },
+          get enum() {
+            return true;
           }
         }
       });
@@ -99,5 +102,14 @@ export default class Enum extends Map {
     } else {
       throw new RenderEngineError('Invalid enum value type. Expected a function or an object.')
     }
+  }
+
+  /**
+   * Get the enum value at the ordinal position in the `Enum`.
+   * @param {number} ordinal - The ordinal position of the enum value within the `Enum`.
+   * @returns {Symbol}
+   */
+  at(ordinal) {
+    return this.get(ordinal);
   }
 }

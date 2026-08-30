@@ -1,6 +1,23 @@
 import { Matrix2d } from '../../core/Matrix.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import { CameraConfig } from '../../core/Config.js';
+import Config from '../../core/Config.js';
+
+class CameraConfig extends Config {
+    constructor() {
+        super({
+            position: [0, 0], 
+            viewport: {left: 0, top: 0, width: 800, height: 600 }, 
+            rotation: 0, 
+            scale:[1, 1]
+        });
+    }
+
+    get varname() {
+        return 'CAMERA_OPTIONS';
+    }
+}
+
+export { CameraConfig };
 
 /**
  * Camera is the base class for all camera implementations in the Render Engine 4.

@@ -13,11 +13,11 @@ import GameWorld from './GameWorld.js'
 import EventEngine from './EventEngine.js'
 import RenderContext from '../rendering/contexts/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
-import ParticleEngine from './../particlesystem/ParticleEngine.js';
+import ParticleEngine, { ParticleEngineConfig, ParticleEngineThreadingConfig } from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
 import AABBCollisionModel from '../collisionModels/models/AABB.js';
 
-import FPSCounter from '../ui/debug/FPSCounter.js'
+import FPSCounter from '../ui/debug/FPSCounter.js';
 
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
@@ -383,8 +383,12 @@ export default class Engine {
     // validate engine options
     // ...
     const e = new Engine(engineOptions);
-    if (!e.options.particleEngine.disabled) {
-      e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, e.options.particleEngine, e.options.threading.particleEngine);
+    if (!e.options.flags.particleEngineDisabled) {
+      const config = new ParticleEngineConfig();
+      let threading = null;
+      if (e.options.flags.threading.particles)
+        threading = new ParticleEngineThreadingConfig();
+      e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, config, threading);
     }
     return e;
   }

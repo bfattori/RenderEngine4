@@ -128,6 +128,11 @@ export default class ParticleWorker {
                 this.instance.addEffect(effect);
                 this.#acknowledge(effect, 'effect');
                 break;
+            case Constants.MSG_ADD_AFFECTOR:
+                const affector = await TransferrableConfig.reconstruct(data.affector);
+                this.instance.addAffector(affector);
+                this.#acknowledge(affector, 'affector');
+                break;
             case Constants.MSG_ADD_PARTICLES:
                 this.instance.addParticles(data.particles);
                 break;

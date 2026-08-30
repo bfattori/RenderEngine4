@@ -5,7 +5,7 @@ import Util from '../../core/Util.js';
 export default class DiffuseParticle extends BasicParticle {
   #ctx = null;
 
-  constructor(opts = {}, url = import.meta.url) {
+  constructor(overrides = {}, url = import.meta.url) {
     super({
       /**
        * The diffuse blurring of the particle. Higher values imply more blurring.
@@ -13,7 +13,7 @@ export default class DiffuseParticle extends BasicParticle {
        */
       softness: 1.0
     }, url);
-    this.merge(opts);
+    this.merge(overrides);
     this.#init();
   }
   

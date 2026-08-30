@@ -5,17 +5,17 @@ export default class SmokeEffect extends ParticleEffect {
   /**
    * Create a `SmokeEffect` to use with the particle system.
    * 
-   * @param {Object} opts - Configuration options for the effect
+   * @param {Object} overrides - Configuration options for the effect
    * @param {String} url - The URL for the class file
    */
-  constructor(opts = {}, url = import.meta.url) {
+  constructor(overrides = {}, url = import.meta.url) {
     super({
       count: 10,
       emissionFrequency: 100,
       frequencyVariance: 250,
       spread: 15
     }, url);
-    this.merge(opts);
+    this.merge(overrides);
     this.$name = 'smokeEffect';
   }
 

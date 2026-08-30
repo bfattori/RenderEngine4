@@ -5,17 +5,17 @@ import ParticleEffect from './ParticleEffect.js';
 
 export default class FountainEffect extends ParticleEffect {
     /**
+     * Create a `FountainEffect` to use with the particle system.
      * 
-     * @param {Array<string>} types - Particle types to use 
-     * @param {number} angle - The fountain angle (default: 0 - straight up)
-     * @param {number} spread - The spread-angle in degrees (default: 30) 
+     * @param {Object} opts - Configuration options for the effect
+     * @param {String} url - The URL for the class file
      */
-    constructor(opts = {}, url = import.meta.url) {
+    constructor(overrides = {}, url = import.meta.url) {
         super({
             angle: 0, 
             spread: 30
         }, url);
-        this.merge(opts);
+        this.merge(overrides);
         this.$name = 'fountainEffect';
     }
 
