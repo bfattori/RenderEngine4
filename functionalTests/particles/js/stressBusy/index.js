@@ -13,9 +13,13 @@ import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
-
 // number of objects to create
 const numObjects = 500;
+
+self.PARTICLE_ENGINE_OPTIONS = {
+    maxParticles: 80000
+};
+
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -42,9 +46,6 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
-    },
-    particleEngine: {
-        maxParticles: 80000
     }
 });
 

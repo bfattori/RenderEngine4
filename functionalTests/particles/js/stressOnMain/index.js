@@ -12,6 +12,10 @@ import VectorRendererPart from '../../../../src/engine/parts/render/VectorRender
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 
+self.PARTICLE_ENGINE_OPTIONS = {
+    maxParticles: 80000
+};
+
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {
@@ -38,10 +42,7 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
-    },
-    particleEngine: {
-        maxParticles: 80000
-    },
+    }
 });
 
 // set up the particles and effects we'll use
