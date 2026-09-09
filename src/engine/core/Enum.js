@@ -103,13 +103,8 @@ export default class Enum extends Map {
       throw new RenderEngineError('Invalid enum value type. Expected a function or an object.')
     }
   }
-
-  /**
-   * Get the enum value at the ordinal position in the `Enum`.
-   * @param {number} ordinal - The ordinal position of the enum value within the `Enum`.
-   * @returns {Symbol}
-   */
-  at(ordinal) {
-    return this.get(ordinal);
+  
+  at(idx) {
+    return this.get(idx);
   }
 }

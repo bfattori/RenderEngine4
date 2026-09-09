@@ -54,6 +54,7 @@ export default class ResourceLoader extends TransferrableConfig {
         if (type !== ResourceLoader.TYPE.CUSTOM)
             this.#loadResource();
 
+        this.$name = `Resource_${this.resourceUrl.pathname.split('/').pop().split('.')[0]}`;
     }
 
     destroy() {
@@ -172,7 +173,7 @@ export default class ResourceLoader extends TransferrableConfig {
     }
 
     /**
-     * Change the enums to their ordinals
+     * Change the resource into a string
      * @returns {Object}
      */
     dehydrate() {
@@ -182,7 +183,7 @@ export default class ResourceLoader extends TransferrableConfig {
     }
 
     /**
-     * Change the enums back to their values
+     * Change the string url into an Url and load the resource
      * @returns 
      */
     rehydrate() {

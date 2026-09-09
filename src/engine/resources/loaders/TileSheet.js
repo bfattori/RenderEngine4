@@ -27,6 +27,7 @@ export default class TileSheet extends ResourceLoader {
             sheet: null,
             tileDef: null
         });
+        this.$name = `TileSheet_${this.$name.split('_')[1]}`;
     }
 
     async postProcess(content) {

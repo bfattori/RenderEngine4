@@ -51,33 +51,6 @@
                     of 100,000 live particles.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=typesAndEffects">Included particle types &amp; effects</a>
-                <div class="test-description">
-                    <p>The particle engine is flexible with base types for particles and effects, but extensible with a simple inehritance scheme.
-                    <b>Particle types</b> reduce the amount of state data needed, per particle, keeping the update/render operation fast.</p>
-                    <p><b>Particle effects</b> generate particles and influence their spawning behavior to give the ultimate flexibility in the design and
-                    generation of repeatable particle effects.</p>
-                    <p>
-                    <b>Included particle types:</b>
-                    <ul>
-                        <li><b><code>BasicParticle</code></b> - position, velocity, drag, dragRate, and gravity</li>
-                        <li><b><code>AffectedParticle</code></b> - Like basic, but affected by repulsors and colliders (increased CPU load)</li>
-                    </ul>
-                    </p>
-                    <p>
-                    <b>Included particle effects:</b>
-                    <ul>
-                        <li><b><code>Spark</code></b> - Configurable color palette, streak length, renders as lines, spawns sub-particle points, narrow spread-angle emission</li>
-                        <li><b><code>Burst</code></b> - Configurable color palette, particle sizes, renders as points, 360&deg; emission</li>
-                        <li><b><code>Puff</code></b> - Configurable color palette, particle sizes, renders as diffuse points, 360&deg; emission</li>
-                        <li><b><code>Explosion</code></b> - Configurable color palette, particle sizes, origin smoke properties, gravity influenced, renders as points, 360&deg; emission</li>
-                        <li><b><code>Fountain</code></b> - Configurable color palette, particle sizes, renders as points or sprites, spread-angle emission</li>
-                        <li><b><code>Fireworks</code></b> - Pre-defined color palettes, renders as points, particles spawn sub-particles, built-in types: <b>Peony, chrysanthemum, comet, palm, brocade, willow, pistil, tourbillion, fish, and strobe.</b></li>
-                        <li><b><code>Smoke</code></b> - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission. This is an <b><code>AffectedParticle</code></b>.</li>
-                    </ul>
-                    </p>
-                </div>
-            </li>
             <li><a href="runner.html?js=affectors">Affectors</a>
                 <div class="test-description">
                     <p>Particle affectors are used to modify the behavior of `PhysicalParticles`. Primary examples of affectors are *repulsors* and *colliders* that push away particles, or
@@ -113,6 +86,33 @@
                     and assumed on for <i>front</i>. You can configure this per-object to override the default behavior.</p>
                     <p>Occluders are collected into an "occlusion mask" that is applied to the particles as they are rendered into the scene. Occluders can create the effect of
                     depth for the particles generated.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=typesAndEffects">Included particle types &amp; effects</a>
+                <div class="test-description">
+                    <p>The particle engine is flexible with base types for particles and effects, but extensible with a simple inehritance scheme.
+                    <b>Particle types</b> reduce the amount of state data needed, per particle, keeping the update/render operation fast.</p>
+                    <p><b>Particle effects</b> generate particles and influence their spawning behavior to give the ultimate flexibility in the design and
+                    generation of repeatable particle effects.</p>
+                    <p>
+                    <b>Included particle types:</b>
+                    <ul>
+                        <li><b><code>BasicParticle</code></b> - position, velocity, drag, dragRate, and gravity</li>
+                        <li><b><code>AffectedParticle</code></b> - Like basic, but affected by repulsors and colliders (increased CPU load)</li>
+                    </ul>
+                    </p>
+                    <p>
+                    <b>Included particle effects:</b>
+                    <ul>
+                        <li><b><code>Spark</code></b> - Configurable color palette, streak length, renders as lines, spawns sub-particle points, narrow spread-angle emission</li>
+                        <li><b><code>Burst</code></b> - Configurable color palette, particle sizes, renders as points, 360&deg; emission</li>
+                        <li><b><code>Puff</code></b> - Configurable color palette, particle sizes, renders as diffuse points, 360&deg; emission</li>
+                        <li><b><code>Explosion</code></b> - Configurable color palette, particle sizes, origin smoke properties, gravity influenced, renders as points, 360&deg; emission</li>
+                        <li><b><code>Fountain</code></b> - Configurable color palette, particle sizes, renders as points or sprites, spread-angle emission</li>
+                        <li><b><code>Fireworks</code></b> - Pre-defined color palettes, renders as points, particles spawn sub-particles, built-in types: <b>Peony, chrysanthemum, comet, palm, brocade, willow, pistil, tourbillion, fish, and strobe.</b></li>
+                        <li><b><code>Smoke</code></b> - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission. This is an <b><code>AffectedParticle</code></b>.</li>
+                    </ul>
+                    </p>
                 </div>
             </li>
         </ul>        

@@ -84,8 +84,8 @@ export default class ParticleWorker {
         this.#assembler = self[assemblerClass].getInstance();
 
         postMessage({ 
-            re4: Constants.PARTICLE_WORKER_MSG, 
-            type: Constants.MSG_READY, 
+            re4: Constants.MSG.WORKER, 
+            type: Constants.MTYPE.WORKER.READY, 
             workerId: workerId 
         });  // inform the orchestrator that the worker is ready
 
@@ -104,8 +104,8 @@ export default class ParticleWorker {
         // let the orchestrator know that a 
         // particle or effect was received
         postMessage({ 
-            re4: Constants.PARTICLE_WORKER_MSG, 
-            type: Constants.MSG_ACK, 
+            re4: Constants.MSG.WORKER, 
+            type: Constants.MTYPE.WORKER.ACK, 
             workerId: this.#workerId,
             ack: type,
             name: obj.$name 
@@ -118,44 +118,44 @@ export default class ParticleWorker {
      */
     async process(data) {
         switch(data.type) {
-            case Constants.MSG_ADD_TYPE:
+            case Constants.MTYPE.ORCHESTRATOR.ADD_TYPE:
                 const particle = await TransferrableConfig.reconstruct(data.particle);
                 this.instance.addParticleType(particle);
-                this.#acknowledge(particle, 'particle');
+                this.#acknowledge(particle, Constants.MTYPE.WORKER.ACK_TYPE);
                 break;
-            case Constants.MSG_ADD_EFFECT:
+            case Constants.MTYPE.ORCHESTRATOR.ADD_EFFECT:
                 const effect = await TransferrableConfig.reconstruct(data.effect, (obj) => {obj.engine = this.instance;});
                 this.instance.addEffect(effect);
-                this.#acknowledge(effect, 'effect');
+                this.#acknowledge(effect, Constants.MTYPE.WORKER.ACK_EFFECT);
                 break;
-            case Constants.MSG_ADD_AFFECTOR:
+            case Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR:
                 const affector = await TransferrableConfig.reconstruct(data.affector);
                 this.instance.addAffector(affector);
-                this.#acknowledge(affector, 'affector');
+                this.#acknowledge(affector, Constants.MTYPE.WORKER.ACK_AFFECTOR);
                 break;
-            case Constants.MSG_ADD_PARTICLES:
+            case Constants.MTYPE.ORCHESTRATOR.ADD_PARTICLES:
                 this.instance.addParticles(data.particles);
                 break;
-            case Constants.MSG_RUN_EFFECT:
+            case Constants.MTYPE.ORCHESTRATOR.RUN_EFFECT:
                 this.instance.runEffect(data.pos, data.name, data.isReset, data.time, data.deltaTime);
                 break;
-            case Constants.MSG_SPAWN:
+            case Constants.MTYPE.ORCHESTRATOR.SPAWN:
                 this.instance.spawnParticle(data.pos, data.particle);
                 break;
-            case Constants.MSG_PAUSE:
+            case Constants.MTYPE.ORCHESTRATOR.PAUSE:
                 this.#running = false;
                 break;
-            case Constants.MSG_RUN:
+            case Constants.MTYPE.ORCHESTRATOR.RUN:
                 this.#run();
                 break;
-            case Constants.MSG_SHUTDOWN:
+            case Constants.MTYPE.ORCHESTRATOR.SHUTDOWN:
                 this.#running = false;
                 this.instance.shutdown();
                 console.debug(`[ParticleWorker] Worker${this.#workerId} terminated`);
                 self.close();
                 break;
             default:
-                console.error('[ParticleWorker] Unknown message type:', data.type);
+                console.error('[ParticleWorker] Unknown message type from orchestrator:', data.type);
         }
     }
 
@@ -185,8 +185,8 @@ export default class ParticleWorker {
                 if (renderTime !== -1) {
                 const image = this.instance.bitmap;
                     postMessage({ 
-                        re4: Constants.PARTICLE_WORKER_MSG, 
-                        type: Constants.MSG_RENDERED, 
+                        re4: Constants.MSG.WORKER, 
+                        type: Constants.MTYPE.WORKER.RENDERED, 
                         workerId: this.#workerId,
                         time: time,
                         deltaTime: deltaTime, 
@@ -211,8 +211,8 @@ export default class ParticleWorker {
  * Listen for events from the orchestrator
  */
 addEventListener('message', (event) => {
-    if (event.data.re4 && event.data.re4 === Constants.ORCHESTRATOR_MSG) {
-        if (event.data.type === Constants.MSG_INIT) {
+    if (event.data.re4 && event.data.re4 === Constants.MSG.ORCHESTRATOR) {
+        if (event.data.type === Constants.MTYPE.ORCHESTRATOR.INIT) {
             console.debug(`Starting ParticleWorker ${event.data.workerId}`);
             self.$$worker = new ParticleWorker(
                 event.data.workerId, 
@@ -224,7 +224,10 @@ addEventListener('message', (event) => {
                 event.data.systemOpts
             );
         } else if (self.$$worker) {
+            // fixme: prolly also losing shit here...
             self.$$worker.process(event.data);
+        } else {
+            console.log("missed message in Worker", event);
         }
     }
 });

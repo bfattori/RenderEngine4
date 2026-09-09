@@ -1,9 +1,12 @@
 import Context from '../../Context.js';
 import Constants from '../../Constants.js';
-import Console from '../../core/Console.js';
 import $Math from '../../core/Math.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
+
+// looks unused - but this is where PRAGMA comes from
+import Console from '../../core/Console.js';
+
 
 let orchestratorInstance = null;
 let messageHandler = null;
@@ -85,9 +88,10 @@ class Orchestrator {
                 throw new ParticleWorkerError(worker, event.message, event);
             }
 
+            // assign a name to the worker
             worker.$name = `${tConfig.name}_worker${i}`;
 
-            // retain worker information
+            // retain worker config
             this.#workers.set(i, { 
                 worker: worker, 
                 live: 0,
@@ -99,8 +103,8 @@ class Orchestrator {
             // initialize the worker thread
             const workerConfig = { ...pConfig, maxParticles: Math.floor(pConfig.maxParticles / tConfig.workers) };
             worker.postMessage({ 
-                re4: Constants.ORCHESTRATOR_MSG, 
-                type: Constants.MSG_INIT, 
+                re4: Constants.MSG.ORCHESTRATOR, 
+                type: Constants.MTYPE.ORCHESTRATOR.INIT, 
                 workerId: i,
                 assembler: assembler,
                 width: vPort[0], 
@@ -110,7 +114,6 @@ class Orchestrator {
                 systemOpts: this.#systemOpts 
             });
         }
-
     }
 
     /**
@@ -137,11 +140,11 @@ class Orchestrator {
      */
     #waitAcknowledge(event) {
         this.#workerState.forEach(worker => {
-            if (event.data.type === Constants.MSG_ADD_TYPE)
+            if (event.data.type === Constants.MTYPE.WORKER.ACK_TYPE)
                 worker.ackParticles.push(event.data.particle.$name)
-            else if (event.data.type === Constants.MSG_ADD_EFFECT)
+            else if (event.data.type === Constants.MTYPE.WORKER.ACK_EFFECT)
                 worker.ackEffects.push(event.data.effect.$name);
-            else if (event.data.type === Constants.MSG_ADD_AFFECTOR)
+            else if (event.data.type === Constants.MTYPE.WORKER.ACK_AFFECTOR)
                 worker.ackAffectors.push(event.data.affector.$name);
         });
     }
@@ -155,8 +158,8 @@ class Orchestrator {
         if (this.#workersInitialized === this.#workers.size && this.#waitingWorkers.every(e => e === false)) {
             // the orchestrator is ready to handle requests
             postMessage({ 
-                re4: Constants.ORCHESTRATOR_MSG, 
-                type: Constants.MSG_READY 
+                re4: Constants.MSG.ORCHESTRATOR, 
+                type: Constants.MTYPE.ORCHESTRATOR.READY 
             });    
         }
     }
@@ -173,22 +176,22 @@ class Orchestrator {
                 // forward to a worker
                 this.toWorker(event);
                 break;
-            case Constants.MSG_ADD_TYPE:
-            case Constants.MSG_ADD_EFFECT:
-            case Constants.MSG_ADD_AFFECTOR:
+            case Constants.MTYPE.MANAGER.ADD_TYPE:
+            case Constants.MTYPE.MANAGER.ADD_EFFECT:
+            case Constants.MTYPE.MANAGER.ADD_AFFECTOR:
                 // broadcast to all workers
                 this.broadcast(event);
                 this.#waitAcknowledge(event);
                 break;
-            case Constants.MSG_RESET:
+            case Constants.MTYPE.MANAGER.RESET:
                 // terminate the threads and restart them
                 this.reset();
                 break;
-            case Constants.MSG_SHUTDOWN:
+            case Constants.MTYPE.MANAGER.SHUTDOWN:
                 this.shutdown();
                 break;
             default:
-                console.error('[Orchestrator] Unknown message type:', event.data.type);
+                console.error('[Orchestrator] Unknown message type from manager:', event.data.type);
         }
     }
 
@@ -197,22 +200,23 @@ class Orchestrator {
      * @param {Event} event 
      */
     #fromWorker(event) {
-        if (event.data.re4 && event.data.re4 === Constants.PARTICLE_WORKER_MSG) {
+        if (event.data.re4 && event.data.re4 === Constants.MSG.WORKER) {
             switch(event.data.type) {
-                case Constants.MSG_READY:
+                case Constants.MTYPE.WORKER.READY:
                     // once all workers are ready...
                     this.#waitingWorkers[event.data.workerId] = false;
                     this.#testReady(event.data.workerId);
                     break;
-                case Constants.MSG_ACK:
+                case Constants.MTYPE.WORKER.ACK:
                     const worker = this.#workers.get(event.data.workerId);
                     switch (event.data.ack) {
-                        case 'particle': worker.ackParticles.splice(worker.ackParticles.indexOf(event.data.name), 1); break;
-                        case 'effect': worker.ackEffects.splice(worker.ackEffects.indexOf(event.data.name), 1); break;
+                        case Constants.MTYPE.WORKER.ACK_TYPE: worker.ackParticles.splice(worker.ackParticles.indexOf(event.data.name), 1); break;
+                        case Constants.MTYPE.WORKER.ACK_EFFECT: worker.ackEffects.splice(worker.ackEffects.indexOf(event.data.name), 1); break;
+                        case Constants.MTYPE.WORKER.ACK_AFFECTOR: worker.ackAffectors.splice(worker.ackAffectors.indexOf(event.data.name), 1); break;
                     }
                     this.#testReady(event.data.workerId);
                     break;
-                case Constants.MSG_RENDERED:
+                case Constants.MTYPE.WORKER.RENDERED:
                     // the worker thread has rendered the particles and returned a bitmap
                     this.#workerBitmaps[event.data.workerId] = event.data.image;
                     this.#workerState[event.data.workerId] = event.data.metrics;
@@ -220,9 +224,9 @@ class Orchestrator {
                     PRAGMA('showParticleWorkersPiP:rendered', () => {
                         const image = CanvasPIP.copyImage(event.data.image);
                         postMessage({ 
-                            re4: Constants.ORCHESTRATOR_MSG, 
+                            re4: Constants.MSG.ORCHESTRATOR, 
                             workerId: event.data.workerId, 
-                            type: Constants.MSG_WORKER_RENDERED, 
+                            type: Constants.MTYPE.ORCHESTRATOR.WORKER_RENDERED, 
                             image: image 
                         }, [ image ]);
                     });
@@ -230,8 +234,8 @@ class Orchestrator {
                     // merge worker bitmaps
                     const combinedBitmap = this.#compositeWorkers();
                     postMessage({
-                        re4: Constants.ORCHESTRATOR_MSG,
-                        type: Constants.MSG_RENDERED,
+                        re4: Constants.MSG.ORCHESTRATOR,
+                        type: Constants.MTYPE.ORCHESTRATOR.RENDERED,
                         time: event.data.time,                  // these are the time and 
                         deltaTime: event.data.deltaTime,        // deltaTime of the particle system
                         image: combinedBitmap,
@@ -254,7 +258,7 @@ class Orchestrator {
         const workerId = this.#whichWorker();
         const worker = this.#workers.get(workerId).worker;
         if (worker) {
-            event.data.re4 = Constants.ORCHESTRATOR_MSG;
+            event.data.re4 = Constants.MSG.ORCHESTRATOR;
             worker.postMessage(event.data);
         }
     }
@@ -264,7 +268,8 @@ class Orchestrator {
      * @param {Event} event 
      */
     broadcast(event) {
-        event.data.re4 = Constants.ORCHESTRATOR_MSG;
+        event.data.re4 = Constants.MSG.ORCHESTRATOR;
+        event.data.__broadcast = true;
         for (const [workerId, worker] of this.#workers) {
             worker.worker.postMessage(event.data);
         }
@@ -342,11 +347,11 @@ class Orchestrator {
         // tell workers to stop processing, 
         // they will clean up and close
         console.debug('[Orchestrator] Shutdown workers');
-        this.broadcast({data: { type: Constants.MSG_SHUTDOWN }});
+        this.broadcast({data: { type: Constants.MTYPE.ORCHESTRATOR.SHUTDOWN }});
         
         postMessage({ 
-            re4: Constants.ORCHESTRATOR_MSG, 
-            type: Constants.MSG_TERMINATED 
+            re4: Constants.MSG.ORCHESTRATOR, 
+            type: Constants.MTYPE.ORCHESTRATOR.TERMINATED 
         });
     }
 }
@@ -358,8 +363,8 @@ class Orchestrator {
  * particles. It distributes tasks to worker threads based on their load and handles responses from workers.
  */
 messageHandler = addEventListener('message', (event) => {
-    if (event.data.re4 && event.data.re4 === Constants.PARTICLE_MANAGER_MSG) {
-        if (event.data.type === Constants.MSG_INIT) {
+    if (event.data.re4 && event.data.re4 === Constants.MSG.MANAGER) {
+        if (event.data.type === Constants.MTYPE.MANAGER.INIT) {
             console.debug('Starting particle orchestrator');
             const assembler = event.data.assembler;
             const viewPort = [event.data.width, event.data.height];
@@ -368,7 +373,10 @@ messageHandler = addEventListener('message', (event) => {
             const systemOpts = event.data.systemOpts;
             orchestratorInstance = new Orchestrator(assembler, viewPort, particlesConfig, threadingConfig, systemOpts);
         } else if (orchestratorInstance) {
+            // fixme: This is probably why effect and shit don't make it to the workers
             orchestratorInstance.process(event);
+        } else {
+            console.log("missed message in Orchestrator", event);
         }
     }
 });

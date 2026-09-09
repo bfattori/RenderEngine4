@@ -1,6 +1,5 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
-import Engine from '../../core/Engine.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import LoadCounter from '../../ui/debug/LoadCounter.js';
 
@@ -130,8 +129,8 @@ export default class $ParticleEngine {
 
             // initialize the orchestator and wait for it to be ready
             this.#thread.postMessage({ 
-                re4: Constants.PARTICLE_MANAGER_MSG, 
-                type: Constants.MSG_INIT,
+                re4: Constants.MSG.MANAGER, 
+                type: Constants.MTYPE.MANAGER.INIT,
                 assembler: this.#assembler.constructor.name,
                 width: this.#initProps.width, 
                 height: this.#initProps.height, 
@@ -156,14 +155,14 @@ export default class $ParticleEngine {
     }
 
     reset() {
-        this.#thread.postMessage({ re4: Constants.PARTICLE_MANAGER_MSG, type: Constants.MSG_RESET })
+        this.#thread.postMessage({ re4: Constants.MSG.MANAGER, type: Constants.MTYPE.MANAGER.RESET })
     }
 
     /**
      * Terminate the thread. This will stop the particle engine and free up resources.
      */
     shutdown() {
-        this.#thread.postMessage({ re4: Constants.PARTICLE_MANAGER_MSG, type: Constants.MSG_SHUTDOWN });
+        this.#thread.postMessage({ re4: Constants.MSG.PARTICLE_MANAGER, type: Constants.MSG.MANAGER.SHUTDOWN });
     }
 
     #createOrchestrator() {
@@ -183,12 +182,12 @@ export default class $ParticleEngine {
     }
 
     #orchestratorInbound(event) {
-        if (event.data.re4 === Constants.ORCHESTRATOR_MSG) {
+        if (event.data.re4 === Constants.MSG.ORCHESTRATOR) {
             switch(event.data.type) {
-                case Constants.MSG_READY:
+                case Constants.MTYPE.ORCHESTRATOR.READY:
                     this.#readyToProcess = true;
                     break;
-                case Constants.MSG_RENDERED:
+                case Constants.MTYPE.ORCHESTRATOR.RENDERED:
                     this.bitmap = event.data.image;
                     this.#ready = true;
 
@@ -219,25 +218,25 @@ export default class $ParticleEngine {
                     });
 
                     break;
-                case Constants.MSG_WORKER_RENDERED:
+                case Constants.MTYPE.ORCHESTRATOR.WORKER_RENDERED:
                     PRAGMA('showParticleWorkersPiP:workerRender', () => {
                         this.#workerViews[event.data.workerId].update(event.data.image);
                     })
                     break;
-                case Constants.MSG_TERMINATED:
+                case Constants.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();
                     this.#thread = null;
                     console.debug('Orchestrator thread terminated');
                     break;
                 default:
-                    console.error('[Particle Manager] Unknown message type:', event.data.type);
+                    console.error('[Particle Manager] Unknown message type from orchestrator:', event.data.type);
             }
         }
     }
 
     #orchestratorError(event) {
         console.error(event.message, event);
-        //throw new OrchestratorError(this.#thread, event.message, event);
+        throw new OrchestratorError(this.#thread, event.message, event);
     }
 
     /**
@@ -248,7 +247,7 @@ export default class $ParticleEngine {
     #send(data, transfer) {
         if (this.isStarted)
             this.#thread.postMessage({ 
-                re4: Constants.PARTICLE_MANAGER_MSG, 
+                re4: Constants.MSG.MANAGER, 
                 ... data }, transfer);
     }
 
@@ -263,18 +262,18 @@ export default class $ParticleEngine {
      * Add multiple particle types to the engine at once
      * @param  {...BasicParticle} particles - Particle types
      */
-    addParticleTypes(...particles) {
-        particles.forEach(p => this.addParticleType(p));
+    async addParticleTypes(...particles) {
+        particles.forEach(async p => await this.addParticleType(p));
     }
 
     /**
      * Add a new particle type to the particle engine
      * @param {Particle} particle 
      */
-    addParticleType(particle) {
+    async addParticleType(particle) {
         this.#send({ 
-            type: Constants.MSG_ADD_TYPE, 
-            particle: particle.transferrable 
+            type: Constants.MTYPE.MANAGER.ADD_TYPE, 
+            particle: await particle.transferrable() 
         });
     }
 
@@ -282,8 +281,8 @@ export default class $ParticleEngine {
      * Add multiple particle effects to the engine at once
      * @param  {...ParticleEffect} effects - Particle types
      */
-    addEffects(...effects) {
-        effects.forEach(e => this.addEffect(e));
+    async addEffects(...effects) {
+        effects.forEach(async e => await this.addEffect(e));
     }
 
     /**
@@ -291,10 +290,10 @@ export default class $ParticleEngine {
      * @param particleEffect
      * @return {ParticleEffect} The instance of the effect
      */
-    addEffect(particleEffect) {
+    async addEffect(particleEffect) {
         this.#send({ 
-            type: Constants.MSG_ADD_EFFECT, 
-            effect: particleEffect.transferrable 
+            type: Constants.MTYPE.MANAGER.ADD_EFFECT, 
+            effect: await particleEffect.transferrable() 
         });
     }
 
@@ -302,18 +301,18 @@ export default class $ParticleEngine {
      * Convience method to add several `ParticleAffectors` at once to the engine.
      * @param  {ParticleAffector} affectors - A list of particle affectors
      */
-    addAffectors(... affectors) {
-        affectors.forEach(affector => this.addAffector(affector));
+    async addAffectors(... affectors) {
+        affectors.forEach(async affector => await this.addAffector(affector));
     }
 
     /**
      * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
      * @param {ParticleAffector} affector - The particle affector 
      */
-    addAffector(affector) {
+    async addAffector(affector) {
         this.#send({ 
-            type: Constants.MSG_ADD_AFFECTOR, 
-            affector: affector.transferrable 
+            type: Constants.MTYPE.MANAGER.ADD_AFFECTOR, 
+            affector: await affector.transferrable() 
         });
     }
 
@@ -323,7 +322,7 @@ export default class $ParticleEngine {
      */
     addParticles(particles) {
         this.#send({ 
-            type: Constants.MSG_ADD_PARTICLES, 
+            type: Constants.MTYPE.MANAGER.ADD_PARTICLES, 
             particles: particles
         });
     }
@@ -334,7 +333,7 @@ export default class $ParticleEngine {
      */
     addParticle(particle) {
         this.#send({ 
-            type: Constants.MSG_ADD_PARTICLES, 
+            type: Constants.MTYPE.MANAGER.ADD_PARTICLES, 
             particles: [particle]
         });
     }
@@ -350,7 +349,7 @@ export default class $ParticleEngine {
      */
     runEffect([x, y], effectName, isReset, time, deltaTime) {
         this.#send({ 
-            type: Constants.MSG_RUN_EFFECT, 
+            type: Constants.MTYPE.MANAGER.RUN_EFFECT, 
             pos: [x, y], 
             name: effectName, 
             time: time, 
@@ -367,7 +366,7 @@ export default class $ParticleEngine {
      */
     spawnParticle(worldPos, particleType) {
         this.#send({
-            type: Constants.MSG_SPAWN, 
+            type: Constants.MTYPE.MANAGER.SPAWN, 
             pos: worldPos, 
             particle: particleType 
         });

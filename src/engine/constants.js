@@ -103,28 +103,54 @@ const Constants = {
     },
     DEFAULT_FILTER_STRENGTH: 10,
 
-    PARTICLE_WORKER_MSG: 'pWorker',
-    ORCHESTRATOR_MSG: 'orchestrator',
-    PARTICLE_MANAGER_MSG: 'particles',
+    // thread message origins
+    MSG: {
+        ORCHESTRATOR: 'mOrch',
+        MANAGER: 'mPMgr',
+        WORKER: 'mPWkr',
+    },
 
-    MSG_RENDERED: 'rendered',
-    MSG_WORKER_RENDERED: 'workerRendered',
-    MSG_READY: 'ready',
-    MSG_INIT: 'init',
-    MSG_TERMINATED: 'terminated',
-    MSG_ADD_TYPE: 'type',
-    MSG_ADD_EFFECT: 'addEffect',
-    MSG_ADD_AFFECTOR: 'addAffector',
-    MSG_ADD_PARTICLES: 'addParticles',
-    MSG_RUN_EFFECT: 'effect',
-    MSG_SPAWN: 'spawn',
-    MSG_UPDATE: 'update',
-    MSG_START: 'start',
-    MSG_RESET: 'reset',
-    MSG_SHUTDOWN: 'shutdown',
-    MSG_PAUSE: 'pause',
-    MSG_RUN: 'run',
-    MSG_ACK: 'ack'
+    // thread message types
+    MTYPE: {
+        // from worker
+        WORKER: {
+            ACK: 'ack',
+            READY: 'rdy',
+            RENDERED: 'rndr',
+            ACK_TYPE: 'ackType',
+            ACK_EFFECT: 'ackFx',
+            ACK_AFFECTOR: 'ackAff'
+        },
+        // from orchestrator
+        ORCHESTRATOR: {
+            INIT: 'init',
+            READY: 'rdy',
+            ADD_TYPE: '+type',
+            ADD_EFFECT: '+fx',
+            ADD_AFFECTOR: '+aff',
+            ADD_PARTICLES: '+ptls',
+            RUN_EFFECT: 'runFx',
+            RENDERED: 'rndr',
+            WORKER_RENDERED: 'wRndr',
+            SPAWN: 'spawn',
+            PAUSE: 'pause',
+            RUN: 'run',
+            SHUTDOWN: 'down',
+            TERMINATED: 'term'
+        },
+        // from manager
+        MANAGER: {
+            INIT: 'init',
+            RESET: 'reset',
+            SHUTDOWN: 'down',
+            ADD_TYPE: '+type',
+            ADD_EFFECT: '+fx',
+            ADD_AFFECTOR: '+aff',
+            ADD_PARTICLES: '+ptls',
+            RUN_EFFECT: 'runFx',
+            SPAWN: 'spawn'
+        }
+    }
 };
 
 export default Constants;
