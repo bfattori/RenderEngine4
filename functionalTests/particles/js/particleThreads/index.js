@@ -17,7 +17,7 @@ self.PARTICLE_ENGINE_OPTIONS = {
 
 self.PARTICLE_THREADING_OPTIONS = {
     workers: 2,
-    framesPerSecond: 240
+    framesPerSecond: 120
 };
 
 
@@ -82,7 +82,7 @@ RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4)
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 10000,
+    count: 8000,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
