@@ -227,15 +227,15 @@ export default class CanvasRenderer extends Renderer {
     }
 
     compileSprite(sprite, tag) {
-        return this.assembler.compileSprite(sprite, tag);
+        return this.assembler.compileTile(sprite, tag);
     }
 
     destroySprite(opaqueId) {
-        this.assembler.destroySprite(opaqueId);
+        this.assembler.destroyTile(opaqueId);
     }
 
     renderSprite(opaqueId, x, y, time, deltaTime) {
-        const sprite = this.assembler.getCompiledSprite(parseInt(opaqueId));
+        const sprite = this.assembler.getCompiledTile(parseInt(opaqueId));
         if (sprite) {
             const frame = sprite.frameRect;
             this.surface.drawImage(sprite.sourceImage, frame[0], frame[1], frame[2], frame [3], x, y, frame[2], frame[3]);
@@ -263,7 +263,7 @@ export default class CanvasRenderer extends Renderer {
      *                   the renderer does not support pre-compilation of renderable objects.
      */
     getCompiledSprite(sprite, tag) {
-        return this.assembler.compileSprite(this, sprite, tag);
+        return this.assembler.compileTile(this, sprite, tag);
     }
 
     /**
@@ -273,7 +273,7 @@ export default class CanvasRenderer extends Renderer {
      * @returns 
      */
     destroyCompiledSprite(opaqueId) {
-        this.assembler.destroySprite(opaqueId);
+        this.assembler.destroyTile(opaqueId);
     }
 
     /**

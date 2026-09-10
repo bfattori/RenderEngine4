@@ -60,6 +60,7 @@ const tiles = new TileSheet('smoke', '../../../assets/smoke_sprites.json');
 await tiles.loading();
 
 const sParticle = new SmokeParticle({
+    lifeSpan: [20000, 30000],
     tileSheet: tiles
 });
 sParticle.name = 'withTiles';
@@ -71,7 +72,9 @@ const sEffect = new SmokeEffect({
 });
 sEffect.name = 'withTiles';
 
-const sParticle2 = new SmokeParticle();
+const sParticle2 = new SmokeParticle({
+    lifeSpan: [20000, 30000]
+});
 sParticle2.name = 'points';
 
 const sEffect2 = new SmokeEffect({

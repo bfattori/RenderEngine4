@@ -302,7 +302,7 @@ export default class $ParticleEngine {
         if (this.isCircular && this.#particleIdx > this.maxParticles)
             this.#particleIdx = 0;    // wrap
         else if (this.isCircular)
-            return this.#particleIdx++;
+            this.#particleIdx++;
         else if (!this.isCircular) {
             // find first free index (could be -1)
             this.#particleIdx = this.#memories.findIndex((e) => e === null);

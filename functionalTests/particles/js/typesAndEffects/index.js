@@ -19,7 +19,7 @@ self.PARTICLE_ENGINE_OPTIONS = {
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
-    workers: 2,
+    workers: 4,
     framesPerSecond: 120
 };
 
