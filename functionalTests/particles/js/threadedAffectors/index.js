@@ -20,7 +20,7 @@ self.PARTICLE_ENGINE_OPTIONS = {
 
 self.PARTICLE_THREADING_OPTIONS = {
     workers: 2,
-    framesPerSecond: 40
+    framesPerSecond: 240
 };
 
 // create a double-buffered canvas renderer

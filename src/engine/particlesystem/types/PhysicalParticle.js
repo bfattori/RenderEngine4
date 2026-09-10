@@ -50,8 +50,8 @@ export default class PhysicalParticle extends DiffuseParticle {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(pEngine, time, config) {
-        const particle = super.spawn(pEngine, time, config);
+    spawn(time, config) {
+        const particle = super.spawn(time, config);
         particle.$$affected = true;
         particle.restitution = this.restitution;
         particle.friction = this.friction;

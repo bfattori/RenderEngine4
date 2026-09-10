@@ -15,9 +15,9 @@ export default class SparkParticle extends SprayParticle {
         return new SparkParticle();
     }
 
-    spawn(pEngine, $memory, time, type, config) {
+    spawn($memory, time, type, config) {
         if (time > config.lastTime) {
-            super(pEngine, $memory, time, type, config);
+            super($memory, time, type, config);
             $memory.lastTime = time + config.delay + $Math.randomRange(0, config.delayVariance, true);
         }
     }

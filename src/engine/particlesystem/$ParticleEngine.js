@@ -507,7 +507,7 @@ export default class $ParticleEngine {
         const pType = this.getParticleType(memory.$pType);
         
         // update the particle and then age it
-        pType.update(this, time, deltaTime, memory, this.#pPos[idx], this.#pVel[idx], this.#pSpan[idx]);
+        pType.update(time, deltaTime, memory, this.#pPos[idx], this.#pVel[idx], this.#pSpan[idx]);
         this.#pSpan[idx] -= deltaTime;
 
         // only physical particles are affected by repulsors and colliders
@@ -517,7 +517,7 @@ export default class $ParticleEngine {
 
         // free-up space when dead
         if (this.#pSpan[idx] <= 0) {
-            pType.cleanUp(this, memory);
+            pType.cleanUp(memory);
             this.#memories[idx] = null;
         }
     }
@@ -549,7 +549,7 @@ export default class $ParticleEngine {
         this.#memories.forEach((memory, i) => {
             if (memory !== null) {
                 const pType = this.getParticleType(memory.$pType);
-                pType.render(this, time, deltaTime, memory, 
+                pType.render(time, deltaTime, memory, 
                     this.#pPos[i], this.#pSpan[i], 'canvas', surf);
             }
         });

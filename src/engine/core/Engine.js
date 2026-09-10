@@ -28,6 +28,12 @@ const primary = {
   PARTICLE_ENGINE: null
 };
 
+const _paths = {
+  engine: null,
+  game: null,
+  startup: null
+};
+
 const ctx = Context.getInstance();
 let waitInit = false;
 
@@ -374,11 +380,9 @@ export default class Engine {
     // this should give us 'http://.../src/engine/'
     engineUrl.pathname = srcPath.join('/');
   
-    engineOptions.system = {
-      engineLocation: new URL(engineUrl),
-      startupLocation: new URL(startupLocation),
-      gameLocation: new URL(gameLocation)
-    };
+    Paths.engine = engineUrl;
+    Paths.startup = startupLocation;
+    Paths.game = gameLocation;
 
     // validate engine options
     // ...
@@ -635,26 +639,44 @@ export default class Engine {
 
 }
 
-export const Paths = {
-    /**
-     * The engine Url: `./src/engine` 
-     * @returns {String}
-     */
-    get engine() {
-        return Engine.engine.options.system.engineLocation.toString();
-    },
-    /**
-     * The engine startup invocation Url: `./renderEngine4.js`
-     * @returns {String}
-     */
-    get startup() {
-        return Engine.engine.options.system.startupLocation.toString();
-    },
-    /**
-     * The game location url
-     * @returns {String}
-     */
-    get game() {
-        return Engine.engine.options.system.gameLocation.toString();
-    }
+export class Paths {
+  static #engineLocation = null;
+  static #startupLocation = null;
+  static #gameLocation = null;
+
+  /**
+   * The engine Url: `./src/engine` 
+   * @returns {String}
+   */
+  static get engine() {
+      return Paths.#engineLocation.toString();
+  }
+
+  static set engine(url) {
+    Paths.#engineLocation = new URL(url, self.location);
+  }
+
+  /**
+   * The engine startup invocation Url: `./renderEngine4.js`
+   * @returns {String}
+   */
+  static get startup() {
+      return Paths.#startupLocation.toString();
+  }
+
+  static set startup(url) {
+    Paths.#startupLocation = new URL(url, self.location);
+  }
+
+  /**
+   * The game location url
+   * @returns {String}
+   */
+  static get game() {
+      return Paths.#gameLocation.toString();
+  }
+
+  static set game(url) {
+    Paths.#gameLocation = new URL(url, self.location);
+  }
 };

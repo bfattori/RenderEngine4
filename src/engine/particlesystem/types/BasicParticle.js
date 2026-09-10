@@ -1,6 +1,8 @@
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
+import TileSheet from '../../resources/loaders/TileSheet.js';
+import Assembler from '../../rendering/assemblers/Assembler.js';
 
 export default class BasicParticle extends TransferrableConfig {
     /**
@@ -98,7 +100,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(pEngine, time, config) {
+    spawn(time, config) {
         const $memory = {};
         $memory.$pType = this.$name;    // the particle type
         $memory.color = config.colors && config.colors.length !== 0 ? config.colors[$Math.randomRange(0, config.colors.length - 1, true)] : '#000';
@@ -146,7 +148,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(pEngine, time, deltaTime, $memory, pos, vel, life) {
+    update(time, deltaTime, $memory, pos, vel, life) {
         // standard update:
         //   add velocity to position then add gravity to velocity
         const drag = $memory.drag === 0 ? 1 : (1 / $memory.drag);
@@ -179,7 +181,6 @@ export default class BasicParticle extends TransferrableConfig {
 
     /**
      * Render the particle
-     * @param {ParticleEngine} pEngine - The particle engine
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      * @param {Object} $memory - The memory object containing the particle's instantaneous properties
@@ -189,13 +190,13 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(pEngine, time, deltaTime, $memory, pos, life, target, surface) {
+    render(time, deltaTime, $memory, pos, life, target, surface) {
         switch (target) {
             case 'canvas':
                 if ($memory.point) {
-                    this.drawShape(pEngine, time, deltaTime, surface, $memory, pos);
+                    this.drawShape(time, deltaTime, surface, $memory, pos);
                 } else {
-                    this.drawTile(pEngine, time, deltaTime, surface, $memory, pos);
+                    this.drawTile(time, deltaTime, surface, $memory, pos);
                 }
                 break;
             case 'webgl':
@@ -213,7 +214,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawShape(pEngine, time, deltaTime, surface, $memory, pos) {
+    drawShape(time, deltaTime, surface, $memory, pos) {
         const sz = Math.ceil($memory.size / 2);
         surface.fillStyle = $memory.color;
         surface.fillRect(pos[0] - sz, pos[1] - sz, $memory.size, $memory.size);    
@@ -221,7 +222,6 @@ export default class BasicParticle extends TransferrableConfig {
 
     /**
      * Render the particle
-     * @param {ParticleEngine} pEngine - The particle engine
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      * @param {CanvasRenderingContext2D} surface - The rendering context
@@ -229,12 +229,12 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawTile(pEngine, time, deltaTime, surface, $memory, pos) {
+    drawTile(time, deltaTime, surface, $memory, pos) {
         // $memory.mtx.setTo({
         //     scale: [$memory.scale, $memory.scale]
         // });
         // surface.transform.apply(surface, $memory.mtx.asCanvas());
-        const tile = pEngine.assembler.getCompiledSprite($memory.tile);
+        const tile = Assembler.assemblerInstance.getCompiledTile($memory.tile);
         const frame = tile.frameRect;
         surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pos[0], pos[1], frame[2], frame[3]);
         //surface.restore();
@@ -248,5 +248,30 @@ export default class BasicParticle extends TransferrableConfig {
      */
     cleanUp($memory) {
         $memory.color = null;
-    }            
+    }
+
+    /**
+     * Reduce the particle types to their names
+     * @returns {Object}
+     */
+    dehydrate() {
+        const props = super.dehydrate();
+        props.tileSheet = this.tileSheet ? {name: this.tileSheet.$name, resourceUrl: this.tileSheet.resourceUrl.toString()} : null;
+        return props;
+    }
+
+    /**
+     * Replace particle types with their configured instances
+     * @returns 
+     */
+    async rehydrate(obj) {
+        if (obj.tileSheet !== null) {
+            const sheet = new TileSheet(obj.tileSheet.name, obj.tileSheet.resourceUrl);
+            await sheet.loading();
+            obj.tileSheet = sheet;
+        }
+
+        await super.rehydrate(obj);
+        return obj;
+    }
 }

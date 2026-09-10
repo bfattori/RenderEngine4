@@ -2,20 +2,17 @@ import Assembler from '../Assembler.js';
 import { IL as RASTER_IL } from '../IntermediateLanguages.js';
 
 export default class CanvasRasterAssembler extends Assembler {
-    static #instance = null;
-
     constructor() {
         super();
     }
 
     static getInstance() {
-        if (!CanvasRasterAssembler.#instance) {
+        if (!Assembler.assemblerInstance) {
             Assembler.getInstance();
-            CanvasRasterAssembler.#instance = new CanvasRasterAssembler();
+            Assembler.assemblerInstance = new CanvasRasterAssembler();
         }
-        return CanvasRasterAssembler.#instance;
+        return Assembler.assemblerInstance;
     }
-
 
     /**
      * Assemble the instruction into a renderer-appropriate function call.

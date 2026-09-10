@@ -18,6 +18,7 @@ export default class TransferrableConfig extends Config {
 
     constructor(opts, url = import.meta.url) {
         super(opts);
+        opts.name !== undefined ? this.$name = opts.name : this.$name = null; 
         this.#transferrable.url = url;
     }
 
@@ -98,10 +99,11 @@ export default class TransferrableConfig extends Config {
 
     /**
      * Rehydrate primitive values back into their complex types.
-     * @returns {TransferrableConfig}
+     * @returns {Object} An object with the same structure as the original config
      */
-    rehydrate() {
-        return this;
+    async rehydrate(props) {
+        this.merge(props);
+        return props;
     }
 
     /**
@@ -115,10 +117,11 @@ export default class TransferrableConfig extends Config {
             // import the object class into the global scope
             let obj = await import(transferrable.url);
             self[transferrable.$type] = obj.default;
-            obj = new self[transferrable.$type](transferrable.props);
+            obj = new self[transferrable.$type]({});
             if (binder && typeof binder === 'function') binder(obj);
+            await obj.rehydrate(transferrable.props);
             obj.$name = transferrable.$name;
-            return obj.rehydrate();
+            return obj;
         } catch (ex) {
             throw new RenderEngineError(`Error loading "${transferrable.$name}"(${transferrable.$type}) from "${transferrable.url}"`, ex);
         }

@@ -10,9 +10,9 @@ const ctx = Context.getInstance();
  */
 export default class Assembler {
     static #built = false;
+    static #assemblerInstance = null;
 
     #compiledShapes = new Map();
-    #compiledSprites = new Map();
     #compiledTiles = new Map();
     #compiledTileMaps = new Map();
 
@@ -20,7 +20,6 @@ export default class Assembler {
 
     constructor() {
         if (!Assembler.#built) throw new AssemblerError("Use the static getInstance() method to construct an Assembler");
-        Assembler.built = false;
     }
 
     /**
@@ -30,7 +29,16 @@ export default class Assembler {
      */
     static getInstance() {
         Assembler.#built = true;
-        return new Assembler();
+        return Assembler.#assemblerInstance;
+    }
+
+    static get assemblerInstance() {
+        return Assembler.#assemblerInstance;
+    }
+
+    static set assemblerInstance(instance) {
+        Assembler.#assemblerInstance = instance;
+        Assembler.#built = false;
     }
 
     //-------------------------------------------------
@@ -53,8 +61,8 @@ export default class Assembler {
         return this.#compiledShapes.get(opaqueId);
     }
 
-    getCompiledSprite(opaqueId) {
-        return this.#compiledSprites.get(opaqueId);
+    getCompiledTile(opaqueId) {
+        return this.#compiledTiles.get(opaqueId);
     }
 
     /**
@@ -65,8 +73,8 @@ export default class Assembler {
         this.#compiledShapes.delete(opaqueId);
     }
 
-    destroyCompiledSprite(opaqueId) {
-        this.#compiledSprites.delete(opaqueId);
+    destroyCompiledTile(opaqueId) {
+        this.#compiledTiles.delete(opaqueId);
     }
 
     /**
@@ -124,7 +132,7 @@ export default class Assembler {
         return opaqueId;
     }
 
-    compileSprite(sprite) {
+    compileTile(tile) {
         const opaqueId = this.#nextShapeId;
         
         // in the future, we might wrap this in a self-contained function
@@ -135,7 +143,7 @@ export default class Assembler {
         // }
 
         // store the procedure that will run the instructions
-        this.#compiledSprites.set(opaqueId, sprite);
+        this.#compiledTiles.set(opaqueId, tile);
         return opaqueId;
     }
 
@@ -163,7 +171,7 @@ export default class Assembler {
     get properties() {
         return {
             compiledShapes: this.#compiledShapes,
-            compiledSprites: this.#compiledSprites
+            compiledTiles: this.#compiledTiles
         };
     }
 }

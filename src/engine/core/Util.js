@@ -186,4 +186,13 @@ export default class Util {
         const values = await Util.hashDigest(message);
         return values.map(b => b.toString(16).padStart(2, '0')).join('');
     }
+
+    /**
+     * Checks if the current context is a web worker.
+     * @returns {boolean} `true` if the current context is a web worker, `false` otherwise.
+     */
+    static isWorker() {
+        const isWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+        return isWorker;
+    }
 }

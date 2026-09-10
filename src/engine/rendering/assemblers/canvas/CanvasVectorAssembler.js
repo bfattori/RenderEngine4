@@ -4,8 +4,6 @@ import Assembler from '../Assembler.js';
 import { IL as VECTOR_IL } from '../IntermediateLanguages.js';
 
 export default class CanvasVectorAssembler extends Assembler {
-    static #instance = null;
-
     constructor() {
         super();
     }
@@ -17,11 +15,11 @@ export default class CanvasVectorAssembler extends Assembler {
      * @static
      */
     static getInstance() {
-        if (!CanvasVectorAssembler.#instance) {
+        if (!Assembler.assemblerInstance) {
             Assembler.getInstance();
-            CanvasVectorAssembler.#instance = new CanvasVectorAssembler();
+            Assembler.assemblerInstance = new CanvasVectorAssembler();
         }
-        return CanvasVectorAssembler.#instance;
+        return Assembler.assemblerInstance;
     }
 
     /**

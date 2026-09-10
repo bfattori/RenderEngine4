@@ -85,9 +85,20 @@ export default class ParticleEffect extends TransferrableConfig {
      * Replace particle types with their configured instances
      * @returns 
      */
-    rehydrate() {
-        const obj = super.rehydrate();
+    async rehydrate(obj) {
+        await new Promise((resolve) => {
+            const resolveParticleTypes = () => {
+                const success = obj.particleTypes.every(e => this.#engine.types.get(e));
+                if (success)
+                    return resolve(true);
+                else
+                    setTimeout(resolveParticleTypes, 1000);
+            };
+            resolveParticleTypes();
+        });
+        
         obj.particleTypes = obj.particleTypes.map(e => this.#engine.types.get(e));
+        await super.rehydrate(obj);
         return obj;
     }
 
@@ -144,7 +155,7 @@ export default class ParticleEffect extends TransferrableConfig {
             const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
             const pType = this.particleTypes.at(typeIdx);
             if (pType) {
-                let particle = pType.spawn(this.engine, time, pType.opts);
+                let particle = pType.spawn(time, pType.opts);
                 // give sub-classes an opportunity to modify 
                 // these values or introduce new ones
                 particle = this.initParticle(particle, pType.opts);

@@ -47,8 +47,8 @@ export default class SmokeParticle extends PhysicalParticle {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(pEngine, time, config) {
-        const particle = super.spawn(pEngine, time, config);
+    spawn(time, config) {
+        const particle = super.spawn(time, config);
         particle.memory.curl = $Math.randomRange(this.curl[0], this.curl[1]);
         particle.memory.cD = Util.selectRandom(-this.curlVariance, this.curlVariance);
         particle.memory.cI = this.curlIntensity * 1000;
@@ -65,8 +65,8 @@ export default class SmokeParticle extends PhysicalParticle {
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(pEngine, time, deltaTime, $memory, pos, vel, life) {
-        super.update(pEngine, time, deltaTime, $memory, pos, vel, life);
+    update(time, deltaTime, $memory, pos, vel, life) {
+        super.update(time, deltaTime, $memory, pos, vel, life);
 
         // apply curl
         vel[0] += ($memory.curl * Math.cos(($memory.ttl - life) / $memory.cI)) * $memory.cD;

@@ -1,5 +1,5 @@
 import { ResourceError } from './loaders/ResourceLoader.js';
-import Engine from '../core/Engine.js';
+import Assembler from '../rendering/assemblers/Assembler.js';
 import Config from '../core/Config.js';
 import Util from '../core/Util.js';
 
@@ -67,10 +67,12 @@ export default class Tile extends Config {
                 frameRect: [tileDef[0], tileDef[1], tileDef[2], tileDef[3]],
                 boundingBox: [0, 0, tileDef[2], tileDef[3]]
             });
-
-            // this would be better if we had a reference of our own
-            this.#opaqueId = Engine.renderContext.compileSprite(this);
+            this.compile();
         }
+    }
+
+    compile() {
+        this.#opaqueId = Assembler.assemblerInstance.compileTile(this);
     }
 
     /**

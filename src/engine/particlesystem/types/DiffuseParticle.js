@@ -29,15 +29,14 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {Object} config - The particle's configuration
    * @returns {Object} An object containing `softness`, the diffuse blur of the particle
    */
-  spawn(pEngine, time, config) {
-    const p = super.spawn(pEngine, time, config);  
+  spawn(time, config) {
+    const p = super.spawn(time, config);  
     p.softness = this.softness;
     return p;
   }
 
   /**
    * Render the particle
-   * @param {ParticleEngine} pEngine - The particle engine
    * @param {Number} time - The current world time in milliseconds
    * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
    * @param {CanvasRenderingContext2D} surface - The rendering context
@@ -45,7 +44,7 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(pEngine, time, deltaTime, surface, $memory, pos) {
+  drawShape(time, deltaTime, surface, $memory, pos) {
     const gradient = this.#gradient($memory, pos);
     surface.beginPath();
     surface.arc(pos[0], pos[1], $memory.size, 0, $Math.TWO_PI);

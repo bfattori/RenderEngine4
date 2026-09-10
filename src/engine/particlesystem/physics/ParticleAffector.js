@@ -4,17 +4,17 @@ import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 export default class ParticleAffector extends TransferrableConfig {
-   static FALLOFF_TYPE = new Enum({
-    LINEAR: 'linear',
-    SQUARED: 'squared',
-    ATTENUATE: 'log',
-    CUSTOM: 'custom'
-  });
+   static FALLOFF_TYPE = new Enum(
+    'LINEAR', 
+    'SQUARED', 
+    'ATTENUATE', 
+    'CUSTOM'
+  );
 
-  static SHAPE = new Enum({
-    CIRCLE: 'circ',
-    RECTANGLE: 'rect'
-  });
+  static SHAPE = new Enum(
+    'CIRCLE',
+    'RECTANGLE'
+  );
 
   constructor(overrides = {}, url = import.meta.url) {
     super({
@@ -229,8 +229,8 @@ export default class ParticleAffector extends TransferrableConfig {
    */
   dehydrate() {
       const props = super.dehydrate();
-      props.falloffType = +props.falloffType;
-      props.shape = +props.shape;
+      props.falloffType = `${props.falloffType}`;
+      props.shape = `${props.shape}`;
       return props;
   }
 
@@ -238,10 +238,10 @@ export default class ParticleAffector extends TransferrableConfig {
    * Change the enums back to their values
    * @returns 
    */
-  rehydrate() {
-      const obj = super.rehydrate();
-      obj.falloffType = ParticleAffector.FALLOFF_TYPE.at(obj.falloffType);
-      obj.shape = ParticleAffector.SHAPE.at(obj.shape);
+  async rehydrate(obj) {
+      obj.falloffType = ParticleAffector.FALLOFF_TYPE[obj.falloffType];
+      obj.shape = ParticleAffector.SHAPE[obj.shape];
+      await super.rehydrate(obj);
       return obj;
   }
 

@@ -13,6 +13,8 @@ import { Matrix2d } from '../../core/Matrix.js';
 
 import { CanvasRasterAssembler, CanvasVectorAssembler } from '../../rendering/assemblers/canvas/CanvasAssemblers.js';
 
+import { Paths } from '../../core/Engine.js';
+
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
 
@@ -71,6 +73,10 @@ export default class ParticleWorker {
 
     get classMap() {
         return this.#classMap;
+    }
+
+    get assembler() {
+        return this.#assembler;
     }
 
     /**
@@ -214,6 +220,13 @@ addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.MSG.ORCHESTRATOR) {
         if (event.data.type === Constants.MTYPE.ORCHESTRATOR.INIT) {
             console.debug(`Starting ParticleWorker ${event.data.workerId}`);
+
+            // set the engine paths for the worker to reference
+            console.debug(`Setting engine paths for worker ${event.data.workerId}:`, event.data.paths);
+            Paths.engine = event.data.paths.engine;
+            Paths.startup = event.data.paths.startup;
+            Paths.game = event.data.paths.game;
+
             self.$$worker = new ParticleWorker(
                 event.data.workerId, 
                 event.data.assembler, 

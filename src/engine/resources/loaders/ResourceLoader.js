@@ -51,7 +51,7 @@ export default class ResourceLoader extends TransferrableConfig {
             retryInterval: 500
         });
 
-        if (type !== ResourceLoader.TYPE.CUSTOM)
+        if (this.type !== ResourceLoader.TYPE.CUSTOM)
             this.#loadResource();
 
         this.$name = `Resource_${this.resourceUrl.pathname.split('/').pop().split('.')[0]}`;
@@ -127,7 +127,7 @@ export default class ResourceLoader extends TransferrableConfig {
      * @param {String} content - The content returned from the resource
      * @returns {*}
      */
-    postProcess(content) {
+    async postProcess(content) {
         return content;
     }
 
@@ -172,23 +172,17 @@ export default class ResourceLoader extends TransferrableConfig {
         })
     }
 
-    /**
-     * Change the resource into a string
-     * @returns {Object}
-     */
     dehydrate() {
         const props = super.dehydrate();
-        props.resourceUrl = props.resourceUrl.toString();
+        props.type = `${this.type}`;
         return props;
     }
 
-    /**
-     * Change the string url into an Url and load the resource
-     * @returns 
-     */
-    rehydrate() {
-        const obj = super.rehydrate();
-        obj.resourceUrl = new URL(obj.resourceUrl);
-        return obj;
+    async rehydrate(props) {
+        props.type = ResourceLoader.TYPE[props.type];
+        await super.rehydrate(props);
+        if (this.type !== ResourceLoader.TYPE.CUSTOM)
+            await this.#loadResource();
+        return props;
     }
 }

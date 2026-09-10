@@ -1,4 +1,5 @@
 import RenderEngineError from './RenderEngineError.js';
+import Util from './Util.js';
 
 // Canonical identity matrix
 const _IdentityMatrix = [
@@ -32,7 +33,7 @@ const _IdentityMatrix = [
  */
 export class Matrix2d extends DOMMatrix {
     constructor(...mtxArgs) {
-        if (mtxArgs[0] instanceof DOMMatrix) {
+        if (!Util.isWorker() && mtxArgs[0] instanceof DOMMatrix) {
             super(mtxArgs[0]);
         } else if (mtxArgs.length > 1) { 
             // a 2d array
@@ -317,7 +318,7 @@ export class Matrix2d extends DOMMatrix {
 }
 
 // copies to export
-const IdentityMatrix = new Matrix2d(1,0,0,1,0,0);
+const IdentityMatrix = new Matrix2d([1,0,0,1,0,0]);
 
 const NullMatrix = null;
 

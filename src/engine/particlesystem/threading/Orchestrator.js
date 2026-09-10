@@ -31,11 +31,13 @@ class Orchestrator {
     #workerBurden = 0;
 
     #workersInitialized = 0;
+    #paths = null;
 
-    constructor(assembler, viewPort, particlesConfig, threadingConfig, systemOpts) {
+    constructor(assembler, viewPort, particlesConfig, threadingConfig, systemOpts, paths) {
         this.#compositor = new OffscreenCanvas(viewPort[0], viewPort[1]);
         this.#particlesConfig = particlesConfig;
         this.#threadingConfig = threadingConfig;
+        this.#paths = paths;
         
         this.#viewPort = viewPort;
 
@@ -111,7 +113,8 @@ class Orchestrator {
                 height: vPort[1], 
                 config: workerConfig, 
                 threading: tConfig, 
-                systemOpts: this.#systemOpts 
+                systemOpts: this.#systemOpts,
+                paths: this.#paths 
             });
         }
     }
@@ -170,9 +173,9 @@ class Orchestrator {
      */
     process(event) {
         switch(event.data.type) {
-            case Constants.MSG_ADD_PARTICLES:
-            case Constants.MSG_RUN_EFFECT:
-            case Constants.MSG_SPAWN:
+            case Constants.MTYPE.MANAGER.ADD_PARTICLES:
+            case Constants.MTYPE.MANAGER.RUN_EFFECT:
+            case Constants.MTYPE.MANAGER.SPAWN:
                 // forward to a worker
                 this.toWorker(event);
                 break;
@@ -371,7 +374,8 @@ messageHandler = addEventListener('message', (event) => {
             const particlesConfig = event.data.config;
             const threadingConfig = event.data.threading;
             const systemOpts = event.data.systemOpts;
-            orchestratorInstance = new Orchestrator(assembler, viewPort, particlesConfig, threadingConfig, systemOpts);
+            const paths = event.data.paths;
+            orchestratorInstance = new Orchestrator(assembler, viewPort, particlesConfig, threadingConfig, systemOpts, paths);
         } else if (orchestratorInstance) {
             // fixme: This is probably why effect and shit don't make it to the workers
             orchestratorInstance.process(event);

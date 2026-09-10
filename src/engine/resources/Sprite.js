@@ -1,4 +1,5 @@
 import { ResourceError } from './loaders/ResourceLoader.js';
+import Assembler from '../rendering/assemblers/Assembler.js';
 import Engine from '../core/Engine.js';
 import Enum from '../core/Enum.js';
 import $Math from '../core/Math.js';
@@ -155,9 +156,7 @@ export default class Sprite extends Tile {
             // assume the first state on initialization
             this.currentState = this.states.keys().next().value;
         }
-
-        // this would be better if we had a reference of our own
-        this.opaqueId = Engine.renderContext.compileSprite(this);
+        this.compile();
     }
 
     /**

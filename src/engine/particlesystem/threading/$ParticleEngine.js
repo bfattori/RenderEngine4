@@ -22,13 +22,14 @@ export default class $ParticleEngine {
     #initProps = null;
     #assembler = null;
 
-    constructor(renderContext, width, height, config, threading, opts) {
+    constructor(renderContext, width, height, config, threading, opts, paths) {
         this.#initProps = {
             width: width,
             height: height,
             config: config,
             threading: threading,
-            opts: opts
+            opts: opts,
+            paths: paths
         };
         this.#assembler = renderContext.renderer.assembler;
     }
@@ -136,7 +137,8 @@ export default class $ParticleEngine {
                 height: this.#initProps.height, 
                 config: this.#initProps.config, 
                 threading: this.#initProps.threading, 
-                systemOpts: this.#initProps.opts  
+                systemOpts: this.#initProps.opts,
+                paths: this.#initProps.paths  
             });
             
             // wait until the workers have all started
@@ -262,18 +264,18 @@ export default class $ParticleEngine {
      * Add multiple particle types to the engine at once
      * @param  {...BasicParticle} particles - Particle types
      */
-    async addParticleTypes(...particles) {
-        particles.forEach(async p => await this.addParticleType(p));
+    addParticleTypes(...particles) {
+        particles.forEach(p => this.addParticleType(p));
     }
 
     /**
      * Add a new particle type to the particle engine
      * @param {Particle} particle 
      */
-    async addParticleType(particle) {
+    addParticleType(particle) {
         this.#send({ 
             type: Constants.MTYPE.MANAGER.ADD_TYPE, 
-            particle: await particle.transferrable() 
+            particle: particle.transferrable 
         });
     }
 
@@ -281,8 +283,8 @@ export default class $ParticleEngine {
      * Add multiple particle effects to the engine at once
      * @param  {...ParticleEffect} effects - Particle types
      */
-    async addEffects(...effects) {
-        effects.forEach(async e => await this.addEffect(e));
+    addEffects(...effects) {
+        effects.forEach(e => this.addEffect(e));
     }
 
     /**
@@ -290,10 +292,10 @@ export default class $ParticleEngine {
      * @param particleEffect
      * @return {ParticleEffect} The instance of the effect
      */
-    async addEffect(particleEffect) {
+    addEffect(particleEffect) {
         this.#send({ 
             type: Constants.MTYPE.MANAGER.ADD_EFFECT, 
-            effect: await particleEffect.transferrable() 
+            effect: particleEffect.transferrable 
         });
     }
 
@@ -301,18 +303,18 @@ export default class $ParticleEngine {
      * Convience method to add several `ParticleAffectors` at once to the engine.
      * @param  {ParticleAffector} affectors - A list of particle affectors
      */
-    async addAffectors(... affectors) {
-        affectors.forEach(async affector => await this.addAffector(affector));
+    addAffectors(... affectors) {
+        affectors.forEach(affector => this.addAffector(affector));
     }
 
     /**
      * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
      * @param {ParticleAffector} affector - The particle affector 
      */
-    async addAffector(affector) {
+    addAffector(affector) {
         this.#send({ 
             type: Constants.MTYPE.MANAGER.ADD_AFFECTOR, 
-            affector: await affector.transferrable() 
+            affector: affector.transferrable 
         });
     }
 
