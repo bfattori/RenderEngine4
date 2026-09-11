@@ -59,7 +59,7 @@ class SpriteState extends Config {
      * @return {Boolean} <tt>true</tt> if the sprite is an animation and toggles
      */
     get isToggle() {
-        return (this.isAnimation && this.mode === +Sprite.MODE.TOGGLE);
+        return (this.isAnimation && this.mode === +Sprite.MODE.BOUNCE);
     }
 
     /**
@@ -76,36 +76,36 @@ export { SpriteState };
 
 export default class Sprite extends Tile {
 
-    static TYPE = new Enum({
+    static TYPE = new Enum(
         /** 
          * The sprite is a single frame
          */
-        SINGLE: 'single',
+        'SINGLE',
         /** 
          * The sprite is an animation
          */
-        ANIMATION: 'animation'
-    });
+        'ANIMATION'
+    );
 
-    static MODE = new Enum({
+    static MODE = new Enum(
         /**
          * The sprite is a single frame
          */
-        STATIC: 'static',
+        'STATIC',
         /** 
          * The animation loops (beginning to end, repeat)
          */
-        LOOP: 'loop',
+        'LOOP',
         /** 
          * The animation bounces, playing from the first to the last frame
          * then backwards from the last to the first, and repeats.
          */
-        BOUNCE: 'bounce',
+        'BOUNCE',
         /** 
          * The  animation plays once from the beginning then stops at the last frame
          */
-        ONCE: 'once'
-    });
+        'ONCE'
+    );
 
     static DEFAULT_STATE = 'default';
     
@@ -164,19 +164,19 @@ export default class Sprite extends Tile {
      * @param {String} stateName - The name of the sprite state
      * @param {Array<any>} spriteDef - 
      */
-    addState(stateName = 'default', [ left = 0, top = 0, width, height, frameCount = -1, animationSpeed, animationType, unsynchronized = false ]) {
+    addState(stateName = 'default', [ left = 0, top = 0, width, height, frameCount = 1, fps, animationType, unsynchronized = false ]) {
         if (!(width && height))
                 throw new ResourceError(this, `An error occurred creating the sprite "${this.name}"`, ex);
 
         const state = new SpriteState({ 
             name: stateName,
-            shape: [ left, top, width, height, frameCount, animationSpeed, animationType, unsynchronized ],
-            type: frameCount === -1 ? +Sprite.TYPE.SINGLE : +Sprite.TYPE.ANIMATION
+            shape: [ left, top, width, height, frameCount, fps, animationType, unsynchronized ],
+            type: frameCount === 1 ? +Sprite.TYPE.SINGLE : +Sprite.TYPE.ANIMATION
         });
 
         state.frameNum = 0;
         if (state.type === +Sprite.TYPE.ANIMATION) {
-            switch (animationType) {
+            switch (animationType.toUpperCase()) {
                 case `${Sprite.MODE.STATIC}` :
                     state.mode = +Sprite.MODE.STATIC;
                     break;
@@ -191,13 +191,16 @@ export default class Sprite extends Tile {
                     break;
             }
 
+            // prevent overflow
+            fps = Math.max(1, fps);
+
             state.sync = !unsynchronized;
-            if (!unsynchronized) {
-                state.lastTime = null;
+            state.lastTime = null;
+            if (state.isToggle)
                 state.direction = -1;	// Trust me bro
-            }
+            
             state.frameCount = frameCount;
-            state.framesPerSec = animationSpeed;
+            state.framesPerSec = Math.ceil(1000 / fps);
         } else {
             state.frameCount = 1;
             state.framesPerSec = 0;
@@ -262,7 +265,7 @@ export default class Sprite extends Tile {
         if (state.isAnimation && !state.isStatic) {
             // set the frame to the correct sprite based on time
             const frameNum = this.#calcFrameNumber(time, deltaTime, state);
-            state.frameRect[0] = (frameNum * state.width);
+            state.frameRect[0] = (state.left + (frameNum * state.width));
         }
     }
 
@@ -278,10 +281,6 @@ export default class Sprite extends Tile {
             return 0;
         }
 
-        const frameBudget = Math.ceil(1000 / state.framesPerSec);
-
-        let spriteFrame = 0;
-
         // calcular the frame number
         if (state.sync) {
             // Synchronized animations run with the game clock
@@ -292,15 +291,15 @@ export default class Sprite extends Tile {
             }
 
             // How much time has elapsed since the last frame update?
-            spriteFrame = Math.round($Math.lerp(0, state.frameCount - 1, (state.lastTime / time))) - 1;
+            if (time - state.lastTime < state.framesPerSec) {
+                // Not enough time has elapsed to update the frame
+                return state.frameNum;
+            }
             state.lastTime = time;
-        } else {
-            // Unsynchronized animations
-            spriteFrame = state.frameNum++;
         }
 
-        state.frameNum = spriteFrame;            
-
+        if (!state.isToggle)
+            state.frameNum += state.direction;            
 
         // alter based on mode
         if ((state.isOnce || state.isStatic) && state.frameNum >= state.frameCount) {
@@ -312,6 +311,9 @@ export default class Sprite extends Tile {
             state.frameNum = 0;
         else if (state.isToggle && (state.frameNum === state.frameCount - 1 || state.frameNum === 0))
             state.direction *= -1;
+
+        if (state.isToggle)
+            state.frameNum += state.direction;
 
         return state.frameNum;
     }

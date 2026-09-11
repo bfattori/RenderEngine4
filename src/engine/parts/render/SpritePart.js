@@ -23,7 +23,7 @@ export default class SpritePart extends RenderPart {
 
     set stateName(stateName) {
         this.sprite.currentState = stateName;
-        this.calculateBoundingBox();
+        this.#calculateBoundingBox();
     }
 
     get stateName() {
@@ -37,12 +37,6 @@ export default class SpritePart extends RenderPart {
      */
     set sprite(sprite) {
         this.#currentSprite = sprite;
-        if (this.#opaqueId) {
-            // if this previously existed
-            this.context.destroySprite(this.#opaqueId);
-        }
-
-        this.#opaqueId = this.context.compileSprite(sprite, null);
         this.#calculateBoundingBox();
     }
 
@@ -74,8 +68,8 @@ export default class SpritePart extends RenderPart {
     }
 
     draw(time, deltaTime) {
-        if (this.#opaqueId)
-            this.context.renderSprite(this.#opaqueId, this.host.worldTransform.e, this.host.worldTransform.f - this.sprite.states.get(this.sprite.currentState).height, time, deltaTime);
+        if (this.sprite !== null)
+            this.context.renderSprite(this.sprite.opaqueId, this.host.worldTransform.e, this.host.worldTransform.f - this.sprite.states.get(this.sprite.currentState).height, time, deltaTime);
     }
 
 }

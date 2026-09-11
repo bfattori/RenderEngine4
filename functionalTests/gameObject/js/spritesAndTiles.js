@@ -23,7 +23,7 @@ await RenderEngine.init(import.meta.url, {
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {
-                    doubleBuffered: false
+                    doubleBuffered: true
                 }
             ),
             { 
@@ -68,9 +68,31 @@ marioSprites.sprites.forEach(sprite => {
     
     const sprPart = actor.getComponentByName("sprite");
     sprPart.sprite = sprite;
+
+    if (sprite.states.size > 1) {
+        makeDropDown(sprPart, x, y + 50);
+    }
     
-    x += 45;
+    x += 55;
 });
+
+function makeDropDown(sprPart, x, y) {
+    const select =document.createElement('select');
+    select.classList.add('sprite-state-select');
+    const offsetX = document.getElementById('context').getBoundingClientRect().left;
+    for (const [stateName, state] of sprPart.sprite.states) {
+        const option = document.createElement('option');
+        option.value = stateName;
+        option.text = stateName;
+        select.appendChild(option);
+    }
+    document.body.appendChild(select);
+    select.style.left = (offsetX + x) + 'px';
+    select.style.top = y + 'px';
+    select.onchange = function() {
+        sprPart.stateName = this.value;
+    };
+}
 
 
 // Start the render loop   
