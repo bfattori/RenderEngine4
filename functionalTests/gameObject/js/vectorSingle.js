@@ -41,12 +41,7 @@ await RenderEngine.init(import.meta.url, {
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -63,9 +58,12 @@ renderer.compile();
 // set the origin at the center of the text
 //gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
 
+const transform = gameObject.getComponentByName("transform");
+transform.position = [400, 300];
+
 // fires before each update of the object
 gameObject.onBeforeUpdate = (time, deltaTime) => {
-    gameObject.worldTransform.rotateSelf(1);
+    transform.localTransform.rotateSelf(1);
 };
 
 // Start the render loop   

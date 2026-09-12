@@ -6,7 +6,7 @@ const DebugObjects = {
      * Get the origin shape (red line up, blue line to the right)
      * @returns {number} The opaque Id of the shape
      */
-    Origin: (ctx, x, y, local = [0,0], world = [0,0], angle) => {
+    Origin: (ctx, x, y, world = [0,0], angle) => {
         ctx.API
             .setColor('#ff0000')
             .setWidth(2)

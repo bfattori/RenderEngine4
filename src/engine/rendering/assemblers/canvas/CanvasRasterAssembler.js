@@ -41,7 +41,10 @@ export default class CanvasRasterAssembler extends Assembler {
                 return `this.surface.transform(${args[0]}, ${args[3]}, ${args[1]}, ${args[4]}, ${args[2]}, ${args[5]});`;
                 break;
             case raster.PUSH:
-                return 'this.surface.save();';
+                _instruction = 'surface.save();';
+                if (args.length === 6)
+                    _instruction += ` surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`
+                return _instruction;
                 break;    
             case raster.POP:
                 return 'this.surface.restore();';

@@ -3,7 +3,7 @@
 Uses position and orientation data for 3D audio positioning 
 */
 import SoundPart from './SoundPart.js';
-import Constants from '../../constants.js';
+import Constants from '../../Constants.js';
 
 /**
  * @typedef {Object} PositionData - 2D or 3D position coordinates

@@ -420,7 +420,7 @@ export default class Engine {
       // update the particles
       this.particleEngine.update(currentTime, deltaTime);
 
-      // Update the world
+      // Update the world state
       this.world.update(currentTime, deltaTime);
       
       // If render context exists, update its state

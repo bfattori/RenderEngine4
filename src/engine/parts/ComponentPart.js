@@ -257,6 +257,11 @@ export default class ComponentPart {
     throw new ComponentPartError(this, 'ComponentPart.update() must be implemented by subclasses');
   }
 
+  render(time, deltaTime) {
+    // Base class does nothing. Subclasses should implement specific logic.
+    throw new ComponentPartError(this, 'ComponentPart.render() must be implemented by subclasses');
+  }
+
   //-------------------------------
   // Serialization Methods
   //-------------------------------

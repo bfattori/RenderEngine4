@@ -66,7 +66,7 @@ export default class VectorRendererPart extends RenderPart {
             letterSpacing: this.letterSpacing,
             lineHeight: this.lineHeight,
 
-            _localTransform: this.#localTransform,
+            _renderTransform: this.renderTransform,
             _compiledShape: this.#compiledShape,
 
         }};
@@ -81,23 +81,23 @@ export default class VectorRendererPart extends RenderPart {
     }
 
     pushTransform(transform) {
-        super.pushTransform(Matrix2d.from(this.#localTransform));
-        this.#localTransform.multiplySelf(transform);
+        super.pushTransform(Matrix2d.from(this.renderTransform));
+        this.renderTransform.multiplySelf(transform);
     }
 
     popTransform() {
         const txfm = super.popTransform();
-        this.#localTransform.fromMatrix(txfm);
+        this.renderTransform.fromMatrix(txfm);
         return txfm;
     }
 
     peekTransform() {
-        return this.#localTransform;
+        return this.renderTransform;
     }
 
     resetTransforms() {
         super.resetTransforms();
-        this.#localTransform = Matrix2d.identity();
+        this.renderTransform = Matrix2d.identity();
     }
 
     setCursorPosition(x, y) {

@@ -486,14 +486,14 @@ export default class RenderContext {
    * @returns A matrix representing the top-most element of the transformation stack
    */
   peekTransform() {
-    return this.#world?.peekTransformation();
+    return this.#world.peekTransformation();
   }
 
   /**
    * Resets the transformation stack to the initial state (identity matrix)
    */
   resetTransforms() {
-    this.#world?.resetTransforms();
+    this.#world.resetTransforms();
   }
 
   /**
@@ -507,10 +507,6 @@ export default class RenderContext {
   renderScene(objects, time, deltaTime) {
     // Clear active objects for this frame
     this.clearActiveObjects();
-
-    // start the particles rendering now, if threading
-    if (this.particleThreadingEnabled)
-      Engine.particleEngine.renderParticles(time, deltaTime, null);
 
     if (this.#renderer && this.#renderer.constructor !== Renderer) {
       // pre-frame generation
@@ -583,7 +579,7 @@ export default class RenderContext {
         }
       }
 
-      // render any pending instructions
+      // render the pending instructions
       this.renderInstructions(time, deltaTime);
 
       // render the particles directly to the 

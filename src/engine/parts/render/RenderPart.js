@@ -44,6 +44,7 @@ export { ComposeEvent, RenderEvent };
 export default class RenderPart extends ComponentPart {
     #context = null;
     #localTransformStack = [];
+    #renderTransform = Matrix2d.identity();
     #world = null;
     #committed = false;
     
@@ -84,7 +85,11 @@ export default class RenderPart extends ComponentPart {
      * @returns {Matrix2d}
      */
     get renderTransform() {
-        return this.peekTransform();
+        return this.#renderTransform;
+    }
+
+    set renderTransform(matrix) {
+        this.#renderTransform = matrix;
     }
 
     /**
@@ -104,7 +109,7 @@ export default class RenderPart extends ComponentPart {
      * @param {number} delta - The value to modify the X position by
      */
     set cursorDeltaX(delta) {
-        this.#context.cursorX += delta;
+        this.context.cursorX += delta;
     }
 
     //-------------------------------
@@ -127,14 +132,16 @@ export default class RenderPart extends ComponentPart {
     //------------------------------
 
     pushTransform(transform) {
-        this.#localTransformStack.push(transform);
+        this.#localTransformStack.push(this.#renderTransform);
+        this.#renderTransform.multiplySelf(transform);
     }
 
     popTransform() {
-        return this.#localTransformStack.pop();
+        this.#renderTransform = this.#localTransformStack.pop();
     }
 
     resetTransforms() {
+        this.#renderTransform = Matrix2d.identity();
         this.#localTransformStack = [];
     }
 
@@ -199,34 +206,25 @@ export default class RenderPart extends ComponentPart {
     compile() {}
 
     /**
-     * Updates the transform based on current state and world bounds
+     * Update does nothing in the render component
      * 
-     * @param {number} time - Current world time (Unix timestamp or frame count)
+     * @param {number} time - Current world time
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      * @param {Object} [options] - Optional configuration for the update
      */
     update(time, deltaTime) {
-        PERF('updateStart');
-        this.compose(time, deltaTime);
-        this.emit(new ComposeEvent(this, performance.now() - time, time, deltaTime));
-//        this.resetTransforms();
-        PERF('updateEnd');
-        MEASURE('RenderPart Update', 'updateStart', 'updateEnd');
-        return this;
     }
 
     /**
-     * Prepare for a component render by updating its state 
-     * @param {number} time - Current world time
-     * @param {number} deltaTime - Time since last update in seconds
-     * @returns {void}
+     * Render the component to the context. This method is called during the render phase of the game loop.
+     * Calls the draw() method to perform the actual rendering. Subclasses should override draw() to implement 
+     * specific rendering logic.
+     * @param {number} time - Current world time 
+     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
-    compose(time, deltaTime) {
-    }
-
     render(time, deltaTime) {
         PERF('renderStart');
-        /// step 2: Render
+        this.context.pushTransform(this.renderTransform);
         this.draw(time, deltaTime);
         this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
         this.resetTransforms();

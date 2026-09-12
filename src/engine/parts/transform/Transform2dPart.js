@@ -34,6 +34,7 @@ export { CommitTransformEvent, TransformEvent };
 
 class Transform2dPart extends ComponentPart {
     #localTransform = Matrix2d.identity();
+    #initOpts = null;
 
     /**
      * Creates a new Transform2dPart instance
@@ -52,12 +53,8 @@ class Transform2dPart extends ComponentPart {
      */
     constructor(name = 'Transform2dPart', options = {}, priority = Constants.TRANSFORM_PRIORITY) {
         super(name, priority);
-        
-        this.x = options.position ? options.position[0] : 0;
-        this.y = options.position ? options.position[1] : 0;
-        this.rotation = options?.rotation || 0;
-        this.scale = options?.scale !== undefined ? Array.isArray(options.scale) ? options.scale : [options.scale, options.scale] : [1, 1];
-
+        this.#initOpts = options;
+    
         // subscribe for events
         this.on(InputEvent);
         this.on(ColliderEvent);
@@ -67,29 +64,60 @@ class Transform2dPart extends ComponentPart {
     // Getters and Setters
     //-------------------------------
 
+    set host(host) {
+        super.host = host;
+        this.x = this.#initOpts.position ? this.#initOpts.position[0] : 0;
+        this.y = this.#initOpts.position ? this.#initOpts.position[1] : 0;
+        this.rotation = this.#initOpts?.rotation || 0;
+        this.scale = this.#initOpts?.scale !== undefined ? Array.isArray(this.#initOpts.scale) ? this.#initOpts.scale : [this.#initOpts.scale, this.#initOpts.scale] : [1, 1];
+    }
+
+    get host() {
+        return super.host;
+    }
+
     /**
-     * Gets the current transform matrix
-     * @returns {Matrix2d} The transform matrix
+     * The local transform for this {@link Transform2dPart}. This is a matrix that represents the position, rotation, and scale
+     * of the Transform2dPart in its own coordinate system. It is used to update the world transform of the GameObject.
+     * @returns {Matrix2d} - The local transform of the Transform2dPart
      */
     get localTransform() {
         return this.#localTransform;
     }
 
     /**
-     * Sets the local transform matrix
-     * @param {Matrix2d} transform - New transform matrix
+     * Set the local transform for this {@link Transform2dPart}. This is a matrix that represents the position, rotation, and scale
+     * of the Transform2dPart in its own coordinate system. It is used to update the world transform of the GameObject.
+     * @param {Matrix2d} transform - The new local transform for the Transform2dPart
      */
     set localTransform(transform) {
         this.#localTransform = transform;
     }
 
     /**
-     * Sets position in local space
-     * 
+     * Sets position in world space
      * @param {number} x - New X coordinate
      * @param {number} y - New Y coordinate
      */
     set position([x, y]) {
+        this.worldTransform.translateSelf(x, y);
+        return this;
+    }
+
+    /**
+     * Gets world position
+     * @returns {Array<number>} Position coodinates, x and y
+     */
+    get position() {
+        return this.worldTransform.position;
+    }
+
+    /**
+     * Sets position in local space
+     * @param {number} x - New X coordinate
+     * @param {number} y - New Y coordinate
+     */
+    set localPosition([x, y]) {
         this.#localTransform.translateSelf(x, y);
         return this;
     }
@@ -98,12 +126,12 @@ class Transform2dPart extends ComponentPart {
      * Gets local position
      * @returns {Array<number>} Position coodinates, x and y
      */
-    get position() {
+    get localPosition() {
         return this.#localTransform.position;
     }
 
     /**
-     * Set the rotation angle
+     * Set the local rotation angle
      * @param {number} angle - New rotation angle in degrees
      */
     set rotation(angle) {
@@ -111,7 +139,7 @@ class Transform2dPart extends ComponentPart {
     }
 
     /**
-     * Get the rotation angle
+     * Get the local rotation angle
      * @returns {number} Rotation angle in degrees
      */
     get rotation() {
@@ -119,8 +147,7 @@ class Transform2dPart extends ComponentPart {
     }
 
     /**
-     * Sets scale factor (uniform or non-uniform depending on argument)
-     * 
+     * Sets the local scale factor (uniform or non-uniform depending on argument)
      * @param {number|Number[]} scale - A uniform scaling factor if a single number, non-uniform if an array
      */
     set scale(scale) {
@@ -133,7 +160,7 @@ class Transform2dPart extends ComponentPart {
     }
 
     /**
-     * Gets scale factor
+     * Gets the local scale factor
      * @returns {Number[]} Scale factors as an array [x, y]
      */
     get scale() {
@@ -146,7 +173,7 @@ class Transform2dPart extends ComponentPart {
      * @param {number} x - New X coordinate
      */
     set x(x) {
-        this.#localTransform.e = x;
+        this.worldTransform.e = x;
         return this;
     }
 
@@ -156,16 +183,16 @@ class Transform2dPart extends ComponentPart {
      * @param {number} y - New Y coordinate
      */
     set y(y) {
-        this.#localTransform.f = y;
+        this.worldTransform.f = y;
         return this;
     }
 
     /**
-     * An immutable copy of the world transform for the host {@link GameObject}
+     * The world transform for the host {@link GameObject}
      * @returns {Matrix2d} The game object's world transform
      */
     get worldTransform() {
-        return Matrix2d.from(this?.host.worldTransform);
+        return this.host.worldTransform;
     }
 
     //-------------------------------
@@ -220,12 +247,20 @@ class Transform2dPart extends ComponentPart {
     update(time, deltaTime) {
         const updateStart = PERF('transformPartStart');
         // Emit the computed local transform
-        const emitTransform = Matrix2d.from(this.localTransform)
+        const emitTransform = this.localTransform;
         this.emit(new TransformEvent(this, emitTransform, time, deltaTime));
         const updateEnd = PERF('transformPartEnd');
         MEASURE('Transform Part', 'transformPartStart', 'transformPartEnd');
         return this;
     }
+
+    /**
+     * Render does nothing in transform components
+     *
+     * @param {number} time - Current world time (Unix timestamp or frame count)
+     * @param {number} deltaTime - Time elapsed since last frame in milliseconds
+     */
+    render(time, deltaTime) {}
 
     /**
      * Deserializes transform data and updates the component state. Subclasses should override this to handle specific properties.
@@ -275,13 +310,24 @@ class Transform2dPart extends ComponentPart {
     //-------------------------------
 
     /**
-     * Adds delta to position (used for smooth movement)
+     * Adds delta to local position (used for smooth movement)
      * 
      * @param {number} dx - Delta X to add
      * @param {number} dy - Delta Y to add
      */
     addPosition(dx, dy) {
         this.position = [this.x + dx, this.y + dy];
+        return this;
+    }
+
+    /**
+     * Adds delta to world position (used for smooth movement)
+     * 
+     * @param {number} dx - Delta X to add
+     * @param {number} dy - Delta Y to add
+     */
+    addWorldPosition(dx, dy) {
+        this.worldPosition = [this.worldPosition[0] + dx, this.worldPosition[1] + dy];
         return this;
     }
 

@@ -34,7 +34,6 @@ export default class GameObject {
   #componentMap = new Map();
   #hostEventContext = null;
   #world = null;
-  #localTransform = Matrix2d.identity();
   #worldTransform = null;
   #localOrigin = [0, 0];
   #boundingBox = [0, 0, 1, 1];
@@ -74,7 +73,7 @@ export default class GameObject {
       name = `GameObject${count}`;
     }
     
-    this.#worldTransform = worldTransform;
+    this.#worldTransform = worldTransform !== null ? worldTransform : Matrix2d.identity();
     this.#name = name;
 
     // internal event context for this game object
@@ -117,24 +116,6 @@ export default class GameObject {
    */
   get eventContext() {
     return this.#hostEventContext;
-  }
-
-  /**
-   * The local transform for this {@link GameObject}. This is a matrix that represents the position, rotation, and scale
-   * of the GameObject in its own coordinate system. It is used to update the world transform of the GameObject.
-   * @returns {Matrix2d} - The local transform of the GameObject
-   */
-  get localTransform() {
-    return this.#localTransform;
-  }
-
-  /**
-   * Set the local transform for this {@link GameObject}. This is a matrix that represents the position, rotation, and scale
-   * of the GameObject in its own coordinate system. It is used to update the world transform of the GameObject.
-   * @param {Matrix2d} transform - The new local transform for the GameObject
-   */
-  set localTransform(transform) {
-    this.#localTransform = transform;
   }
 
   /**
@@ -376,6 +357,7 @@ export default class GameObject {
     // transform out to world coordinates
     const mtx = Matrix2d.from(this.worldTransform);
     mtx.translateSelf(-this.origin[0], -this.origin[1]);
+    mtx.multiplySelf(cameraMatrix);
     rc.pushTransform(mtx);
 
     // Find the first transform component - this affects the object
@@ -413,9 +395,12 @@ export default class GameObject {
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
 
+    rc.pushTransform();
+
     // transform out to world coordinates
     const mtx = Matrix2d.from(this.worldTransform);
     mtx.translateSelf(-this.origin[0], -this.origin[1]);
+    mtx.multiplySelf(cameraMatrix);
     rc.pushTransform(mtx);
 
     // Find the first transform component - this affects the object
@@ -438,7 +423,6 @@ export default class GameObject {
         mtx.scaleSelf(1,1);
         rc.pushTransform(mtx);
         DebugObjects.Origin(this.world.renderContext, mtx.e, mtx.f, 
-          [this.localTransform.e, this.localTransform.f],
           [this.worldTransform.e, this.worldTransform.f], 
           this.worldTransform.rotation);
         rc.popTransform();

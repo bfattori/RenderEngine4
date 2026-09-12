@@ -38,10 +38,7 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-const context = RE4.world.renderContext;
-
-// chainable API for drawing shapes and text
-const api = context.getAPI();
+document.getElementById("context").classList.add("sprites-and-tiles");
 
 // load a couple sprite sheets
 const marioSprites = new SpriteSheet('SMBTiles', '../../assets/smb_sprites.json');
@@ -58,10 +55,11 @@ marioSprites.sprites.forEach(sprite => {
     const actor = new GameObject();
     actor.addComponentParts(new Transform2dPart("transform"), new SpritePart("sprite"))
         .worldTransform = Matrix2d.identity().update({
-            position: [x, y],
-            rotation: 0,
-            scale: [1, 1]
+            position: [x, y]
         });
+
+    const transformPart = actor.getComponentByName("transform");
+    transformPart.scale = [-1, 1];
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(actor);

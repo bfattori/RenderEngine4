@@ -154,7 +154,7 @@ export default class CanvasVectorAssembler extends Assembler {
             case vector.PUSH:
                 _instruction = 'surface.save();';
                 if (args.length === 6)
-                    _instruction += ` surface.setTransform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`
+                    _instruction += ` surface.transform(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${args[4]}, ${args[5]});`
                 return _instruction;
                 break;    
             case vector.POP:

@@ -162,12 +162,14 @@ export default class CanvasRenderer extends Renderer {
      * Clear the frame buffer before beginning any rendering
      */
     preFrame() {
+        this.surface.resetTransform();
         this.surface.clearRect(0, 0, this.renderContext.viewport.width, this.renderContext.viewport.height);
     }
 
     #particles(target) {
         if (!Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
             // draw particles to target
+            this.surface.resetTransform();
             this.surface.drawImage(Engine.particleEngine.bitmap, 0, 0);
         }        
     }
@@ -445,7 +447,7 @@ export default class CanvasRenderer extends Renderer {
             case vector.PUSH:
                 this.surface.save();
                 if (args.length === 6)
-                    this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
+                    this.surface.transform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
             case vector.POP:
                 this.surface.restore();
