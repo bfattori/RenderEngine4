@@ -68,12 +68,10 @@ RenderEngine.particleEngine.initialize();
 // explosion object
 const explosionObject = new GameObject();
 explosionObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+
+const eT = explosionObject.getComponentByName("transform");
+eT.isHost = true;
 
 RenderEngine.world.addObject(explosionObject);
 
@@ -82,9 +80,7 @@ const explosionEmitter = explosionObject.getComponentByName("emitter");
 
 // generate an explosion randomly every 80 to 200 milliseconds
 function explode() {
-    explosionObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
-    });
+    eT.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
 
     // choose a random effect
     explosionEmitter.effect = Util.selectRandom(pEffect, pEffect2);
@@ -98,21 +94,17 @@ function explode() {
 // fountain objects
 const fountain1 = new GameObject();
 fountain1
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [5, 580],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const fT1 = fountain1.getComponentByName("transform");
+fT1.isHost = true;
+fT1.position = [5, 580];
 
 const fountain2 = new GameObject();
 fountain2
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [795, 580],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const fT2 = fountain2.getComponentByName("transform");
+fT2.isHost = true;
+fT2.position = [795, 580];
 
 RenderEngine.world.addObjects(fountain1, fountain2);
 

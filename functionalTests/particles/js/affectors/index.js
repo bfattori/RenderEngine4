@@ -99,12 +99,11 @@ RenderEngine.particleEngine.initialize();
 // smoker using bitmaps (tiles)
 const smoker = new GameObject();
 smoker
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [190, 600],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+
+const sT1 = smoker.getComponentByName("transform");
+sT1.isHost = true;
+sT1.position = [190, 600];
 
 // add the smoker to the world
 RenderEngine.world.addObject(smoker);
@@ -116,12 +115,11 @@ smokeEmitter.effect = sEffect;
 // smoker using diffuse particles
 const smoker2 = new GameObject();
 smoker2
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [530, 600],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+
+const sT2 = smoker2.getComponentByName("transform");
+sT2.isHost = true;
+sT2.position = [530, 600];
 
 // add the smoker to the world
 RenderEngine.world.addObject(smoker2);

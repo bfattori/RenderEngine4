@@ -68,8 +68,7 @@ export default class ParticleEmitterPart extends RenderPart {
     update(time, deltaTime) {
         if (this.#doEmit) {
             // convert to world coordinates
-            const transform = Matrix2d.from(this.renderTransform).multiplySelf(this.world.currentTransform);
-            Engine.particleEngine.runEffect([transform.e, transform.f], this.effect.$name, this.effect.isReset, time, deltaTime, this.effect);
+            Engine.particleEngine.runEffect([this.host.worldTransform.e, this.host.worldTransform.f], this.effect.$name, this.effect.isReset, time, deltaTime, this.effect);
             if (this.effect.emissionFrequency === 0)
                 this.#doEmit = false;
         }

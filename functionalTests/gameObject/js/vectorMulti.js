@@ -49,19 +49,20 @@ for (let i = 0; i < numObjects; i++) {
     const gameObject = new GameObject(`MultiObject${i}`);
     const scale = $Math.randomRange(0.25, 1.5);
     gameObject
-        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-        .worldTransform = Matrix2d.identity().setTo({
-            position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)],
-            rotation: 0,
-            scale: [scale, scale]
-        });
+        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(gameObject);
 
+    const transform = gameObject.getComponentByName("transform");
+    transform.isHost = true;
+    transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
+    transform.rotation = $Math.randomRange(0, 4) - 2.0;
+
     // vector renderer
     const color = Util.getColor(Math.random(), Math.random(), Math.random());
     const renderer = gameObject.getComponentByName("renderer");
+    renderer.isHost = true;
     renderer.API
         .color(color)
         .width($Math.randomRange(1, 4))
@@ -71,7 +72,7 @@ for (let i = 0; i < numObjects; i++) {
     // fires before each update of the object
     const rotate = $Math.randomRange(0, 4) - 2.0;
     gameObject.onBeforeUpdate = (time, deltaTime) => {
-        gameObject.worldTransform.rotateSelf(rotate);
+        transform.rotation += rotate;
     };
 }
 

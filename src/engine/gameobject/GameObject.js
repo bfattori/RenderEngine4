@@ -66,14 +66,13 @@ export default class GameObject {
    * Creates a new GameObject instance
    * @param {string} name - The name of the game object (defaults to "GameObject###" with ### being the creation index)
    */
-  constructor(name, worldTransform = null) {
+  constructor(name) {
     // Generate default name if none provided
     if (!name || (name && name.trim() === '')) {
       const count = GameObject.nextId;
       name = `GameObject${count}`;
     }
     
-    this.#worldTransform = worldTransform !== null ? worldTransform : Matrix2d.identity();
     this.#name = name;
 
     // internal event context for this game object
@@ -354,11 +353,11 @@ export default class GameObject {
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
 
-    // transform out to world coordinates
-    const mtx = Matrix2d.from(this.worldTransform);
-    mtx.translateSelf(-this.origin[0], -this.origin[1]);
-    mtx.multiplySelf(cameraMatrix);
-    rc.pushTransform(mtx);
+    // // transform out to world coordinates
+    // const mtx = Matrix2d.from(this.worldTransform);
+    // mtx.translateSelf(-this.origin[0], -this.origin[1]);
+    // mtx.multiplySelf(cameraMatrix);
+    // rc.absTransform(mtx);
 
     // Find the first transform component - this affects the object
     for (const component of sortedComponents) {
@@ -373,7 +372,7 @@ export default class GameObject {
       }
     }
 
-    rc.popTransform();
+    // rc.popTransform();
 
     this.#hooks.onAfterUpdate.call(time, deltaTime);
 
@@ -389,19 +388,19 @@ export default class GameObject {
   render(time, deltaTime, cameraMatrix) {
     const renderStart = PERF('gameObjectRenderStart');
 
-    const rc = this.world.renderContext.API;
+    const rcAPI = this.world.renderContext.API;
     this.#hooks.onBeforeRender(time, deltaTime, cameraMatrix);
 
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
 
-    rc.pushTransform();
+    rcAPI.push();
 
     // transform out to world coordinates
     const mtx = Matrix2d.from(this.worldTransform);
     mtx.translateSelf(-this.origin[0], -this.origin[1]);
     mtx.multiplySelf(cameraMatrix);
-    rc.pushTransform(mtx);
+    rcAPI.absTransform(mtx);
 
     // Find the first transform component - this affects the object
     for (const component of sortedComponents) {
@@ -416,24 +415,24 @@ export default class GameObject {
       }
     }
 
-    rc.popTransform();
+    rcAPI.pop();
 
     PRAGMA('objectOrigins', () => {
         const mtx = Matrix2d.from(this.worldTransform);
         mtx.scaleSelf(1,1);
-        rc.pushTransform(mtx);
+        rcAPI.absTransform(mtx);
         DebugObjects.Origin(this.world.renderContext, mtx.e, mtx.f, 
           [this.worldTransform.e, this.worldTransform.f], 
           this.worldTransform.rotation);
-        rc.popTransform();
+        // rcAPI.popTransform();
     });
 
     PRAGMA('boundingBoxes', () => {
         const mtx = Matrix2d.from(this.worldTransform);
         mtx.scaleSelf(1,1);
-        rc.pushTransform(mtx);
+        rcAPI.pushTransform(mtx);
         DebugObjects.BoundingBox(this.boundingBox, this.world.renderContext);
-        rc.popTransform();
+        rcAPI.popTransform();
     });
 
     this.#hooks.onAfterRender.call(time, deltaTime);

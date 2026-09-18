@@ -57,12 +57,7 @@ RenderEngine.particleEngine.addEffect(pEffect);
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -71,11 +66,12 @@ RenderEngine.world.addObject(gameObject);
 const emitter = gameObject.getComponentByName("emitter");
 emitter.effect = pEffect;
 
+const transform = gameObject.getComponentByName("transform");
+transform.isHost = true;
+
 // every few seconds we'll generate an explosion
 function explode() {
-    gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
-    });
+    transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
     emitter.reset().enable();
     setTimeout(explode, $Math.randomRange(200, 800, true));
 }

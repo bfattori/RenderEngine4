@@ -33,6 +33,7 @@ class CommitTransformEvent extends TransformEvent {
 export { CommitTransformEvent, TransformEvent };
 
 class Transform2dPart extends ComponentPart {
+    #hostTransform = false;
     #localTransform = Matrix2d.identity();
     #initOpts = null;
 
@@ -70,10 +71,30 @@ class Transform2dPart extends ComponentPart {
         this.y = this.#initOpts.position ? this.#initOpts.position[1] : 0;
         this.rotation = this.#initOpts?.rotation || 0;
         this.scale = this.#initOpts?.scale !== undefined ? Array.isArray(this.#initOpts.scale) ? this.#initOpts.scale : [this.#initOpts.scale, this.#initOpts.scale] : [1, 1];
+        this.hostTransform = this.#initOpts?.hostTransform || false;
     }
 
     get host() {
         return super.host;
+    }
+
+    /**
+     * Sets whether this Transform2dPart should be the host's transform. If true, the host's world transform will be set to this part's local transform.
+     * @param {boolean} value - True to set this part as the host's transform, false otherwise
+     */
+    set isHost(value) {
+        this.#hostTransform = value;
+        if (value) {
+            this.host.worldTransform = this.localTransform;
+        }
+    }
+
+    /**
+     * Returns whether this part is the host's transform.
+     * @returns {boolean} - True if this part is the host's transform, false otherwise
+     */
+    get isHost() {
+        return this.#hostTransform;
     }
 
     /**
@@ -92,6 +113,8 @@ class Transform2dPart extends ComponentPart {
      */
     set localTransform(transform) {
         this.#localTransform = transform;
+        if (this.isHost)
+            this.host.worldTransform = this.#localTransform;
     }
 
     /**
@@ -100,7 +123,7 @@ class Transform2dPart extends ComponentPart {
      * @param {number} y - New Y coordinate
      */
     set position([x, y]) {
-        this.worldTransform.translateSelf(x, y);
+        this.#localTransform.setTo({position: [x, y]});
         return this;
     }
 
@@ -109,24 +132,6 @@ class Transform2dPart extends ComponentPart {
      * @returns {Array<number>} Position coodinates, x and y
      */
     get position() {
-        return this.worldTransform.position;
-    }
-
-    /**
-     * Sets position in local space
-     * @param {number} x - New X coordinate
-     * @param {number} y - New Y coordinate
-     */
-    set localPosition([x, y]) {
-        this.#localTransform.translateSelf(x, y);
-        return this;
-    }
-
-    /**
-     * Gets local position
-     * @returns {Array<number>} Position coodinates, x and y
-     */
-    get localPosition() {
         return this.#localTransform.position;
     }
 
@@ -135,7 +140,7 @@ class Transform2dPart extends ComponentPart {
      * @param {number} angle - New rotation angle in degrees
      */
     set rotation(angle) {
-        this.#localTransform.rotateSelf(angle);
+        this.#localTransform.setTo({rotation: angle});
     }
 
     /**
@@ -152,9 +157,9 @@ class Transform2dPart extends ComponentPart {
      */
     set scale(scale) {
         if (Array.isArray(scale)) {
-            this.#localTransform.scaleSelf(scale[0], scale[1]);
+            this.#localTransform.setTo({scale: scale});
         } else {
-            this.#localTransform.uniformScaleSelf(scale);
+            this.#localTransform.setTo({scale: [scale, scale]});
         }
         return this;
     }
@@ -173,7 +178,7 @@ class Transform2dPart extends ComponentPart {
      * @param {number} x - New X coordinate
      */
     set x(x) {
-        this.worldTransform.e = x;
+        this.#localTransform.e = x;
         return this;
     }
 
@@ -183,16 +188,8 @@ class Transform2dPart extends ComponentPart {
      * @param {number} y - New Y coordinate
      */
     set y(y) {
-        this.worldTransform.f = y;
+        this.#localTransform.f = y;
         return this;
-    }
-
-    /**
-     * The world transform for the host {@link GameObject}
-     * @returns {Matrix2d} The game object's world transform
-     */
-    get worldTransform() {
-        return this.host.worldTransform;
     }
 
     //-------------------------------
@@ -317,17 +314,6 @@ class Transform2dPart extends ComponentPart {
      */
     addPosition(dx, dy) {
         this.position = [this.x + dx, this.y + dy];
-        return this;
-    }
-
-    /**
-     * Adds delta to world position (used for smooth movement)
-     * 
-     * @param {number} dx - Delta X to add
-     * @param {number} dy - Delta Y to add
-     */
-    addWorldPosition(dx, dy) {
-        this.worldPosition = [this.worldPosition[0] + dx, this.worldPosition[1] + dy];
         return this;
     }
 

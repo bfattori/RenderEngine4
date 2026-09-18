@@ -187,10 +187,10 @@ class GameWorld {
     const worldUpdateStart = PERF('worldUpdateStart')
 
     //starting fresh
-    this.resetTransforms();
+    // this.resetTransforms();
 
     // push the camera transform
-    this.pushTransformation(this.camera.worldTransform);
+    // this.pushTransformation(this.camera.worldTransform);
 
     // Update each GameObject in the world
     for (const object of this.#objects) {
@@ -204,7 +204,7 @@ class GameWorld {
     }
     
     // pop the camera transformation
-    this.popTransformation();
+    // this.popTransformation();
 
     // should only be left with the world transformation (identity)
     if (this.#transformStack.length > 1) {

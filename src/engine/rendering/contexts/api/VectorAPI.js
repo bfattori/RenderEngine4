@@ -139,7 +139,7 @@ export default function getAPI() {
          * Save the surface state
          */
         push: () => {
-            context.addInstruction(RASTER_IL.PUSH);
+            context.addInstruction(VECTOR_IL.PUSH);
             return context.API;
         },
 
@@ -157,7 +157,7 @@ export default function getAPI() {
          * Restore the surface state
          */
         pop: () => {
-            context.addInstruction(RASTER_IL.POP);
+            context.addInstruction(VECTOR_IL.POP);
             return context.API;
         },
 

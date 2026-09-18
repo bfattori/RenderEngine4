@@ -19,13 +19,13 @@ export default class SmokeParticle extends PhysicalParticle {
              * The amount of curl applied to each particle throughout its life
              * @type {number|Array<number>}
              */
-            curl: [0.0003, 0.002],
+            curl: [0.009, 0.08],
 
             /**
              * The intensity of the curl over 1 second. Lower values result in less curling.
              * @type {number|Array<number>}
              */
-            curlIntensity: 0.8,
+            curlIntensity: 0.008,
             
             /**
              * The range of curl variance applied to the particle
@@ -69,7 +69,7 @@ export default class SmokeParticle extends PhysicalParticle {
         super.update(time, deltaTime, $memory, pos, vel, life);
 
         // apply curl
-        vel[0] += ($memory.curl * Math.cos(($memory.ttl - life) / $memory.cI)) * $memory.cD;
-        vel[1] += $memory.curl * Math.sin(($memory.ttl - life) / $memory.cI);
+        vel[0] += ($memory.curl * Math.cos(time / $memory.cI) * $memory.cD);
+        vel[1] += $memory.curl * Math.sin(time / $memory.cI);
     }
 }

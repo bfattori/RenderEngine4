@@ -45,7 +45,7 @@ export default class RenderPart extends ComponentPart {
     #context = null;
     #localTransformStack = [];
     #renderTransform = Matrix2d.identity();
-    #world = null;
+    #hostRender = false;
     #committed = false;
     
     #lineHeight = Constants.VECTOR_DEFAULTS.LINE_HEIGHT;
@@ -63,6 +63,14 @@ export default class RenderPart extends ComponentPart {
     //--------------------------------
     // Getters and Setters
     //--------------------------------
+
+    set isHost(value) {
+        this.#hostRender = value;
+    }
+
+    get isHost() {
+        return this.#hostRender;
+    }
 
     /**
      * The engine render context
@@ -154,7 +162,7 @@ export default class RenderPart extends ComponentPart {
     //-------------------------------
     
     /**
-     * Event handler responds to {@link PreTransformEvent} and {@link TransformEvent}.
+     * Event handler responds to {@link CommitTransformEvent} and {@link TransformEvent}.
      * The former occurs when the transform intended for rendering is updated. The latter is a commit to use the newly calculated transform.
      * 
      * @param {ComponentPartEvent} eventObject - The event object
@@ -224,10 +232,14 @@ export default class RenderPart extends ComponentPart {
      */
     render(time, deltaTime) {
         PERF('renderStart');
-        this.context.pushTransform(this.renderTransform);
+        if (!this.isHost) {
+            this.context.API.push();
+            this.context.API.transform(this.renderTransform);
+        }
         this.draw(time, deltaTime);
         this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
-        this.resetTransforms();
+        if (!this.isHost)
+            this.context.API.pop();
         PERF('renderEnd');
         MEASURE('RenderPart Render', 'renderStart', 'renderEnd'); 
     }

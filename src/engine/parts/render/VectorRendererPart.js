@@ -80,26 +80,6 @@ export default class VectorRendererPart extends RenderPart {
         this.#instructions.push(inst);
     }
 
-    pushTransform(transform) {
-        super.pushTransform(Matrix2d.from(this.renderTransform));
-        this.renderTransform.multiplySelf(transform);
-    }
-
-    popTransform() {
-        const txfm = super.popTransform();
-        this.renderTransform.fromMatrix(txfm);
-        return txfm;
-    }
-
-    peekTransform() {
-        return this.renderTransform;
-    }
-
-    resetTransforms() {
-        super.resetTransforms();
-        this.renderTransform = Matrix2d.identity();
-    }
-
     setCursorPosition(x, y) {
         this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
     }
