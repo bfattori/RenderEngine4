@@ -3,7 +3,6 @@ import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRe
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
-import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
 

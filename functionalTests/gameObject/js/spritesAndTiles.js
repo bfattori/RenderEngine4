@@ -38,12 +38,14 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
+// add blue background
 document.getElementById("context").classList.add("sprites-and-tiles");
 
-// load a couple sprite sheets
+// load a couple asset sheets
 const marioSprites = new SpriteSheet('SMBTiles', '../../assets/smb_sprites.json');
 const tiles = new TileSheet('Tiles', '../../assets/floor_tiles.json');
 
+// wait until they are loaded to continue
 await marioSprites.loading();
 await tiles.loading();
 
@@ -51,7 +53,6 @@ await tiles.loading();
 let x = 100, y = 100;
 
 marioSprites.sprites.forEach(sprite => {
-   
     const actor = new GameObject();
     actor.addComponentParts(new Transform2dPart("transform"), new SpritePart("sprite"))
         .worldTransform = Matrix2d.identity().update({

@@ -6,7 +6,6 @@ import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
 
-import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 import $Math from '../../../src/engine/core/Math.js';
 import Util from '../../../src/engine/core/Util.js';
 
