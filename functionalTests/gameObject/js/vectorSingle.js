@@ -50,7 +50,6 @@ RenderEngine.world.addObject(gameObject);
 // capture the text sizing to set the origin
 let textBox = [0,0];
 const renderer = gameObject.getComponentByName("renderer");
-renderer.isHost = true;
 renderer.API
     .fontSize(20)
     .text("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l", {}, textBox);
@@ -60,7 +59,6 @@ renderer.compile();
 //gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
 
 const transform = gameObject.getComponentByName("transform");
-transform.isHost = true;
 transform.position = [400, 300];
 
 // fires before each update of the object

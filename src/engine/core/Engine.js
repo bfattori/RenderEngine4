@@ -489,14 +489,14 @@ export default class Engine {
       lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
       this.update(currentTime, deltaTime);
       const updateEnd = PERF('updateEnd');
-      lifecycleHooks?.onUpdate(updateEnd - frameStart, updateEnd - updateStart);
+      lifecycleHooks?.onUpdate(currentTime, deltaTime);
       
       // Render the world
       const renderStart = PERF('renderStart');
       lifecycleHooks?.onPreRender(renderStart - frameStart);
       this.renderWorld(currentTime, deltaTime);
       const renderEnd = PERF('renderEnd');
-      lifecycleHooks?.onRender(renderEnd - frameStart, renderEnd - renderStart);
+      lifecycleHooks?.onRender(currentTime, deltaTime);
 
       // one frame generated
       lifecycleHooks.onFrame(performance.now() - frameStart);

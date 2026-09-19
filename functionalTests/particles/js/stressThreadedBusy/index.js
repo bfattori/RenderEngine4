@@ -17,7 +17,7 @@ import Util from '../../../../src/engine/core/Util.js';
 const numObjects = 500;
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 500000
+    maxParticles: 200000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
@@ -61,7 +61,7 @@ await RenderEngine.init(import.meta.url, {
 // set up the particles and effects we'll use
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 10000,
+    count: 5000,
     particleTypes: [exParticle]
 });
 
@@ -73,12 +73,8 @@ RenderEngine.particleEngine.initialize();
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const t = gameObject.getComponentByName("transform");
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -89,9 +85,7 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
-    });
+    t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
     emitter.reset().enable();
     setTimeout(explode, $Math.randomRange(80, 100, true));
 }
@@ -103,12 +97,11 @@ for (let i = 0; i < numObjects; i++) {
     const gameObject = new GameObject(`MultiObject${i}`);
     const scale = $Math.randomRange(0.25, 1.5);
     gameObject
-        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-        .worldTransform = Matrix2d.identity().setTo({
-            position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)],
-            rotation: 0,
-            scale: [scale, scale]
-        });
+        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
+
+    const t2 = gameObject.getComponentByName("transform");
+    t2.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
+    t2.scale = [scale, scale];
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(gameObject);
@@ -125,7 +118,7 @@ for (let i = 0; i < numObjects; i++) {
     // fires before each update of the object
     const rotate = $Math.randomRange(0, 4) - 2.0;
     gameObject.onBeforeUpdate = (time, deltaTime) => {
-        gameObject.worldTransform.rotateSelf(rotate);
+        t2.rotation += rotate;
     };
 }
 

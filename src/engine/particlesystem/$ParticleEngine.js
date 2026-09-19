@@ -384,6 +384,15 @@ export default class $ParticleEngine {
         this.#particleAffectors.push(affector);
     }
 
+    /**
+     * Locates an affector by its name and returns it. 
+     * @param {String} affectorName - The name of the affector to find
+     * @return {ParticleAffector} The affector or null if it does not exist.
+     */
+    getAffector(affectorName) {
+        return this.#particleAffectors.find(affector => affector.name === affectorName);
+    }
+
     //-------------------------------------
     // particle creation
 
@@ -440,6 +449,17 @@ export default class $ParticleEngine {
         if (effect) {
             //if (isReset) effect.reset();
             effect.run([x, y], time, deltaTime);
+        }
+    }
+
+    /**
+     * Update an affector in the particle engine. Primarily used when threading.
+     * @param {Object} affector - The `TransferrableConfig` representation of an affector 
+     */
+    updateAffector(affector) {
+        const instance = this.getAffector(affector.$name);
+        if (instance != null && affector.props) {
+            instance.pos = affector.props.pos;
         }
     }
 

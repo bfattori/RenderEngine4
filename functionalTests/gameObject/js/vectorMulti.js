@@ -55,14 +55,12 @@ for (let i = 0; i < numObjects; i++) {
     RenderEngine.world.addObject(gameObject);
 
     const transform = gameObject.getComponentByName("transform");
-    transform.isHost = true;
     transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
     transform.rotation = $Math.randomRange(0, 4) - 2.0;
 
     // vector renderer
     const color = Util.getColor(Math.random(), Math.random(), Math.random());
     const renderer = gameObject.getComponentByName("renderer");
-    renderer.isHost = true;
     renderer.API
         .color(color)
         .width($Math.randomRange(1, 4))

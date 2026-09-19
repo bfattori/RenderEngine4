@@ -60,12 +60,9 @@ RenderEngine.particleEngine.addEffect(pEffect);
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+
+const t = gameObject.getComponentByName("transform");
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -76,9 +73,7 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
-    });
+    t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
     emitter.reset().enable();
     setTimeout(explode, $Math.randomRange(10, 100, true));
 }
@@ -88,12 +83,10 @@ function explode() {
 // - set world position, rotation, and scale
 const gameObject2 = new GameObject();
 gameObject2
-    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
+
+const t2 = gameObject2.getComponentByName("transform");
+t2.position = [400, 300];
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject2);
@@ -112,7 +105,7 @@ renderer.compile();
 
 // fires before each update of the object
 gameObject2.onBeforeUpdate = (time, deltaTime) => {
-    gameObject2.worldTransform.rotateSelf(1);
+    t2.rotation += 1;
 };
 
 explode();

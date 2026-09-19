@@ -130,6 +130,7 @@ const Constants = {
             ADD_AFFECTOR: '+aff',
             ADD_PARTICLES: '+ptls',
             RUN_EFFECT: 'runFx',
+            UPDATE_AFFECTOR: 'updAff',
             RENDERED: 'rndr',
             WORKER_RENDERED: 'wRndr',
             SPAWN: 'spawn',
@@ -148,6 +149,7 @@ const Constants = {
             ADD_AFFECTOR: '+aff',
             ADD_PARTICLES: '+ptls',
             RUN_EFFECT: 'runFx',
+            UPDATE_AFFECTOR: 'updAff',
             SPAWN: 'spawn'
         }
     }

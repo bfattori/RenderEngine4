@@ -114,6 +114,8 @@ export default class Util {
                                 },
                                 set(val) {
                                     values[k] = val;
+                                    if (target.$propUpdated)
+                                        target.$propUpdates(k, val);
                                 },
                                 enumerable: true,
                                 configurable: true
@@ -145,6 +147,8 @@ export default class Util {
                                 },
                                 set(val) {
                                     values[propName] = val;
+                                    if (target.$propUpdated)
+                                        target.$propUpdated(propName, val);
                                 },
                                 enumerable: true,
                                 configurable: true

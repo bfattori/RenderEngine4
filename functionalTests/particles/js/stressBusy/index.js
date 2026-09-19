@@ -63,12 +63,8 @@ RenderEngine.particleEngine.addEffect(pEffect);
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const t = gameObject.getComponentByName("transform");
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -79,9 +75,7 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)]
-    });
+    t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
     emitter.reset().enable();
     setTimeout(explode, $Math.randomRange(10, 100, true));
 }
@@ -93,12 +87,10 @@ for (let i = 0; i < numObjects; i++) {
     const gameObject = new GameObject(`MultiObject${i}`);
     const scale = $Math.randomRange(0.25, 1.5);
     gameObject
-        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"))
-        .worldTransform = Matrix2d.identity().setTo({
-            position: [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)],
-            rotation: 0,
-            scale: [scale, scale]
-        });
+        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
+
+    const t2 = gameObject.getComponentByName("transform");
+    t2.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(gameObject);
@@ -112,10 +104,10 @@ for (let i = 0; i < numObjects; i++) {
         .regularPolygon(0, 0, $Math.randomRange(3, 12, true), false);
     renderer.compile();
 
-    // fires before each update of the object
+    // fires before each update of the object (not ideal in this situation, but meh)
     const rotate = $Math.randomRange(0, 4) - 2.0;
     gameObject.onBeforeUpdate = (time, deltaTime) => {
-        gameObject.worldTransform.rotateSelf(rotate);
+        t2.rotation += rotate;
     };
 }
 

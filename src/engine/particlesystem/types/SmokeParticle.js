@@ -19,13 +19,13 @@ export default class SmokeParticle extends PhysicalParticle {
              * The amount of curl applied to each particle throughout its life
              * @type {number|Array<number>}
              */
-            curl: [0.009, 0.08],
+            curl: [0.01, 0.08],
 
             /**
              * The intensity of the curl over 1 second. Lower values result in less curling.
              * @type {number|Array<number>}
              */
-            curlIntensity: 0.008,
+            curlIntensity: 0.013,
             
             /**
              * The range of curl variance applied to the particle

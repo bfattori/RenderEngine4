@@ -106,7 +106,6 @@ const emitter = gameObject.getComponentByName("emitter");
 emitter.effect = pEffect;
 
 const transform = gameObject.getComponentByName("transform");
-transform.isHost = true;
 
 // every few seconds we'll generate an explosion
 function explode() {

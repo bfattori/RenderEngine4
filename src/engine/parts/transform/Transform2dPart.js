@@ -33,7 +33,6 @@ class CommitTransformEvent extends TransformEvent {
 export { CommitTransformEvent, TransformEvent };
 
 class Transform2dPart extends ComponentPart {
-    #hostTransform = false;
     #localTransform = Matrix2d.identity();
     #initOpts = null;
 
@@ -71,7 +70,8 @@ class Transform2dPart extends ComponentPart {
         this.y = this.#initOpts.position ? this.#initOpts.position[1] : 0;
         this.rotation = this.#initOpts?.rotation || 0;
         this.scale = this.#initOpts?.scale !== undefined ? Array.isArray(this.#initOpts.scale) ? this.#initOpts.scale : [this.#initOpts.scale, this.#initOpts.scale] : [1, 1];
-        this.hostTransform = this.#initOpts?.hostTransform || false;
+        if (this.isHost)
+            this.host.worldTransform = this.#localTransform;
     }
 
     get host() {
@@ -83,7 +83,7 @@ class Transform2dPart extends ComponentPart {
      * @param {boolean} value - True to set this part as the host's transform, false otherwise
      */
     set isHost(value) {
-        this.#hostTransform = value;
+        super.isHost = value;
         if (value) {
             this.host.worldTransform = this.localTransform;
         }
@@ -94,7 +94,7 @@ class Transform2dPart extends ComponentPart {
      * @returns {boolean} - True if this part is the host's transform, false otherwise
      */
     get isHost() {
-        return this.#hostTransform;
+        return super.isHost;
     }
 
     /**

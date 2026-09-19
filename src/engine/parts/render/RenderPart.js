@@ -45,7 +45,6 @@ export default class RenderPart extends ComponentPart {
     #context = null;
     #localTransformStack = [];
     #renderTransform = Matrix2d.identity();
-    #hostRender = false;
     #committed = false;
     
     #lineHeight = Constants.VECTOR_DEFAULTS.LINE_HEIGHT;
@@ -63,14 +62,6 @@ export default class RenderPart extends ComponentPart {
     //--------------------------------
     // Getters and Setters
     //--------------------------------
-
-    set isHost(value) {
-        this.#hostRender = value;
-    }
-
-    get isHost() {
-        return this.#hostRender;
-    }
 
     /**
      * The engine render context

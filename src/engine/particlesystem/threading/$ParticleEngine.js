@@ -360,6 +360,13 @@ export default class $ParticleEngine {
         });
     }
 
+    updateAffector(affector) {
+        this.#send({
+            type: Constants.MTYPE.MANAGER.UPDATE_AFFECTOR,
+            affector: affector.transferrable
+        });
+    }
+
     /**
      * Spawn a single particle into the particle engine at the given position. The particle type dictates the behavior of the particle, including 
      * how it is rendered, how it moves, and how it is updated over time.

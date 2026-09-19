@@ -1,10 +1,13 @@
+import Engine from '../../core/Engine.js';
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import Enum from '../../core/Enum.js';
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
 export default class ParticleAffector extends TransferrableConfig {
-   static FALLOFF_TYPE = new Enum(
+  #engine = null;
+
+  static FALLOFF_TYPE = new Enum(
     'LINEAR', 
     'SQUARED', 
     'ATTENUATE', 
@@ -76,6 +79,27 @@ export default class ParticleAffector extends TransferrableConfig {
     }, url);
     this.merge(overrides);
     this.name = 'particleAffector';
+    try {
+      this.#engine = Engine.particleEngine;
+    } catch (ex) {
+      this.#engine = null;
+    }
+  }
+
+  /**
+   * Set the associated particle engine this affector will impact.
+   * @param {ParticleEngine} pEngine - The particle engine instance
+   */
+  set engine(pEngine) {
+      this.#engine = pEngine;
+  }
+
+  /**
+   * Get the particle engine the affector is associated with.
+   * @returns {ParticleEngine} The particle engine 
+   */
+  get engine() {
+      return this.#engine;
   }
 
   /**
@@ -94,6 +118,18 @@ export default class ParticleAffector extends TransferrableConfig {
    */
   get name() {
     return this.$name;
+  }
+
+  /**
+   * This method will be called on config objects that update their properties
+   * since there doesn't appear to be an easy way to override setters.
+   * @param {String} property - The property that was changed 
+   * @param {*} newValue - The new value being assigned to the property
+   */
+  $propUpdated(property, newValue, oldValue) {
+    if (property === 'pos' && this.engine !== null) {
+      this.engine.updateAffector(this);
+    }
   }
 
   /**

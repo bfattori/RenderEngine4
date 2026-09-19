@@ -71,7 +71,6 @@ explosionObject
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
 
 const eT = explosionObject.getComponentByName("transform");
-eT.isHost = true;
 
 RenderEngine.world.addObject(explosionObject);
 
@@ -96,14 +95,12 @@ const fountain1 = new GameObject();
 fountain1
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
 const fT1 = fountain1.getComponentByName("transform");
-fT1.isHost = true;
 fT1.position = [5, 580];
 
 const fountain2 = new GameObject();
 fountain2
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
 const fT2 = fountain2.getComponentByName("transform");
-fT2.isHost = true;
 fT2.position = [795, 580];
 
 RenderEngine.world.addObjects(fountain1, fountain2);

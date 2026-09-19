@@ -84,7 +84,7 @@ const repulsor2 = new ParticleAffector({
 
 const repulsor3 = new ParticleAffector({
      radius: 80,
-     pos: [380, 200],
+     pos: [380, 270],
      restitution: 0.087
 });
 
@@ -102,7 +102,6 @@ smoker
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
 
 const sT1 = smoker.getComponentByName("transform");
-sT1.isHost = true;
 sT1.position = [190, 600];
 
 // add the smoker to the world
@@ -118,7 +117,6 @@ smoker2
     .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
 
 const sT2 = smoker2.getComponentByName("transform");
-sT2.isHost = true;
 sT2.position = [530, 600];
 
 // add the smoker to the world
@@ -130,6 +128,11 @@ smokeEmitter2.effect = sEffect2;
 
 smokeEmitter.enable();
 smokeEmitter2.enable();
+
+RenderEngine.hooks.onUpdate = (time, deltaTime) => {
+    repulsor3.pos = [Math.floor(380 + (400 * Math.sin(time * 0.001))), 270];
+}
+
 
 // Start the render loop   
 RenderEngine.start();

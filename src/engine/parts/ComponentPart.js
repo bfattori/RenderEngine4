@@ -55,15 +55,18 @@ export default class ComponentPart {
   #type = null;
   #localEventContext = null;
   #cachedEvents = [];
+  #isHost = true;
 
   /**
    * Creates a new ComponentPart instance
    * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
    * @param {string} name - Optional name for this component
+   * @param {boolean} isHost - `true` (default) to assign as the host component
    */
-  constructor(name = '', priority = Constants.defaultPriority) {
+  constructor(name = '', priority = Constants.defaultPriority, isHost = true) {
     this.#priority = priority;
     this.#name = name;
+    this.#isHost = isHost;
     
     // Store the component type for identification
     this.#type = this.constructor.name;
@@ -107,6 +110,10 @@ export default class ComponentPart {
     return this.#host;
   }
 
+  /**
+   * Gets the world this component is attached to
+   * @returns {World} The host world or null if not set
+   */
   get world() {
     return this.#host.world;
   }
@@ -152,6 +159,26 @@ export default class ComponentPart {
    */
   set eventContext(context) {
     this.#localEventContext = context;
+  }
+
+  /**
+   * Setting a component as the host component (default: `true`) means that it affects the `GameObject` directly.
+   * Transform components affect the object's world transform. Render components are rendered in world coordinates.
+   * Collision components react to the collision model assigned to the object. There can be only one component
+   * assigned the host role. Since the default is `true` be aware that adding additional components will overwrite the
+   * currently assigned host component.
+   * @param {boolean} value - Whether the component is a host component
+   */
+  set isHost(value) {
+    this.#isHost = value;
+  }
+
+  /**
+   * Returns `true` if the component is the host component.
+   * @return {boolean} Whether the component is a host component
+   */
+  get isHost() {
+    return this.#isHost;
   }
 
   //-------------------------------

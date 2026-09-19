@@ -125,7 +125,7 @@ export default class ParticleWorker {
     async process(data) {
         switch(data.type) {
             case Constants.MTYPE.ORCHESTRATOR.ADD_TYPE:
-                const particle = await TransferrableConfig.reconstruct(data.particle);
+                const particle = await TransferrableConfig.reconstruct(data.particle, (obj) => {obj.engine = this.instance;});
                 this.instance.addParticleType(particle);
                 this.#acknowledge(particle, Constants.MTYPE.WORKER.ACK_TYPE);
                 break;
@@ -135,9 +135,12 @@ export default class ParticleWorker {
                 this.#acknowledge(effect, Constants.MTYPE.WORKER.ACK_EFFECT);
                 break;
             case Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR:
-                const affector = await TransferrableConfig.reconstruct(data.affector);
+                const affector = await TransferrableConfig.reconstruct(data.affector, (obj) => {obj.engine = this.instance;});
                 this.instance.addAffector(affector);
                 this.#acknowledge(affector, Constants.MTYPE.WORKER.ACK_AFFECTOR);
+                break;
+            case Constants.MTYPE.ORCHESTRATOR.UPDATE_AFFECTOR:
+                this.instance.updateAffector(data.affector);
                 break;
             case Constants.MTYPE.ORCHESTRATOR.ADD_PARTICLES:
                 this.instance.addParticles(data.particles);

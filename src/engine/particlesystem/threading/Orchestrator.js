@@ -182,9 +182,10 @@ class Orchestrator {
             case Constants.MTYPE.MANAGER.ADD_TYPE:
             case Constants.MTYPE.MANAGER.ADD_EFFECT:
             case Constants.MTYPE.MANAGER.ADD_AFFECTOR:
+                this.#waitAcknowledge(event);
+            case Constants.MTYPE.MANAGER.UPDATE_AFFECTOR:
                 // broadcast to all workers
                 this.broadcast(event);
-                this.#waitAcknowledge(event);
                 break;
             case Constants.MTYPE.MANAGER.RESET:
                 // terminate the threads and restart them

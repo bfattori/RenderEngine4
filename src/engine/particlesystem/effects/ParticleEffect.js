@@ -67,6 +67,10 @@ export default class ParticleEffect extends TransferrableConfig {
         this.#engine = pEngine;
     }
 
+    /**
+     * Get the particle engine the effect is associated with.
+     * @returns {ParticleEngine} The particle engine 
+     */
     get engine() {
         return this.#engine;
     }
@@ -88,7 +92,7 @@ export default class ParticleEffect extends TransferrableConfig {
     async rehydrate(obj) {
         await new Promise((resolve) => {
             const resolveParticleTypes = () => {
-                const success = obj.particleTypes.every(e => this.#engine.types.get(e));
+                const success = obj.particleTypes.every(e => this.engine.types.get(e));
                 if (success)
                     return resolve(true);
                 else
@@ -97,7 +101,7 @@ export default class ParticleEffect extends TransferrableConfig {
             resolveParticleTypes();
         });
         
-        obj.particleTypes = obj.particleTypes.map(e => this.#engine.types.get(e));
+        obj.particleTypes = obj.particleTypes.map(e => this.engine.types.get(e));
         await super.rehydrate(obj);
         return obj;
     }
@@ -159,7 +163,7 @@ export default class ParticleEffect extends TransferrableConfig {
                 // give sub-classes an opportunity to modify 
                 // these values or introduce new ones
                 particle = this.initParticle(particle, pType.opts);
-                this.#engine.spawnParticle(worldPos, time, particle);
+                this.engine.spawnParticle(worldPos, time, particle);
             }
         }
     }
