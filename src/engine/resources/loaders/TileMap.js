@@ -3,7 +3,11 @@ import ResourceLoader, { ResourceError } from './ResourceLoader.js';
 import TileSheet from './TileSheet.js';
 
 /**
- * TileMap
+ * TileMapFactory is a resource factory for the various types of tile maps that can be loaded into the game.
+ *
+ * @example
+ * // Load a platformer tile map from a JSON file
+ * const tileMap = new TileMap('platformTest', '
  * See: functionalTests/assets/tile_map.json
  *
  * @class
@@ -11,6 +15,7 @@ import TileSheet from './TileSheet.js';
  */
 export default class TileMap extends ResourceLoader {
     #name;
+    #generated = null;
 
     static TYPE = new Enum({
       PLATFORMER: 'platformer',
@@ -19,7 +24,7 @@ export default class TileMap extends ResourceLoader {
     });
 
     /**
-     * Create a new `Sprite` resource.
+     * Create a new `TileMap` resource.
      * 
      * @param {String} name - The name of the sprite sheet
      * @param {String} tileMapUrl - The Url to the tilemap
@@ -29,10 +34,9 @@ export default class TileMap extends ResourceLoader {
         super(tileMapUrl, ResourceLoader.TYPE.JSON, rel);
         this.merge({
             name: name,
-            type: TileMap.TYPE.GRID,
+            mapType: TileMap.TYPE.GRID,
             tileSheet: null,
-            tileMap: null,
-            tileSize: [0, 0]
+            tileMap: null
         });
     }
 
@@ -44,12 +48,17 @@ export default class TileMap extends ResourceLoader {
         await this.tileSheet.loading();
         this.tileSize = content.size;
         switch(content.type) {
-          case `${TileMap.TYPE.PLATFORMER}`: this.type = TileMap.TYPE.PLATFORMER; break;
-          case `${TileMap.TYPE.ISOMETRIC}`: this.type = TileMap.TYPE.ISOMETRIC; break;
+          case `${TileMap.TYPE.PLATFORMER}`: this.mapType = TileMap.TYPE.PLATFORMER; break;
+          case `${TileMap.TYPE.ISOMETRIC}`: this.mapType = TileMap.TYPE.ISOMETRIC; break;
+          case `${TileMap.TYPE.GRID}`: this.mapType = TileMap.TYPE.GRID; break;
           default: throw new ResourceError(this, `Unknown type "${content.type}" for tile map "${this.url}".`);
         }
         this.tileMap = content;
+        await this.loadTileMap();
         return this;
+    }
+
+    async loadTileMap() {
     }
 
     /**
@@ -67,5 +76,21 @@ export default class TileMap extends ResourceLoader {
      */
     get sheet() {
         return this.tileSheet;
+    }
+
+    /**
+     * Get the associated `TileMap`
+     * @returns {TileMap} The tile map containing the tiles
+     */
+    get generated() {
+        return this.#generated;
+    }
+
+    /**
+     * Set the associated `TileMap`
+     * @param {TileMap} value - The tile map containing the tiles
+     */
+    set generated(value) {
+        this.#generated = value;
     }
 }

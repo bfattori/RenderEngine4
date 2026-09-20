@@ -423,7 +423,7 @@ export default class Engine {
       // Update the world state
       this.world.update(currentTime, deltaTime);
       
-      // If render context exists, update its state
+      // If render context exists and it has an update method, update the context
       if (this.world.renderContext && this.world.renderContext.update) {
         this.world.renderContext.update(currentTime, deltaTime);
       }
@@ -450,7 +450,7 @@ export default class Engine {
       
       // Render context traverses its internal structure of GameObjects
       // to update the scene and then render the scene
-      return !!this.world.renderContext.renderScene(this.world.allObjects, currentTime, deltaTime);
+      return this.world.render(currentTime, deltaTime);
     } catch (error) {
       console.error('Engine: Error during rendering:', error);
       return false;

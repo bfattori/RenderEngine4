@@ -25,6 +25,7 @@ export default class TileSheet extends ResourceLoader {
             name: name,
             assumeOpaque: false,
             sheet: null,
+            tileSize: [0, 0],
             tileDef: null
         });
         this.$name = `TileSheet_${this.$name.split('_')[1]}`;
@@ -37,6 +38,7 @@ export default class TileSheet extends ResourceLoader {
         this.sheet = new ImageResource(this.name, content.bitmap.image, content.bitmap.width, content.bitmap.height, this.url);
         this.assumeOpaque = content.assumeOpaque;
         this.tileDef = content.tiles;
+        this.tileSize = content.tileSize;
 
         // this contains all the tiles
         if (await this.sheet.loading()) {

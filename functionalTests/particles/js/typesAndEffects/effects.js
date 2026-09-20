@@ -1,7 +1,7 @@
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
 import FountainEffect from '../../../../src/engine/particlesystem/effects/FountainEffect.js';
 
-import { eParticle, eParticle2, eParticle3, eParticle4, wParticle } from './particles.js';
+import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2 } from './particles.js';
 
 // configure particle effects
 const pEffect = new BurstEffect({
@@ -10,7 +10,7 @@ const pEffect = new BurstEffect({
 });
 
 const pEffect2 = new BurstEffect({
-    count: 1000,
+    count: 1800,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 pEffect2.name = 'glittery';
@@ -29,14 +29,24 @@ const wEffect2 = new FountainEffect({
     spread: 8
 });
 
+const wEffect3 = new FountainEffect({
+    count: 10,
+    particleTypes: [wParticle2],
+    angle: 0,
+    spread: 45
+});
+
+
 // we're using the same effect with different configurations
 // assigning a name will differentiate them to the particle engine
 wEffect1.name = 'fountain1';
 wEffect2.name = 'fountain2';
+wEffect3.name = 'sparkler';
 
 export {
   pEffect,
   pEffect2,
   wEffect1,
-  wEffect2
+  wEffect2,
+  wEffect3
 };

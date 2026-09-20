@@ -11,11 +11,11 @@ import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
-import { pEffect, pEffect2, wEffect1, wEffect2 } from './effects.js';
-import { eParticle, eParticle2, eParticle3, eParticle4, wParticle } from './particles.js';
+import { pEffect, pEffect2, wEffect1, wEffect2, wEffect3 } from './effects.js';
+import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2 } from './particles.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 80000
+    maxParticles: 45000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
@@ -55,8 +55,11 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle); //, sParticle);
-RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2); // , sEffect);
+// add blue background
+document.getElementById("context").classList.add("types-and-effects");
+
+RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2);
+RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, wEffect3);
 
 // let the threaded particle engine know when
 // the effects and particles have been sent
@@ -103,19 +106,31 @@ fountain2
 const fT2 = fountain2.getComponentByName("transform");
 fT2.position = [795, 580];
 
-RenderEngine.world.addObjects(fountain1, fountain2);
+const sparkler = new GameObject();
+sparkler
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const spkT = sparkler.getComponentByName("transform");
+spkT.position = [400, 590];
+
+RenderEngine.world.addObjects(fountain1, fountain2, sparkler);
+
+const emitter1 = fountain1.getComponentByName("emitter");
+const emitter2 = fountain2.getComponentByName("emitter");
+const emitter3 = sparkler.getComponentByName("emitter");
 
 // configure the emitters to use the fountain effect
-fountain1.getComponentByName("emitter").effect = wEffect1;
-fountain2.getComponentByName("emitter").effect = wEffect2;
+emitter1.effect = wEffect1;
+emitter2.effect = wEffect2;
+emitter3.effect = wEffect3;
 
 
 // start the particle effects
 explode();
 
 RenderEngine.hooks.onBeforeFrame = () => {
-    fountain1.getComponentByName("emitter").reset().enable();
-    fountain2.getComponentByName("emitter").reset().enable();
+    emitter1.reset().enable();
+    emitter2.reset().enable();
+    emitter3.reset().enable();
 };
 
 // Start the render loop   

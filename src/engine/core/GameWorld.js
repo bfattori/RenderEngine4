@@ -17,6 +17,8 @@ class GameWorld {
   #renderContext = null;
   #currentTransform = new Matrix2d(IdentityMatrix);
 
+  #tileMap = null;
+
   /**
    * Creates a new GameWorld instance
    * @param {Engine} engine - Reference to the Engine for global event access
@@ -171,6 +173,22 @@ class GameWorld {
     return this.#currentTransform;
   }
 
+  /**
+   * Set the tile map for the world (when using raster contexts)
+   * @param {TileMap} tileMap - The new tile map to set
+   */
+  set tileMap(tileMap) {
+    this.#tileMap = tileMap;
+  }
+
+  /**
+   * Get the tile map for the world (when using raster contexts)
+   * @returns {TileMap} - The current tile map
+   */
+  get tileMap() {
+    return this.#tileMap;
+  }
+
   //--------------------------------
   // Lifecycle Methods
   //--------------------------------
@@ -216,6 +234,15 @@ class GameWorld {
 
     const worldUpdateEnd = PERF('worldUpdateEnd');
     MEASURE('Game World Update', 'worldUpdateStart', 'worldUpdateEnd');
+  }
+
+  /**
+   * Render the world
+   * @param {number} currentTime 
+   * @param {number} deltaTime 
+   */
+  render(currentTime, deltaTime) {
+    return !!this.renderContext.renderScene(this.tileMap, this.allObjects, currentTime, deltaTime);
   }
 
   /**

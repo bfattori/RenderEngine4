@@ -2,7 +2,7 @@ import RenderEngine from '../../../src/engine/renderEngine4.js';
 import RasterRenderContext from '../../../src/engine/rendering/contexts/RasterRenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
-import TileSheet from '../../../src/engine/resources/loaders/TileSheet.js';
+import PlatformerMap from '../../../src/engine/resources/loaders/PlatformerMap.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import SpritePart from '../../../src/engine/parts/render/SpritePart.js';
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
@@ -43,14 +43,16 @@ document.getElementById("context").classList.add("sprites-and-tiles");
 
 // load a couple asset sheets
 const marioSprites = new SpriteSheet('SMBTiles', '../../assets/smb_sprites.json');
-const tiles = new TileSheet('Tiles', '../../assets/floor_tiles.json');
+const map = new PlatformerMap('TileMap', '../../assets/platformer.json');
 
 // wait until they are loaded to continue
 await marioSprites.loading();
-await tiles.loading();
+await map.loading();
 
 // drop some sprites in the playfield
-let x = 100, y = 100;
+let x = 100, y = 400;
+
+RenderEngine.world.tileMap = map;
 
 marioSprites.sprites.forEach(sprite => {
     const actor = new GameObject();

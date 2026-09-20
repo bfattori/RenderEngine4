@@ -499,18 +499,19 @@ export default class RenderContext {
   /**
    * Renders the current scene to produce video output
    * Objects are automatically sorted into render planes for depth-based rendering
+   * @param {TileMap} tileMap - A tilemap to render in the context
    * @param {Array<GameObject>} objects - Array of GameObjects to render in order
    * @param {number} time - Current game time in milliseconds (for parallax effects)
    * @param {number} deltaTime - Time since last update in milliseconds
    * @returns {boolean} true if rendering was successful
    */
-  renderScene(objects, time, deltaTime) {
+  renderScene(tileMap, objects, time, deltaTime) {
     // Clear active objects for this frame
     this.clearActiveObjects();
 
-    if (this.#renderer && this.#renderer.constructor !== Renderer) {
+    if (this.renderer && this.renderer.constructor !== Renderer) {
       // pre-frame generation
-      this.#renderer.preFrame();
+      this.renderer.preFrame();
 
       const activeObjects = [];
 
@@ -564,7 +565,12 @@ export default class RenderContext {
           }
         }
       }
-      
+
+      // render a tilemap if provided
+      if (tileMap) {
+        this.renderer.surface.drawImage(tileMap.generated, 0, 0);
+      }
+
       // Sort objects into their respective planes
       this.sortObjectsByPlanes();
 
