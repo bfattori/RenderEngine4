@@ -27,7 +27,7 @@
               [1, 4, 7],
               [5, 4, 7]
           ],
-          "vRotate": 0
+          "vRotate": true
       },
       {
           "tile": "redMid",
@@ -38,7 +38,7 @@
           "vert": [
               [22, 4, 7]
           ],
-          "vRotate": 0
+          "vRotate": true
       }
   ],
   "tiles": {

@@ -29,14 +29,14 @@ export default class PlatformerMap extends TileMap {
       if (run['horiz']) {
         // process horizontal runs
         for (const hRun of run['horiz']) {
-          this.#createHorizontalRun(tile, hRun, startCap, endCap, run.hRotate ? run.hRotate : 0);
+          this.#createHorizontalRun(tile, hRun, startCap, endCap, run.hRotate ? run.hRotate : false);
         }
       }
 
       if (run['vert']) {
         // process vertical runs
         for (const vRun of run['vert']) {
-          this.#createVerticalRun(tile, vRun, startCap, endCap, run.vRotate ? run.vRotate : 0);
+          this.#createVerticalRun(tile, vRun, startCap, endCap, run.vRotate ? run.vRotate : false);
         }
       }
     }
@@ -53,7 +53,7 @@ export default class PlatformerMap extends TileMap {
     this.#render();
   }
 
-  #createHorizontalRun(tile, horizontalRun, startCap, endCap, rotate = 0) {
+  #createHorizontalRun(tile, horizontalRun, startCap, endCap, rotate = false) {
     const xStart = horizontalRun[0],
           xEnd = horizontalRun[1],
           y = horizontalRun[2];
@@ -72,7 +72,7 @@ export default class PlatformerMap extends TileMap {
     }
   }
 
-  #createVerticalRun(tile, verticalRun, startCap, endCap, rotate = 0) {
+  #createVerticalRun(tile, verticalRun, startCap, endCap, rotate = false) {
     const x = verticalRun[0],
           yStart = verticalRun[1],
           yEnd = verticalRun[2];
@@ -92,27 +92,49 @@ export default class PlatformerMap extends TileMap {
   #createSparseTile(tile, position) {
     const x = position[0],
           y = position[1];
-    this.#rows[y][x] = {tile: tile, rotate: 0};
+    this.#rows[y][x] = {tile: tile, rotate: false};
   }
 
   #render() {
-    const canvas = new OffscreenCanvas(this.tileSheet.tileSize[0] * this.tileMap.size[0], this.tileSheet.tileSize[1] * this.tileMap.size[1]);
+    const tileWidth = this.tileSheet.tileSize[0],
+          tileHeight = this.tileSheet.tileSize[1];
+
+    // this will be the generated tilemap
+    const canvas = new OffscreenCanvas(tileWidth * this.tileMap.size[0], tileHeight * this.tileMap.size[1]);
     const ctx = canvas.getContext('2d');
+
+    // a temporary canvas for manipulating individual tiles
+    const tileTemp = new OffscreenCanvas(tileWidth, tileHeight);
+    const tileCtx = tileTemp.getContext('2d');
     
     for (let x = 0; x < this.tileMap.size[0]; x++) {
       for (let y = 0; y < this.tileMap.size[1]; y++) {
         if (this.#rows[y][x] !== 0) {
           const entry = this.#rows[y][x];
           const tile = entry.tile;
+          const rotate = entry.rotate;
+
+          // bounding rectangle for the tile
           const frame = tile.frameRect;
-          ctx.save();
-          ctx.rotate($Math.degToRad(entry.rotate));
-          ctx.translate(this.tileSheet.tileSize[0], -this.tileSheet.tileSize[1]);
-          ctx.drawImage(tile.sourceImage, 
+
+          tileCtx.clearRect(0, 0, tileWidth, tileHeight);
+          tileCtx.save();
+          if (rotate) {
+            tileCtx.rotate($Math.degToRad(90));
+            tileCtx.translate(0, -tileWidth);
+          }
+
+          tileCtx.drawImage(tile.sourceImage, 
             frame[0], frame[1], frame[2], frame [3],  // source frame 
+            0, 0, tileWidth, tileHeight);
+
+          tileCtx.restore();  
+
+          ctx.drawImage(tileTemp, 
+            0, 0, tileWidth, tileHeight,      // source frame 
             x * this.tileSheet.tileSize[0],   // dest frame
-            y * this.tileSheet.tileSize[1], frame[2], frame[3]);
-          ctx.restore();
+            y * this.tileSheet.tileSize[1], frame[2], frame[3]
+          );
         }  
       }
     }

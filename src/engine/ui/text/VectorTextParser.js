@@ -143,8 +143,8 @@ export default class VectorTextParser extends TextParser {
     #getCharacterInstructions(char) {
         const minMax = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
 
-        // if (this.config.text.forceUpperCase)
-        //    char = char.toUpperCase();
+        if (this.renderContext.context.config.text.forceUpperCase)
+            char = char.toUpperCase();
 
         // Convert char to ASCII code
         const ascii = char.charCodeAt(0);

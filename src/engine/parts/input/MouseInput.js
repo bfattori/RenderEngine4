@@ -9,10 +9,11 @@ This component interfaces with the system's mouse event source and provides a un
 import InputPart, { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
+import Enum from '../../core/Enum.js';
 
 class MouseEvent extends InputEvent {
-    constructor(mouseState, gameObject, time, timeDelta) {
-        super(mouseState, gameObject, time, timeDelta);
+    constructor(mouseState, time, timeDelta) {
+        super(this, mouseState, time, timeDelta);
     }
 }
 
@@ -23,6 +24,14 @@ class MouseInput extends InputPart {
     #previousMousePosition = [0, 0];
     #initialMousePosition = null;
     #buttonPressPositions = [];  // Track where mouse buttons were pressed
+
+    static EVENT_TYPE = new Enum(
+        'NONE',
+        'MOUSE_DOWN',
+        'MOUSE_UP',
+        'MOUSE_WHEEL',
+        'MOUSE_MOVE'
+    );
 
     constructor(priority = Constants.INPUT_PRIORITY, name = 'MouseInput') {
         super(priority, name);
@@ -138,6 +147,7 @@ class MouseInput extends InputPart {
      */
     initialize() {
         this.state = {
+            action: InputPart.INPUT_EVENTS.NONE,
             position: [0, 0],
             delta: [0, 0],
             buttons: {
@@ -165,9 +175,9 @@ class MouseInput extends InputPart {
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:
-        // window.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        // window.addEventListener('mousedown', this.handleMouseDown.bind(this));
-        // window.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        window.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        window.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        window.addEventListener('mouseup', this.handleMouseUp.bind(this));
         
         // For desktop environments or custom input systems:
         // This is handled by the system's input management
@@ -195,6 +205,7 @@ class MouseInput extends InputPart {
         }
         
         // Update button state
+        this.state.action = InputPart.INPUT_EVENTS.MOUSE_DOWN;
         this.state.buttons[buttonName] = true;
         this.state.repeat = false; // This is a new mouse button press
         
@@ -207,12 +218,7 @@ class MouseInput extends InputPart {
         });
         
         // Publish mouse down event with new data
-        Engine.eventEngine.emit(Input.INPUT_EVENTS.MOUSE_DOWN, {
-            button: buttonName,
-            position: [event.clientX, event.clientY],
-            delta: [0, 0], // No movement yet
-            repeat: false
-        });
+        Engine.eventEngine.emit(new MouseEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
     }
     
     /**
@@ -232,16 +238,12 @@ class MouseInput extends InputPart {
         const buttonName = buttonMap[event.button] || 'unknown';
         
         // Update button state
+        this.state.action = InputPart.INPUT_EVENTS.MOUSE_UP;
         this.state.buttons[buttonName] = false;
         this.state.repeat = true;
         
         // Publish mouse up event with new data
-        Engine.eventEngine.emit(Input.INPUT_EVENTS.MOUSE_UP, {
-            button: buttonName,
-            position: [event.clientX, event.clientY],
-            delta: [0, 0],
-            repeat: true
-        });
+        Engine.eventEngine.emit(new MouseEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
     }
     
     /**
@@ -255,16 +257,12 @@ class MouseInput extends InputPart {
         const deltaY = event.clientY - this.state.position[1];
         
         // Update mouse position
+        this.state.action = InputPart.INPUT_EVENTS.MOUSE_MOVE;
         this.state.delta = [deltaX, deltaY];
         this.state.position = [event.clientX, event.clientY];
         this.state.repeat = false; // This is new mouse movement data
         
-        // Publish mouse move event with new data
-        Engine.eventEngine.emit(Input.INPUT_EVENTS.MOUSE_MOVE, {
-            position: [event.clientX, event.clientY],
-            delta: [deltaX, deltaY],
-            repeat: false
-        });
+        Engine.eventEngine.emit(new MouseEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
         
         this.#lastMouseMoveTime = performance.now();
     }
@@ -277,13 +275,11 @@ class MouseInput extends InputPart {
     handleMouseWheel(event) {
         // Get wheel delta (normalized to lines)
         const wheelDelta = Math.round((event.detail || event.wheelDeltaY || 0) / 120);
-        
-        // Publish wheel event with new data
-        Engine.eventEngine.emitGlobal(Input.INPUT_EVENTS.WHEEL, {
-            position: [event.clientX, event.clientY],
-            delta: wheelDelta,
-            repeat: false
-        });
+        this.state.action = InputPart.INPUT_EVENTS.MOUSE_WHEEL;
+        this.state.wheel.delta = wheelDelta;
+        this.state.wheel.position = [event.clientX, event.clientY]
+
+        Engine.eventEngine.emit(new MouseEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
     }
     
     /**
@@ -347,6 +343,7 @@ class MouseInput extends InputPart {
         this.#initialMousePosition = null;
         this.#buttonPressPositions = [];
         this.state = {
+            action: InputPart.INPUT_EVENTS.NONE,
             position: [0, 0],
             delta: [0, 0],
             buttons: {

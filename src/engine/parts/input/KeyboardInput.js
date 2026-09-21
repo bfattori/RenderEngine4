@@ -8,10 +8,11 @@ This component interfaces with the system's keyboard event source and provides a
 import InputPart, { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
+import Enum from '../../core/Enum.js';
 
 class KeyboardEvent extends InputEvent {
-    constructor(keyboardState, gameObject, time, timeDelta) {
-        super(keyboardState, gameObject, time, timeDelta);
+    constructor(keyboardState, time, timeDelta) {
+        super(this, keyboardState, time, timeDelta);
     }
 }
 
@@ -33,19 +34,6 @@ class KeyboardInput extends InputPart {
     //--------------------------------
     // Getters and Setters
     //--------------------------------
-
-    /**
-     * Get or initialize the current keyboard state
-     * @returns {Object} Current keyboard state object
-     */
-    get state() {
-        return {...super.state(), ...{
-            keyCode: null,
-            state: false,
-            modifiers: Object.assign({}, KeyboardInput.DEFAULT_MODIFIERS),
-            repeat: true
-        }};
-    }
 
     /**
      * Get current modifier key states
@@ -104,6 +92,7 @@ class KeyboardInput extends InputPart {
      */
     initialize() { 
         this.state = {
+            action: InputPart.INPUT_EVENTS.NONE,
             keyCode: null,
             state: false,
             modifier: Object.assign({}, KeyboardInput.DEFAULT_MODIFIERS),
@@ -119,18 +108,18 @@ class KeyboardInput extends InputPart {
      * @method bindKeyboardEvents
      */
     bindKeyboardEvents() {
-        console.log('KeyboardInput: Binding keyboard events');
+        console.debug('KeyboardInput: Binding keyboard events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:
-        // window.addEventListener('keydown', this.handleKeyDown.bind(this));
-        // window.addEventListener('keyup', this.handleKeyUp.bind(this));
+        window.addEventListener('keydown', this.handleKeyDown.bind(this));
+        window.addEventListener('keyup', this.handleKeyUp.bind(this));
         
         // For desktop environments or custom input systems:
         // This is handled by the system's input management
 
         // emit the event
-        this.emit(Constants.EVENT_INPUT_UPDATE, this.getState());
+        Engine.eventEngine.emit(new KeyboardEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
     }
 
     /**
@@ -156,6 +145,7 @@ class KeyboardInput extends InputPart {
         this.updateModifierState(event, true);
         
         // Update key state with repeat handling
+        this.state.action = InputPart.INPUT_EVENTS.KEY_DOWN;
         this.state.keyCode = event.keyCode;
         this.state.state = true;
         this.state.repeat = false; // This is a new key press
@@ -167,23 +157,13 @@ class KeyboardInput extends InputPart {
         const timeSinceLastKey = performance.now() - (this.#keyHistory.length > 0 ? this.#keyHistory[this.#keyHistory.length - 1] : 0);
         if (timeSinceLastKey >= this.#repeatInterval || this.#keyHistory.length === 0) {
             this.#keyHistory.push(performance.now());
-            
-            // Emit key pressed event with new data
-            Engine.eventEngine.emitGlobal(InputPart.INPUT_EVENTS.KEY_DOWN, {
-                keyCode: event.keyCode,
-                state: true,
-                modifiers: this.state.modifiers,
-                repeat: false
-            });
-        } else {
-            this.state.repeat = true;
-            this.emitGlobal('keyheld', {
-                keyCode: event.keyCode,
-                state: true,
-                modifiers: this.state.modifiers,
-                repeat: true
-            });
+                    } else {
+                this.state.action = InputPart.INPUT_EVENTS.KEY_HELD;
+                this.state.repeat = true;
         }
+
+        // Emit key pressed event with new data
+        Engine.eventEngine.emit(new KeyboardEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
     }
     
     /**
@@ -196,16 +176,13 @@ class KeyboardInput extends InputPart {
         this.updateModifierState(event, false);
         
         // Emit key released event with new data
+        this.state.action = InputPart.INPUT_EVENTS.KEY_UP;
         this.state.keyCode = event.keyCode;
         this.state.state = false;
         this.state.repeat = true; // This will be overridden next press
         
-        this.emitGlobal(InputPart.INPUT_EVENTS.KEY_UP, {
-            keyCode: event.keyCode,
-            state: false,
-            modifiers: this.state.modifiers,
-            repeat: true
-        });
+        // Emit key pressed event with new data
+        Engine.eventEngine.emit(new KeyboardEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
         
         // Remove from history if it's the most recent key
         if (this.#keyHistory.length > 0 && this.#keyHistory[this.#keyHistory.length - 1] === performance.now()) {
@@ -223,7 +200,9 @@ class KeyboardInput extends InputPart {
         if (event.key === 'Escape') {
             // Emit escape press if not already in our state
             if (!this.isModifierKeyPressed()) {
-                Engine.eventEngine.emit(InputPart.INPUT_EVENTS.KEY_ESCAPE, { keyCode: KeyboardInput.KEY_CODES.KEY_ESCAPE });
+                // Emit key pressed event with new data
+                this.state.action = InputPart.INPUT_EVENTS.KEY_ESCAPE;
+                Engine.eventEngine.emit(new KeyboardEvent(this.state, this.host, Engine.engine.time, Engine.engine.deltaTime));
             }
         }
         
@@ -295,6 +274,7 @@ class KeyboardInput extends InputPart {
      */
     resetState() {
         this.state = {
+            action: InputPart.INPUT_EVENTS.NONE,
             keyCode: null,
             state: false,
             modifier: Object.assign({}, KeyboardInput.DEFAULT_MODIFIERS),

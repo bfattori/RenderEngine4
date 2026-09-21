@@ -50,7 +50,7 @@ await marioSprites.loading();
 await map.loading();
 
 // drop some sprites in the playfield
-let x = 100, y = 400;
+let x = 100, y = 64;
 
 RenderEngine.world.tileMap = map;
 

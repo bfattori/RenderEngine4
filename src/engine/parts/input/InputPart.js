@@ -32,22 +32,23 @@ export { InputEvent };
  * @constructs Input
  */
 class InputPart extends ComponentPart {
-    #inputState = null;
+    #inputState = {};
     
     /**
      * Input event type constants
      */
-    static INPUT_EVENTS = {
-        KEY_PRESSED: 'keypress',
-        KEY_DOWN: 'keydown',
-        KEY_UP: 'keyup',
-        KEY_HELD: 'keyheld',
-        KEY_ESCAPE: 'escape',
-        MOUSE_DOWN: 'mousedown',
-        MOUSE_UP: 'mouseup',
-        MOUSE_MOVE: 'mousemove',
-        WHEEL: 'wheel'
-    }
+    static INPUT_EVENTS = new Enum(
+        'NONE',
+        'KEY_PRESSED',
+        'KEY_DOWN',
+        'KEY_UP',
+        'KEY_HELD',
+        'KEY_ESCAPE',
+        'MOUSE_DOWN',
+        'MOUSE_UP',
+        'MOUSE_MOVE',
+        'MOUSE_WHEEL'
+    );
 
     constructor(priority = Constants.INPUT_PRIORITY, name = 'Input') {
         super(priority, name);
