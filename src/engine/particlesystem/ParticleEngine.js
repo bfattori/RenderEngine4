@@ -27,7 +27,12 @@ class ParticleEngineConfig extends Config {
             /**
              * Play nicely with the main thread
              */
-            nice: 5
+            nice: 5,
+            /**
+             * The distance from the boundaries at which particles are automatically killed.
+             * @type {number}
+             */
+            boundaryExpansion: 50
         });
     }
 

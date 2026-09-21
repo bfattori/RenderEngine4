@@ -60,25 +60,25 @@ const tiles = new TileSheet('smoke', '../../../assets/smoke_sprites.json');
 await tiles.loading();
 
 const sParticle = new SmokeParticle({
-    lifeSpan: [20000, 30000],
+    lifeSpan: [8000, 10000],
     tileSheet: tiles
 });
 sParticle.name = 'withTiles';
 
 const sEffect = new SmokeEffect({
-  count: 2,
+  count: 4,
   particleTypes: [sParticle],
   angle: 0
 });
 sEffect.name = 'withTiles';
 
 const sParticle2 = new SmokeParticle({
-    lifeSpan: [20000, 30000]
+    lifeSpan: [8000, 10000]
 });
 sParticle2.name = 'points';
 
 const sEffect2 = new SmokeEffect({
-  count: 2,
+  count: 4,
   particleTypes: [sParticle2],
   angle: 0,
   spread: 30
@@ -89,7 +89,7 @@ sEffect2.name = 'points';
 const repulsor = new ParticleAffector({
     radius: 100,
     pos: [200, 300],
-    restitution: 0.1
+    restitution: 0.09
 });
 
 const repulsor2 = new ParticleAffector({

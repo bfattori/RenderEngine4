@@ -69,7 +69,8 @@ export default class SmokeParticle extends PhysicalParticle {
         super.update(time, deltaTime, $memory, pos, vel, life);
 
         // apply curl
-        vel[0] += ($memory.curl * Math.cos(time / $memory.cI) * $memory.cD);
-        vel[1] += $memory.curl * Math.sin(time / $memory.cI);
+        const factor = time/$memory.cI;
+        vel[0] += ($memory.curl * Math.cos(factor) * $memory.cD);
+        vel[1] += $memory.curl * Math.sin(factor);
     }
 }

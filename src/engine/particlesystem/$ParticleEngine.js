@@ -536,10 +536,16 @@ export default class $ParticleEngine {
         }
 
         // free-up space when dead
-        if (this.#pSpan[idx] <= 0) {
+        // ... or when no longer in the visible area
+        if (!this.#inBounds(this.#pPos[idx]) || this.#pSpan[idx] <= 0) {
             pType.cleanUp(memory);
             this.#memories[idx] = null;
         }
+    }
+
+    #inBounds(pos) {
+        const limit = this.config.boundaryExpansion; 
+        return pos[0] >= 0 - limit && pos[0] <= this.#width + limit && pos[1] >= 0 - limit && pos[1] <= this.#height + limit;
     }
 
     /**
