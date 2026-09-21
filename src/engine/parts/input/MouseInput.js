@@ -9,7 +9,6 @@ This component interfaces with the system's mouse event source and provides a un
 import InputPart, { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
-import Enum from '../../core/Enum.js';
 
 class MouseEvent extends InputEvent {
     constructor(mouseState, time, timeDelta) {
@@ -24,14 +23,6 @@ class MouseInput extends InputPart {
     #previousMousePosition = [0, 0];
     #initialMousePosition = null;
     #buttonPressPositions = [];  // Track where mouse buttons were pressed
-
-    static EVENT_TYPE = new Enum(
-        'NONE',
-        'MOUSE_DOWN',
-        'MOUSE_UP',
-        'MOUSE_WHEEL',
-        'MOUSE_MOVE'
-    );
 
     constructor(priority = Constants.INPUT_PRIORITY, name = 'MouseInput') {
         super(priority, name);

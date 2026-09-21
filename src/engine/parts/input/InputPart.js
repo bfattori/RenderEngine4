@@ -10,6 +10,7 @@
 
 import Constants from '../../Constants.js';
 import ComponentPart, { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
+import Enum from '../../core/Enum.js';
 
 class InputEvent extends ComponentPartEvent {
     #inputState = null;

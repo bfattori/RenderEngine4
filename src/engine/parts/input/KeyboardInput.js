@@ -8,7 +8,6 @@ This component interfaces with the system's keyboard event source and provides a
 import InputPart, { InputEvent } from './InputPart.js';
 import Constants from '../../Constants.js';
 import Engine from '../../core/Engine.js';
-import Enum from '../../core/Enum.js';
 
 class KeyboardEvent extends InputEvent {
     constructor(keyboardState, time, timeDelta) {

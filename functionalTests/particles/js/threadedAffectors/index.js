@@ -101,7 +101,7 @@ const repulsor2 = new ParticleAffector({
 const repulsor3 = new ParticleAffector({
      radius: 80,
      pos: [380, 200],
-     restitution: 0.087
+     restitution: 0.3
 });
 repulsor3.name = "r3";
 
