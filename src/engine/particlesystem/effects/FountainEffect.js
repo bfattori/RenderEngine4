@@ -3,6 +3,13 @@ import $Math from '../../core/Math.js';
 import SprayParticle from '../types/BasicParticle.js';
 import ParticleEffect from './ParticleEffect.js';
 
+/**
+ * @class FountainEffect
+ * @classdesc The FountainEffect class is a specialized particle effect that generates particles in a fountain-like pattern. It extends 
+ * from the ParticleEffect class and overrides the initParticle method to apply a random velocity to each spawned particle based 
+ * on a specified velocity range. The effect can be configured with various options, including the number of particles to spawn, 
+ * the spread of the fountain, and the maximum velocity of the particles.
+ */
 export default class FountainEffect extends ParticleEffect {
     /**
      * Create a `FountainEffect` to use with the particle system.

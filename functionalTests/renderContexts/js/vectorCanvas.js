@@ -18,7 +18,7 @@ await RenderEngine.init(import.meta.url, {
             { 
                 enableCulling: false, 
                 text: {
-                    forceUpperCase: true
+                    forceUpperCase: false
                 }
             }
         ),

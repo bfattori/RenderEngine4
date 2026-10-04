@@ -29,7 +29,8 @@ class CanvasConfig extends RendererConfig {
                 letterSpacing: 0,
                 textRendering: "auto"
             }
-        }, defaults);
+        });
+        this.merge(defaults);
     }
 
     get varname() {

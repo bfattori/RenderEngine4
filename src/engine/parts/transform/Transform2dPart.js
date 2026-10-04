@@ -9,7 +9,9 @@
 import Constants from '../../Constants.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
+import ColliderPart from '../collision/Collider.js';
 import { Matrix2d } from '../../core/Matrix.js';
+import Engine from '../../core/Engine.js';
 
 import { ColliderEvent, CollisionData } from '../../parts/collision/Collider.js';
 
@@ -242,11 +244,19 @@ class Transform2dPart extends ComponentPart {
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
     update(time, deltaTime) {
-        const updateStart = PERF('transformPartStart');
-        // Emit the computed local transform
-        const emitTransform = this.localTransform;
-        this.emit(new TransformEvent(this, emitTransform, time, deltaTime));
-        const updateEnd = PERF('transformPartEnd');
+        const txfmEvent = new TransformEvent(this, this.localTransform, time, deltaTime)
+        PERF('transformPartStart');
+        // Emit the computed local transform locally
+        this.emit(txfmEvent);
+    
+        // todo: would there be a reason *not* to emit the event when the host has
+        //       a collider component itself??
+        const hostCollider = this.host.getComponentsByType(ColliderPart).find(c => c.isHost);
+        if (hostCollider) {
+            Engine.eventEngine.emit(txfmEvent);
+        }
+
+        PERF('transformPartEnd');
         MEASURE('Transform Part', 'transformPartStart', 'transformPartEnd');
         return this;
     }

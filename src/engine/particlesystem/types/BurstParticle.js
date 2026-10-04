@@ -1,5 +1,11 @@
 import BasicParticle from './BasicParticle.js';
 
+/**
+ * @class BurstParticle
+ * @classdesc The BurstParticle class is a simple particle type that extends the BasicParticle class. It defines specific properties 
+ * for particles that are generated in a burst pattern, including color options, lifespan, drag, size, and velocity. The class provides 
+ * methods to initialize the particle and update its state over time.
+ */
 export default class BurstParticle extends BasicParticle {
     constructor(overrides = {}, url = import.meta.url) {
         super({

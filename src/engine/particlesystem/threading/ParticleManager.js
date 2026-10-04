@@ -7,16 +7,29 @@ import OrchestratorError from './OrchestratorError.js';
 
 const ctx = Context.getInstance();
 
-export default class $ParticleEngine {
+/**
+ * @class ParticleManager
+ * @classdesc Manages the particles in a 2D canvas. This class handles the creation, update, and rendering of particles.
+ * It also manages the particle engine configuration and threading options. The ParticleManager presents an interface identical
+ * to the ParticleEngine, but is designed to pass execution to separate threads. The ParticleManager spawns the Orchestrator thread, 
+ * which in turn spawns the ParticleWorker threads. The Orchestrator is responsible for distributing particles to the workers, and the 
+ * workers are responsible for updating and rendering the particles.
+ * 
+ * @param {RenderContext} renderContext - The rendering context for the particle manager.
+ * @param {number} width - The width of the canvas.
+ * @param {number} height - The height of the canvas.
+ * @param {ParticleEngineConfig} config - The configuration for the particle engine.
+ * @param {ParticleEngineThreadingConfig} threading - The threading configuration for the particle manager.
+ * @param {object} opts - Engine configuration options used by the particle manager.
+ * @param {Paths} paths - Paths object containing various paths used by the particle manager.
+ */
+export default class ParticleManager {
     #thread = null;
     #ready = false;
     #bitmap = null;
-    #metrics = {};
     #readyToProcess = false;
-    #debugView = null;
     #workerViews = [];
     #engineLoadView = null;
-    #particleTypes = new Map();
     #initialized = false;
 
     #initProps = null;
@@ -360,6 +373,10 @@ export default class $ParticleEngine {
         });
     }
 
+    /**
+     * Updates a `ParticleAffector` in the engine.
+     * @param {ParticleAffector} affector - The particle affector to update. The affector must have been added to the engine previously. 
+     */
     updateAffector(affector) {
         this.#send({
             type: Constants.MTYPE.MANAGER.UPDATE_AFFECTOR,

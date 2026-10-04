@@ -15,7 +15,7 @@ import RenderContext from '../rendering/contexts/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine, { ParticleEngineConfig, ParticleEngineThreadingConfig } from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
-import AABBCollisionModel from '../collisionModels/models/AABB.js';
+import GridBroadphase from '../collisionModels/broadphase/GridBroadphase.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
 
@@ -52,15 +52,12 @@ export default class Engine {
 
   #ENGINE_OPTIONS = new EngineConfig();
   
-  #width = 0;
-  #height = 0;
   #currentTime = 0;
   #lastTime = 0;
   #deltaTime = 0;
   #isRunning = false;
   #animationFrameId = null;
   #lifecycleTiming = 0;
-  #collisionModel = null;
   #fpsCounter = null;
 
   #startupLocation = null;
@@ -104,7 +101,7 @@ export default class Engine {
     this.#WORLD.height = renderContext.worldDimensions.height;
 
     // Collision model storage
-    const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new AABBCollisionModel(this);
+    const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new GridBroadphase('defaultGrid', this.#WORLD.width, this.#WORLD.height);
     this.#ENGINE_OPTIONS.world.collisionModel = collisionModel;
 
     if (this.#ENGINE_OPTIONS.flags.showFps) {

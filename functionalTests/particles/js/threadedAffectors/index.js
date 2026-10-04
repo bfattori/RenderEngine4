@@ -15,7 +15,7 @@ import ParticleAffector from '../../../../src/engine/particlesystem/physics/Part
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 100000
+    maxParticles: 5000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {

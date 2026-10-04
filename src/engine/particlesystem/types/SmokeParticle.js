@@ -2,6 +2,13 @@ import PhysicalParticle from './PhysicalParticle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
 
+/**
+ * @class SmokeParticle
+ * @classdesc The SmokeParticle class is a specialized particle type that extends the PhysicalParticle class. It defines specific properties 
+ * for particles that simulate smoke, including color options, lifespan, drag, size, velocity, growth, gravity, and curl. The class provides 
+ * methods to initialize the particle, update its state over time, and apply curling effects to simulate the behavior of smoke in a realistic manner.
+ * @extends PhysicalParticle
+ */
 export default class SmokeParticle extends PhysicalParticle {
     constructor(overrides = {}, url = import.meta.url) {
         super({

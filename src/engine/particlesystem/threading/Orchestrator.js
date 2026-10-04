@@ -12,6 +12,12 @@ let orchestratorInstance = null;
 let messageHandler = null;
 const ctx = Context.getInstance();
 
+/**
+ * @class Orchestrator
+ * @classdesc The Orchestrator class is responsible for managing multiple worker threads that handle particle system operations. It initializes the 
+ * worker threads, distributes tasks to them based on their load, and composites the rendered images from the workers into a single image for display. 
+ * The orchestrator communicates with the main thread and the worker threads to manage particle types, effects, and affectors.  
+ */
 class Orchestrator {
     #workers = new Map();
     #viewPort = [];

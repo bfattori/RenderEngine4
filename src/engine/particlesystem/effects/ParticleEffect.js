@@ -2,6 +2,14 @@ import $Math from '../../core/Math.js';
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import BasicParticle from '../types/BasicParticle.js';
 
+/**
+ * @class ParticleEffect
+ * @classdesc The ParticleEffect class is responsible for generating particles and introducing them into the ParticleSystem. It defines the 
+ * properties of the effect such as frequency, quantity, and types of particles to spawn, and provides a method for sub-classes to modify 
+ * the properties of spawned particles before they are added to the system. The effect can be configured with various options, including 
+ * the number of particles to spawn, their types, and their properties such as size, color, and lifetime.
+ * @extends TransferrableConfig
+ */
 export default class ParticleEffect extends TransferrableConfig {
     #lastTime = 0;
     #engine = null;

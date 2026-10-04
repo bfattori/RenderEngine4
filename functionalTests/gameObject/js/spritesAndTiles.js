@@ -5,6 +5,7 @@ import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
 import PlatformerMap from '../../../src/engine/resources/loaders/PlatformerMap.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import SpritePart from '../../../src/engine/parts/render/SpritePart.js';
+import AABBCollider from '../../../src/engine/parts/collision/AABBCollider.js';
 import { Matrix2d } from '../../../src/engine/core/Matrix.js';
 
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
@@ -23,7 +24,10 @@ await RenderEngine.init(import.meta.url, {
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {
-                    doubleBuffered: true
+                    doubleBuffered: true,
+                    defaults: {
+                        imageSmoothingEnabled: false
+                    }
                 }
             ),
             { 
@@ -56,13 +60,10 @@ RenderEngine.world.tileMap = map;
 
 marioSprites.sprites.forEach(sprite => {
     const actor = new GameObject();
-    actor.addComponentParts(new Transform2dPart("transform"), new SpritePart("sprite"))
-        .worldTransform = Matrix2d.identity().update({
-            position: [x, y]
-        });
+    actor.addComponentParts(new Transform2dPart("transform"), new SpritePart("sprite"), new AABBCollider("collision"));
 
     const transformPart = actor.getComponentByName("transform");
-    transformPart.scale = [-1, 1];
+    transformPart.position = [x, y];
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(actor);

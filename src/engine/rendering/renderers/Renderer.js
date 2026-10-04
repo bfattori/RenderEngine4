@@ -9,7 +9,8 @@ class RendererConfig extends Config {
             doubleBuffered: false,
             useCompiler: true,
             formatting: new Map()
-        }, defaults);
+        });
+        this.merge(defaults);
     }
 
     get varname() {

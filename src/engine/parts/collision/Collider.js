@@ -4,16 +4,17 @@
  * that all collider component subclasses inherit from.
  */
 import Constants from '../../Constants.js';
+import EventEngine, { Event } from '../../core/EventEngine.js';
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
 import { TransformEvent } from '../transform/Transform2dPart.js';
 
 /**
  * @class CollisionData
- * The event information for when a collision occurs.
+ * The event information for a collision.
  * 
  * @param {GameObject} initiator - The GameObject that initiated the collision.
- * @param {GameObject} collidedWith - The GameObject that was collided with.
+ * @param {GameObject} target - The GameObject that was collided with.
  * @param {number} separatingDistance - The distance between the two GameObjects at which they are separating.
  * @param {Array} backoffVector - The vector that needs to be applied to the initiator to move them closer together. (x, y)
  * @param {number} backoffDistance - The distance that needs to be moved by the initiator to resolve the collision.
@@ -25,12 +26,12 @@ import { TransformEvent } from '../transform/Transform2dPart.js';
  * @returns {CollisionData} An object containing the collision data.
  */
 class CollisionData {
-  constructor({ initiator, collidedWith, 
+  constructor({ initiator, target, 
                 separatingDistance, backoffVector, backoffDistance, 
                 collisionType, colliderModel, position, rotation, 
                 scale, axis, side }) {
     this.initiator = initiator;
-    this.collidedWith = collidedWith;
+    this.target = target;
     this.separatingDistance = separatingDistance;  // Calculated by SAT in real implementation
     this.backoffVector = backoffVector; // Calculated by collision model
     this.backoffDistance = backoffDistance;    // Penetration depth
@@ -44,6 +45,32 @@ class CollisionData {
   }
 };
 
+/**
+ * This event is emitted globally to inform listeners of
+ * all the recorded collisions for an object.
+ */
+class CollisionsEvent extends Event {
+  #collisions;
+  constructor(collisionSet, time, deltaTime) {
+    super(time, deltaTime);
+    this.#collisions = collisionSet;
+  }
+
+  consume(consumer) {
+    super.consume(consumer);
+    return this.#collisions;
+  }
+
+  get collisions() {
+    return this.#collisions;
+  }
+}
+
+/**
+ * This event is used amongst component parts to communicate
+ * instantaneous updates to other components within the host
+ * object.
+ */
 class ColliderEvent extends ComponentPartEvent {
     #collisionData = null;
     constructor(part, collisionData, time, deltaTime) {
@@ -72,7 +99,7 @@ export default class ColliderPart extends ComponentPart {
   #collisions = [];
   #worldCollisionModel = null;
   #cachedTransform = null;
-  
+
   /**
    * Creates a ColliderPart with common collision detection functionality
    * @param {number} priority - Priority of execution (0.0 to 1.0, implying order of execution, with 0.0 being first and 1.0 being last)
@@ -150,7 +177,7 @@ export default class ColliderPart extends ComponentPart {
     this.#collisions.push(collisionData);
     this.#collided = true;
     
-    // Notify via local event
+    // Notify via local event, the moment a collision occurs
     this.emit(new ColliderEvent(this, collisionData, time, deltaTime));
   }
 
@@ -187,13 +214,13 @@ export default class ColliderPart extends ComponentPart {
  onEvent(eventObject) {
     if (super.onEvent(eventObject)) return;
     switch (eventObject.type) {
-      case LocalTransformEvent:
+      case TransformEvent:
         this.transformUpdated(eventObject);
         break;
     }
   }
 
-  transformUpdate(eventObject) {
+  transformUpdated(eventObject) {
     this.#cachedTransform = eventObject.consume(this);
   }
 
@@ -277,7 +304,16 @@ export default class ColliderPart extends ComponentPart {
           }
         }
       }
+
+      if (this.#collided) {
+        // Emit the collisions that were recorded for this object
+        EventEngine.emit(new CollisionsEvent(this, this.#collisions, time, deltaTime));
+      }
     }
+  }
+
+  render(time, deltaTime) {
+    
   }
 
   /**

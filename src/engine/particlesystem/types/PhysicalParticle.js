@@ -1,7 +1,8 @@
 import DiffuseParticle from './DiffuseParticle.js';
 
 /**
- * `PhysicalParticle` is the base class for particles that interact with the game through `ParticleColliders` and `ParticleRepulsors`, providing visual response
+ * @class PhysicalParticle
+ * @classdesc `PhysicalParticle` is the base class for particles that interact with the game through `ParticleAffectors`, providing visual response
  * to objects in the game world. The particle inherits from `BasicParticle` for most configuration, but adds `restitution` and `friction` which are evaluated
  * during the `affect()` method, unique to `PhysicalParticles`. Use physical particle effects with caution as they will impose additional overhead during
  * particle calculation.

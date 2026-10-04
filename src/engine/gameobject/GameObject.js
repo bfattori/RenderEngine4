@@ -419,7 +419,7 @@ export default class GameObject {
 
     PRAGMA('objectOrigins', () => {
         const mtx = Matrix2d.from(this.worldTransform);
-        mtx.scaleSelf(1,1);
+        //mtx.scaleSelf(1,1);
         rcAPI.absTransform(mtx);
         DebugObjects.Origin(this.world.renderContext, mtx.e, mtx.f, 
           [this.worldTransform.e, this.worldTransform.f], 

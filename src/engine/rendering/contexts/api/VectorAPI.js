@@ -97,7 +97,7 @@ export default function getAPI() {
          */
         uniformScale: (scalar) => {
             context.addInstruction(`${VECTOR_IL.USCALE} ${scalar}`);
-            state.currentTransform.uniformScaleSelf(scalar);
+            state.currentTransform.scale(scalar, scalar);
             return context.API;
         },
 

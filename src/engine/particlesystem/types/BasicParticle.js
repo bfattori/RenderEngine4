@@ -4,6 +4,14 @@ import { Matrix2d } from '../../core/Matrix.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';
 
+/**
+ * @class BasicParticle
+ * @classdesc The BasicParticle class is a fundamental particle type used in the particle system. It defines the properties 
+ * and behaviors of individual particles, including their color, size, velocity, drag, lifespan, and rendering methods. The 
+ * class provides methods for spawning, updating, rendering, and cleaning up particles, allowing for customization of particle 
+ * behavior and appearance. BasicParticle can be extended or configured to create various particle effects within the particle system.
+ * @extends TransferrableConfig
+ */
 export default class BasicParticle extends TransferrableConfig {
     /**
      * Create a `BasicParticle` with options for colors, sizes, velocity range,

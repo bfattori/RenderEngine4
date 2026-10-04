@@ -1,6 +1,15 @@
 import $Math from '../../core/Math.js';
 import ParticleEffect from './ParticleEffect.js';
 
+/**
+ * @class SmokeEffect
+ * @classdesc The SmokeEffect class is a specialized particle effect that generates particles in a smoke-like pattern. It extends 
+ * from the ParticleEffect class and overrides the initParticle method to apply a random velocity to each spawned particle based 
+ * on a specified velocity range. The effect can be configured with various options, including the number of particles to spawn, 
+ * their initial position, and their velocity range.
+ * 
+ * @extends ParticleEffect
+ */
 export default class SmokeEffect extends ParticleEffect {
   /**
    * Create a `SmokeEffect` to use with the particle system.

@@ -21,9 +21,16 @@ self.Matrix2d = Matrix2d;
 self.CanvasRasterAssembler = CanvasRasterAssembler;
 self.CanvasVectorAssembler = CanvasVectorAssembler;
 
+// this will reference ourselves in the worker thread so we can access the worker instance from the message handler
 self.$$worker = null;
 const ctx = Context.getInstance();
 
+/**
+ * @class ParticleWorker
+ * @classdesc The ParticleWorker class is responsible for managing a single worker thread that handles particle system operations. It initializes the particle engine instance, 
+ * processes messages from the orchestrator, and runs the main update loop for particle rendering and updates. The worker communicates with the orchestrator to acknowledge 
+ * received particles, effects, and affectors, and sends rendered images back to the orchestrator for display.
+ */
 export default class ParticleWorker {
     #engineInstance = null;
     #workerId = null;
@@ -51,6 +58,10 @@ export default class ParticleWorker {
 
     set startTime(time) {
         this.#startTime = time;
+    }
+
+    get startTime() {
+        return this.#startTime;
     }
 
     set isRunning(state) {

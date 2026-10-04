@@ -1,5 +1,12 @@
 import BasicParticle from './BasicParticle.js';
 
+/**
+ * @class WaterParticle
+ * @classdesc The WaterParticle class is a simple particle type that extends the BasicParticle class. It defines specific properties 
+ * for particles that simulate water, including color options, lifespan, drag, size, velocity, gravity, and size decay. The class provides 
+ * methods to initialize the particle and update its state over time.
+ * @extends BasicParticle
+ */
 export default class WaterParticle extends BasicParticle {
     constructor(overrides = {}, url = import.meta.url) {
         super({

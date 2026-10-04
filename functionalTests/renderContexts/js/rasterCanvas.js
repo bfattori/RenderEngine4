@@ -18,7 +18,10 @@ await RenderEngine.init(import.meta.url, {
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {
-                    doubleBuffered: false
+                    doubleBuffered: false,
+                    defaults: {
+                        imageSmoothingEnabled: false
+                    }
                 }
             ),
             { 

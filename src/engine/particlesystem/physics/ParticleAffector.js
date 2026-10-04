@@ -4,6 +4,12 @@ import Enum from '../../core/Enum.js';
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
+/**
+ * @class ParticleAffector
+ * @classdesc The ParticleAffector class is responsible for applying forces to particles within a particle system. It defines the shape, position, and falloff of the affector, 
+ * and calculates the resulting impulse on particles based on their position relative to the affector. The affector can be circular or linear in shape, and can have different 
+ * types of falloff (linear, squared, attenuate, or custom). The affector also has properties for friction and restitution that affect how particles respond to its influence.
+ */
 export default class ParticleAffector extends TransferrableConfig {
   #engine = null;
 
@@ -16,7 +22,7 @@ export default class ParticleAffector extends TransferrableConfig {
 
   static SHAPE = new Enum(
     'CIRCLE',
-    'RECTANGLE'
+    'SURFACE'
   );
 
   constructor(overrides = {}, url = import.meta.url) {
@@ -28,7 +34,7 @@ export default class ParticleAffector extends TransferrableConfig {
       pos: [0, 0],
 
       /**
-       * The shape of the affector: CIRCLE or RECTANGLE
+       * The shape of the affector: CIRCLE or SURFACE. The shape determines how the affector influences particles within its area of effect.
        * @type {ParticleAffector#SHAPE}
        */
       shape: ParticleAffector.SHAPE.CIRCLE,
@@ -40,17 +46,11 @@ export default class ParticleAffector extends TransferrableConfig {
       radius: 50,
 
       /**
-       * The shape when the affector is type `RECTANGLE`. The rectangle origin is 
+       * The shape when the affector is type `SURFACE`. The surface origin is 
        * the position of the affector
-       * @type {Array<number>} The rectangle shape in [x, y, width, height] format
+       * @type {Array<number>} The surface shape in [x, y, x1, y1, normal] format
        */
-      rectangle: [0, 0, 1, 1],
-
-      /**
-       * When the shape is `RECTANGLE`, this is the rotation applied to the shape at its center point. 
-       * @type {number} The rotation in degrees
-       */
-      rotation: 0.0,
+      surface: [0, 0, 1, 1, [0, 1]],
 
       /**
        * The type of falloff applied
