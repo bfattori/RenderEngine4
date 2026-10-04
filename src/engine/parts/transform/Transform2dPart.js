@@ -194,6 +194,16 @@ class Transform2dPart extends ComponentPart {
         return this;
     }
 
+    flipX(force) {
+        this.#localTransform.flipX(force);
+        return this;
+    }
+
+    flipY(force) {
+        this.#localTransform.flipY(force);
+        return this;
+    }
+
     //-------------------------------
     // Event handler
     //-------------------------------

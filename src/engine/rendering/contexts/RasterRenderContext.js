@@ -166,7 +166,8 @@ export default class RasterRenderContext extends RenderContext {
   }
 
   renderSprite(opaqueId, x, y, time, deltaTime) {
-    this.renderer.renderSprite(opaqueId, x, y, time, deltaTime);
+    this.addInstruction(`${RASTER_IL.SPRITE} ${opaqueId} ${x} ${y}`);
+    //this.renderer.renderSprite(opaqueId, x, y, time, deltaTime);
   }
 
   //--------------------------------------

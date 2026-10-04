@@ -6,19 +6,22 @@ import Util from './Util.js';
  * row-major order. Initialized to the identity matrix if no parameters passed.
  */
 export class Matrix2d extends DOMMatrix {
+  #flippedX = false;
+  #flippedY = false;
+
   constructor(...mtxArgs) {
     if (!Util.isWorker() && mtxArgs[0] instanceof DOMMatrix) {
         super(mtxArgs[0]);
+        if (mtxArgs[0] instanceof Matrix2d) {
+            this.#flippedX = mtxArgs[0].isFlippedX;
+            this.#flippedY = mtxArgs[0].isFlippedY;
+        }
     } else if (mtxArgs.length > 1) { 
         // a 2d array
         super([mtxArgs[0], mtxArgs[1], mtxArgs[2], mtxArgs[3], mtxArgs[4], mtxArgs[5]]);
     } else {
         super();
     }
-
-    // Explicitly track axis flips to avoid matrix decomposition ambiguity
-    this._flippedX = false;
-    this._flippedY = false;
   }
 
     /**
@@ -40,6 +43,7 @@ export class Matrix2d extends DOMMatrix {
      * @returns {number} The translation along the X axis.
      */
     get tx() { return this.e; }
+    
     /**
      * Set the translation along the X axis
      * @param {number} value - The translation along the X axis.
@@ -96,10 +100,6 @@ export class Matrix2d extends DOMMatrix {
      * @returns {Array<number>} [sX, sY] where sx is the scaling factor along the X axis and sy is the scaling factor along the Y axis. 
      */
     get scaling() {
-        // difference between this and the previous implementation is that we use Math.hypot for better numerical stability
-        // const sX = Math.sqrt((this.a ** 2) + (this.c ** 2));
-        // const sY = Math.sqrt((this.b ** 2) + (this.d ** 2));
-        // return [sX, sY];
         return [
             Math.hypot(this.a, this.b),
             Math.hypot(this.c, this.d)
@@ -112,13 +112,18 @@ export class Matrix2d extends DOMMatrix {
      * Returns whether the matrix is currently flipped horizontally.
      * @returns {boolean} True if the matrix is flipped horizontally, false otherwise.
      */
-    get isFlippedX() { return this._flippedX; }
+    get isFlippedX() { return this.#flippedX; }
     
+    set flips([x,y]) {
+        this.#flippedX = x;
+        this.#flippedY = y;
+    }
+
     /**
      * Returns whether the matrix is currently flipped vertically.
      * @returns {boolean} True if the matrix is flipped vertically, false otherwise.
      */
-    get isFlippedY() { return this._flippedY; }
+    get isFlippedY() { return this.#flippedY; }
 
     /**
      * Toggles or sets the horizontal mirroring state of the sprite.
@@ -126,9 +131,9 @@ export class Matrix2d extends DOMMatrix {
      * @param {boolean} [forceState] - Force a true/false state, otherwise toggles.
      */
     flipX(forceState) {
-        const nextState = forceState !== undefined ? forceState : !this._flippedX;
-        if (this._flippedX !== nextState) {
-            this._flippedX = nextState;
+        const nextState = forceState !== undefined ? forceState : !this.#flippedX;
+        if (this.#flippedX !== nextState) {
+            this.#flippedX = nextState;
             // Mutate matrix by mirroring the columns responsible for horizontal layout
             this.a = -this.a;
             this.b = -this.b;
@@ -142,14 +147,23 @@ export class Matrix2d extends DOMMatrix {
      * @param {boolean} [forceState] - Force a true/false state, otherwise toggles.
      */
     flipY(forceState) {
-        const nextState = forceState !== undefined ? forceState : !this._flippedY;
-        if (this._flippedY !== nextState) {
-            this._flippedY = nextState;
+        const nextState = forceState !== undefined ? forceState : !this.#flippedY;
+        if (this.#flippedY !== nextState) {
+            this.#flippedY = nextState;
             // Mutate matrix by mirroring the columns responsible for vertical layout
             this.c = -this.c;
             this.d = -this.d;
         }
         return this;
+    }
+
+    clearFlips() {
+        if (this.#flippedX) {
+            this.flipX(false);
+        }
+        if (this.#flippedY) {
+            this.flipY(false);
+        }
     }
 
     // --- Local Transformation Chains ---
@@ -307,10 +321,16 @@ export class Matrix2d extends DOMMatrix {
         if (Array.isArray(other)) {
             return Matrix2d.fromArray(other);
         } else if (other instanceof DOMMatrix) {
-            return new Matrix2d(other.a, other.b, other.c, other.d, other.e, other.f);
+            const mtx = new Matrix2d(other.a, other.b, other.c, other.d, other.e, other.f);
+            if (other instanceof Matrix2d) {
+                // maintain flipped state
+                mtx.flips = [other.isFlippedX, other.isFlippedY];
+            }
+            return mtx;
         } else if (typeof other === "string") {
             return Matrix2d.fromArray(other.split(' ').map(e => parseFloat(e)));
         }
+
         throw new RenderEngineError('Invalid matrix type');
     }
 

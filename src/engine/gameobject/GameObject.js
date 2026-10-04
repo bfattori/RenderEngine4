@@ -6,6 +6,7 @@ import EventEngine from '../core/EventEngine.js';
 import { Matrix2d } from '../core/Matrix.js';
 import Engine from '../core/Engine.js';
 import DebugObjects from '../ui/debug/DebugObjects.js';
+import RenderPart from '../parts/render/RenderPart.js';
 
 const ctx = Context.getInstance();
 
@@ -394,17 +395,15 @@ export default class GameObject {
     // Update all components in priority order
     const sortedComponents = this.sortedComponentParts;
 
-    rcAPI.push();
+    //rcAPI.push();
 
     // transform out to world coordinates
     const mtx = Matrix2d.from(this.worldTransform);
-    mtx.translateSelf(-this.origin[0], -this.origin[1]);
     mtx.multiplySelf(cameraMatrix);
-    rcAPI.absTransform(mtx);
+    rcAPI.pushTransform(mtx);
 
-    // Find the first transform component - this affects the object
     for (const component of sortedComponents) {
-      if (typeof component.render === 'function') {
+      if (component instanceof RenderPart && typeof component.render === 'function') {
         try {
           this.#hooks.onBeforeRenderPart(component, time, deltaTime);
           component.render(time, deltaTime);
@@ -415,21 +414,21 @@ export default class GameObject {
       }
     }
 
-    rcAPI.pop();
+    rcAPI.popTransform();
 
     PRAGMA('objectOrigins', () => {
         const mtx = Matrix2d.from(this.worldTransform);
-        //mtx.scaleSelf(1,1);
-        rcAPI.absTransform(mtx);
+        mtx.clearFlips();
+        rcAPI.pushTransform(mtx);
         DebugObjects.Origin(this.world.renderContext, mtx.e, mtx.f, 
           [this.worldTransform.e, this.worldTransform.f], 
           this.worldTransform.rotation);
-        // rcAPI.popTransform();
+        rcAPI.popTransform();
     });
 
     PRAGMA('boundingBoxes', () => {
         const mtx = Matrix2d.from(this.worldTransform);
-        mtx.scaleSelf(1,1);
+        // mtx.clearFlips();
         rcAPI.pushTransform(mtx);
         DebugObjects.BoundingBox(this.boundingBox, this.world.renderContext);
         rcAPI.popTransform();

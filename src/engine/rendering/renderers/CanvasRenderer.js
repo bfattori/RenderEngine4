@@ -241,7 +241,7 @@ export default class CanvasRenderer extends Renderer {
         const sprite = this.assembler.getCompiledTile(parseInt(opaqueId));
         if (sprite) {
             const frame = sprite.frameRect;
-            this.surface.drawImage(sprite.sourceImage, frame[0], frame[1], frame[2], frame [3], x, y, frame[2], frame[3]);
+            this.surface.drawImage(sprite.sourceImage, frame[0], frame[1], frame[2], frame[3], x, y, frame[2], frame[3]);
         } else if (opaqueId !== "undefined") {
             console.warn(`No compiled sprite found for opaqueId: ${opaqueId}`);
         }
@@ -251,7 +251,7 @@ export default class CanvasRenderer extends Renderer {
         const tile = this.assembler.getCompiledTile(parseInt(opaqueId));
         if (tile) {
             const frame = tile.frameRect;
-            this.surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], x, y, frame[2], frame[3]);
+            this.surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame[3], x, y, frame[2], frame[3]);
         } else if (opaqueId !== "undefined") {
             console.warn(`No compiled tile found for opaqueId: ${opaqueId}`);
         }

@@ -62,6 +62,14 @@ export default class SpritePart extends RenderPart {
         return this.currentState.boundingBox = $Math.boundingBox([0,0],[this.currentState.width,this.currentState.height]);
     }
 
+    // flipX(force) {
+    //     this.host.worldTransform.flipX(force);
+    // }
+
+    // flipY(force) {
+    //     this.host.worldTransform.flipY(force);
+    // }
+
     update(time, deltaTime) {
         this.sprite.update(time, deltaTime);
         super.update(time, deltaTime);
@@ -69,7 +77,7 @@ export default class SpritePart extends RenderPart {
 
     draw(time, deltaTime) {
         if (this.sprite !== null)
-            this.context.renderSprite(this.sprite.opaqueId, this.host.worldTransform.e, this.host.worldTransform.f - this.sprite.states.get(this.sprite.currentState).height, time, deltaTime);
+            this.context.renderSprite(this.sprite.opaqueId, 0, -this.sprite.states.get(this.sprite.currentState).height, time, deltaTime);
     }
 
 }
