@@ -11,8 +11,8 @@ import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
-import { pEffect, pEffect2, wEffect1, wEffect2, wEffect3 } from './effects.js';
-import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2 } from './particles.js';
+import { pEffect, pEffect2, wEffect1, wEffect2, wEffect3, sparkEffect, sparkEffect2 } from './effects.js';
+import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2, sparkParticle } from './particles.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 45000
@@ -58,8 +58,8 @@ await RenderEngine.init(import.meta.url, {
 // add blue background
 document.getElementById("context").classList.add("types-and-effects");
 
-RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2);
-RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, wEffect3);
+RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2, sparkParticle);
+RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, wEffect3, sparkEffect, sparkEffect2);
 
 // let the threaded particle engine know when
 // the effects and particles have been sent
@@ -123,6 +123,30 @@ emitter1.effect = wEffect1;
 emitter2.effect = wEffect2;
 emitter3.effect = wEffect3;
 
+//---------------------------------
+// spark effects
+const sparkObject = new GameObject();
+sparkObject
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const sparkT = sparkObject.getComponentByName("transform");
+sparkT.position = [10, 25];
+
+const sparkObject2 = new GameObject();
+sparkObject2
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+const sparkT2 = sparkObject2.getComponentByName("transform");
+sparkT2.position = [790, 25];
+
+RenderEngine.world.addObject(sparkObject);
+RenderEngine.world.addObject(sparkObject2);
+
+const sparkEmitter = sparkObject.getComponentByName("emitter");
+sparkEmitter.effect = sparkEffect;
+sparkEmitter.enable();
+
+const sparkEmitter2 = sparkObject2.getComponentByName("emitter");
+sparkEmitter2.effect = sparkEffect2;
+sparkEmitter2.enable();
 
 // start the particle effects
 explode();

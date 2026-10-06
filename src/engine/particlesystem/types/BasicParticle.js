@@ -33,7 +33,7 @@ export default class BasicParticle extends TransferrableConfig {
              * Tiles (bitmaps) used in place of a simple colored shape.
              * @type {}
              */
-             tileSheet: null,
+            tileSheet: null,
             /**
              * Size of the particle
              * @type {Array<number>|number} [...mean], [minimum, maximum], or limit

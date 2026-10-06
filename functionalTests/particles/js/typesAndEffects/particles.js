@@ -1,5 +1,6 @@
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import WaterParticle from '../../../../src/engine/particlesystem/types/WaterParticle.js';
+import SprayParticle from '../../../../src/engine/particlesystem/types/SprayParticle.js';
 
 // configure particles
 const eParticle = new BurstParticle();
@@ -37,6 +38,18 @@ const wParticle2 = new WaterParticle({
 });
 wParticle2.name = 'hotYellows';
 
+const sparkParticle = new SprayParticle({
+    particleSize: 4,
+    trailLength: 10,
+    trailWidth: 2,
+    drag: 0,
+    dragRate: 0,
+    velocity: [1, 5],
+    gravity: [0, 0.08],
+    lifeSpan: [1000, 2000]
+});
+sparkParticle.name = 'sparky';
+
 
 export {
   eParticle,
@@ -44,5 +57,6 @@ export {
   eParticle3,
   eParticle4,
   wParticle,
-  wParticle2
+  wParticle2,
+  sparkParticle
 };

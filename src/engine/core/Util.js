@@ -58,9 +58,9 @@ export default class Util {
         if (isNaN(color)) {
             const small = color.length === 4;
             color = color.substring(1); // remove hash
-            r = parseInt(color.substring(0, small ? 1 : 2), 16) / 255;
-            g = parseInt(color.substring(small ? 1 : 2, small ? 2 : 4), 16) / 255;
-            b = parseInt(color.substring(small ? 2 : 4, small ? 3 : 6), 16) / 255;
+            r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 1), 16) / 255;
+            g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 3), 16) / 255;
+            b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 5), 16) / 255;
         }
         return Util.getColor(r, g, b, alpha);
     }
