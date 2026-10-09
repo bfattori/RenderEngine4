@@ -71,6 +71,20 @@ export default class $Math {
 
     /**
      * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
+     * optionally as an integer value only (rounded down to nearest integer)
+     *
+     * @param low {Number} The low part of the range
+     * @param high {Number} The high part of the range
+     * @param [whole] {Boolean} Return whole values only
+     * @return {Number}
+     * @memberof R.lang.Math2
+     */
+    static randomRangeInt(low, high) {
+        return $Math.randomRange(low, high, true);
+    }
+
+    /**
+     * Return a random value within the <tt>low</tt> to <tt>high</tt> range,
      * optionally as an integer value only (rounded to nearest integer)
      *
      * @param low {Number} The low part of the range

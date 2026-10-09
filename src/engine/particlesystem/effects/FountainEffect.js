@@ -20,7 +20,15 @@ export default class FountainEffect extends ParticleEffect {
     constructor(overrides = {}, url = import.meta.url) {
         super({
             /**
-             * The angle of the fountain effect, in degrees. The angle is measured from the center of the fountain, with 0 degrees being straight up.
+             * Should be a non-zero value so it does not flood the particle
+             * engine with particles.
+             * @type {number}
+             */
+            emissionFrequency: 5,
+            /**
+             * The angle of the fountain effect, in degrees. The angle is measured from the 
+             * center of the fountain, with 0 degrees being straight up.
+             * @type {number}
              */
             angle: 0,
             /**

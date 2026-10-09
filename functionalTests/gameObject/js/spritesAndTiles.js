@@ -60,19 +60,20 @@ RenderEngine.world.tileMap = map;
 
 marioSprites.sprites.forEach(sprite => {
     const actor = new GameObject();
-    actor.addComponentParts(new Transform2dPart("transform"), new SpritePart("sprite"), new AABBCollider("collision"));
+    actor.addComponentParts(
+        new Transform2dPart("transform"), 
+        new SpritePart("render"), 
+        new AABBCollider("collision"));
 
-    const transformPart = actor.getComponentByName("transform");
-    transformPart.position = [x, y];
+    actor.PARTS.transform.position = [x, y];
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(actor);
     
-    const sprPart = actor.getComponentByName("sprite");
-    sprPart.sprite = sprite;
+    actor.PARTS.render.sprite = sprite;
 
     if (sprite.states.size > 1) {
-        makeDropDown(sprPart, x, y + 50);
+        makeDropDown(actor.PARTS.render, x, y + 50);
     }
     
     x += 55;

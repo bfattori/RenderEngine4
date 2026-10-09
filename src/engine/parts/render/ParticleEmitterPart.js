@@ -5,6 +5,7 @@ import { Matrix2d } from '../../core/Matrix.js';
 
 export default class ParticleEmitterPart extends RenderPart {
     #doEmit = false;
+    #disableAfter = false;
     #effect = new ParticleEffect();
 
     /**
@@ -41,8 +42,8 @@ export default class ParticleEmitterPart extends RenderPart {
     }
 
     /**
-     * Enable the particle emitter.
-     * Each invocation will cause the emitter to create particles until complete.
+     * Enable the particle emitter - this will continuously emit particles until disabled.
+     * @return {ParticleEmitterPart} The particle emitter instance
      */
     enable() {
         this.#doEmit = true;
@@ -50,7 +51,27 @@ export default class ParticleEmitterPart extends RenderPart {
     }
 
     /**
-     * Reset the emitter for reuse.
+     * Triggers the particle emitter to emit particles once, and then disables the emitter.
+     * @return {ParticleEmitterPart} The particle emitter instance
+     */
+    once() {
+        this.#doEmit = true;
+        this.#disableAfter = true;
+        return this;
+    }
+
+    /**
+     * Disable the particle emitter - this will stop emitting particles.
+     * @return {ParticleEmitterPart} The particle emitter instance
+     */
+    disable() {
+        this.#doEmit = false;
+        return this;
+    }
+
+    /**
+     * Reset the emitter's effect for reuse.
+     * @return {ParticleEmitterPart} The particle emitter instance
      */
     reset() {
         this.#effect.reset();
@@ -69,8 +90,10 @@ export default class ParticleEmitterPart extends RenderPart {
         if (this.#doEmit) {
             // convert to world coordinates
             Engine.particleEngine.runEffect([this.host.worldTransform.e, this.host.worldTransform.f], this.effect.$name, this.effect.isReset, time, deltaTime, this.effect);
-            if (this.effect.emissionFrequency === 0)
+            if (this.#disableAfter) {
                 this.#doEmit = false;
+                this.#disableAfter = false;
+            }
         }
     }
 }

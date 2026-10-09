@@ -40,7 +40,9 @@ await RenderEngine.init(import.meta.url, {
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new VectorRendererPart("renderer"));
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
@@ -48,7 +50,7 @@ RenderEngine.world.addObject(gameObject);
 // vector renderer draws out the word "Colorful"
 // capture the text sizing to set the origin
 let textBox = [0,0];
-const renderer = gameObject.getComponentByName("renderer");
+const renderer = gameObject.PARTS.renderer;
 renderer.API
     .fontSize(20)
     .text("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l", {}, textBox);
@@ -57,7 +59,7 @@ renderer.compile();
 // set the origin at the center of the text
 //gameObject.origin = [textBox[0] / 2, textBox[1] / 2];
 
-const transform = gameObject.getComponentByName("transform");
+const transform = gameObject.PARTS.transform;
 transform.position = [400, 300];
 
 // fires before each update of the object

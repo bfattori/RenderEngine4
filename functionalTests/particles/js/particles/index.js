@@ -56,21 +56,21 @@ RenderEngine.particleEngine.addEffect(pEffect);
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
 
 // configure the emitter to use the explosion effect
-const emitter = gameObject.getComponentByName("emitter");
+const emitter = gameObject.PARTS.emitter;
 emitter.effect = pEffect;
-
-const transform = gameObject.getComponentByName("transform");
 
 // every few seconds we'll generate an explosion
 function explode() {
-    transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
-    emitter.reset().enable();
+    gameObject.PARTS.transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
+    emitter.once();
     setTimeout(explode, $Math.randomRange(200, 800, true));
 }
 

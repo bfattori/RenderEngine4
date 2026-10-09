@@ -54,13 +54,17 @@ export default class Util {
      * @returns 
      */
     static setAlpha(alpha, color, g, b) {
-        let r = color;
+        let r = color, a = alpha;
         if (isNaN(color)) {
             const small = color.length === 4;
             color = color.substring(1); // remove hash
-            r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 1), 16) / 255;
-            g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 3), 16) / 255;
-            b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 5), 16) / 255;
+            r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 2), 16) / 255;
+            g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 4), 16) / 255;
+            b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 6), 16) / 255;
+            if (color.length > 6) {
+                a = (parseInt(color.substring(6,8), 16) / 255);
+                alpha *= a;
+            }
         }
         return Util.getColor(r, g, b, alpha);
     }
@@ -70,7 +74,7 @@ export default class Util {
      * @param  {...any} items - The set of values to choose from
      * @returns {*}
      */
-    static selectRandom(... items) {
+    static selectRandomOf(... items) {
         return items[$Math.randomRange(0, items.length, true)];
     }
 

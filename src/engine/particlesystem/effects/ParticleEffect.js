@@ -38,7 +38,7 @@ export default class ParticleEffect extends TransferrableConfig {
             /**
              * The frequency at which particles are emitted. `0` is "always on".
              * Otherwise, the value is a time delay between emissions.
-             * @type {number} - milliseconds
+             * @type {number|Array<number>} - milliseconds
              */
             emissionFrequency: 0,
             /**
@@ -127,12 +127,12 @@ export default class ParticleEffect extends TransferrableConfig {
      * Run the particle effect, generating particles at the frequency, quantity, and variances specified.
      * A frequency of `0` is equivalent to running once. Call `reset()` to reuse the effect.
      * 
-     * @param {number} time - The current world time in milliseconds
      * @param {Array<number>} worldPos - [x, y] the world position where to emit particles
+     * @param {number} time - The current world time in milliseconds
      */
     run(worldPos, time) {
         const freq = this.emissionFrequency + $Math.randomRange(-this.frequencyVariance, this.frequencyVariance, true);
-        if (time - this.#lastTime > freq) {
+        if (freq === 0 || time - this.#lastTime > freq) {
             this.#generateParticles(worldPos, time);
             this.#lastTime = time;
         }
@@ -159,21 +159,32 @@ export default class ParticleEffect extends TransferrableConfig {
      * Generate particles for the effect and introduce them into the `ParticleSystem`
      * @param worldPos {Array<number>} The world position where the particles are emitted from
      * @param time {Number} The current world time
-     * @param deltaTime {Number} The time between the last frame and current time
      */
     #generateParticles(worldPos, time) {
-        const count = this.count + $Math.randomRange(-this.countVariance, this.countVariance, true);
-        for (let i = 0; i < count; i++) {
-            const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
-            const pType = this.particleTypes.at(typeIdx);
-            if (pType) {
-                let particle = pType.spawn(time, pType.opts);
-                // give sub-classes an opportunity to modify 
-                // these values or introduce new ones
-                particle = this.initParticle(particle, pType.opts);
-                this.engine.spawnParticle(worldPos, time, particle);
+        if (this.generate(worldPos,time)) {
+            const count = this.count + $Math.randomRange(-this.countVariance, this.countVariance, true);
+            for (let i = 0; i < count; i++) {
+                const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
+                const pType = this.particleTypes.at(typeIdx);
+                if (pType) {
+                    let particle = pType.spawn(time, pType.opts);
+                    // give sub-classes an opportunity to modify 
+                    // these values or introduce new ones
+                    particle = this.initParticle(particle, pType.opts);
+                    this.engine.spawnParticle(worldPos, time, particle);
+                }
             }
         }
+    }
+
+    /**
+     * Sub-classes can override this method to implement custom logic to control generation.
+     * @param {Array<number>} worldPos - [x, y] the world position where to emit particles
+     * @param {number} time - The current world time in milliseconds
+     * @returns {boolean} `true` if the effect should generate particles, `false` otherwise. 
+     */
+    generate(worldPos, time) {
+        return true;
     }
 
     /**

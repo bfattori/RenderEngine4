@@ -15,6 +15,12 @@ export default class DiffuseParticle extends BasicParticle {
   constructor(overrides = {}, url = import.meta.url) {
     super({
       /**
+       * The rate at which the particle fades to nothing. Lower values imply faster fading.
+       * @type {number|Array<number>}
+       */
+      fadeRate: 0,
+      
+      /**
        * The diffuse blurring of the particle. Higher values imply more blurring.
        * @type {number}
        */
@@ -38,7 +44,10 @@ export default class DiffuseParticle extends BasicParticle {
    */
   spawn(time, config) {
     const p = super.spawn(time, config);  
-    p.softness = this.softness;
+    p.memory.softness = this.softness;
+    p.memory.fade = $Math.getRangeValue(this.fadeRate);
+    p.memory.alpha = 1.0;
+    p.memory.full = p.memory.color;
     return p;
   }
 
@@ -67,13 +76,22 @@ export default class DiffuseParticle extends BasicParticle {
    */
   #gradient($memory, pos) {
     const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], $memory.size);
-    const alphaOne = Util.setAlpha(1.0, $memory.color);
-    const alphaZero = Util.setAlpha(0, $memory.color);
-    gradient.addColorStop(0, alphaOne);
+
+    $memory.color = Util.setAlpha($memory.alpha, $memory.full)
+
+    if ($memory.fade > 0) {
+       $memory.alpha = Math.max(0.0, $memory.alpha - $memory.fade);
+    }
+
+    // start us off
+    gradient.addColorStop(0, $memory.color);
+
     if ($memory.softness < 1.0) {
         const halfAlpha = Util.setAlpha(0.5, $memory.color);
         gradient.addColorStop($memory.softness, halfAlpha);
     }
+
+    const alphaZero = Util.setAlpha(0, $memory.full);
     gradient.addColorStop(1, alphaZero);
     return gradient;
   }

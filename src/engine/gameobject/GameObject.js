@@ -43,6 +43,14 @@ export default class GameObject {
   #sorted = false;
 
   /**
+   * The parts (by name) that are assigned to this host object. As parts are added, they 
+   * are stored in this object for quick access by name. Adding a part with a name that 
+   * already exists will overwrite the previous part.
+   * @type {Object<string, ComponentPart>}
+   */
+  PARTS = {};
+
+  /**
    * Hooks are methods to allow custom operation before and after lifecycle updates.
    */
   #hooks = {
@@ -308,6 +316,9 @@ export default class GameObject {
 
     this.#sorted = false;
     this.#fullSort = null;
+ 
+    // Store by name for quick access
+    this.PARTS[component.name] = component;
 
     return this;
   }

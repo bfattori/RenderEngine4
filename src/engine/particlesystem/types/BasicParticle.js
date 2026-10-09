@@ -118,8 +118,6 @@ export default class BasicParticle extends TransferrableConfig {
         $memory.dragRate = $Math.getRangeValue(config.dragRate);
         $memory.gravity = config.gravity;
         $memory.sizeDecay = config.sizeDecay;
-        $memory.fade = this.fade;
-        $memory.alpha = 1.0;
 
         const life = $Math.getRangeValue(config.lifeSpan);
         $memory.ttl = (life - $Math.getRangeValue(config.lifeVariance));
@@ -179,12 +177,6 @@ export default class BasicParticle extends TransferrableConfig {
         if ($memory.sizeDecay > 0.0) {
             $memory.size = ((life / $memory.ttl) * $memory.startSize) / $memory.sizeDecay;
         }
-
-        // if ($memory.fade > 0) {
-        //     $memory.alpha -= $memory.fade;
-        //     $memory.alpha = Math.max(0.0, $memory.alpha);
-        //     $memory.color = Util.setAlpha($memory.alpha, $memory.color);
-        // }
     }
 
     /**

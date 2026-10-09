@@ -55,107 +55,113 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-// add blue background
+// set background to blue
 document.getElementById("context").classList.add("types-and-effects");
 
+//----------------------------------
+// configure the particle engine
+
+// add the particle types and effects
 RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2, sparkParticle);
 RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, wEffect3, sparkEffect, sparkEffect2);
 
-// let the threaded particle engine know when
-// the effects and particles have been sent
+// initialize the particle engine
 RenderEngine.particleEngine.initialize();
 
 //-----------------------------------
 // burst effect 
 
-// explosion object
 const explosionObject = new GameObject();
 explosionObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
-
-const eT = explosionObject.getComponentByName("transform");
-
-RenderEngine.world.addObject(explosionObject);
-
-// it's always the same emitter used for every effect
-const explosionEmitter = explosionObject.getComponentByName("emitter");
-
-// generate an explosion randomly every 80 to 200 milliseconds
-function explode() {
-    eT.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
-
-    // choose a random effect
-    explosionEmitter.effect = Util.selectRandom(pEffect, pEffect2);
-    explosionEmitter.reset().enable();
-    setTimeout(explode, $Math.randomRange(80, 200, true));
-}
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
 
 //----------------------------------
-// fountain effect
+// fountain effects
 
-// fountain objects
 const fountain1 = new GameObject();
 fountain1
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
-const fT1 = fountain1.getComponentByName("transform");
-fT1.position = [5, 580];
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
 
 const fountain2 = new GameObject();
 fountain2
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
-const fT2 = fountain2.getComponentByName("transform");
-fT2.position = [795, 580];
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
+
+//---------------------------------
+// center sparkler object
 
 const sparkler = new GameObject();
 sparkler
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
-const spkT = sparkler.getComponentByName("transform");
-spkT.position = [400, 590];
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
 
-RenderEngine.world.addObjects(fountain1, fountain2, sparkler);
+//---------------------------------
+// spark effects
 
-const emitter1 = fountain1.getComponentByName("emitter");
-const emitter2 = fountain2.getComponentByName("emitter");
-const emitter3 = sparkler.getComponentByName("emitter");
+const sparkObject = new GameObject();
+sparkObject
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
 
-// configure the emitters to use the fountain effect
+const sparkObject2 = new GameObject();
+sparkObject2
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
+
+//----------------------------------       
+// add the objects to the render engine world
+RenderEngine.world.addObjects(explosionObject, fountain1, fountain2, sparkler, sparkObject, sparkObject2);
+
+
+// set the positions of the various static objects in the world
+fountain1.PARTS.transform.position = [5, 580];
+fountain2.PARTS.transform.position = [795, 580];
+sparkler.PARTS.transform.position = [400, 590];
+sparkObject.PARTS.transform.position = [10, 25];
+sparkObject2.PARTS.transform.position = [790, 25];
+
+// configure fountain emitters and enable them to continuously emit particles
+const emitter1 = fountain1.PARTS.emitter;
+const emitter2 = fountain2.PARTS.emitter;
+const emitter3 = sparkler.PARTS.emitter;
+
 emitter1.effect = wEffect1;
 emitter2.effect = wEffect2;
 emitter3.effect = wEffect3;
 
-//---------------------------------
-// spark effects
-const sparkObject = new GameObject();
-sparkObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
-const sparkT = sparkObject.getComponentByName("transform");
-sparkT.position = [10, 25];
+emitter1.enable();
+emitter2.enable();
+emitter3.enable();
 
-const sparkObject2 = new GameObject();
-sparkObject2
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
-const sparkT2 = sparkObject2.getComponentByName("transform");
-sparkT2.position = [790, 25];
-
-RenderEngine.world.addObject(sparkObject);
-RenderEngine.world.addObject(sparkObject2);
-
-const sparkEmitter = sparkObject.getComponentByName("emitter");
+// configure spark emitters and enable them to continuously emit particles
+const sparkEmitter = sparkObject.PARTS.emitter;
 sparkEmitter.effect = sparkEffect;
 sparkEmitter.enable();
 
-const sparkEmitter2 = sparkObject2.getComponentByName("emitter");
+const sparkEmitter2 = sparkObject2.PARTS.emitter;
 sparkEmitter2.effect = sparkEffect2;
 sparkEmitter2.enable();
 
-// start the particle effects
-explode();
+// generate an explosion randomly every 80 to 200 milliseconds
+function explode() {
+    explosionObject.PARTS.transform.position = [$Math.randomRangeInt(10, 790), $Math.randomRangeInt(5, 300)];
 
-RenderEngine.hooks.onBeforeFrame = () => {
-    emitter1.reset().enable();
-    emitter2.reset().enable();
-    emitter3.reset().enable();
-};
+    // choose a random effect
+    explosionObject.PARTS.emitter.effect = Util.selectRandomOf(pEffect, pEffect2);
+    explosionObject.PARTS.emitter.once();
+    setTimeout(explode, $Math.randomRangeInt(80, 200));
+}
+
+// start the first explosion
+explode();
 
 // Start the render loop   
 RenderEngine.start();

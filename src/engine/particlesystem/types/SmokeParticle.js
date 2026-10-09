@@ -57,7 +57,7 @@ export default class SmokeParticle extends PhysicalParticle {
     spawn(time, config) {
         const particle = super.spawn(time, config);
         particle.memory.curl = $Math.randomRange(this.curl[0], this.curl[1]);
-        particle.memory.cD = Util.selectRandom(-this.curlVariance, this.curlVariance);
+        particle.memory.cD = Util.selectRandomOf(-this.curlVariance, this.curlVariance);
         particle.memory.cI = this.curlIntensity * 1000;
         return particle
     }

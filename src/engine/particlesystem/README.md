@@ -18,12 +18,12 @@ There are several styles of particle and effect generators to select from, or to
 #### Particle types:
 
 - **BasicParticle** - position, velocity, drag, dragRate, and gravity
-- **AffectedParticle** - like basic, but affected by repulsors and colliders (increased CPU load)
+- **PhysicalParticle** - like basic, but affected by repulsors and colliders (increased CPU load)
 - **BurstParticle** - Simple particle burst, outward 360&deg; emission
 - **FireworksParticle** - Used with the `FireworksEffect`, generates sub-particles to simulate embers
-- **SparkParticle** - Drawn as velocity-directed lines to simulate streaks of hot metal
-- **SprayParticle** - A narrow-spread angle emission particle
-- **WaterParticle** - A particle that simulates water
+- **SprayParticle** - A narrow-spread angle emission particle with optional trails
+- **WaterParticle** - A particle that resembles water
+- **SmokeParticle** - A physical particle that acts like smoke
 
 #### Particle effects:
 - **SparkEffect** - Configurable color palette, streak length, renders as lines, spawns sub-particle points, narrow spread-angle emission
@@ -32,5 +32,5 @@ There are several styles of particle and effect generators to select from, or to
 - **ExplosionEffect** - Configurable color palette, particle sizes, origin smoke properties, gravity influenced, renders as points, 360&deg; emission
 - **FountainEffect** - Configurable color palette, particle sizes, renders as points or sprites, spread-angle emission
 - **FireworksEffect** - Pre-defined color palettes, renders as points, particles spawn sub-particles, built-in types: **Peony, chrysanthemum, comet, palm, brocade, willow, pistil, tourbillion, fish, and strobe.**
-- **SmokeEffect** - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission. Use an `AffectedParticle` for the best looking effect.
+- **SmokeEffect** - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission.
 
