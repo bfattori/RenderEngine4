@@ -1,8 +1,9 @@
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
-import { Matrix2d } from '../../core/Matrix.js';
+import Util from '../../core/Util.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';
+import Spark, { MemShape } from '../../core/Spark.js';
 
 /**
  * @class BasicParticle
@@ -13,6 +14,11 @@ import Assembler from '../../rendering/assemblers/Assembler.js';
  * @extends TransferrableConfig
  */
 export default class BasicParticle extends TransferrableConfig {
+    static AS_POINT = 0;
+    #opaqueId = null;
+    #particleShape = null;
+    #sizeBytes = null;
+
     /**
      * Create a `BasicParticle` with options for colors, sizes, velocity range,
      * drag, and other properties. Particles are the atomic unit represented in the `ParticleSystem`
@@ -77,11 +83,42 @@ export default class BasicParticle extends TransferrableConfig {
             gravity: [0.0, 0.0]
         }, url);
         this.merge(overrides);
-        this.name = 'basicParticle'
+        this.name = 'basicParticle';
+
+        // convert colors to 4 8-bit color channels
+        this.#preComputeColors();
     }
 
     static getInstance() {
         return new BasicParticle();
+    }
+
+    #preComputeColors() {
+        for (let i = 0; i < this.colors.length; i++) {
+            this.colors[i] = Util.color8Hex(this.colors[i]);
+        }
+    }
+
+    get shape() {
+        if (!this.#particleShape) {
+            this.#particleShape = new MemShape();
+            this.#particleShape.set('opaqueId',       'UInt8');
+            this.#particleShape.set('spawnTime',      'UInt64');
+            this.#particleShape.set('lifeSpan',       'UInt16');
+            this.#particleShape.set('particleColor',  'UInt8');
+            this.#particleShape.set('startSize',      'Float32');
+            this.#particleShape.set('particleSize',   'Float32');
+            this.#particleShape.set('sizeDecay',      'Float32');
+            this.#particleShape.set('dragRate',       'Float32');
+            this.#particleShape.set('dragDelta',      'Float32');
+            this.#particleShape.set('tileOpaqueId',   'UInt16');
+            this.#particleShape.build();
+        }
+        return this.#particleShape;
+    }
+
+    get sizeBytes() {
+        return this.shape.sizeOf;
     }
 
     /**
@@ -103,100 +140,143 @@ export default class BasicParticle extends TransferrableConfig {
     }
 
     /**
+     * The opaque Id references this type of particle. This is used to identify particles in the engine's memory.
+     * @type {number} - The opaque Id of the particle type
+     */
+    set opaqueId(opaqueId) {
+        this.#opaqueId = opaqueId;
+    }
+
+    /**
+     * The opaque Id representing this particle type
+     * @returns {number}
+     */
+    get opaqueId() {
+        return this.#opaqueId;
+    }
+
+    /**
      * Called when a particle is spawned to initialize its settings
      * @param {number} time - The current world time in milliseconds
      * @param {Object} config - The particle's configuration
-     * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
+     * @param {DataView} heap - The memory heap segment
+     * @returns {number} the offset at the end of the particles memory
      */
-    spawn(time, config) {
-        const $memory = {};
-        $memory.$pType = this.$name;    // the particle type
-        $memory.color = config.colors && config.colors.length !== 0 ? config.colors[$Math.randomRange(0, config.colors.length - 1, true)] : '#000';
-        $memory.size = $Math.getRangeValue(config.particleSize);
-        $memory.startSize = $memory.size;
-        $memory.drag = $Math.getRangeValue(config.drag);
-        $memory.dragRate = $Math.getRangeValue(config.dragRate);
-        $memory.gravity = config.gravity;
-        $memory.sizeDecay = config.sizeDecay;
+    spawn(time, config, heap) {
+        // assign the heap segment BEFORE any operations
+        this.shape.segment = heap;
 
-        const life = $Math.getRangeValue(config.lifeSpan);
-        $memory.ttl = (life - $Math.getRangeValue(config.lifeVariance));
+        // opaqueId and spawn time
+        this.shape.opaqueId = this.opaqueId;
+        this.shape.spawnTime = BigInt(Math.floor(time));
 
+        // lifespan
+        const life = $Math.getRangeValueInt(config.lifeSpan);               
+        this.shape.lifeSpan = life - $Math.getRangeValueInt(config.lifeVariance);
+
+        // color: index to the computed color array
+        const color = $Math.randomRangeInt(0, config.colors.length - 1);
+        this.shape.particleColor = color;
+
+        // initial size of the particle
+        const initSize = $Math.getRangeValue(config.particleSize);
+        this.shape.startSize = initSize;
+
+        // the size of the particle as rendered (this value will change)
+        this.shape.particleSize = initSize;
+
+        // rate of size decay
+        this.shape.sizeDecay = config.sizeDecay;
+
+        // the drag for the particle (this value changes)
+        this.shape.dragRate = $Math.getRangeValue(config.drag);
+
+        // rate of drag increase
+        this.shape.dragDelta = $Math.getRangeValue(config.dragRate);
+
+        // tile or point?
+        let tile = BasicParticle.AS_POINT;
         if (this.tileSheet !== null) {
             // select a random tile
-            const tileNum = $Math.randomRange(0, this.tileSheet.count, true);
-            $memory.tile = this.tileSheet.getTileAt(tileNum).opaqueId;
-            $memory.mtx = Matrix2d.identity();    // start at 1,1
-            $memory.mtx.setTo({
-                position: [0, 0],
-                scale: [1, 1],
-                rotation: 0
-            });
-            $memory.scale = 1.0;
-            $memory.growth = this.growth;
-        } else
-            $memory.point = true;
-
-        return {
-            memory: $memory,
-            life: life,
-            vel: $Math.getRangeValue(config.velocity)
-        };
+            tile = this.tileSheet.getTileAt($Math.randomRangeInt(0, this.tileSheet.count)).opaqueId;      // 16-bit unsigned int
+        }
+        this.shape.tileOpaqueId = tile;
     }
 
     /**
      * Update the particle
      * @param {number} time - Current world time in milliseconds
      * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
-     * @param {Array<number>} pos - The particle's current position
-     * @param {Array<number>} vel - The particle's velocity vector
-     * @param {number} life - Remaining life of the particle
-     * @type {Function}
+     * @param {DataView} heap - The memory segment containing the particle's instantaneous properties
+     * @param {Float32Array} pos - The particle's current position (2-element x & y)
+     * @param {Float32Array} vel - The particle's velocity vector (2-element x & y)
+     * @param {UInt16Array} life - Remaining life of the particle (1-element)
      */
-    update(time, deltaTime, $memory, pos, vel, life) {
-        // standard update:
-        //   add velocity to position then add gravity to velocity
-        const drag = $memory.drag === 0 ? 1 : (1 / $memory.drag);
-        $memory.drag += $memory.dragRate;
-        
-        const v = $Math.vecMulScalar(vel, drag);
-        vel[0] = v[0] + this.gravity[0];
-        vel[1] = v[1] + this.gravity[1];
-        pos[0] += vel[0];
-        pos[1] += vel[1];
+    update(time, deltaTime, heap, pos, vel, life) {
+        // assign the segment BEFORE any operations
+        this.shape.segment = heap;
 
-        // increase drag over time
-        $memory.drag += $memory.dragRate;
-
-        // grow tile-based particles in size
-        // if (!$memory.point)
-        //     $memory.scale += $memory.growth;
+        const lifeSpan = this.shape.lifeSpan;
+        const initSize = this.shape.startSize;
+        const sizeDecay = this.shape.sizeDecay;
 
         // shrink over the lifespan
-        if ($memory.sizeDecay > 0.0) {
-            $memory.size = ((life / $memory.ttl) * $memory.startSize) / $memory.sizeDecay;
+        if (sizeDecay > 0.0) {
+            this.shape.particleSize = ((life[0] / lifeSpan) * initSize) / sizeDecay;
         }
+
+        if (this.shape.particleSize <= 0.0) {
+            life[0] = 0;
+        }
+        
+        // get the drag and drag rate
+        const curDrag = this.shape.dragRate;
+        const dragDelta = this.shape.dragDelta;
+
+        // calculate instaneous drag
+        const drag = curDrag === 0 ? 1 : (1 / curDrag);
+
+        // write back the updated drag
+        this.shape.dragRate = drag + dragDelta;
+
+        // add velocity to position then add gravity to velocity
+        const cV = [vel[0], vel[1]];
+        const v = $Math.vecMulScalar(cV, drag);
+        v[0] += this.gravity[0];
+        v[1] += this.gravity[1];
+        const p = [pos[0], pos[1]];
+        p[0] += v[0];
+        p[1] += v[1];
+        pos[0] = p[0]
+        pos[1] = p[1];
+        vel[0] = v[0];
+        vel[1] = v[1];
     }
 
     /**
      * Render the particle
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
-     * @param {Array<number>} pos - The current position of the particle
-     * @param {Number} life - The remaining lifespan of the particle
+     * @param {DataView} heap - The memory object containing the particle's instantaneous properties
+     * @param {Float32Array} pos - The current position of the particle
+     * @param {Uint16Array} life - the life left in the particle
      * @param {String} target - The name of the renderer ('canvas', 'webgl', ...)
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, $memory, pos, life, target, surface) {
+    render(time, deltaTime, heap, pos, life, target, surface) {
+        // assign the memory segment BEFORE any access to the shape
+        this.shape.segment = heap;
+
+        // get the tile's opaque Id or 0 if it's a simple point
+        const opaqueId = this.shape.tileOpaqueId;
+
         switch (target) {
             case 'canvas':
-                if ($memory.point) {
-                    this.drawShape(time, deltaTime, surface, $memory, pos);
+                if (opaqueId === BasicParticle.AS_POINT) {
+                    this.drawShape(time, deltaTime, surface, heap, pos);
                 } else {
-                    this.drawTile(time, deltaTime, surface, $memory, pos);
+                    this.drawTile(opaqueId, surface, heap, pos);
                 }
                 break;
             case 'webgl':
@@ -205,7 +285,7 @@ export default class BasicParticle extends TransferrableConfig {
     }
 
     /**
-     * Render the particle
+     * Render the particle - a filled rectangle
      * @param {ParticleEngine} pEngine - The particle engine
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
@@ -214,14 +294,25 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawShape(time, deltaTime, surface, $memory, pos) {
-        const sz = Math.ceil($memory.size / 2);
-        surface.fillStyle = $memory.color;
-        surface.fillRect(pos[0] - sz, pos[1] - sz, $memory.size, $memory.size);    
+    drawShape(time, deltaTime, surface, heap, pos) {
+        // assign the memory segment BEFORE any access to the shape
+        this.shape.segment = heap;
+
+        // color index
+        const colorIdx = this.shape.particleColor;
+
+        // step over initial size to get the current size
+        const curSz = this.shape.particleSize;
+        const sz = Math.ceil(curSz / 2);
+        const pX = pos[0];
+        const pY = pos[1];
+
+        surface.fillStyle = this.colors[colorIdx];
+        surface.fillRect(pX - sz, pY - sz, curSz, curSz);
     }
 
     /**
-     * Render the particle
+     * Render the particle - a tile
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      * @param {CanvasRenderingContext2D} surface - The rendering context
@@ -229,15 +320,13 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawTile(time, deltaTime, surface, $memory, pos) {
-        // $memory.mtx.setTo({
-        //     scale: [$memory.scale, $memory.scale]
-        // });
-        // surface.transform.apply(surface, $memory.mtx.asCanvas());
-        const tile = Assembler.assemblerInstance.getCompiledTile($memory.tile);
+    drawTile(opaqueId, surface, heap, pos) {
+        this.shape.segment = heap;
+        const tile = Assembler.assemblerInstance.getCompiledTile(opaqueId);
         const frame = tile.frameRect;
-        surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pos[0], pos[1], frame[2], frame[3]);
-        //surface.restore();
+        const pX = pos[0];
+        const pY = pos[1];
+        surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pX, pY, frame[2], frame[3]);
     }
 
     
@@ -246,8 +335,8 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Object} $memory - The memory object containing the particle's instantaneous properties
      * @type {Function}
      */
-    cleanUp($memory) {
-        $memory.color = null;
+    cleanUp() {
+        
     }
 
     /**

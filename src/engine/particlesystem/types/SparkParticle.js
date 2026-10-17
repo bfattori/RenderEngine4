@@ -1,12 +1,15 @@
 import PhysicalParticle from './PhysicalParticle.js';
 import Util from '../../core/Util.js';
+import $Math from '../../core/Math.js';
 
 export default class SparkParticle extends PhysicalParticle {
+  static MAX_TRAIL_LENGTH = 10;
+
   constructor(overrides = {}, url = import.meta.url) {
     super({
       /**
        * The length of the trail for the spark.
-       * @type {number}
+       * @type {Array<number>|number}
        */
       trailLength: 5,
       /**
@@ -34,6 +37,14 @@ export default class SparkParticle extends PhysicalParticle {
       return new SparkParticle();
   }
 
+  computeParticleShape() {
+    const shape = super.computeParticleShape();
+    shape.set('trailLength',    'Uint8');
+    shape.set('trail',          'Float16', config.trailLength * 2);
+    shape.set('mult',           'Float16');
+    return shape;
+  }
+
   /**
    * Called when a particle is spawned to initialize its settings
    * @param {number} time - The current world time in milliseconds
@@ -42,9 +53,9 @@ export default class SparkParticle extends PhysicalParticle {
    */
   spawn(time, config) {
     const p = super.spawn(time, config);
-    p.memory.trailLength = config.trailLength;
-    p.memory.trailWidth = config.trailWidth;
-    p.memory.trail = [];
+    p.memory.trailLength = config.trailLength;  // 8-bit unsigned integer
+    p.memory.trail = [];  // max trail-length * two 16-bit floats
+    p.memory.mult = 1;
     return p;
   }
 
@@ -63,8 +74,9 @@ export default class SparkParticle extends PhysicalParticle {
     
     // calculate the trail if the particle has a trail length greater than 0
     if ($memory.trailLength > 0) {
-      $memory.aFact = 1 / $memory.trailLength;
-      $memory.trail.unshift([pos[0], pos[1]]);
+      $memory.mult = 1 / $memory.trailLength;
+      $memory.trail.unshift(pos[1]);
+      $memory.trail.unshift(pos[0]);
       if ($memory.trail.length > $memory.trailLength) {
         $memory.trail.length = $memory.trailLength;
       }

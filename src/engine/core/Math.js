@@ -133,9 +133,18 @@ export default class $Math {
                 return $Math.mean(v);
             }
         } else if (v && !isNaN(v)) {
-            return v;
+            return $Math.randomRange(0, v);
         }
         return 0.0;
+    }
+
+    /**
+     * Performs the same function as {@link $Math#getRangeValue} but returns an integer value
+     * @param  {...any} v - value(s)
+     * @returns {number}
+     */
+    static getRangeValueInt(v) {
+        return Math.floor($Math.getRangeValue(v));
     }
 
     //------------------------------------

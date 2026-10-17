@@ -1,6 +1,3 @@
-import Constants from '../Constants.js';
-import Context from '../Context.js';
-import RenderEngineError from '../core/RenderEngineError.js';
 import { NOP, ENGINE_ERRORS } from '../Constants.js';
 import Util from './Util.js';
 
@@ -35,39 +32,13 @@ export default class Config {
       return undefined;
     }
 
-    #isObject(item) {
-        return (item && (item.constructor.name === 'Object' && `${item}` === '[object Object]') && !Array.isArray(item));
-    }
-
-    #deepMerge(target, source) {
-        // Create a deep copy of target to keep the function pure
-        const output = Object.assign({}, target);
-
-        if (this.#isObject(target) && this.#isObject(source)) {
-            Object.keys(source).forEach(key => {
-            if (this.#isObject(source[key])) {
-                if (!(target.hasOwnProperty(key))) {
-                    Object.assign(output, { [key]: source[key] });
-                } else {
-                    // Recursive call for nested objects
-                    output[key] = this.#deepMerge(target[key], source[key]);
-                }
-            } else {
-                // Simple primitive overwrite
-                Object.assign(output, { [key]: source[key] });
-            }
-            });
-        }
-        return output;
-    }
-
     /**
      * Merge this config with another object containing values that should override the current ones.
      * It instruments the `Config` with getters and setters for the properties in the incoming configuration.
      * @param {Object} incoming - Incoming config object
      */
     merge(incoming = {}) {
-        const merged = this.#deepMerge(this.#opts, incoming);
+        const merged = Util.deepMerge(this.#opts, incoming);
         this.#opts = merged;
         Util.lombok(this, merged);
     }
@@ -85,7 +56,7 @@ export default class Config {
      * @param {Object} options - The new options to set
      */
     set opts(options) {
-        this.#opts = opts;
+        this.#opts = options;
     }
 }
 

@@ -36,6 +36,15 @@ export default class DiffuseParticle extends BasicParticle {
     this.#ctx = off.getContext('2d');
   }
 
+  computeParticleShape() {
+    const shape = super.computeParticleShape();
+    shape.set('softness',   'Float16');
+    shape.set('fade',       'Float16');
+    shape.set('alpha',      'Float16');
+    shape.set('initColor',  'Color32');
+    return shape;
+  }
+
   /**
    * Called when a particle is spawned to initialize its settings
    * @param {number} time - The current world time in milliseconds
@@ -44,10 +53,10 @@ export default class DiffuseParticle extends BasicParticle {
    */
   spawn(time, config) {
     const p = super.spawn(time, config);  
-    p.memory.softness = this.softness;
-    p.memory.fade = $Math.getRangeValue(this.fadeRate);
-    p.memory.alpha = 1.0;
-    p.memory.full = p.memory.color;
+    p.memory.softness = this.softness;                    // 16-bit float
+    p.memory.fade = $Math.getRangeValue(this.fadeRate);   // 16-bit float
+    p.memory.alpha = 1.0;                                 // 16-bit float
+    p.memory.initColor = p.memory.color;                  // 32-bit integer
     return p;
   }
 

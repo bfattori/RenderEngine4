@@ -11,15 +11,23 @@ import $Math from '../core/Math.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 
+import Spark from '../core/Spark.js';
+
 const ctx = Context.getInstance();
 
 export default class $ParticleEngine {
     static #instance = null;
     static #useBuilder = true;
     
+    static PARTICLE_LIVE = 1;
+    static PARTICLE_DEAD = 0;
 
     #config = null;
     #threading = null;
+
+    // a list of opaque Ids to particle types
+    #opaqueId = 1;
+    #opaqueMap = new Map();
 
     // particle types the engine is configured to render
     #particleTypes = new Map();
@@ -41,7 +49,7 @@ export default class $ParticleEngine {
     #pSpan = null;
     
     // pointer to the arrays above
-    #particleIdx = 0;
+    #particleIdx = -1;
     
     // number of particles that are live in the engine
     #liveParticles = 0;
@@ -61,6 +69,8 @@ export default class $ParticleEngine {
     #width = 0;
     #height = 0;
     #assembler = null;
+
+    #particleMemSize = 0;
 
     /**
      * Get the instance of the `ParticleEngine`.  This method should be used instead of creating 
@@ -149,7 +159,6 @@ export default class $ParticleEngine {
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);
         this.#surface = this.#offscreen.getContext('2d');
-        this.#initializeParticles(config.maxParticles);
     }
 
     /**
@@ -190,7 +199,6 @@ export default class $ParticleEngine {
      */
     set maxParticles(count) {
         this.config.maxParticles = count;
-        this.#initializeParticles(count);
     }
 
     /**
@@ -251,22 +259,19 @@ export default class $ParticleEngine {
     }
 
     /**
-     * Initialize the particle engine
+     * Initialize the particle engine, allocating the memory for position, velocity,
+     * lifespan, and particle memory.
      */
     initialize() {
-       
-    }
+        const count = this.config.maxParticles;
 
-    /**
-     * Initialize the particle arrays.  This is also called if `maxParticles` is changed.
-     * @param {number} count - The maximum number of particles the engine will create
-     * @private
-     */
-    #initializeParticles(count) {
-        this.#pPos = new Array(count).fill([0,0]);          // stores x and y as an array
-        this.#pVel = new Array(count).fill([0,0]);          // stores vX and vY as an array
-        this.#pSpan = new Array(count).fill(0);               // single value for each lifespan as Number
-        this.#memories = new Array(count).fill(null);        // array that will hold the particle memory
+        // one extra byte per particle to store the life status
+        const memoryHeap = new ArrayBuffer(count * (this.#particleMemSize + Spark.UInt8.size));
+
+        this.#pPos = new Float32Array(count * 2);   // two 32-bit floats
+        this.#pVel = new Float32Array(count * 2);   // two 32-bit floats
+        this.#pSpan = new Uint16Array(count);       // one 2-byte integer
+        this.#memories = new Spark(memoryHeap);
     }
 
     /**
@@ -275,14 +280,6 @@ export default class $ParticleEngine {
      */
     get state() {
         const p = [], l = [], v = [], m = [];
-        for (let i = 0; i < this.#memories.length; i++) {
-            if (this.#memories[i] !== null) {
-                p.push(this.#pPos[i]);
-                v.push(this.#pVel[i]);
-                l.push(this.#pSpan[i]);
-                m.push(this.#memories[i]);
-            }
-        }
         return {
             pos: p,
             vel: v,
@@ -305,10 +302,19 @@ export default class $ParticleEngine {
             this.#particleIdx++;
         else if (!this.isCircular) {
             // find first free index (could be -1)
-            this.#particleIdx = this.#memories.findIndex((e) => e === null);
+            //this.#particleIdx = this.#memories.findIndex((e) => e === null);
         }
 
         return this.#particleIdx;
+    }
+
+    /**
+     * Returns the next opaqueId for particle types
+     * @returns {number}
+     * @private
+     */
+    get #nextOpaque() {
+        return this.#opaqueId++;
     }
 
     //-----------------------------------
@@ -328,17 +334,25 @@ export default class $ParticleEngine {
      * @param {Particle} particle 
      */
     addParticleType(particle) {
-        if (this.types.get(particle.$name) === undefined)
-            this.types.set(particle.$name, particle);
+        if (particle.opaqueId === null) {
+            // assign a unique id
+            particle.opaqueId = this.#nextOpaque;
+            this.types.set(particle.opaqueId, particle);
+
+            // find the largest particle (by memory size) that will exist
+            if (particle.sizeBytes > this.#particleMemSize) {
+                this.#particleMemSize = particle.sizeBytes;
+            }
+        }
     }
 
     /**
-     * Get the particle type for the name
-     * @param {String} name - The name of the particle type
+     * Get the particle type for the opaqueId
+     * @param {number} opaqueId - The particle id
      * @returns {Object} The configuration object for the specified particle type, or undefined if no such type exists
      */
-    getParticleType(name) {
-        return this.types.get(name);
+    getParticleType(opaqueId) {
+        return this.types.get(opaqueId);
     }
 
     /**
@@ -420,18 +434,46 @@ export default class $ParticleEngine {
      * creates the instance of the particle in the engine.
      * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
      * @param {number} time - The current world time in milliseconds
-     * @param {Object} particle - Initialized particle data 
+     * @param {Object} particleConfig - Initialized particle data 
      */
-    spawnParticle(worldPos, time, particle) {
+    spawnParticle(worldPos, time, particleType) {
         const idx = this.#nextIndex;
         if (idx !== -1) {
-            this.#pPos[idx] = [worldPos[0], worldPos[1]];
-            this.#pVel[idx] = [particle.vel[0], particle.vel[1]];
-            this.#pSpan[idx] = particle.life;
-            this.#memories[idx] = particle.memory;                        
+            // position and velocity
+            this.#pPos[idx * 2] = worldPos[0]; 
+            this.#pPos[(idx * 2) + 1] = worldPos[1];
+            this.#pVel[idx * 2] = 0.0;
+            this.#pVel[(idx * 2) + 1] = 0.0;
+            
+            // spawn the particle
+            // byte 0 indicates living or dead
+            const lifeByte = idx * (this.#particleMemSize + Spark.UInt8.size);
+            this.#memories.setUint8(lifeByte, $ParticleEngine.PARTICLE_LIVE);
+            
+            // memory offset
+            let offset = lifeByte + Spark.UInt8.size;
+            const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
+            particleType.spawn(time, particleType.opts, memSegment);
+
+            // retrieve the particle's lifespan from memory
+            // and store it in the spans list
+            particleType.shape.segment = memSegment;
+            this.#pSpan[idx] = particleType.shape.lifeSpan;
+            
+            const mOffs = (idx * 2) * Float32Array.BYTES_PER_ELEMENT;
+
+            const spawned = {
+                pos: new Float32Array(this.#pPos.buffer, mOffs, 2),
+                vel: new Float32Array(this.#pVel.buffer, mOffs, 2),
+                memSegment: memSegment
+            };
+
             this.#newParticles = true;
+            return spawned;
         } else if (ctx.debug)
             console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
+
+        return null;
     }
 
     /**
@@ -491,15 +533,33 @@ export default class $ParticleEngine {
         }
 
         // run all particles
-        let lives = 0;
-        this.#memories.forEach((memory, idx) => {
-            if (memory !== null && this.#pSpan[idx] !== 0) {
-                this.#runParticle(memory, idx, time, deltaTime);
-                lives++;
-            }
-        })
+        let livingParticles = 0;
+        let offset = 0;
+        for (let p = 0; p < this.config.maxParticles; p++) {
+            const lifeByte = offset;
+            offset += Spark.UInt8.size;
+            if (this.#memories.getUint8(lifeByte) === $ParticleEngine.PARTICLE_LIVE) {
+                const pType = this.getParticleType(this.#memories.getUint8(offset));
 
-        this.#liveParticles = lives;
+                const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
+                const pos = new Float32Array(this.#pPos.buffer, p * 4, 2);
+                const vel = new Float32Array(this.#pVel.buffer, p * 4, 2);
+                const life = new Uint16Array(this.#pSpan.buffer, p * 2, 1);
+                this.#runParticle(pType, memSegment, pos, vel, life, time, deltaTime);
+
+                // free-up space when dead
+                // ... or when no longer in the visible area
+                if (!this.#inBounds(pos) || life[0] <= 0) {
+                    pType.cleanUp();
+                    this.#memories.setUInt8(lifeByte, $ParticleEngine.PARTICLE_DEAD);
+                } else {
+                    livingParticles++;
+                }
+            }
+            offset += this.#particleMemSize;
+        }
+
+        this.#liveParticles = livingParticles;
         this.#newParticles = false;
         PERF('particlesUpdateEnd');
         MEASURE('Update Particles', 'particlesUpdateStart', 'particlesUpdateEnd');
@@ -522,24 +582,21 @@ export default class $ParticleEngine {
      * @param {number} time - world time in milliseconds
      * @param {number} deltaTime - delta time in milliseconds since last frame
      */
-    #runParticle(memory, idx, time, deltaTime) {
-        // get the type configuration
-        const pType = this.getParticleType(memory.$pType);
+    #runParticle(particleType, memSegment, pos, vel, life, time, deltaTime) {
+        // update the particle
+        particleType.update(time, deltaTime, memSegment, pos, vel, life);
         
-        // update the particle and then age it
-        pType.update(time, deltaTime, memory, this.#pPos[idx], this.#pVel[idx], this.#pSpan[idx]);
-        this.#pSpan[idx] -= deltaTime;
-
-        // only physical particles are affected by repulsors and colliders
-        if (pType instanceof PhysicalParticle) {
-            this.#addImpulse(idx, time, deltaTime);
+        // age particle
+        const remain = life[0] - deltaTime;
+        if (remain > 0) {
+            life[0] = remain;
+        } else {
+            life[0] = 0;
         }
 
-        // free-up space when dead
-        // ... or when no longer in the visible area
-        if (!this.#inBounds(this.#pPos[idx]) || this.#pSpan[idx] <= 0) {
-            pType.cleanUp(memory);
-            this.#memories[idx] = null;
+        // only physical particles are affected by repulsors and colliders
+        if (particleType instanceof PhysicalParticle) {
+            this.#addImpulse(pos, vel, time, deltaTime);
         }
     }
 
@@ -550,13 +607,12 @@ export default class $ParticleEngine {
 
     /**
      * Adds impulse to physical particles based on particle affectors.
-     * @param {*} idx - The particle index
      * @param {*} time - Current world time
      * @param {*} deltaTime - Time since last frame
      */
-    #addImpulse(idx, time, deltaTime) {
+    #addImpulse(pos, vel, time, deltaTime) {
         this.affectors.forEach(affector => {
-            affector.affect(this.#pPos[idx], this.#pVel[idx], time, deltaTime);
+            affector.affect(pos, vel, time, deltaTime);
         });
     }
 
@@ -572,13 +628,20 @@ export default class $ParticleEngine {
         const render = PERF('particlesRenderStart');
 
         let surf = directSurface || this.#surface;
-        this.#memories.forEach((memory, i) => {
-            if (memory !== null) {
-                const pType = this.getParticleType(memory.$pType);
-                pType.render(time, deltaTime, memory, 
-                    this.#pPos[i], this.#pSpan[i], 'canvas', surf);
+        let offset = 0;
+        for (let p = 0; p < this.config.maxParticles; p++) {
+            const lifeByte = offset;
+            offset += Spark.UInt8.size;
+            if (this.#memories.getInt8(lifeByte) === $ParticleEngine.PARTICLE_LIVE) {
+                const pType = this.getParticleType(this.#memories.getUint8(offset));
+
+                const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
+                const pos = new Float32Array(this.#pPos.buffer, p * 4, 2);
+                const life = new Uint16Array(this.#pSpan.buffer, p * 2, 1);
+                pType.render(time, deltaTime, memSegment, pos, life, 'canvas', surf); 
             }
-        });
+            offset += this.#particleMemSize;
+        }
 
         const renderTime = performance.now() - render;
         PERF('particlesRenderEnd');
@@ -605,7 +668,7 @@ export default class $ParticleEngine {
     }
 
     reset() {
-        this.#memories.fill(null);
+        //this.#memories.fill(null);
         this.#liveParticles = 0;
         this.#newParticles = false;
     }

@@ -26,20 +26,20 @@ export default class BurstEffect extends ParticleEffect {
     }
 
     /**
-     * Sub-classes can override this method to modify a spawned 
+     * Sub-classes should override this method to modify the spawned 
      * particle before it is introduced into the `ParticleSystem`.
-     * This instance multiplies a spawn angle, between 0 and 359, 
-     * with the velocity scalar value.
      * 
-     * @param {Object} particle - Particle instantiation config
-     * @param {Object} options - The particle configuration options
-     * @return {Object} Particle spawn data
+     * @param {DataView} heap - Initialized particle memory
+     * @param {BasicParticle} particleType - Particle configuration
+     * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
+     * @param {Float32Array} vel - The velocity of the particle
      */
-    initParticle(particle, options) {
-        particle.vel = $Math.vecMulScalar(
+    initParticle(heap, particleType, pos, vel) {        
+        const v = $Math.vecMulScalar(
             $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
-            $Math.getRangeValue(options.velocity)
+            $Math.getRangeValue(particleType.velocity)
         );
-        return particle;
+        vel[0] = v[0];
+        vel[1] = v[1];
     }
 }

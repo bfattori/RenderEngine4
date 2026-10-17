@@ -48,6 +48,13 @@ export default class SmokeParticle extends PhysicalParticle {
         return new SmokeParticle();
     }
 
+    computeParticleShape() {
+        const shape = super.computeParticleShape();
+        shape.set('curl',       'Float16');
+        shape.set('curlVar',    'Float16');
+        return shape;
+    }
+
     /**
      * Called when a particle is spawned to initialize its settings
      * @param {number} time - The current world time in milliseconds
@@ -56,10 +63,9 @@ export default class SmokeParticle extends PhysicalParticle {
      */
     spawn(time, config) {
         const particle = super.spawn(time, config);
-        particle.memory.curl = $Math.randomRange(this.curl[0], this.curl[1]);
-        particle.memory.cD = Util.selectRandomOf(-this.curlVariance, this.curlVariance);
-        particle.memory.cI = this.curlIntensity * 1000;
-        return particle
+        particle.memory.curl = $Math.getRangeValue(this.curl);                              // 16-bit float
+        particle.memory.curlVar = Util.selectRandomOf(-this.curlVariance, this.curlVariance);    // 16-bit float
+        return particle;
     }
 
     /**
@@ -76,7 +82,7 @@ export default class SmokeParticle extends PhysicalParticle {
         super.update(time, deltaTime, $memory, pos, vel, life);
 
         // apply curl
-        const factor = time/$memory.cI;
+        const factor = time / (this.curlIntensity * 1000);
         vel[0] += ($memory.curl * Math.cos(factor) * $memory.cD);
         vel[1] += $memory.curl * Math.sin(factor);
     }

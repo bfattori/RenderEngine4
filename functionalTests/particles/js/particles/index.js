@@ -46,11 +46,12 @@ RenderEngine.particleEngine.addParticleType(exParticle);
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 500,
+    count: 1000,
     particleTypes: [exParticle],
     drag: 0
 });
 RenderEngine.particleEngine.addEffect(pEffect);
+RenderEngine.particleEngine.initialize();
 
 // game object and component parts
 // - set world position, rotation, and scale

@@ -167,11 +167,8 @@ export default class ParticleEffect extends TransferrableConfig {
                 const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
                 const pType = this.particleTypes.at(typeIdx);
                 if (pType) {
-                    let particle = pType.spawn(time, pType.opts);
-                    // give sub-classes an opportunity to modify 
-                    // these values or introduce new ones
-                    particle = this.initParticle(particle, pType.opts);
-                    this.engine.spawnParticle(worldPos, time, particle);
+                    const spawned = this.engine.spawnParticle(worldPos, time, pType);
+                    this.initParticle(spawned.memSegment, pType, spawned.pos, spawned.vel);
                 }
             }
         }
@@ -188,14 +185,14 @@ export default class ParticleEffect extends TransferrableConfig {
     }
 
     /**
-     * Sub-classes can override this method to modify a spawned 
+     * Sub-classes should override this method to modify the spawned 
      * particle before it is introduced into the `ParticleSystem`.
      * 
-     * @param {BasicParticle} particle - Particle config
-     * @param {Object} options - Optional particle configuration
-     * @return {Object} Particle spawn data
+     * @param {DataView} heap - Initialized particle memory
+     * @param {BasicParticle} particleType - Particle configuration
+     * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
+     * @param {Float32Array} vel - The velocity of the particle
      */
-    initParticle(particle, options = {}) {
-        return particle;
+    initParticle(heap, particleType, pos, vel) {        
     }
 }
