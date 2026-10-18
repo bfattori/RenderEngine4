@@ -66,7 +66,7 @@ RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, 
 RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, wEffect3, sparkEffect, sparkEffect2);
 
 // initialize the particle engine
-RenderEngine.particleEngine.initialize();
+await RenderEngine.particleEngine.initialize();
 
 //-----------------------------------
 // burst effect 

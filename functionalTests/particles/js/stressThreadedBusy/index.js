@@ -17,12 +17,12 @@ import Util from '../../../../src/engine/core/Util.js';
 const numObjects = 500;
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 200000
+    maxParticles: 100000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
     workers: 4,
-    framesPerSecond: 60
+    framesPerSecond: 120
 };
 
 
@@ -61,13 +61,13 @@ await RenderEngine.init(import.meta.url, {
 // set up the particles and effects we'll use
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 5000,
+    count: 2000,
     particleTypes: [exParticle]
 });
 
 RenderEngine.particleEngine.addParticleType(exParticle);
 RenderEngine.particleEngine.addEffect(pEffect);
-RenderEngine.particleEngine.initialize();
+await RenderEngine.particleEngine.initialize();
 
 // game object and component parts
 // - set world position, rotation, and scale
@@ -86,7 +86,7 @@ emitter.effect = pEffect;
 // every few seconds we'll generate an explosion
 function explode() {
     t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
-    emitter.reset().enable();
+    emitter.once();
     setTimeout(explode, $Math.randomRange(80, 100, true));
 }
 

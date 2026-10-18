@@ -262,16 +262,17 @@ export default class $ParticleEngine {
      * Initialize the particle engine, allocating the memory for position, velocity,
      * lifespan, and particle memory.
      */
-    initialize() {
+    async initialize() {
         const count = this.config.maxParticles;
 
-        // one extra byte per particle to store the life status
+        // one extra byte per particle for the lifeByte
         const memoryHeap = new ArrayBuffer(count * (this.#particleMemSize + Spark.UInt8.size));
 
-        this.#pPos = new Float32Array(count * 2);   // two 32-bit floats
-        this.#pVel = new Float32Array(count * 2);   // two 32-bit floats
+        this.#pPos = new Float32Array(count * 2);   // two 32-bit floats (x & y)
+        this.#pVel = new Float32Array(count * 2);   // two 32-bit floats (xV & yV)
         this.#pSpan = new Uint16Array(count);       // one 2-byte integer
         this.#memories = new Spark(memoryHeap);
+        return Promise.resolve(true);
     }
 
     /**
@@ -296,7 +297,7 @@ export default class $ParticleEngine {
      * @private
      */
     get #nextIndex() {
-        if (this.isCircular && this.#particleIdx > this.maxParticles)
+        if (this.isCircular && this.#particleIdx >= this.maxParticles - 1)
             this.#particleIdx = 0;    // wrap
         else if (this.isCircular)
             this.#particleIdx++;
@@ -337,12 +338,13 @@ export default class $ParticleEngine {
         if (particle.opaqueId === null) {
             // assign a unique id
             particle.opaqueId = this.#nextOpaque;
-            this.types.set(particle.opaqueId, particle);
+        }
 
-            // find the largest particle (by memory size) that will exist
-            if (particle.sizeBytes > this.#particleMemSize) {
-                this.#particleMemSize = particle.sizeBytes;
-            }
+        this.types.set(particle.opaqueId, particle);
+
+        // find the largest particle (by memory size) that will exist
+        if (particle.sizeBytes > this.#particleMemSize) {
+            this.#particleMemSize = particle.sizeBytes;
         }
     }
 
@@ -460,11 +462,10 @@ export default class $ParticleEngine {
             particleType.shape.segment = memSegment;
             this.#pSpan[idx] = particleType.shape.lifeSpan;
             
-            const mOffs = (idx * 2) * Float32Array.BYTES_PER_ELEMENT;
-
+            const pvOffs = (idx * 2) * Float32Array.BYTES_PER_ELEMENT;
             const spawned = {
-                pos: new Float32Array(this.#pPos.buffer, mOffs, 2),
-                vel: new Float32Array(this.#pVel.buffer, mOffs, 2),
+                pos: new Float32Array(this.#pPos.buffer, pvOffs, 2),
+                vel: new Float32Array(this.#pVel.buffer, pvOffs, 2),
                 memSegment: memSegment
             };
 
@@ -526,11 +527,11 @@ export default class $ParticleEngine {
         // add any particles that are queued...
         this.#start = PERF('particlesUpdateStart');
 
-        while(this.#buffered.length > 0) {
-            // spawn the particle
-            const p = this.#buffered.shift();
-            this.spawnParticle(p.pos, time, p.type);
-        }
+        // while(this.#buffered.length > 0) {
+        //     // spawn the particle
+        //     const p = this.#buffered.shift();
+        //     this.spawnParticle(p.pos, time, p.type);
+        // }
 
         // run all particles
         let livingParticles = 0;
@@ -542,8 +543,11 @@ export default class $ParticleEngine {
                 const pType = this.getParticleType(this.#memories.getUint8(offset));
 
                 const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
-                const pos = new Float32Array(this.#pPos.buffer, p * 4, 2);
-                const vel = new Float32Array(this.#pVel.buffer, p * 4, 2);
+
+                const pvOffs = (p * 2) * Float32Array.BYTES_PER_ELEMENT;
+                const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
+                const vel = new Float32Array(this.#pVel.buffer, pvOffs, 2);
+                
                 const life = new Uint16Array(this.#pSpan.buffer, p * 2, 1);
                 this.#runParticle(pType, memSegment, pos, vel, life, time, deltaTime);
 
@@ -636,7 +640,10 @@ export default class $ParticleEngine {
                 const pType = this.getParticleType(this.#memories.getUint8(offset));
 
                 const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
-                const pos = new Float32Array(this.#pPos.buffer, p * 4, 2);
+
+                const pvOffs = (p * 2) * Float32Array.BYTES_PER_ELEMENT;
+                const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
+
                 const life = new Uint16Array(this.#pSpan.buffer, p * 2, 1);
                 pType.render(time, deltaTime, memSegment, pos, life, 'canvas', surf); 
             }

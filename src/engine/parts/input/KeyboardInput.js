@@ -369,6 +369,7 @@ class KeyboardInput extends InputPart {
 
         // reserved for engine control
         RESERVED_F2: 113,
+        RESERVED_F9: 120,
         RESERVED_F4: 115
     }
 

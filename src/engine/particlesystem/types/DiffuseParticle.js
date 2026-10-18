@@ -1,6 +1,7 @@
 import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
+import Spark, { MemShape } from '../../core/Spark.js';
 
 /**
  * @class DiffuseParticle
@@ -11,6 +12,7 @@ import Util from '../../core/Util.js';
  */
 export default class DiffuseParticle extends BasicParticle {
   #ctx = null;
+  #particleShape = null;
 
   constructor(overrides = {}, url = import.meta.url) {
     super({
@@ -36,13 +38,17 @@ export default class DiffuseParticle extends BasicParticle {
     this.#ctx = off.getContext('2d');
   }
 
-  computeParticleShape() {
-    const shape = super.computeParticleShape();
-    shape.set('softness',   'Float16');
-    shape.set('fade',       'Float16');
-    shape.set('alpha',      'Float16');
-    shape.set('initColor',  'Color32');
-    return shape;
+   get shape() {
+    if (!this.#particleShape) {
+      const shape = new MemShape();
+      shape.inherit(super.shape);
+      shape.set('softness',   'Float32');
+      shape.set('fade',       'Float32');
+      shape.set('alpha',      'Float32');
+      this.#particleShape = shape;
+      this.#particleShape.build();
+    }
+    return this.#particleShape;
   }
 
   /**
@@ -51,13 +57,15 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {Object} config - The particle's configuration
    * @returns {Object} An object containing `softness`, the diffuse blur of the particle
    */
-  spawn(time, config) {
-    const p = super.spawn(time, config);  
-    p.memory.softness = this.softness;                    // 16-bit float
-    p.memory.fade = $Math.getRangeValue(this.fadeRate);   // 16-bit float
-    p.memory.alpha = 1.0;                                 // 16-bit float
-    p.memory.initColor = p.memory.color;                  // 32-bit integer
-    return p;
+  spawn(time, config, heap) {
+    super.spawn(time, config, heap);
+
+    // assign the heap segment BEFORE any operations
+    this.shape.segment = heap;
+
+    this.shape.softness = this.softness;               
+    this.shape.fade = $Math.getRangeValue(this.fadeRate);
+    this.shape.alpha = 1.0;                                 
   }
 
   /**
@@ -69,10 +77,12 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(time, deltaTime, surface, $memory, pos) {
-    const gradient = this.#gradient($memory, pos);
+  drawShape(time, deltaTime, surface, heap, pos) {
+    this.shape.segment = heap;
+
+    const gradient = this.#gradient(heap, pos);
     surface.beginPath();
-    surface.arc(pos[0], pos[1], $memory.size, 0, $Math.TWO_PI);
+    surface.arc(pos[0], pos[1], this.shape.particleSize, 0, $Math.TWO_PI);
     surface.fillStyle = gradient;
     surface.fill();
   }
@@ -83,24 +93,29 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {*} pos - The position of the particle
    * @returns 
    */
-  #gradient($memory, pos) {
-    const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], $memory.size);
+  #gradient(heap, pos) {
+    this.shape.segment = heap;
 
-    $memory.color = Util.setAlpha($memory.alpha, $memory.full)
+    const color = this.colors[this.shape.particleColor];
+    const alpha = this.shape.alpha;
+    const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], this.shape.particleSize);
+    const alphaColor = Util.setAlpha(alpha, color)
 
-    if ($memory.fade > 0) {
-       $memory.alpha = Math.max(0.0, $memory.alpha - $memory.fade);
+    const fade = this.shape.fade;
+    if (fade > 0) {
+       this.shape.alpha = Math.max(0.0, alpha - fade);
     }
 
     // start us off
-    gradient.addColorStop(0, $memory.color);
+    gradient.addColorStop(0, alphaColor);
+    const soft = this.shape.softness;
 
-    if ($memory.softness < 1.0) {
-        const halfAlpha = Util.setAlpha(0.5, $memory.color);
-        gradient.addColorStop($memory.softness, halfAlpha);
+    if (soft < 1.0) {
+        const halfAlpha = Util.setAlpha(0.5, color);
+        gradient.addColorStop(soft, halfAlpha);
     }
 
-    const alphaZero = Util.setAlpha(0, $memory.full);
+    const alphaZero = Util.setAlpha(0, color);
     gradient.addColorStop(1, alphaZero);
     return gradient;
   }

@@ -52,12 +52,13 @@ await RenderEngine.init(import.meta.url, {
 // set up the particles and effects we'll use
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 2000,
+    count: 1000,
     particleTypes: [exParticle]
 });
 
 RenderEngine.particleEngine.addParticleType(exParticle);
 RenderEngine.particleEngine.addEffect(pEffect);
+await RenderEngine.particleEngine.initialize();
 
 // game object and component parts
 // - set world position, rotation, and scale

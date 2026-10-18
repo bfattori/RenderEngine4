@@ -35,6 +35,8 @@ export default class ParticleManager {
     #initProps = null;
     #assembler = null;
 
+    #opaqueId = 0;
+
     constructor(renderContext, width, height, config, threading, opts, paths) {
         this.#initProps = {
             width: width,
@@ -57,6 +59,10 @@ export default class ParticleManager {
 
     get isInitialized() {
         return this.#initialized;
+    }
+
+    set initialized(value) {
+        this.#initialized = value;
     }
 
     /**
@@ -92,14 +98,32 @@ export default class ParticleManager {
         this.#bitmap = bitmap;
     }
     
-    initialize() {
-        this.#initialized = true;
+    async initialize() {
+        return new Promise((resolve) => {
+            // wait until the workers have all started
+            const $this = this;
+            const waitFn = () => {
+                if ($this.isStarted) {
+                    this.#send({ 
+                        type: Constants.MTYPE.ORCHESTRATOR.GENESIS
+                    });
+
+                    this.initialized = true;
+                    console.debug(`Particle orchestrator started with ${this.#initProps.threading.workers} workers`);
+                    resolve(true);
+                } else {
+                    // wait for the orchestrator to be ready
+                    setTimeout(waitFn, 500);
+                }
+            }
+            waitFn();
+        });
     }
 
     /**
      * Set up the message handler for receiving messages from the orchestrator.
      */
-    async start() {
+    start() {
         PRAGMA('showParticleWorkersPiP', () => {
             let top = 10;
             if (this.#initProps.opts.debugOpts.showParticleEngineLoad)
@@ -135,37 +159,22 @@ export default class ParticleManager {
             this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
         });
 
-        return new Promise((resolve) => {
-            console.debug('Loading particle orchestrator');
-            
-            // load the particle engine orchestrator thread
-            this.#createOrchestrator();       
+        console.debug('Loading particle orchestrator');
+        
+        // load the particle engine orchestrator thread
+        this.#createOrchestrator();       
 
-            // initialize the orchestator and wait for it to be ready
-            this.#thread.postMessage({ 
-                re4: Constants.MSG.MANAGER, 
-                type: Constants.MTYPE.MANAGER.INIT,
-                assembler: this.#assembler.constructor.name,
-                width: this.#initProps.width, 
-                height: this.#initProps.height, 
-                config: this.#initProps.config, 
-                threading: this.#initProps.threading, 
-                systemOpts: this.#initProps.opts,
-                paths: this.#initProps.paths  
-            });
-            
-            // wait until the workers have all started
-            const $this = this;
-            const waitFn = () => {
-                if ($this.isStarted) {
-                    console.debug(`Particle orchestrator started with ${this.#initProps.threading.workers} workers`);
-                    resolve(true);
-                } else {
-                    // wait for the orchestrator to be ready
-                    setTimeout(waitFn, 500);
-                }
-            }
-            waitFn();
+        // initialize the orchestator and wait for it to be ready
+        this.#thread.postMessage({ 
+            re4: Constants.MSG.MANAGER, 
+            type: Constants.MTYPE.MANAGER.INIT,
+            assembler: this.#assembler.constructor.name,
+            width: this.#initProps.width, 
+            height: this.#initProps.height, 
+            config: this.#initProps.config, 
+            threading: this.#initProps.threading, 
+            systemOpts: this.#initProps.opts,
+            paths: this.#initProps.paths  
         });
     }
 
@@ -260,10 +269,9 @@ export default class ParticleManager {
      * @param {Array<Object>} transfer - Optional array of objects to transfer ownership of to the thread 
      */
     #send(data, transfer) {
-        if (this.isStarted)
-            this.#thread.postMessage({ 
-                re4: Constants.MSG.MANAGER, 
-                ... data }, transfer);
+        this.#thread.postMessage({ 
+            re4: Constants.MSG.MANAGER, 
+            ... data }, transfer);
     }
 
     /**
@@ -271,6 +279,15 @@ export default class ParticleManager {
      */
     #notReady() {
         this.#ready = false;
+    }
+
+    /**
+     * Returns the next opaqueId for particle types
+     * @returns {number}
+     * @private
+     */
+    get #nextOpaque() {
+        return this.#opaqueId++;
     }
 
     /**
@@ -286,6 +303,9 @@ export default class ParticleManager {
      * @param {Particle} particle 
      */
     addParticleType(particle) {
+        // assign a unique id
+        particle.opaqueId = this.#nextOpaque;
+
         this.#send({ 
             type: Constants.MTYPE.MANAGER.ADD_TYPE, 
             particle: particle.transferrable 

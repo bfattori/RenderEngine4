@@ -345,6 +345,7 @@ export default class BasicParticle extends TransferrableConfig {
      */
     dehydrate() {
         const props = super.dehydrate();
+        props.opaqueId = this.#opaqueId;
         props.tileSheet = this.tileSheet ? {name: this.tileSheet.$name, resourceUrl: this.tileSheet.resourceUrl.toString()} : null;
         return props;
     }

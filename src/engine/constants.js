@@ -5,6 +5,9 @@ function ENGINE_ERRORS(error, ...args) { console.error(error, ...args) }
  * Constants used throughout the RenderEngine4 engine
  */
 const Constants = {
+    // Cap frame rate at 120 (~8ms per frame)
+    FRAME_RATE_CAP: 120,
+    
     // Component priorities (higher priority executes last)
     defaultPriority: 0.5,
     
@@ -123,6 +126,7 @@ const Constants = {
         },
         // from orchestrator
         ORCHESTRATOR: {
+            GENESIS: 'gen',
             INIT: 'init',
             READY: 'rdy',
             ADD_TYPE: '+type',

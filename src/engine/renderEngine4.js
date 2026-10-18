@@ -54,9 +54,9 @@ const RenderEngine = {
     /**
      * Start the engine
      */
-    start(seedTime = 0) {
-        RE4.start(engineOptions.world.fps, seedTime);
-        console.info(" - started", RE4.engine.options, seedTime);
+    start(seedTime) {
+        RE4.start();
+        console.info(" - started", RE4.engine.options);
         RenderEngine.paused = false;
     },
 
@@ -64,9 +64,9 @@ const RenderEngine = {
      * Pause (halt) the engine without resetting it.
      */
     pause() {
+        RenderEngine.paused = true;
         console.warn(" - paused");
         RE4.stop();
-        RenderEngine.paused = true;
     },
 
     /**
@@ -84,6 +84,13 @@ const RenderEngine = {
     shutdown() {
         console.info(" - shutting down");
         RE4.destroy();
+    },
+
+    /**
+     * Step the engine by one frame
+     */
+    step() {
+        RE4.step();
     },
 
     /**
@@ -157,6 +164,11 @@ window.addEventListener('keyup', (event) => {
             RenderEngine.pause();
         }
     
+    if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F9)
+        if (RenderEngine.paused) {
+            RenderEngine.step();
+        }
+
     if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F4)
         if (RenderEngine.reset) {
             console.warn(" - shutting down...");

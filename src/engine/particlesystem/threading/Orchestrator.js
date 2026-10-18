@@ -101,6 +101,7 @@ class Orchestrator {
 
             // retain worker config
             this.#workers.set(i, { 
+                id: i,
                 worker: worker, 
                 live: 0,
                 ackEffects: [],
@@ -148,12 +149,12 @@ class Orchestrator {
      * @param {Event} event 
      */
     #waitAcknowledge(event) {
-        this.#workerState.forEach(worker => {
-            if (event.data.type === Constants.MTYPE.WORKER.ACK_TYPE)
+        this.#workers.forEach(worker => {
+            if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_TYPE)
                 worker.ackParticles.push(event.data.particle.$name)
-            else if (event.data.type === Constants.MTYPE.WORKER.ACK_EFFECT)
+            else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_EFFECT)
                 worker.ackEffects.push(event.data.effect.$name);
-            else if (event.data.type === Constants.MTYPE.WORKER.ACK_AFFECTOR)
+            else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR)
                 worker.ackAffectors.push(event.data.affector.$name);
         });
     }
@@ -188,7 +189,10 @@ class Orchestrator {
             case Constants.MTYPE.MANAGER.ADD_TYPE:
             case Constants.MTYPE.MANAGER.ADD_EFFECT:
             case Constants.MTYPE.MANAGER.ADD_AFFECTOR:
+                // particle types, effect, and affectors need to be
+                // acknowledged before workers are ready
                 this.#waitAcknowledge(event);
+            case Constants.MTYPE.ORCHESTRATOR.GENESIS:
             case Constants.MTYPE.MANAGER.UPDATE_AFFECTOR:
                 // broadcast to all workers
                 this.broadcast(event);
@@ -213,9 +217,7 @@ class Orchestrator {
         if (event.data.re4 && event.data.re4 === Constants.MSG.WORKER) {
             switch(event.data.type) {
                 case Constants.MTYPE.WORKER.READY:
-                    // once all workers are ready...
                     this.#waitingWorkers[event.data.workerId] = false;
-                    this.#testReady(event.data.workerId);
                     break;
                 case Constants.MTYPE.WORKER.ACK:
                     const worker = this.#workers.get(event.data.workerId);

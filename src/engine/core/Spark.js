@@ -18,6 +18,12 @@ class MemShape extends Map {
         return super.get(key).type;
     }
 
+    inherit(fromWhat) {
+        fromWhat.forEach((v, k) => {
+            this.set(k, v.type, v.len);
+        });
+    }
+
     getByteOffset(key) {
         if (this.#offsets.size === 0) {
             let offset = 0;
@@ -660,10 +666,3 @@ export default class EDV extends DataView {
         return arr;
     }
 }
-
-
-const shape = new MemShape();
-shape.set('length', 'UInt16');
-shape.set('position', 'VecF16');
-shape.set('aSpont', 'Int16', 10);
-shape.build();

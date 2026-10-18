@@ -51,7 +51,7 @@ const pEffect = new BurstEffect({
     drag: 0
 });
 RenderEngine.particleEngine.addEffect(pEffect);
-RenderEngine.particleEngine.initialize();
+await RenderEngine.particleEngine.initialize();
 
 // game object and component parts
 // - set world position, rotation, and scale
@@ -72,10 +72,13 @@ emitter.effect = pEffect;
 function explode() {
     gameObject.PARTS.transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
     emitter.once();
-    setTimeout(explode, $Math.randomRange(200, 800, true));
 }
 
-explode();
+window.addEventListener('keypress', (event) => {
+    if (event.key === ' ') {
+        explode();
+    }
+});
 
 const s = new Slider(document.body, {
     label: 'Particles Per Burst',

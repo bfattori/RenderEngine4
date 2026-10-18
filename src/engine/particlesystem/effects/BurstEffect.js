@@ -36,7 +36,7 @@ export default class BurstEffect extends ParticleEffect {
      */
     initParticle(heap, particleType, pos, vel) {        
         const v = $Math.vecMulScalar(
-            $Math.getDirectionVector([0, 0], $Math.randomRange(0, 359, true)), 
+            $Math.getDirectionVector([0, 0], $Math.randomRangeInt(0, 359)), 
             $Math.getRangeValue(particleType.velocity)
         );
         vel[0] = v[0];

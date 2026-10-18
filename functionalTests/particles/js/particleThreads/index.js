@@ -12,11 +12,11 @@ import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 100000
+    maxParticles: 50000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
-    workers: 2,
+    workers: 4,
     framesPerSecond: 120
 };
 
@@ -82,14 +82,14 @@ RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4)
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 8000,
+    count: 3000,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
 
 // let the threaded particle engine know when
 // the effects and particles have been sent
-RenderEngine.particleEngine.initialize();
+await RenderEngine.particleEngine.initialize();
 
 
 // game object and component parts

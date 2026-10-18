@@ -59,9 +59,15 @@ export default class Engine {
   #animationFrameId = null;
   #lifecycleTiming = 0;
   #fpsCounter = null;
+  #frameTime = 1;
 
   #startupLocation = null;
   #engineLocation = null;
+
+  #stepping = false;
+  #stepTime = 0;
+
+  #runOneFrame;
 
   constructor(options) {
     if (!waitInit) {
@@ -277,6 +283,10 @@ export default class Engine {
     this.#lastTime = time;
   }
 
+  get fpsCounter() {
+    return this.#fpsCounter;
+  }
+
   //--------------------------------
   // Threading
 
@@ -311,6 +321,43 @@ export default class Engine {
   }
 
   /**
+   * Set's the engine to stepping mode where it will advance one
+   * frame when `engine.step()` is called
+   */
+  get isStepping() {
+    return this.#stepping;
+  }
+
+  set isStepping(state) {
+    this.#stepping = state;
+    this.#stepTime = this.#currentTime;
+  }
+
+  set stepTime(time) {
+    this.#stepTime = time;
+  }
+
+  get stepTime() {
+    return this.#stepTime;
+  }
+
+  set frameTime(allot) {
+    this.#frameTime = allot;
+  }
+
+  get frameTime() {
+    return this.#frameTime;
+  }
+
+  set frameController(frameId) {
+    this.#animationFrameId = frameId;
+  }
+
+  get frameController() {
+    return this.#animationFrameId;
+  }
+
+  /**
    * Get the world's collision model
    * @returns {CollisionModel|null}
    */
@@ -332,6 +379,15 @@ export default class Engine {
    */
   static get options() {
     return primary.ENGINE.options;
+  }
+
+
+  set runOneFrame(fn) {
+    this.#runOneFrame = fn;
+  }
+
+  get runOneFrame() {
+    return this.#runOneFrame;
   }
 
   //-------------------------------
@@ -384,7 +440,10 @@ export default class Engine {
     // validate engine options
     // ...
     const e = new Engine(engineOptions);
+    e.frameTime = Math.ceil(1000 / (e.options.world.fps > 0 ? Math.min(Constants.FRAME_RATE_CAP, e.options.world.fps) : 1000));
+
     if (!e.options.flags.particleEngineDisabled) {
+      // start the particle engine
       const config = new ParticleEngineConfig();
       let threading = null;
       if (e.options.flags.threading.particles)
@@ -456,88 +515,46 @@ export default class Engine {
   
   /**
    * Start the game loop
-   * @param {number} frameRate - Target frame rate in frames per second
-   * @param {number} seed - The world timer seed
    */
-  async start(frameRate = 60, seed = 0) {
+  async start() {
     if (this.isRunning) return;
 
     this.isRunning = true;
     this.lastTime = performance.now();
-    this.frameRate = this.options.world.fps;
+    this.isStepping = false;
 
-    // the frame lifecycle callbacks are called in a loop until the game is stopped
-    const lifecycleHooks = this.options.hooks;
-    
-    const loop = async () => {
-      if (!this.isRunning) return;
-
-      // start frame generation
-      const frameStart = PERF('frameStart');
-      const currentTime = frameStart;
-      lifecycleHooks?.onBeforeFrame(currentTime);
-
-      // Calculate delta time in milliseconds
-      const deltaTime = currentTime - this.lastTime; // Cap at ~60fps
-      this.lastTime = currentTime;
-      
-      // Update the scene
-      const updateStart = PERF('updateStart');
-      lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
-      this.update(currentTime, deltaTime);
-      const updateEnd = PERF('updateEnd');
-      lifecycleHooks?.onUpdate(currentTime, deltaTime);
-      
-      // Render the world
-      const renderStart = PERF('renderStart');
-      lifecycleHooks?.onPreRender(renderStart - frameStart);
-      this.renderWorld(currentTime, deltaTime);
-      const renderEnd = PERF('renderEnd');
-      lifecycleHooks?.onRender(currentTime, deltaTime);
-
-      // one frame generated
-      lifecycleHooks.onFrame(performance.now() - frameStart);
-      const frameEnd = PERF('frameEnd');
-
-      if (this.isRunning) {
-        MEASURE('Generate Frame', 'frameStart', 'frameEnd');
-        MEASURE('Update World', 'updateStart', 'updateEnd');
-        MEASURE('Render Scene', 'renderStart', 'renderEnd');
-        if (this.options.flags.showFps) {
-          this.#fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
-        }
-
-        // const sleep = ((1000/this.frameRate) - (frameEnd-frameStart))
-        // if (sleep > 0) {
-        //   // lock down the FPS
-        //   await new Promise(resolve => setTimeout(resolve, sleep));
-        // }
-
-
-        this.#animationFrameId = requestAnimationFrame(loop);
-      }
-    };
-    
-    this.#animationFrameId = requestAnimationFrame(loop);
+    this.frameController = requestAnimationFrame(animationLoop);
 
     // engine started
-    lifecycleHooks?.onStart();
+    this.#ENGINE_OPTIONS.hooks.onStart();
   }
-  
+
   /**
    * Stop the game loop
    */
   stop() {
     this.isRunning = false;
-    if (this.#animationFrameId) {
-      cancelAnimationFrame(this.#animationFrameId);
-      this.#animationFrameId = null;
+    if (this.frameController) {
+      cancelAnimationFrame(this.frameController);
+      this.stepTime = this.#currentTime;
+      this.frameController = null;
+      this.isStepping = true;
     }
 
     // call stop hook
     this.#ENGINE_OPTIONS.hooks.onStop();
   }
-    
+
+  /**
+   * Step by the number of milliseconds in the frame time calculated as `1000 / frameRate`
+   * @param {number} timeDelta - Optional time step
+   */
+  step(timeDelta) {
+    this.stepTime += this.frameTime || timeDelta;
+    console.warn(`  - stepped ${this.frameTime}ms (worldTime: ${this.stepTime}ms)`);
+    this.frameController = requestAnimationFrame(animationLoop);
+  }
+
   /**
    * Reset the engine state
    */
@@ -576,7 +593,7 @@ export default class Engine {
    */
   destroy() {
     // clean up before exiting
-    cancelAnimationFrame(this.#animationFrameId);
+    cancelAnimationFrame(this.frameController);
     this.#EVENT_ENGINE?.shutdown();
     this.#WORLD?.shutdown();
     this.#PARTICLE_ENGINE?.shutdown();
@@ -633,7 +650,6 @@ export default class Engine {
       });
       return serialize;
   }
-
 }
 
 export class Paths {
@@ -677,3 +693,51 @@ export class Paths {
     Paths.#gameLocation = new URL(url, self.location);
   }
 };
+
+
+function animationLoop() {
+  const e = Engine.engine;
+  if (!(e.isRunning || e.isStepping)) return;
+
+  // the frame lifecycle callbacks
+  const lifecycleHooks = e.options.hooks;
+
+  // start frame generation
+  const frameStart = PERF('frameStart');
+  const currentTime = e.stepTime || frameStart;     // allows stepping
+  lifecycleHooks?.onBeforeFrame(currentTime);
+
+  // Calculate delta time in milliseconds
+  const deltaTime = (currentTime - e.lastTime); // / this.frameTime;
+  e.lastTime = currentTime;
+  
+  // Update the scene
+  const updateStart = PERF('updateStart');
+  lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
+  e.update(currentTime, deltaTime);
+  const updateEnd = PERF('updateEnd');
+  lifecycleHooks?.onUpdate(currentTime, deltaTime);
+  
+  // Render the world
+  const renderStart = PERF('renderStart');
+  lifecycleHooks?.onPreRender(renderStart - frameStart);
+  e.renderWorld(currentTime, deltaTime);
+  const renderEnd = PERF('renderEnd');
+  lifecycleHooks?.onRender(currentTime, deltaTime);
+
+  // one frame generated
+  lifecycleHooks.onFrame(performance.now() - frameStart);
+  const frameEnd = PERF('frameEnd');
+
+  if (e.isRunning) {
+    MEASURE('Generate Frame', 'frameStart', 'frameEnd');
+    MEASURE('Update World', 'updateStart', 'updateEnd');
+    MEASURE('Render Scene', 'renderStart', 'renderEnd');
+    if (e.options.flags.showFps) {
+      e.fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
+    }
+
+    e.frameController = requestAnimationFrame(animationLoop);
+    e.stepTime = 0.0;
+  }
+}

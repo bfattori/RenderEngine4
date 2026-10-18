@@ -1,8 +1,9 @@
 import PhysicalParticle from './PhysicalParticle.js';
 import Util from '../../core/Util.js';
-import $Math from '../../core/Math.js';
+import Spark, { MemShape } from '../../core/Spark.js';
 
 export default class SparkParticle extends PhysicalParticle {
+  #particleShape = null;
   static MAX_TRAIL_LENGTH = 10;
 
   constructor(overrides = {}, url = import.meta.url) {
@@ -37,12 +38,17 @@ export default class SparkParticle extends PhysicalParticle {
       return new SparkParticle();
   }
 
-  computeParticleShape() {
-    const shape = super.computeParticleShape();
-    shape.set('trailLength',    'Uint8');
-    shape.set('trail',          'Float16', config.trailLength * 2);
-    shape.set('mult',           'Float16');
-    return shape;
+  get shape() {
+    if (!this.#particleShape) {
+      const shape = new MemShape();
+      shape.inherit(super.shape);
+      shape.set('trailLength',  'UInt8');
+      //shape.set('trail',        'Float32', this.trailLength * 2);
+      shape.set('trFactor',     'Float32');
+      this.#particleShape = shape;
+      this.#particleShape.build();
+    }
+    return this.#particleShape;
   }
 
   /**
@@ -51,12 +57,15 @@ export default class SparkParticle extends PhysicalParticle {
    * @param {Object} config - The particle's configuration
    * @returns {Object} An object containing `memory`, `life`, and `vel`, the instantaneous memory of the particle, lifeSpan, and initial veloctiy of the particle
    */
-  spawn(time, config) {
-    const p = super.spawn(time, config);
-    p.memory.trailLength = config.trailLength;  // 8-bit unsigned integer
-    p.memory.trail = [];  // max trail-length * two 16-bit floats
-    p.memory.mult = 1;
-    return p;
+  spawn(time, config, heap) {
+    super.spawn(time, config, heap);
+
+    // assign the heap segment BEFORE any operations
+    this.shape.segment = heap;
+
+    this.shape.trailLength = config.trailLength;  // 8-bit unsigned integer
+    //this.shape.trail = [];  // max trail-length * two 16-bit floats
+    this.shape.trFactor = 1;
   }
 
   /**
@@ -69,17 +78,22 @@ export default class SparkParticle extends PhysicalParticle {
    * @param {number} life - Remaining life of the particle
    * @type {Function}
    */
-  update(time, deltaTime, $memory, pos, vel, life) {
-    super.update(time, deltaTime, $memory, pos, vel, life);
-    
+  update(time, deltaTime, heap, pos, vel, life) {
+    super.update(time, deltaTime, heap, pos, vel, life);
+
+    // assign the segment BEFORE any operations
+    this.shape.segment = heap;
+
+    const trailLen = this.shape.trailLength;
+
     // calculate the trail if the particle has a trail length greater than 0
-    if ($memory.trailLength > 0) {
-      $memory.mult = 1 / $memory.trailLength;
-      $memory.trail.unshift(pos[1]);
-      $memory.trail.unshift(pos[0]);
-      if ($memory.trail.length > $memory.trailLength) {
-        $memory.trail.length = $memory.trailLength;
-      }
+    if (trailLen > 0) {
+      // this.shape.trFactor = 1 /trailLen;
+      // $memory.trail.unshift(pos[1]);
+      // $memory.trail.unshift(pos[0]);
+      // if ($memory.trail.length > $memory.trailLength) {
+      //   $memory.trail.length = $memory.trailLength;
+      // }
     }
   }
 
@@ -92,12 +106,15 @@ export default class SparkParticle extends PhysicalParticle {
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(time, deltaTime, surface, $memory, pos) {
-    super.drawShape(time, deltaTime, surface, $memory, pos);
+  drawShape(time, deltaTime, surface, heap, pos) {
+    super.drawShape(time, deltaTime, surface, heap, pos);
 
-    if ($memory.trailLength > 0 && $memory.trail.length > 1) {
-      this.drawTrail(surface, $memory, pos);
-    }
+    // assign the segment BEFORE any operations
+    this.shape.segment = heap;
+
+    // if (this.shape.trailLength > 0 && $memory.trail.length > 1) {
+    //   this.drawTrail(surface, $memory, pos);
+    // }
   }
 
   /**

@@ -52,8 +52,9 @@ export default class ParticleWorker {
         // add the root particle type
         this.#classMap.set('BasicParticle', BasicParticle);
         this.#fps = Math.floor(1000 / threading.framesPerSecond);
-    
-        this.readyUp(workerId, assembler);
+        this.#assembler = self[assembler].getInstance();
+
+        this.readyUp();
     }
 
     set startTime(time) {
@@ -91,22 +92,14 @@ export default class ParticleWorker {
     }
 
     /**
-     * Prepare the assembler for use by the worker. Let the orchestrator know the worker is ready to run.
-     * 
-     * @param {number} workerId - The worker's id for communicating back to the orchestrator
-     * @param {string} assemblerClass - The assembler class to instantiate
+     * The particle worker is ready to process requests
      */
-    readyUp(workerId, assemblerClass) {
-        // create an assembler instance
-        this.#assembler = self[assemblerClass].getInstance();
-
+    readyUp() {
         postMessage({ 
             re4: Constants.MSG.WORKER, 
             type: Constants.MTYPE.WORKER.READY, 
-            workerId: workerId 
-        });  // inform the orchestrator that the worker is ready
-
-        this.#run();
+            workerId: this.workerId 
+        });
     }
 
     /**
@@ -135,6 +128,10 @@ export default class ParticleWorker {
      */
     async process(data) {
         switch(data.type) {
+            case Constants.MTYPE.ORCHESTRATOR.GENESIS:
+                this.instance.initialize();     // creates the memory buffers
+                this.#run();
+                break;
             case Constants.MTYPE.ORCHESTRATOR.ADD_TYPE:
                 const particle = await TransferrableConfig.reconstruct(data.particle, (obj) => {obj.engine = this.instance;});
                 this.instance.addParticleType(particle);

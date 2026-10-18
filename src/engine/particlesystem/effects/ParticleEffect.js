@@ -89,7 +89,7 @@ export default class ParticleEffect extends TransferrableConfig {
      */
     dehydrate() {
         const props = super.dehydrate();
-        props.particleTypes = props.particleTypes.map(e => e.$name);
+        props.particleTypes = props.particleTypes.map(e => e.props.opaqueId);
         return props;
     }
 
@@ -161,10 +161,10 @@ export default class ParticleEffect extends TransferrableConfig {
      * @param time {Number} The current world time
      */
     #generateParticles(worldPos, time) {
-        if (this.generate(worldPos,time)) {
+        if (this.generate(worldPos, time)) {
             const count = this.count + $Math.randomRange(-this.countVariance, this.countVariance, true);
             for (let i = 0; i < count; i++) {
-                const typeIdx = $Math.randomRange(0, this.particleTypes.length - 1, true);
+                const typeIdx = $Math.randomRangeInt(0, this.particleTypes.length - 1);
                 const pType = this.particleTypes.at(typeIdx);
                 if (pType) {
                     const spawned = this.engine.spawnParticle(worldPos, time, pType);

@@ -6,12 +6,12 @@ import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2, s
 
 // configure particle effects
 const pEffect = new BurstEffect({
-    count: 3000,
+    count: 1000,
     particleTypes: [eParticle]
 });
 
 const pEffect2 = new BurstEffect({
-    count: 1800,
+    count: 800,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 pEffect2.name = 'glittery';
