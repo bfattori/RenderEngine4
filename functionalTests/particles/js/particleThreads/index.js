@@ -16,7 +16,7 @@ self.PARTICLE_ENGINE_OPTIONS = {
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
-    workers: 4,
+    workers: 2,
     framesPerSecond: 120
 };
 
@@ -64,9 +64,10 @@ eParticle2.name = 'purples';
 
 const eParticle3 = new BurstParticle({
     colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
-    drag: [0.7, 1.8],
+    drag: [1.8, 2.3],
+    dragRate: 0.1,
     lifeSpan: [1000, 2000],
-    velocity: [1.6, 3.0]
+    velocity: [1.6, 5.0]
 });
 eParticle3.name = 'blues';
 
@@ -82,7 +83,7 @@ RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4)
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 3000,
+    count: 800,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
@@ -112,7 +113,7 @@ emitter.effect = pEffect;
 function explode() {
     gameObject.PARTS.transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 590, true)];
     emitter.once();
-    setTimeout(explode, $Math.randomRange(60, 100, true));
+    setTimeout(explode, $Math.randomRange(100, 400, true));
 }
 
 explode();

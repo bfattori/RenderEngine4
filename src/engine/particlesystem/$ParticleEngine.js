@@ -454,7 +454,7 @@ export default class $ParticleEngine {
             
             // memory offset
             let offset = lifeByte + Spark.UInt8.size;
-            const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
+            const memSegment = new Spark(this.#memories.buffer, offset, this.#particleMemSize);
             particleType.spawn(time, particleType.opts, memSegment);
 
             // retrieve the particle's lifespan from memory
@@ -542,7 +542,7 @@ export default class $ParticleEngine {
             if (this.#memories.getUint8(lifeByte) === $ParticleEngine.PARTICLE_LIVE) {
                 const pType = this.getParticleType(this.#memories.getUint8(offset));
 
-                const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
+                const memSegment = new Spark(this.#memories.buffer, offset, this.#particleMemSize);
 
                 const pvOffs = (p * 2) * Float32Array.BYTES_PER_ELEMENT;
                 const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
@@ -639,7 +639,7 @@ export default class $ParticleEngine {
             if (this.#memories.getInt8(lifeByte) === $ParticleEngine.PARTICLE_LIVE) {
                 const pType = this.getParticleType(this.#memories.getUint8(offset));
 
-                const memSegment = new DataView(this.#memories.buffer, offset, this.#particleMemSize);
+                const memSegment = new Spark(this.#memories.buffer, offset, this.#particleMemSize);
 
                 const pvOffs = (p * 2) * Float32Array.BYTES_PER_ELEMENT;
                 const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);

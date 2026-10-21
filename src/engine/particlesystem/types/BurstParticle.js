@@ -11,11 +11,11 @@ export default class BurstParticle extends BasicParticle {
         super({
             colors: ['#ff8', '#ff0', '#fff', '#888', '#f00', '#f90'],
             lifeSpan: [1000, 1500],
-            drag: [0.8, 1.1],
+            drag: [0.9, 1.3],
             dragRate: 0,
             particleSize: [3, 5],
             sizeDecay: 0.9,
-            velocity: [1.3, 2.8]
+            velocity: [0.8, 1.8]
         }, url);
         this.merge(overrides);
         this.name = 'burstParticle';

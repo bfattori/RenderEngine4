@@ -1,6 +1,7 @@
 import PhysicalParticle from './PhysicalParticle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
+import { MemShape } from '../../core/Spark.js';
 
 /**
  * @class SmokeParticle
@@ -10,6 +11,8 @@ import Util from '../../core/Util.js';
  * @extends PhysicalParticle
  */
 export default class SmokeParticle extends PhysicalParticle {
+    #particleShape = null;
+
     constructor(overrides = {}, url = import.meta.url) {
         super({
             colors: ['#35352c','#686851','#878785','#919191','#4e2424','#5c4b38','#793e3e'],
@@ -48,12 +51,17 @@ export default class SmokeParticle extends PhysicalParticle {
         return new SmokeParticle();
     }
 
-    computeParticleShape() {
-        const shape = super.computeParticleShape();
-        shape.set('curl',       'Float16');
-        shape.set('curlVar',    'Float16');
-        return shape;
+   get shape() {
+    if (!this.#particleShape) {
+        const shape = new MemShape();
+        shape.inherit(super.shape);
+        shape.set('curl',       'Float32');
+        shape.set('curlVar',    'Float32');
+        this.#particleShape = shape;
+        this.#particleShape.build();
     }
+    return this.#particleShape;
+  }
 
     /**
      * Called when a particle is spawned to initialize its settings
@@ -61,11 +69,14 @@ export default class SmokeParticle extends PhysicalParticle {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(time, config) {
-        const particle = super.spawn(time, config);
-        particle.memory.curl = $Math.getRangeValue(this.curl);                              // 16-bit float
-        particle.memory.curlVar = Util.selectRandomOf(-this.curlVariance, this.curlVariance);    // 16-bit float
-        return particle;
+    spawn(time, config, heap) {
+        super.spawn(time, config, heap);
+
+        // assign the heap segment BEFORE any operations
+        this.shape.segment = heap;
+
+        this.shape.curl = $Math.getRangeValue(this.curl);                              // 16-bit float
+        this.shape.curlVar = Util.selectRandomOf(-this.curlVariance, this.curlVariance);    // 16-bit float
     }
 
     /**
@@ -78,12 +89,15 @@ export default class SmokeParticle extends PhysicalParticle {
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(time, deltaTime, $memory, pos, vel, life) {
-        super.update(time, deltaTime, $memory, pos, vel, life);
+    update(time, deltaTime, heap, pos, vel, life) {
+        super.update(time, deltaTime, heap, pos, vel, life);
+
+        // assign the segment BEFORE any operations
+        this.shape.segment = heap;
 
         // apply curl
         const factor = time / (this.curlIntensity * 1000);
-        vel[0] += ($memory.curl * Math.cos(factor) * $memory.cD);
-        vel[1] += $memory.curl * Math.sin(factor);
+        vel[0] += (this.shape.curl * Math.cos(factor) * this.shape.curlVar);
+        vel[1] += this.shape.curl * Math.sin(factor);
     }
 }

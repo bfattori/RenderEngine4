@@ -1,6 +1,6 @@
 import PhysicalParticle from './PhysicalParticle.js';
 import Util from '../../core/Util.js';
-import Spark, { MemShape } from '../../core/Spark.js';
+import { MemShape } from '../../core/Spark.js';
 
 export default class SparkParticle extends PhysicalParticle {
   #particleShape = null;
@@ -42,8 +42,7 @@ export default class SparkParticle extends PhysicalParticle {
     if (!this.#particleShape) {
       const shape = new MemShape();
       shape.inherit(super.shape);
-      shape.set('trailLength',  'UInt8');
-      //shape.set('trail',        'Float32', this.trailLength * 2);
+      shape.set('trail',        'VecF32', this.trailLength);
       shape.set('trFactor',     'Float32');
       this.#particleShape = shape;
       this.#particleShape.build();
@@ -63,9 +62,8 @@ export default class SparkParticle extends PhysicalParticle {
     // assign the heap segment BEFORE any operations
     this.shape.segment = heap;
 
-    this.shape.trailLength = config.trailLength;  // 8-bit unsigned integer
-    //this.shape.trail = [];  // max trail-length * two 16-bit floats
-    this.shape.trFactor = 1;
+    this.shape.trail = [];
+    this.shape.trFactor = 1 / config.trailLength;
   }
 
   /**
@@ -88,12 +86,15 @@ export default class SparkParticle extends PhysicalParticle {
 
     // calculate the trail if the particle has a trail length greater than 0
     if (trailLen > 0) {
-      // this.shape.trFactor = 1 /trailLen;
-      // $memory.trail.unshift(pos[1]);
-      // $memory.trail.unshift(pos[0]);
-      // if ($memory.trail.length > $memory.trailLength) {
-      //   $memory.trail.length = $memory.trailLength;
-      // }
+      const trail = this.shape.trail;
+
+      trail.unshift(pos[1]);
+      trail.unshift(pos[0]);
+      if (trail.length > this.trailLength) {
+         trail.length = this.trailLength;
+      }
+
+      this.shape.trail = trail;
     }
   }
 
@@ -112,9 +113,9 @@ export default class SparkParticle extends PhysicalParticle {
     // assign the segment BEFORE any operations
     this.shape.segment = heap;
 
-    // if (this.shape.trailLength > 0 && $memory.trail.length > 1) {
-    //   this.drawTrail(surface, $memory, pos);
-    // }
+    if (this.trailLength > 0 && this.trail.length > 1) {
+       this.drawTrail(surface, heap, pos);
+    }
   }
 
   /**
@@ -123,12 +124,14 @@ export default class SparkParticle extends PhysicalParticle {
    * @param {Object} $memory - The memory object containing the particle's instantaneous properties
    * @param {Array<number>} pos - The current position of the particle
    */
-  drawTrail(surface, $memory, pos) {
-    surface.lineWidth = $memory.trailWidth;
+  drawTrail(surface, heap, pos) {
+    this.shape.segment = heap;
+
+    surface.lineWidth = this.trailWidth;
     surface.beginPath();
     surface.moveTo(pos[0], pos[1]);
-    $memory.trail.map((p, i) => {
-      surface.strokeStyle = Util.setAlpha($memory.aFact * ($memory.trailLength - i), $memory.color);
+    this.shape.trail.map((p, i) => {
+      surface.strokeStyle = Util.setAlpha(this.shape.trFactor * (this.trailLength - i), this.shape.particleColor);
       surface.lineTo(p[0], p[1]);
       surface.stroke();
     });

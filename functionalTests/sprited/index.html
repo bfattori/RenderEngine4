@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Sprite Editor</title>
+    <style>
+        :root {
+            --bg: #1e1e1e;
+            --panel: #2d2d2d;
+            --accent: #007acc;
+            --text: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        #header {
+            height: 40px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 1px solid #444;
+            justify-content: space-between;
+        }
+
+        #main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #toolbar {
+            width: 60px;
+            background: var(--panel);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            border-right: 1px solid #444;
+        }
+
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
+            background: #444;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .tool-btn.active {
+            background: var(--accent);
+        }
+
+        #viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            background-image: 
+                linear-gradient(45deg, #222 25%, transparent 25%), 
+                linear-gradient(-45deg, #222 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #222 75%),
+                linear-gradient(-45deg, transparent 75%, #222 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+            overflow: auto;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            cursor: crosshair;
+        }
+
+        #properties-panel {
+            width: 300px;
+            background: var(--panel);
+            border-left: 1px solid #444;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        input, select, button {
+            background: #444;
+            border: 1px solid #666;
+            color: white;
+            padding: 5px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .frame-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px;
+            background: #3d3d3d;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .frame-item span { flex: 1; }
+        .frame-controls button { width: auto; margin: 0 2px; }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div>Sprite Editor v1.0</div>
+    <div>
+        <input type="file" id="importImg" style="display:none" accept="image/*">
+        <button onclick="document.getElementById('importImg').click()" style="width:auto">Import Image</button>
+        <button onclick="editor.exportJSON()" style="width:auto">Export JSON</button>
+    </div>
+</div>
+
+<div id="main-container">
+    <div id="toolbar">
+        <button id="btn-brush" class="tool-btn active" title="Brush (B)">B</button>
+        <button id="btn-eraser" class="tool-btn" title="Eraser (E)">E</button>
+        <button id="btn-flip" class="tool-btn" title="Flip (F)">F</button>
+        <button id="btn-clear" class="tool-btn" title="Clear">X</button>
+    </div>
+
+    <div id="viewport">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="properties-panel">
+        <div class="panel-section">
+            <h3>Sprite Info</h3>
+            <label>Sprite Name</label>
+            <input type="text" id="prop-spriteName" placeholder="e.g. melvin">
+            <label>State Name</label>
+            <input type="text" id="prop-stateName" placeholder="e.g. walk">
+            <div style="display:flex; gap:5px;">
+                <div><label>Y</label><input type="number" id="prop-y"></div>
+                <div><label>X</label><input type="number" id="prop-x"></div>
+                <div><label>W</label><input type="number" id="prop-w"></div>
+                <div><label>H</label><input type="number" id="prop-h"></div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h3>Animation</h3>
+            <label>FPS</label>
+            <input type="number" id="prop-fps" value="10">
+            <label>Type</label>
+            <select id="prop-type">
+                <option value="loop">Loop</option>
+                <option value="bounce">Bounce</option>
+                <option value="once">Once</option>
+            </select>
+            <button id="btn-addFrame">Add Animation Frame</button>
+        </div>
+
+        <div class="panel-section">
+            <h3>Frames</h3>
+            <div id="frame-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * SPRITE EDITOR ENGINE
+ */
+class SpriteEditor {
+    constructor() {
+        this.canvas = document.getElementById('canvas');
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+        this.img = null;
+        
+        // State
+        this.spriteSheet = {
+            spriteSheet: true,
+            version: 1,
+            bitmap: { image: "", width: 0, height: 0 },
+            assumeOpaque: true,
+            sprites: {}
+        };
+
+        this.currentSprite = null; // { name, stateName, frames: [] }
+        this.currentTool = 'brush';
+        this.isDrawing = false;
+        this.brushColor = '#ffffff';
+
+        this.init();
+    }
+
+    init() {
+        // Canvas Setup
+        this.canvas.width = 64;
+        this.canvas.height = 64;
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Event Listeners
+        this.canvas.addEventListener('mousedown', (e) => this.startAction(e));
+        window.addEventListener('mousemove', (e) => this.doAction(e));
+        window.addEventListener('mouseup', () => this.stopAction());
+        
+        // Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if(e.key.toLowerCase() === 'b') this.setTool('brush');
+            if(e.key.toLowerCase() === 'e') this.setTool('eraser');
+            if(e.key.toLowerCase() === 'f') this.flipSprite();
+            if(e.key.toLowerCase() === 's') this.exportJSON();
+        });
+
+        // UI Bindings
+        document.getElementById('btn-brush').onclick = () => this.setTool('brush');
+        document.getElementById('btn-eraser').onclick = () => this.setTool('eraser');
+        document.getElementById('btn-flip').onclick = () => this.flipSprite();
+        document.getElementById('btn-addFrame').onclick = () => this.addFrame();
+        document.getElementById('importImg').onchange = (e) => this.loadImage(e);
+
+        // Update UI inputs when clicking canvas
+        this.canvas.addEventListener('click', (e) => this.updatePropsFromCoords(e));
+    }
+
+    setTool(tool) {
+        this.currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-${tool}`).classList.add('active');
+    }
+
+    loadImage(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            this.img = new Image();
+            this.img.onload = () => {
+                this.canvas.width = this.img.width;
+                this.canvas.height = this.img.height;
+                this.spriteSheet.bitmap.width = this.img.width;
+                this.spriteSheet.bitmap.height = this.img.height;
+                this.ctx.drawImage(this.img, 0, 0);
+                this.render();
+            };
+            this.img.src = event.target.result;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    }
+
+    startAction(e) {
+        this.isDrawing = true;
+        this.doAction(e);
+    }
+
+    doAction(e) {
+        if (!this.isDrawing) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const x = Math.floor(e.clientX - rect.left);
+        const y = Math.floor(e.clientY - rect.top);
+
+        if (this.currentTool === 'brush') {
+            this.ctx.fillStyle = this.brushColor;
+            this.ctx.fillRect(x, y, 2, 2);
+        } else if (this.currentTool === 'eraser') {
+            this.ctx.globalCompositeOperation = 'destination-out';
+            this.ctx.fillRect(x, y, 2, 2);
+            this.ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+
+    stopAction() {
+        this.isDrawing = false;
+    }
+
+    updatePropsFromCoords(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = Math.floor(e.clientX - rect.left);
+        const y = Math.floor(e.clientY - rect.top);
+        
+        // Logic to define a sprite region
+        // For this MVP, we assume the user clicks to "set" the primary frame
+        const sName = document.getElementById('prop-spriteName').value || "new_sprite";
+        const stateName = document.getElementById('prop-stateName').value || "idle";
+        
+        if (!this.spriteSheet.sprites[sName]) this.spriteSheet.sprites[sName] = {};
+        
+        // Define frame: [y, x, w, h]
+        const frameData = [y, x, 32, 32]; 
+        this.spriteSheet.sprites[sName][stateName] = frameData;
+        this.render();
+        this.updateUI();
+    }
+
+    flipSprite() {
+        // Simple implementation: flip the current canvas context
+        const temp = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.save();
+        this.ctx.translate(this.canvas.width, 0);
+        this.ctx.scale(-1, 1);
+        this.ctx.drawImage(this.canvas, 0, 0);
+        this.ctx.restore();
+        // Note: In a production app, you'd need to map the data coordinates too
+    }
+
+    addFrame() {
+        const sName = document.getElementById('prop-spriteName').value;
+        const stateName = document.getElementById('prop-stateName').value;
+        if (!sName || !stateName) return alert("Enter sprite and state names first");
+
+        const current = this.spriteSheet.sprites[sName][stateName];
+        
+        // If it's a single frame array [y,x,w,h]
+        if (current.length === 4) {
+            this.spriteSheet.sprites[sName][stateName] = [
+                current[0], current[1], current[2], current[3],
+                1, 10, "loop"
+            ];
+        } else {
+            // If it's already an animation [y,x,w,h,count,fps,type]
+            this.spriteSheet.sprites[sName][stateName].push(current[0], current[1], current[2], current[3]);
+        }
+        this.updateUI();
+    }
+
+    updateUI() {
+        const sName = document.getElementById('prop-spriteName').value;
+        const stateName = document.getElementById('prop-stateName').value;
+        const list = document.getElementById('frame-list');
+        list.innerHTML = "";
+
+        if (this.spriteSheet.sprites[sName] && this.spriteSheet.sprites[sName][stateName]) {
+            const data = this.spriteSheet.sprites[sName][stateName];
+            
+            // Update Basic Props
+            document.getElementById('prop-y').value = data[0];
+            document.getElementById('prop-x').value = data[1];
+            document.getElementById('prop-w').value = data[2];
+            document.getElementById('prop-h').value = data[3];
+            
+            if (data.length >= 7) {
+                document.getElementById('prop-fps').value = data[5];
+                document.getElementById('prop-type').value = data[6];
+            }
+
+            // Render Frame List
+            let count = (data.length >= 7) ? data[4] : 1;
+            for (let i = 0; i < count; i++) {
+                const idx = i * 4;
+                const item = document.createElement('div');
+                item.className = 'frame-item';
+                item.innerHTML = `
+                    <span>Frame ${i+1}: ${data[idx]}, ${data[idx+1]}</span>
+                    <div class="frame-controls">
+                        <button onclick="editor.removeFrame(${i})">X</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+        }
+    }
+
+    removeFrame(idx) {
+        const sName = document.getElementById('prop-spriteName').value;
+        const stateName = document.getElementById('prop-stateName').value;
+        const data = this.spriteSheet.sprites[sName][stateName];
+        if (data.length >= 7) {
+            data.splice(idx * 4, 4);
+            this.updateUI();
+        }
+    }
+
+    render() {
+        if (this.img) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(this.img, 0, 0);
+        }
+    }
+
+    exportJSON() {
+        const dataStr = JSON.stringify(this.spriteSheet, null, 4);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "spritesheet.json";
+        a.click();
+    }
+}
+
+// Initialize App
+const editor = new SpriteEditor();
+</script>
+</body>
+</html>

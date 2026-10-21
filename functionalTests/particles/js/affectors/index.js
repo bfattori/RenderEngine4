@@ -94,7 +94,7 @@ RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 
 // initialize the particle engine 
-RenderEngine.particleEngine.initialize();
+await RenderEngine.particleEngine.initialize();
 
 // smoker using bitmaps (tiles)
 const smoker = new GameObject();

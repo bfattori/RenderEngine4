@@ -29,7 +29,7 @@ class MemShape extends Map {
             let offset = 0;
             this.forEach((v, k) => {
                 this.#offsets.set(k, offset);
-                offset += EDV[v.type].size;
+                offset += Spark[v.type].size;
             });
         }
         return this.#offsets.get(key);
@@ -60,24 +60,24 @@ class MemShape extends Map {
      * memory with simple property getters and setters.
      */
     build() {
-        const m = {}, offs = 0;
+        const m = {};
         this.forEach((val, key) => {
             if (val.len === 1) {
                 m[key] = (value) => {
                     // simple value
                     if (value) {
-                        this.segment['set' + EDV[this.get(key)].type](this.getByteOffset(key), value);
+                        this.#currentMemorySegment['set' + Spark[this.get(key)].type](this.getByteOffset(key), value);
                     } else {
-                        return this.segment['get' + EDV[this.get(key)].type](this.getByteOffset(key));
+                        return this.#currentMemorySegment['get' + Spark[this.get(key)].type](this.getByteOffset(key));
                     }
                 };
             } else {
-                m[key] = (value, $$MEM) => {
+                m[key] = (value) => {
                     // array of values
                     if (value) {
-                        this.segment['set' +  EDV[this.get(key)].type + 'Array'](this.getByteOffset(key), value);
+                        this.#currentMemorySegment['set' +  Spark[this.get(key)].type + 'Array'](this.getByteOffset(key), value, this.length(key));
                     } else {
-                        return this.segment['get' +  EDV[this.get(key)].type + 'Array'](this.getByteOffset(key));
+                        return this.#currentMemorySegment['get' +  Spark[this.get(key)].type + 'Array'](this.getByteOffset(key), this.length(key));
                     }
                 };
             }
@@ -85,6 +85,78 @@ class MemShape extends Map {
 
         Util.lombok(this, m);
     }
+
+    /**
+     * Builds the memory shape that allows rapid access to
+     * memory with simple property getters and setters.
+     */
+    newBuild() {
+        const m = {};
+        this.forEach((val, key) => {
+            m[key] = (value) => {
+                if (value) {
+                    this.#setter(val.type, value, this.getByteOffset(key), val.len);
+                } else {
+                    return this.#getter(val.type, this.getByteOffset(key), val.len);
+                }
+            };
+        });
+
+        Util.lombok(this, m);
+    }
+
+    #setter(type, value, byteOffset, len = 1) {
+        if (len === 1) {
+            switch(type) {
+                case 'Int8': this.#currentMemorySegment.setInt8(byteOffset, value); break;
+                case 'UInt8': this.#currentMemorySegment.setUint8(byteOffset, value); break; 
+                case 'Int16': this.#currentMemorySegment.setInt16(byteOffset, value); break; 
+                case 'UInt16': this.#currentMemorySegment.setUint16(byteOffset, value); break; 
+                case 'Int32': this.#currentMemorySegment.setInt32(byteOffset, value); break;
+                case 'UInt32': this.#currentMemorySegment.setUint32(byteOffset, value); break; 
+                case 'Int64': this.#currentMemorySegment.setBigInt64(byteOffset, value); break; 
+                case 'UInt64': this.#currentMemorySegment.setBigUint64(byteOffset, value); break; 
+                case 'Float32': this.#currentMemorySegment.setFloat32(byteOffset, value); break; 
+                case 'Float64': this.#currentMemorySegment.setFloat64(byteOffset, value); break; 
+            }
+        } else {
+            switch(type) {
+                case 'Int8': this.#currentMemorySegment.setInt8Array(byteOffset, value, len); break; 
+                case 'Int16': this.#currentMemorySegment.setInt16Array(byteOffset, value, len); break; 
+                case 'Int32': this.#currentMemorySegment.setInt32Array(byteOffset, value, len); break; 
+                case 'Int64': this.#currentMemorySegment.setBigInt64Array(byteOffset, value, len); break; 
+                case 'Float32': this.#currentMemorySegment.setFloat32Array(byteOffset, value, len); break; 
+                case 'Float64': this.#currentMemorySegment.setFloat64Array(byteOffset, value, len); break; 
+            }
+        }
+    }
+
+    #getter(type, byteOffset, len = 1) {
+        if (len === 1) {
+            switch(type) {
+                case 'Int8': return this.#currentMemorySegment.getInt8(byteOffset); 
+                case 'Uint8': return this.#currentMemorySegment.getUint8(byteOffset); 
+                case 'Int16': return this.#currentMemorySegment.getInt16(byteOffset); 
+                case 'Uint16': return this.#currentMemorySegment.getUint16(byteOffset); 
+                case 'Int32': return this.#currentMemorySegment.getInt32(byteOffset); 
+                case 'Uint32': return this.#currentMemorySegment.getUint32(byteOffset); 
+                case 'BigInt64': return this.#currentMemorySegment.getBigInt64(byteOffset); 
+                case 'BigUint64': return this.#currentMemorySegment.getBigUint64(byteOffset); 
+                case 'Float32': return this.#currentMemorySegment.getFloat32(byteOffset); 
+                case 'Float64': return this.#currentMemorySegment.setFloat64(byteOffset); 
+            }
+        } else {
+            switch(type) {
+                case 'Int8': return this.#currentMemorySegment.getInt8Array(byteOffset, len); 
+                case 'Int16': return this.#currentMemorySegment.getInt16Array(byteOffset, len); 
+                case 'Int32': return this.#currentMemorySegment.getInt32Array(byteOffset, len); 
+                case 'BigInt64': return this.#currentMemorySegment.getBigInt64Array(byteOffset, len); 
+                case 'Float32': return this.#currentMemorySegment.getFloat32Array(byteOffset, len); 
+                case 'Float64': return this.#currentMemorySegment.getFloat64Array(byteOffset, len); 
+            }
+        }
+    }
+
 
     /**
      * Returns the size of this shape in bytes
@@ -95,10 +167,10 @@ class MemShape extends Map {
             let total = 0;
             this.forEach(v => {
               if (v.len === 1) {
-                total += EDV[v.type].size;
+                total += Spark[v.type].size;
               } else {
                 // include total bytes of array length
-                total += EDV[v.type].size * v.len;
+                total += Spark[v.type].size * v.len;
               }
             });
             this.#sizeOf = total;
@@ -109,7 +181,7 @@ class MemShape extends Map {
 
 export { MemShape };
 
-export default class EDV extends DataView {
+export default class Spark extends DataView {
     #options = null;
 
     // standard types
@@ -119,9 +191,8 @@ export default class EDV extends DataView {
     static UInt16 =     {type: 'Uint16',    size: 2};
     static Int32 =      {type: 'Int32',     size: 4};
     static UInt32 =     {type: 'Uint32',    size: 4};
-    static Int64 =      {type: 'BigInt64',  size: 8};
-    static UInt64 =     {type: 'BigUint64', size: 8};
-    static Float16 =    {type: 'Float16',   size: 2};
+    static Int64 =      {type: 'BigInt64',     size: 8};
+    static UInt64 =     {type: 'BigUint64',    size: 8};
     static Float32 =    {type: 'Float32',   size: 4};
     static Float64 =    {type: 'Float64',   size: 8};
 
@@ -134,7 +205,6 @@ export default class EDV extends DataView {
     static VecU8 =      {type: 'VecU8',     size: 2};
     static Vec16 =      {type: 'Vec16',     size: 4};
     static VecU16 =     {type: 'VecU16',    size: 4};
-    static VecF16 =     {type: 'VecF16',    size: 4};
     static Vec32 =      {type: 'Vec32',     size: 8};
     static VecU32 =     {type: 'VecU32',    size: 8};
     static VecF32 =     {type: 'VecF32',    size: 8};
@@ -161,18 +231,6 @@ export default class EDV extends DataView {
      */
     #encodeColor32(color) {
         color = color.substring(1); // remove hash
-        // const small = color.length >= 3 && color.length <= 4;
-        // let coded = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 2), 16) << 24;
-        // coded += parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 4), 16) << 16;
-        // coded += parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 6), 16) << 8;
-        // if (color.length === 4) {
-        //     coded += parseInt(`${color[3]}${color[3]}`, 16);
-        // } else if (color.length === 6) {
-        //     coded += parseInt(color.substring(6, 8), 16);
-        // } else {
-        //   // assume fully opaque for 3 digit hex color codes
-        //   coded += 255;
-        // }
         return parseInt(color, 16);
     }
 
@@ -183,11 +241,6 @@ export default class EDV extends DataView {
      */
     #decodeColor32(uint32) {
         return uint32.toString(16);
-        // const r = (uint32 >> 24 & 0xFF);
-        // const g = (uint32 >> 16 & 0xFF);
-        // const b = (uint32 >> 8 & 0xFF);
-        // const a = uint32 & 0x000000FF;
-        // return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}${a.toString(16).padStart(2, '0')}`;
     }
 
     /**
@@ -215,7 +268,7 @@ export default class EDV extends DataView {
      */
     setString(offset, stringVal) {
       this.setUint16(offset, stringVal.length);
-      const buf = new Uint16Array(this.buffer, offset + EDV.UInt16.size, stringVal.length);
+      const buf = new Uint16Array(this.buffer, offset + Spark.UInt16.size, stringVal.length);
       stringVal.split('').forEach((el, i) => {
         buf[i] = el.codePointAt(0);
       });
@@ -228,7 +281,7 @@ export default class EDV extends DataView {
      */
     getString(offset) {
       const len = this.getUint16(offset);
-      const buf = new Uint16Array(this.buffer, offset + EDV.UInt16.size, len);
+      const buf = new Uint16Array(this.buffer, offset + Spark.UInt16.size, len);
       const arr = [];
       buf.map(el => arr.push(String.fromCodePoint(el)));
       return arr.join('');
@@ -291,7 +344,7 @@ export default class EDV extends DataView {
      */
     setVec8(offset, vec8) {
         this.setInt8(offset, vec8[0]);
-        this.setInt8(offset + EDV.Int8.size, vec8[1]);
+        this.setInt8(offset + Spark.Int8.size, vec8[1]);
     }
 
     /**
@@ -300,7 +353,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec8(offset) {
-        return [this.getInt8(offset), this.getInt8(offset + EDV.Int8.size)];
+        return [this.getInt8(offset), this.getInt8(offset + Spark.Int8.size)];
     }
 
     /**
@@ -310,7 +363,7 @@ export default class EDV extends DataView {
      */
     setVecU8(offset, vecU8) {
         this.setUint8(offset, vecU8[0]);
-        this.setUint8(offset + EDV.UInt8.size, vecU8[1]);
+        this.setUint8(offset + Spark.UInt8.size, vecU8[1]);
     }
 
     /**
@@ -319,7 +372,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU8(offset) {
-        return [this.getUint8(offset), this.getUint8(offset + EDV.UInt8.size)];
+        return [this.getUint8(offset), this.getUint8(offset + Spark.UInt8.size)];
     }
 
     /**
@@ -329,7 +382,7 @@ export default class EDV extends DataView {
      */
     setVec16(offset, vec16) {
         this.setInt16(offset, vec16[0]);
-        this.setInt16(offset + EDV.Int16.size, vec16[1]);
+        this.setInt16(offset + Spark.Int16.size, vec16[1]);
     }
 
     /**
@@ -338,7 +391,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec16(offset) {
-        return [this.getInt16(offset), this.getInt16(offset + EDV.Int16.size)];
+        return [this.getInt16(offset), this.getInt16(offset + Spark.Int16.size)];
     }
 
     /**
@@ -348,7 +401,7 @@ export default class EDV extends DataView {
      */
     setVecU16(offset, vecU16) {
         this.setUint16(offset, vecU16[0]);
-        this.setUint16(offset + EDV.UInt16.size, vecU16[1]);
+        this.setUint16(offset + Spark.UInt16.size, vecU16[1]);
     }
 
     /**
@@ -357,7 +410,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU16(offset) {
-        return [this.getUint16(offset), this.getUint16(offset + EDV.UInt16.size)];
+        return [this.getUint16(offset), this.getUint16(offset + Spark.UInt16.size)];
     }
 
     /**
@@ -367,7 +420,7 @@ export default class EDV extends DataView {
      */
     setVec32(offset, vec32) {
         this.setInt32(offset, vec32[0]);
-        this.setInt32(offset + EDV.Int32.size, vec32[1]);
+        this.setInt32(offset + Spark.Int32.size, vec32[1]);
     }
 
     /**
@@ -376,7 +429,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec32(offset) {
-        return [this.getInt32(offset), this.getInt32(offset + EDV.Int32.size)];
+        return [this.getInt32(offset), this.getInt32(offset + Spark.Int32.size)];
     }
 
     /**
@@ -386,7 +439,7 @@ export default class EDV extends DataView {
      */
     setVecU32(offset, vecU32) {
         this.setUint32(offset, vecU32[0]);
-        this.setUint32(offset + EDV.UInt32.size, vecU32[1]);
+        this.setUint32(offset + Spark.UInt32.size, vecU32[1]);
     }
 
     /**
@@ -395,7 +448,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU32(offset) {
-        return [this.getUint32(offset), this.getUint32(offset + EDV.UInt32.size)];
+        return [this.getUint32(offset), this.getUint32(offset + Spark.UInt32.size)];
     }
 
     /**
@@ -405,7 +458,7 @@ export default class EDV extends DataView {
      */
     setVec64(offset, vec64) {
         this.setBigInt64(offset, vec64[0]);
-        this.setBigInt64(offset + EDV.Int64.size, vec64[1]);
+        this.setBigInt64(offset + Spark.Int64.size, vec64[1]);
     }
 
     /**
@@ -414,7 +467,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec64(offset) {
-        return [this.getBigInt64(offset), this.getBigInt64(offset + EDV.Int64.size)];
+        return [this.getBigInt64(offset), this.getBigInt64(offset + Spark.Int64.size)];
     }
 
     /**
@@ -424,7 +477,7 @@ export default class EDV extends DataView {
      */
     setVecU64(offset, vecU64) {
         this.setBigUint64(offset, vecU64[0]);
-        this.setBigUint64(offset + EDV.UInt64.size, vecU64[1]);
+        this.setBigUint64(offset + Spark.UInt64.size, vecU64[1]);
     }
 
     /**
@@ -433,26 +486,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU64(offset) {
-        return [this.getBigUint64(offset), this.getBigUint64(offset + EDV.UInt64.size)];
-    }
-
-    /**
-     * Store a 2-element 16-bit floating point vector
-     * @param {number} offset - The bute offset
-     * @param {Array<number>} vecF16 - 2-element array
-     */
-    setVecF16(offset, vecF16) {
-        this.setFloat16(offset, vecF16[0]);
-        this.setFloat16(offset + EDV.Float16.size, vecF16[1])
-    }
-
-    /**
-     * Retrieve a 2-element 16-bit floating point vector
-     * @param {number} offset - The byte offset
-     * @returns {Array<number>} A 2-element array
-     */
-    getVecF16(offset) {
-        return [this.getFloat16(offset), this.getFloat16(offset + EDV.Float16.size)];
+        return [this.getBigUint64(offset), this.getBigUint64(offset + Spark.UInt64.size)];
     }
 
     /**
@@ -462,7 +496,7 @@ export default class EDV extends DataView {
      */
     setVecF32(offset, vecF32) {
         this.setFloat32(offset, vecF32[0]);
-        this.setFloat32(offset + EDV.Float32.size, vecF32[1]);
+        this.setFloat32(offset + Spark.Float32.size, vecF32[1]);
     }
 
     /**
@@ -471,7 +505,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecF32(offset) {
-        return [this.getFloat32(offset), this.getFloat32(offset + EDV.Float32.size)];
+        return [this.getFloat32(offset), this.getFloat32(offset + Spark.Float32.size)];
     }
 
     /**
@@ -481,7 +515,7 @@ export default class EDV extends DataView {
      */
     setVecF64(offset, vecF64) {
         this.setFloat64(offset, vecF64[0]);
-        this.setFloat64(offset + EDV.Float64.size, vecF64[1]);
+        this.setFloat64(offset + Spark.Float64.size, vecF64[1]);
     }
 
     /**
@@ -490,7 +524,7 @@ export default class EDV extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecF64(offset) {
-        return [this.getFloat64(offset), this.getFloat64(offset + EDV.Float64.size)];
+        return [this.getFloat64(offset), this.getFloat64(offset + Spark.Float64.size)];
     }
 
     /**
@@ -498,9 +532,9 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @param {Array<number>} int8Array - The array to store
      */
-    setInt8Array(offset, int8Array) {
-        this.setUint16(offset, int8Array.length);
-        const buf = new Int8Array(this.buffer, offset + EDV.UInt16.size, int8Array.length);
+    setInt8Array(offset, int8Array, len) {
+        int8Array.length = len;
+        const buf = new Int8Array(this.buffer, offset, len);
         buf.set(int8Array, 0);
     }
 
@@ -509,9 +543,8 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @returns {Int8Array<ArrayBuffer>} An array of 8-bit signed integers
      */
-    getInt8Array(offset) {
-        const len = this.getUint16(offset);
-        return new Int8Array(this.buffer, offset + EDV.UInt16.size, len);
+    getInt8Array(offset, len) {
+        return new Int8Array(this.buffer, offset, len);
     }
 
     /**
@@ -519,9 +552,9 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @param {Array<number>} int8Array - The array to store
      */
-    setInt16Array(offset, int16Array) {
-        this.setUint16(offset, int16Array.length);
-        const buf = new Int16Array(this.buffer, offset + EDV.UInt16.size, int16Array.length);
+    setInt16Array(offset, int16Array, len) {
+        int16Array.length = len;
+        const buf = new Int16Array(this.buffer, offset, int16Array.length);
         buf.set(int16Array, 0);
     }
 
@@ -530,9 +563,8 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @returns {Int16Array<ArrayBuffer>} An array of 16-bit signed integers
      */
-    getInt16Array(offset) {
-        const len = this.getUint16(offset);
-        return new Int16Array(this.buffer, offset + EDV.UInt16.size, len);
+    getInt16Array(offset, len) {
+        return new Int16Array(this.buffer, offset, len);
     }
 
     /**
@@ -540,9 +572,9 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @param {Array<number>} int32Array - The array to store
      */
-    setInt32Array(offset, int32Array) {
-        this.setUint16(offset, int32Array.length);
-        const buf = new Int32Array(this.buffer, offset + EDV.UInt16.size, int32Array.length);
+    setInt32Array(offset, int32Array, len) {
+        int32Array.length = len;
+        const buf = new Int32Array(this.buffer, offset, len);
         buf.set(int32Array, 0);
     }
 
@@ -551,9 +583,8 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @returns {Int32Array<ArrayBuffer>} An array of 32-bit signed integers
      */
-    getInt32Array(offset) {
-        const len = this.getUint16(offset);
-        return new Int32Array(this.buffer, offset + EDV.UInt16.size, len);
+    getInt32Array(offset, len) {
+        return new Int32Array(this.buffer, offset, len);
     }
 
     /**
@@ -561,9 +592,9 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @param {Array<number>} int64Array - The array to store
      */
-    setInt64Array(offset, int64Array) {
-        this.setUint16(offset, int64Array.length);
-        const buf = new Int64Array(this.buffer, offset + EDV.UInt16.size, int64Array.length);
+    setInt64Array(offset, int64Array, len) {
+        int64Array.length = len;
+        const buf = new BigInt64Array(this.buffer, offset, len);
         buf.set(int64Array, 0);
     }
 
@@ -572,30 +603,8 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @returns {BigInt64Array<ArrayBuffer>} An array of 64-bit signed integers
      */
-    getInt64Array(offset) {
-        const len = this.getUint16(offset);
-        return new BigInt64Array(this.buffer, offset + EDV.UInt16.size, len);
-    }
-
-    /**
-     * Store an array of 16-bit floating points (-65504 to 65504)
-     * @param {number} offset - The byte offset to the array
-     * @param {Array<number>} float16Array - The array to store
-     */
-    setFloat16Array(offset, float16Array) {
-        this.setUint16(offset, float16Array.length);
-        const buf = new Float16Array(this.buffer, offset + EDV.UInt16.size, float16Array.length);
-        buf.set(float16Array, 0);
-    }
-
-    /**
-     * Retrieve an array of 16-bit floating points
-     * @param {number} offset - The byte offset to the array
-     * @returns {Float16Array<ArrayBuffer>} An array of 16-bit floating points
-     */
-    getFloat16Array(offset) {
-        const len = this.getUint16(offset);
-        return new Float16Array(this.buffer, offset + EDV.UInt16.size, len);
+    getInt64Array(offset, len) {
+        return new BigInt64Array(this.buffer, offset, len);
     }
 
     /**
@@ -603,9 +612,9 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @param {Array<number>} float32Array - The array to store
      */
-    setFloat32Array(offset, float32Array) {
-        this.setUint16(offset, float32Array.length);
-        const buf = new Float32Array(this.buffer, offset + EDV.UInt16.size, float32Array.length);
+    setFloat32Array(offset, float32Array, len) {
+        float32Array.length = len;
+        const buf = new Float32Array(this.buffer, offset, len);
         buf.set(float32Array, 0);
     }
 
@@ -614,9 +623,8 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @returns {Float32Array<ArrayBuffer>} An array of 32-bit floating points
      */
-    getFloat32Array(offset) {
-        const len = this.getUint16(offset);
-        return new Float32Array(this.buffer, offset + EDV.UInt16.size, len);
+    getFloat32Array(offset, len) {
+        return new Float32Array(this.buffer, offset, len);
     }
 
     /**
@@ -624,9 +632,9 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @param {Array<number>} float64Array - The array to store
      */
-    setFloat64Array(offset, float64Array) {
-        this.setUint16(offset, float64Array.length);
-        const buf = new Float64Array(this.buffer, offset + EDV.UInt16.size, float64Array.length);
+    setFloat64Array(offset, float64Array, len) {
+        float64Array.length = len;
+        const buf = new Float64Array(this.buffer, offset, len);
         buf.set(float64Array, 0);
     }
 
@@ -635,34 +643,19 @@ export default class EDV extends DataView {
      * @param {number} offset - The byte offset to the array
      * @returns {Float64Array<ArrayBuffer>} An array of 64-bit floating points
      */
-    getFloat64Array(offset) {
-        const len = this.getUint16(offset);
-        return new Float64Array(this.buffer, offset + EDV.UInt16.size, len);
+    getFloat64Array(offset, len) {
+        return new Float64Array(this.buffer, offset, len);
     }
 
-    /**
-     * Store an array of hex color values
-     * @param {number} offset - The byte offset to the array
-     * @param {Array<number>} color32Array - Array of hex colors store
-     */
-    setColor32Array(offset, color32Array) {
-        this.setUint16(offset, color32Array.length);
-        const buf = new Uint32Array(this.buffer, offset + EDV.UInt16.size, color32Array.length);
-        color32Array.forEach((el, i) => {
-          buf[i] = this.#encodeColor32(el);
-        });
+    setVecF32Array(offset, vecf32Array, len) {
+        vecf32Array.length = len * 2;
+        const mem = new Spark(this.buffer, offset, len * Float32Array.BYTES_PER_ELEMENT * 2);
+        const buf = new Float32Array(mem.buffer, 0, len * 2);
+        buf.set(vecf32Array, 0);
     }
 
-    /**
-     * Retrieve an array of hex color values
-     * @param {number} offset - The byte offset to the array
-     * @returns {Array<String>} An array of hex color values
-     */
-    getColor32Array(offset) {
-        const len = this.getUint16(offset);
-        const buf = new Uint32Array(this.buffer, offset + EDV.UInt16.size, len);
-        const arr = [];
-        buf.map(el => arr.push(this.#decodeColor32(el)));
-        return arr;
+    getVecF32Array(offset, len) {
+        const mem = new Spark(this.buffer, offset, len * Float32Array.BYTES_PER_ELEMENT * 2);
+        return new Float32Array(mem.buffer, 0, len * 2);
     }
 }

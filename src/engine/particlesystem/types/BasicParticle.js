@@ -3,7 +3,7 @@ import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';
-import Spark, { MemShape } from '../../core/Spark.js';
+import { MemShape } from '../../core/Spark.js';
 
 /**
  * @class BasicParticle
