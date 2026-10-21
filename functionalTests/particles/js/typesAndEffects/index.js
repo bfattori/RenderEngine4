@@ -7,7 +7,6 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
