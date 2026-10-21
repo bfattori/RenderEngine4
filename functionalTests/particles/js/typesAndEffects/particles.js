@@ -33,7 +33,7 @@ wParticle.name = 'hotOrangeAndRed';
 
 const wParticle2 = new WaterParticle({
     colors: ['#fae8d9','#f0cdcd','#ffffff','#ffffc3','#ffff00'],
-    particleSize: 2,
+    particleSize: 3,
     lifeSpan: [500, 1500]
 });
 wParticle2.name = 'hotYellows';

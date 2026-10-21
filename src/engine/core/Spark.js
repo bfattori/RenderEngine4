@@ -10,31 +10,76 @@ class MemShape extends Map {
         super(iterable);
     }
 
+    /**
+     * Returns the size of this shape in bytes
+     * @returns {number} The size in bytes
+     */
+    get sizeOf() {
+        if (this.#sizeOf === 0) {
+            let total = 0;
+            this.forEach(v => {
+                // include total bytes of array length
+                total += Spark[v.type].size * v.len;
+            });
+            this.#sizeOf = total;
+        }
+        return this.#sizeOf;
+    }
+
+    /**
+     * Set the value type of the property in the type.
+     * @param {String} key - The key name 
+     * @param {String} type - The type name
+     * @param {number} length - The length (default: 1)
+     */
     set(key, type, length = 1) {
         super.set(key, {type: type, len: length});
     }
 
+    /**
+     * Returns the type name associated with the property.
+     * @param {String} key - The key name
+     * @returns {String} The type name
+     */
     get(key) {
         return super.get(key).type;
     }
 
+    /**
+     * Inherits the properties of the parent memory shape object, in the
+     * order that they have been declared. Calling the `super` constructor
+     * fails.
+     * @param {MemShape} fromWhat - The source (parent) `MemShape`
+     */
     inherit(fromWhat) {
         fromWhat.forEach((v, k) => {
             this.set(k, v.type, v.len);
         });
     }
 
+    /**
+     * Returns the byte offset of the property in bytes. This is used for
+     * memory management and serialization.
+     * @param {String} key - The key name
+     * @returns {number} The byte offset
+     */
     getByteOffset(key) {
         if (this.#offsets.size === 0) {
             let offset = 0;
             this.forEach((v, k) => {
                 this.#offsets.set(k, offset);
-                offset += Spark[v.type].size;
+                offset += Spark[v.type].size * v.len;
             });
         }
         return this.#offsets.get(key);
     }
 
+    /**
+     * Returns the length of the value associated with the key. A value longer than `1` indicates an
+     * `Array` type of value.
+     * @param {String} key - The key name
+     * @returns {number} The number of elements the value contains.
+     */
     length(key) {
         return super.get(key).len;
     }
@@ -47,135 +92,48 @@ class MemShape extends Map {
         return super.getOrInsertComputed(key, fn());
     }
 
-    set segment(dataView) {
-        this.#currentMemorySegment = dataView;
+    /**
+     * Set the memory segment within the buffer that 
+     * represents this shapes's allocation.
+     * @param {Spark} seg - The memory segment
+     */
+    set segment(seg) {
+        this.#currentMemorySegment = seg;
     }
 
+    /**
+     * Returns the memory segment within the buffer that 
+     * represents this shapes's allocation.
+     * @returns {Spark}
+     */
     get segment() {
         return this.#currentMemorySegment;
     }
 
     /**
-     * Builds the memory shape that allows rapid access to
-     * memory with simple property getters and setters.
+     * Builds the memory shape to provide rapid access to the
+     * values without remembering byte offsets or types. Transforms
+     * the keys into properties of the shape.
      */
     build() {
-        const m = {};
-        this.forEach((val, key) => {
-            if (val.len === 1) {
-                m[key] = (value) => {
-                    // simple value
-                    if (value) {
-                        this.#currentMemorySegment['set' + Spark[this.get(key)].type](this.getByteOffset(key), value);
-                    } else {
-                        return this.#currentMemorySegment['get' + Spark[this.get(key)].type](this.getByteOffset(key));
-                    }
-                };
-            } else {
-                m[key] = (value) => {
-                    // array of values
-                    if (value) {
-                        this.#currentMemorySegment['set' +  Spark[this.get(key)].type + 'Array'](this.getByteOffset(key), value, this.length(key));
-                    } else {
-                        return this.#currentMemorySegment['get' +  Spark[this.get(key)].type + 'Array'](this.getByteOffset(key), this.length(key));
-                    }
-                };
-            }
-        });
-
-        Util.lombok(this, m);
-    }
-
-    /**
-     * Builds the memory shape that allows rapid access to
-     * memory with simple property getters and setters.
-     */
-    newBuild() {
+        // FIXME: this is using the string'd form of the method which requires a lookup and a calculation.
+        //        in /experiments/MemShapeAccess.js I tried a new builder that uses switch/case which *should*
+        //        increase performance, but failed spectacularly to set or access data. It deserves a revisit
         const m = {};
         this.forEach((val, key) => {
             m[key] = (value) => {
+                // array of values
+                const method = Spark[this.get(key)].type + (this.length(key) > 1 ? 'Array' : ''),
+                    byteOffset = this.getByteOffset(key);
                 if (value) {
-                    this.#setter(val.type, value, this.getByteOffset(key), val.len);
+                    this.#currentMemorySegment['set' + method](byteOffset, value, this.length(key));
                 } else {
-                    return this.#getter(val.type, this.getByteOffset(key), val.len);
+                    return this.#currentMemorySegment['get' + method](byteOffset, this.length(key));
                 }
             };
         });
 
         Util.lombok(this, m);
-    }
-
-    #setter(type, value, byteOffset, len = 1) {
-        if (len === 1) {
-            switch(type) {
-                case 'Int8': this.#currentMemorySegment.setInt8(byteOffset, value); break;
-                case 'UInt8': this.#currentMemorySegment.setUint8(byteOffset, value); break; 
-                case 'Int16': this.#currentMemorySegment.setInt16(byteOffset, value); break; 
-                case 'UInt16': this.#currentMemorySegment.setUint16(byteOffset, value); break; 
-                case 'Int32': this.#currentMemorySegment.setInt32(byteOffset, value); break;
-                case 'UInt32': this.#currentMemorySegment.setUint32(byteOffset, value); break; 
-                case 'Int64': this.#currentMemorySegment.setBigInt64(byteOffset, value); break; 
-                case 'UInt64': this.#currentMemorySegment.setBigUint64(byteOffset, value); break; 
-                case 'Float32': this.#currentMemorySegment.setFloat32(byteOffset, value); break; 
-                case 'Float64': this.#currentMemorySegment.setFloat64(byteOffset, value); break; 
-            }
-        } else {
-            switch(type) {
-                case 'Int8': this.#currentMemorySegment.setInt8Array(byteOffset, value, len); break; 
-                case 'Int16': this.#currentMemorySegment.setInt16Array(byteOffset, value, len); break; 
-                case 'Int32': this.#currentMemorySegment.setInt32Array(byteOffset, value, len); break; 
-                case 'Int64': this.#currentMemorySegment.setBigInt64Array(byteOffset, value, len); break; 
-                case 'Float32': this.#currentMemorySegment.setFloat32Array(byteOffset, value, len); break; 
-                case 'Float64': this.#currentMemorySegment.setFloat64Array(byteOffset, value, len); break; 
-            }
-        }
-    }
-
-    #getter(type, byteOffset, len = 1) {
-        if (len === 1) {
-            switch(type) {
-                case 'Int8': return this.#currentMemorySegment.getInt8(byteOffset); 
-                case 'Uint8': return this.#currentMemorySegment.getUint8(byteOffset); 
-                case 'Int16': return this.#currentMemorySegment.getInt16(byteOffset); 
-                case 'Uint16': return this.#currentMemorySegment.getUint16(byteOffset); 
-                case 'Int32': return this.#currentMemorySegment.getInt32(byteOffset); 
-                case 'Uint32': return this.#currentMemorySegment.getUint32(byteOffset); 
-                case 'BigInt64': return this.#currentMemorySegment.getBigInt64(byteOffset); 
-                case 'BigUint64': return this.#currentMemorySegment.getBigUint64(byteOffset); 
-                case 'Float32': return this.#currentMemorySegment.getFloat32(byteOffset); 
-                case 'Float64': return this.#currentMemorySegment.setFloat64(byteOffset); 
-            }
-        } else {
-            switch(type) {
-                case 'Int8': return this.#currentMemorySegment.getInt8Array(byteOffset, len); 
-                case 'Int16': return this.#currentMemorySegment.getInt16Array(byteOffset, len); 
-                case 'Int32': return this.#currentMemorySegment.getInt32Array(byteOffset, len); 
-                case 'BigInt64': return this.#currentMemorySegment.getBigInt64Array(byteOffset, len); 
-                case 'Float32': return this.#currentMemorySegment.getFloat32Array(byteOffset, len); 
-                case 'Float64': return this.#currentMemorySegment.getFloat64Array(byteOffset, len); 
-            }
-        }
-    }
-
-
-    /**
-     * Returns the size of this shape in bytes
-     * @returns {number} The size in bytes
-     */
-    get sizeOf() {
-        if (this.#sizeOf === 0) {
-            let total = 0;
-            this.forEach(v => {
-              if (v.len === 1) {
-                total += Spark[v.type].size;
-              } else {
-                // include total bytes of array length
-                total += Spark[v.type].size * v.len;
-              }
-            });
-            this.#sizeOf = total;
-        }
-        return this.#sizeOf;
     }
 }
 
@@ -191,8 +149,8 @@ export default class Spark extends DataView {
     static UInt16 =     {type: 'Uint16',    size: 2};
     static Int32 =      {type: 'Int32',     size: 4};
     static UInt32 =     {type: 'Uint32',    size: 4};
-    static Int64 =      {type: 'BigInt64',     size: 8};
-    static UInt64 =     {type: 'BigUint64',    size: 8};
+    static Int64 =      {type: 'BigInt64',  size: 8};
+    static UInt64 =     {type: 'BigUint64', size: 8};
     static Float32 =    {type: 'Float32',   size: 4};
     static Float64 =    {type: 'Float64',   size: 8};
 
@@ -533,7 +491,6 @@ export default class Spark extends DataView {
      * @param {Array<number>} int8Array - The array to store
      */
     setInt8Array(offset, int8Array, len) {
-        int8Array.length = len;
         const buf = new Int8Array(this.buffer, offset, len);
         buf.set(int8Array, 0);
     }
@@ -553,7 +510,6 @@ export default class Spark extends DataView {
      * @param {Array<number>} int8Array - The array to store
      */
     setInt16Array(offset, int16Array, len) {
-        int16Array.length = len;
         const buf = new Int16Array(this.buffer, offset, int16Array.length);
         buf.set(int16Array, 0);
     }
@@ -573,7 +529,6 @@ export default class Spark extends DataView {
      * @param {Array<number>} int32Array - The array to store
      */
     setInt32Array(offset, int32Array, len) {
-        int32Array.length = len;
         const buf = new Int32Array(this.buffer, offset, len);
         buf.set(int32Array, 0);
     }
@@ -593,7 +548,6 @@ export default class Spark extends DataView {
      * @param {Array<number>} int64Array - The array to store
      */
     setInt64Array(offset, int64Array, len) {
-        int64Array.length = len;
         const buf = new BigInt64Array(this.buffer, offset, len);
         buf.set(int64Array, 0);
     }
@@ -613,9 +567,9 @@ export default class Spark extends DataView {
      * @param {Array<number>} float32Array - The array to store
      */
     setFloat32Array(offset, float32Array, len) {
-        float32Array.length = len;
-        const buf = new Float32Array(this.buffer, offset, len);
-        buf.set(float32Array, 0);
+        float32Array.forEach((el, i) => {
+            this.setFloat32(offset + (i * Spark.Float32.size), el);
+        });
     }
 
     /**
@@ -624,7 +578,11 @@ export default class Spark extends DataView {
      * @returns {Float32Array<ArrayBuffer>} An array of 32-bit floating points
      */
     getFloat32Array(offset, len) {
-        return new Float32Array(this.buffer, offset, len);
+        const buf = new Float32Array(len);
+        for (let i = 0; i < len; i++) {
+            buf[i] = this.getFloat32(offset + (i * Spark.Float32.size));
+        }
+        return buf;
     }
 
     /**
@@ -633,7 +591,6 @@ export default class Spark extends DataView {
      * @param {Array<number>} float64Array - The array to store
      */
     setFloat64Array(offset, float64Array, len) {
-        float64Array.length = len;
         const buf = new Float64Array(this.buffer, offset, len);
         buf.set(float64Array, 0);
     }
@@ -648,14 +605,10 @@ export default class Spark extends DataView {
     }
 
     setVecF32Array(offset, vecf32Array, len) {
-        vecf32Array.length = len * 2;
-        const mem = new Spark(this.buffer, offset, len * Float32Array.BYTES_PER_ELEMENT * 2);
-        const buf = new Float32Array(mem.buffer, 0, len * 2);
-        buf.set(vecf32Array, 0);
+        this.setFloat32Array(offset, vecf32Array, len * 2);
     }
 
     getVecF32Array(offset, len) {
-        const mem = new Spark(this.buffer, offset, len * Float32Array.BYTES_PER_ELEMENT * 2);
-        return new Float32Array(mem.buffer, 0, len * 2);
+        return this.getFloat32Array(offset, len * 2);
     }
 }

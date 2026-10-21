@@ -40,6 +40,7 @@ export default class ParticleWorker {
     #fps = 0;
     #startTime = 0;
     #assembler = null;
+    #latched = true;
 
     constructor(workerId, assembler, width, height, config, threading, systemOpts) {
         this.#engineInstance = $ParticleEngine.getWorkerInstance(width, height, config, threading);
@@ -200,7 +201,9 @@ export default class ParticleWorker {
                 const updateTime = this.instance.update(time, deltaTime);
                 const renderTime = await this.instance.renderParticles(time, deltaTime, null);
                 if (renderTime !== -1) {
-                const image = this.instance.bitmap;
+                    // latch the cleanup mechanism
+                    this.#latched = true;               
+                    const image = this.instance.bitmap;
                     postMessage({ 
                         re4: Constants.MSG.WORKER, 
                         type: Constants.MTYPE.WORKER.RENDERED, 
@@ -214,12 +217,43 @@ export default class ParticleWorker {
                             live: this.instance.liveParticles
                         }
                     }, [image]);
-                }
+                } else
+                    this.#cleanUp();
                 // free up to allow message handling and such
                 await new Promise(resolve => setTimeout(resolve, this.#fps));
             }
         } catch (ex) {
+            console.error(ex);
             throw new ParticleWorkerError(this, ex.message, ex);        
+        }
+    }
+
+    /**
+     * After the last particle has been rendered, this cleans up the
+     * bitmap so it doesn't linger with dead particles.
+     * @private
+     */
+    #cleanUp() {
+        if (this.#latched) {
+            // no more particles, clean up the bitmap so dead particles don't get drawn anymore
+            this.instance.surface.clearRect(0, 0, this.instance.offscreen.width, this.instance.offscreen.height);       
+            const image = this.instance.bitmap;
+            postMessage({ 
+                re4: Constants.MSG.WORKER, 
+                type: Constants.MTYPE.WORKER.RENDERED, 
+                workerId: this.#workerId,
+                time: 0,
+                deltaTime: 0, 
+                image: image,
+                metrics: {
+                    updateTime: 0,
+                    renderTime: 0,
+                    live: 0
+                }
+            }, [image]);
+            
+            // unlatch when completed
+            this.#latched = false;
         }
     }
 }

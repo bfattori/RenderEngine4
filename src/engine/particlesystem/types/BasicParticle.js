@@ -332,11 +332,10 @@ export default class BasicParticle extends TransferrableConfig {
     
     /**
      * Called to clean up the particle, such as for freeing resources
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @param {Spark} heap - The memory object containing the particle's instantaneous properties
      * @type {Function}
      */
-    cleanUp() {
-        
+    cleanUp(heap) {
     }
 
     /**

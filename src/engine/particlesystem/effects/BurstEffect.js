@@ -29,7 +29,7 @@ export default class BurstEffect extends ParticleEffect {
      * Sub-classes should override this method to modify the spawned 
      * particle before it is introduced into the `ParticleSystem`.
      * 
-     * @param {DataView} heap - Initialized particle memory
+     * @param {Spark} heap - Initialized particle memory
      * @param {BasicParticle} particleType - Particle configuration
      * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
      * @param {Float32Array} vel - The velocity of the particle

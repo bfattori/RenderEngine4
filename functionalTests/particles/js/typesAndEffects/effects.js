@@ -31,7 +31,7 @@ const wEffect2 = new FountainEffect({
 });
 
 const wEffect3 = new FountainEffect({
-    count: 1,
+    count: 3,
     particleTypes: [wParticle2],
     angle: 0,
     spread: 45
@@ -46,7 +46,7 @@ wEffect3.name = 'sparkler';
 
 
 const sparkEffect = new SparkEffect({
-    count: 5,
+    count: 10,
     countVariance: 20,
     frequencyVariance: 150,
     particleTypes: [sparkParticle],

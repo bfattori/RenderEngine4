@@ -42,8 +42,9 @@ export default class SparkParticle extends PhysicalParticle {
     if (!this.#particleShape) {
       const shape = new MemShape();
       shape.inherit(super.shape);
-      shape.set('trail',        'VecF32', this.trailLength);
-      shape.set('trFactor',     'Float32');
+      shape.set('trFactor', 'Float32');
+      shape.set('trTail',   'UInt8');
+      shape.set('trail',    'VecF32', this.trailLength);
       this.#particleShape = shape;
       this.#particleShape.build();
     }
@@ -62,8 +63,11 @@ export default class SparkParticle extends PhysicalParticle {
     // assign the heap segment BEFORE any operations
     this.shape.segment = heap;
 
-    this.shape.trail = [];
-    this.shape.trFactor = 1 / config.trailLength;
+    if (config.trailLength !== 0) {
+      this.shape.trail.fill(0.0);
+      this.shape.trFactor = 1 / config.trailLength;
+      this.shape.trTail = 0;
+    }
   }
 
   /**
@@ -82,19 +86,12 @@ export default class SparkParticle extends PhysicalParticle {
     // assign the segment BEFORE any operations
     this.shape.segment = heap;
 
-    const trailLen = this.shape.trailLength;
-
     // calculate the trail if the particle has a trail length greater than 0
-    if (trailLen > 0) {
-      const trail = this.shape.trail;
-
-      trail.unshift(pos[1]);
-      trail.unshift(pos[0]);
-      if (trail.length > this.trailLength) {
-         trail.length = this.trailLength;
-      }
-
-      this.shape.trail = trail;
+    const trLen = this.trailLength;
+    if (trLen > 0) {
+      this.shape.trail = Util.unshift(this.shape.trail, pos[0], pos[1]);
+      this.shape.trTail += 1;
+      this.shape.trTail = Math.min(trLen, this.shape.trTail);
     }
   }
 
@@ -110,30 +107,36 @@ export default class SparkParticle extends PhysicalParticle {
   drawShape(time, deltaTime, surface, heap, pos) {
     super.drawShape(time, deltaTime, surface, heap, pos);
 
-    // assign the segment BEFORE any operations
-    this.shape.segment = heap;
+    if (this.trailLength > 0) {
+      // assign the segment BEFORE any operations
+      this.shape.segment = heap;
 
-    if (this.trailLength > 0 && this.trail.length > 1) {
-       this.drawTrail(surface, heap, pos);
+      const color = this.colors[this.shape.particleColor];
+      this.drawTrail(surface, this.shape.trail, this.shape.trTail, this.shape.trFactor, color, pos);
     }
   }
 
   /**
-   * Draw the trail of the particle
+   * Draw the trail of the particle using the color and trail
    * @param {CanvasRenderingContext2D} surface - The rendering context 
-   * @param {Object} $memory - The memory object containing the particle's instantaneous properties
-   * @param {Array<number>} pos - The current position of the particle
+   * @param {TypedArray<VecF32>} trail - The trail array
+   * @param {number} trailLen - The number of vertices in the trail
+   * @param {number} rollFactor - The trail rolloff factor, which controls the opacity of the trail
+   * @param {number} particleColor - The color of the particle
+   * @param {Float32Array} pos - The current position of the particle
    */
-  drawTrail(surface, heap, pos) {
-    this.shape.segment = heap;
-
+  drawTrail(surface, trail, trailLen, rollFactor, particleColor, pos) {
     surface.lineWidth = this.trailWidth;
     surface.beginPath();
     surface.moveTo(pos[0], pos[1]);
-    this.shape.trail.map((p, i) => {
-      surface.strokeStyle = Util.setAlpha(this.shape.trFactor * (this.trailLength - i), this.shape.particleColor);
-      surface.lineTo(p[0], p[1]);
+    
+    // trail positions are stored as 2 elements in the array (x followed by y)
+    let i = 0;
+    for (let idx = 0; idx < trailLen * 2; idx += 2) {
+      surface.strokeStyle = Util.setAlpha(rollFactor * (this.trailLength - i), particleColor);
+      surface.lineTo(trail[idx], trail[idx + 1]);
       surface.stroke();
-    });
+      i++;
+    }
   }
 }

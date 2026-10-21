@@ -258,6 +258,21 @@ export default class Util {
         }
     }
 
+    static unshift(typedArray, ...values) {
+        const numItems = values.length;
+        if (numItems === 0) return typedArray;
+
+        // 1. Shift existing elements to the right, dropping the overflowing ones at the end
+        typedArray.copyWithin(numItems, 0);
+
+        // 2. Insert the new items at the beginning
+        for (let i = 0; i < Math.min(numItems, typedArray.length); i++) {
+            typedArray[i] = values[i];
+        }
+
+        return typedArray;
+    }
+
     /**
      * Convenience method to return the byte sizes of the various
      * memory types by name.
