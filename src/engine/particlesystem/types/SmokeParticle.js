@@ -69,28 +69,31 @@ export default class SmokeParticle extends PhysicalParticle {
      * @param {Object} config - The particle's configuration
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(time, config, heap) {
-        super.spawn(time, config, heap);
+    spawn(time, config, header, heap) {
+        const lifeSpan = super.spawn(time, config, header, heap);
 
         // assign the heap segment BEFORE any operations
         this.shape.segment = heap;
 
-        this.shape.curl = $Math.getRangeValue(this.curl);                              // 16-bit float
+        this.shape.curl = $Math.getRangeValue(this.curl);                                   // 16-bit float
         this.shape.curlVar = Util.selectRandomOf(-this.curlVariance, this.curlVariance);    // 16-bit float
+
+        return lifeSpan;
     }
 
     /**
      * Update the particle
      * @param {number} time - Current world time in milliseconds
      * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+     * @param {Spark} header - The particle header
+     * @param {Spark} heap - The memory object containing the particle's instantaneous properties
      * @param {Array<number>} pos - The particle's current position
      * @param {Array<number>} vel - The particle's velocity vector
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(time, deltaTime, heap, pos, vel, life) {
-        super.update(time, deltaTime, heap, pos, vel, life);
+    update(time, deltaTime, header, heap, pos, vel, life) {
+        super.update(time, deltaTime, header, heap, pos, vel, life);
 
         // assign the segment BEFORE any operations
         this.shape.segment = heap;

@@ -29,12 +29,13 @@ export default class BurstEffect extends ParticleEffect {
      * Sub-classes should override this method to modify the spawned 
      * particle before it is introduced into the `ParticleSystem`.
      * 
+     * @param {Spark} header - The particle header
      * @param {Spark} heap - Initialized particle memory
      * @param {BasicParticle} particleType - Particle configuration
      * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
      * @param {Float32Array} vel - The velocity of the particle
      */
-    initParticle(heap, particleType, pos, vel) {        
+    initParticle(header, heap, particleType, pos, vel) {        
         const v = $Math.vecMulScalar(
             $Math.getDirectionVector([0, 0], $Math.randomRangeInt(0, 359)), 
             $Math.getRangeValue(particleType.velocity)

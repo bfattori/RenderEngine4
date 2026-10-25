@@ -168,7 +168,7 @@ export default class ParticleEffect extends TransferrableConfig {
                 const pType = this.particleTypes.at(typeIdx);
                 if (pType) {
                     const spawned = this.engine.spawnParticle(worldPos, time, pType);
-                    this.initParticle(spawned.memSegment, pType, spawned.pos, spawned.vel);
+                    this.initParticle(spawned.header, spawned.memSegment, pType, spawned.pos, spawned.vel);
                 }
             }
         }
@@ -188,11 +188,12 @@ export default class ParticleEffect extends TransferrableConfig {
      * Sub-classes should override this method to modify the spawned 
      * particle before it is introduced into the `ParticleSystem`.
      * 
-     * @param {DataView} heap - Initialized particle memory
+     * @param {Spark} header - The particle header
+     * @param {Spark} heap - Initialized particle memory
      * @param {BasicParticle} particleType - Particle configuration
      * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
      * @param {Float32Array} vel - The velocity of the particle
      */
-    initParticle(heap, particleType, pos, vel) {        
+    initParticle(header, heap, particleType, pos, vel) {        
     }
 }

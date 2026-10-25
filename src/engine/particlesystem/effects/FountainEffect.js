@@ -51,12 +51,13 @@ export default class FountainEffect extends ParticleEffect {
      * Modify a spawned particle, calculating the spawn angle from
      * the velocity scalar value.
      * 
+     * @param {Spark} header - The particle header
      * @param {Spark} heap - Initialized particle memory
      * @param {BasicParticle} particleType - Particle configuration
      * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
      * @param {Float32Array} vel - The velocity of the particle
      */
-    initParticle(heap, particleType, pos, vel) {
+    initParticle(header, heap, particleType, pos, vel) {
         const variance = $Math.randomRange(0, Math.round(Math.min(this.spread / 2, this.spreadVariance)), true);
         const lowAngle = this.angle - (this.spread - variance);
         const highAngle = this.angle + (this.spread - variance);

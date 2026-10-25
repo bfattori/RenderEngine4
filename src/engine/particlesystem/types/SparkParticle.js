@@ -55,10 +55,12 @@ export default class SparkParticle extends PhysicalParticle {
    * Called when a particle is spawned to initialize its settings
    * @param {number} time - The current world time in milliseconds
    * @param {Object} config - The particle's configuration
-   * @returns {Object} An object containing `memory`, `life`, and `vel`, the instantaneous memory of the particle, lifeSpan, and initial veloctiy of the particle
+   * @param {Spark} header - The particle header
+   * @param {Spark} heap - The particle's instantaneous memory
+   * @returns {number} The lifespan of the particle
    */
-  spawn(time, config, heap) {
-    super.spawn(time, config, heap);
+  spawn(time, config, header, heap) {
+    const lifeSpan = super.spawn(time, config, header, heap);
 
     // assign the heap segment BEFORE any operations
     this.shape.segment = heap;
@@ -68,20 +70,23 @@ export default class SparkParticle extends PhysicalParticle {
       this.shape.trFactor = 1 / config.trailLength;
       this.shape.trTail = 0;
     }
+
+    return lifeSpan;
   }
 
   /**
    * Update the particle
    * @param {number} time - Current world time in milliseconds
    * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-   * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+   * @param {Spark} header - The particle header
+   * @param {Spark} heap - The particle's instantaneous memory
    * @param {Array<number>} pos - The particle's current position
    * @param {Array<number>} vel - The particle's velocity vector
    * @param {number} life - Remaining life of the particle
    * @type {Function}
    */
-  update(time, deltaTime, heap, pos, vel, life) {
-    super.update(time, deltaTime, heap, pos, vel, life);
+  update(time, deltaTime, header, heap, pos, vel, life) {
+    super.update(time, deltaTime, header, heap, pos, vel, life);
 
     // assign the segment BEFORE any operations
     this.shape.segment = heap;
@@ -100,12 +105,13 @@ export default class SparkParticle extends PhysicalParticle {
    * @param {Number} time - The current world time in milliseconds
    * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
    * @param {CanvasRenderingContext2D} surface - The rendering context
-   * @param {Object} $memory - The memory object containing the particle's instantaneous properties
+   * @param {Spark} header - The particle header
+   * @param {Spark} heap - The particle's instantaneous memory
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(time, deltaTime, surface, heap, pos) {
-    super.drawShape(time, deltaTime, surface, heap, pos);
+  drawShape(time, deltaTime, surface, header, heap, pos) {
+    super.drawShape(time, deltaTime, surface, header, heap, pos);
 
     if (this.trailLength > 0) {
       // assign the segment BEFORE any operations

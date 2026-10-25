@@ -102,9 +102,6 @@ export default class BasicParticle extends TransferrableConfig {
     get shape() {
         if (!this.#particleShape) {
             this.#particleShape = new MemShape();
-            this.#particleShape.set('opaqueId',       'UInt8');
-            this.#particleShape.set('spawnTime',      'UInt64');
-            this.#particleShape.set('lifeSpan',       'UInt16');
             this.#particleShape.set('particleColor',  'UInt8');
             this.#particleShape.set('startSize',      'Float32');
             this.#particleShape.set('particleSize',   'Float32');
@@ -156,23 +153,16 @@ export default class BasicParticle extends TransferrableConfig {
     }
 
     /**
-     * Called when a particle is spawned to initialize its settings
+     * Called when a particle is spawned to initialize its settings.
      * @param {number} time - The current world time in milliseconds
-     * @param {Object} config - The particle's configuration
-     * @param {DataView} heap - The memory heap segment
-     * @returns {number} the offset at the end of the particles memory
+     * @param {BasicParticle} config - The particle's configuration
+     * @param {Spark} header - The particle header
+     * @param {Spark} heap - The particle's instantaneous memory
+     * @returns {number} The particle's lifespan
      */
-    spawn(time, config, heap) {
+    spawn(time, config, header, heap) {
         // assign the heap segment BEFORE any operations
         this.shape.segment = heap;
-
-        // opaqueId and spawn time
-        this.shape.opaqueId = this.opaqueId;
-        this.shape.spawnTime = BigInt(Math.floor(time));
-
-        // lifespan
-        const life = $Math.getRangeValueInt(config.lifeSpan);               
-        this.shape.lifeSpan = life - $Math.getRangeValueInt(config.lifeVariance);
 
         // color: index to the computed color array
         const color = $Math.randomRangeInt(0, config.colors.length - 1);
@@ -200,23 +190,28 @@ export default class BasicParticle extends TransferrableConfig {
             // select a random tile
             tile = this.tileSheet.getTileAt($Math.randomRangeInt(0, this.tileSheet.count)).opaqueId;      // 16-bit unsigned int
         }
+
         this.shape.tileOpaqueId = tile;
+
+        // generate a lifespan for the particle
+        return $Math.getRangeValueInt(config.lifeSpan);               
     }
 
     /**
      * Update the particle
      * @param {number} time - Current world time in milliseconds
      * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-     * @param {DataView} heap - The memory segment containing the particle's instantaneous properties
+     * @param {Spark} header - The particle's header
+     * @param {Spark} heap - The memory segment containing the particle's instantaneous properties
      * @param {Float32Array} pos - The particle's current position (2-element x & y)
      * @param {Float32Array} vel - The particle's velocity vector (2-element x & y)
      * @param {UInt16Array} life - Remaining life of the particle (1-element)
      */
-    update(time, deltaTime, heap, pos, vel, life) {
+    update(time, deltaTime, header, heap, pos, vel, life) {
         // assign the segment BEFORE any operations
         this.shape.segment = heap;
 
-        const lifeSpan = this.shape.lifeSpan;
+        const lifeSpan = header.lifeSpan;
         const initSize = this.shape.startSize;
         const sizeDecay = this.shape.sizeDecay;
 
@@ -226,6 +221,7 @@ export default class BasicParticle extends TransferrableConfig {
         }
 
         if (this.shape.particleSize <= 0.0) {
+            // kill the particle
             life[0] = 0;
         }
         
@@ -257,14 +253,15 @@ export default class BasicParticle extends TransferrableConfig {
      * Render the particle
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
-     * @param {DataView} heap - The memory object containing the particle's instantaneous properties
+     * @param {Spark} header - The particle header
+     * @param {Spark} heap - The particle's instantaneous memory
      * @param {Float32Array} pos - The current position of the particle
      * @param {Uint16Array} life - the life left in the particle
      * @param {String} target - The name of the renderer ('canvas', 'webgl', ...)
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, heap, pos, life, target, surface) {
+    render(time, deltaTime, header, heap, pos, life, target, surface) {
         // assign the memory segment BEFORE any access to the shape
         this.shape.segment = heap;
 
@@ -274,9 +271,9 @@ export default class BasicParticle extends TransferrableConfig {
         switch (target) {
             case 'canvas':
                 if (opaqueId === BasicParticle.AS_POINT) {
-                    this.drawShape(time, deltaTime, surface, heap, pos);
+                    this.drawShape(time, deltaTime, surface, header, heap, pos);
                 } else {
-                    this.drawTile(opaqueId, surface, heap, pos);
+                    this.drawTile(opaqueId, surface, header, heap, pos);
                 }
                 break;
             case 'webgl':
@@ -294,7 +291,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawShape(time, deltaTime, surface, heap, pos) {
+    drawShape(time, deltaTime, surface, header, heap, pos) {
         // assign the memory segment BEFORE any access to the shape
         this.shape.segment = heap;
 
@@ -320,7 +317,7 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawTile(opaqueId, surface, heap, pos) {
+    drawTile(opaqueId, surface, header, heap, pos) {
         this.shape.segment = heap;
         const tile = Assembler.assemblerInstance.getCompiledTile(opaqueId);
         const frame = tile.frameRect;

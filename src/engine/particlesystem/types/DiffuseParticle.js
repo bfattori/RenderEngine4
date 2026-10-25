@@ -54,11 +54,13 @@ export default class DiffuseParticle extends BasicParticle {
   /**
    * Called when a particle is spawned to initialize its settings
    * @param {number} time - The current world time in milliseconds
-   * @param {Object} config - The particle's configuration
-   * @returns {Object} An object containing `softness`, the diffuse blur of the particle
+   * @param {BasicParticle} config - The particle's configuration
+   * @param {Spark} header - The particle header
+   * @param {Spark} heap - The particle's instantaneous memory
+  * @returns {number} The particle's lifespan
    */
-  spawn(time, config, heap) {
-    super.spawn(time, config, heap);
+  spawn(time, config, header, heap) {
+    const lifeSpan = super.spawn(time, config, header, heap);
 
     // assign the heap segment BEFORE any operations
     this.shape.segment = heap;
@@ -66,6 +68,8 @@ export default class DiffuseParticle extends BasicParticle {
     this.shape.softness = this.softness;               
     this.shape.fade = $Math.getRangeValue(this.fadeRate);
     this.shape.alpha = 1.0;                                 
+
+    return lifeSpan;
   }
 
   /**
@@ -77,7 +81,7 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(time, deltaTime, surface, heap, pos) {
+  drawShape(time, deltaTime, surface, header, heap, pos) {
     this.shape.segment = heap;
 
     const gradient = this.#gradient(heap, pos);
