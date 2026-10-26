@@ -12,7 +12,7 @@ import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 50000
+    maxParticles: 20000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
@@ -83,7 +83,7 @@ RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4)
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 800,
+    count: 1000,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
@@ -113,7 +113,7 @@ emitter.effect = pEffect;
 function explode() {
     gameObject.PARTS.transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 590, true)];
     emitter.once();
-    setTimeout(explode, $Math.randomRange(100, 400, true));
+    setTimeout(explode, $Math.randomRange(80, 250, true));
 }
 
 explode();

@@ -14,11 +14,11 @@ import { pEffect, pEffect2, wEffect1, wEffect2, wEffect3, sparkEffect, sparkEffe
 import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, wParticle2, sparkParticle } from './particles.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 45000
+    maxParticles: 30000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
-    workers: 2,
+    workers: 4,
     framesPerSecond: 120
 };
 

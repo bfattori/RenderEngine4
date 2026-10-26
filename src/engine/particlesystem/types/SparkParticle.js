@@ -60,7 +60,7 @@ export default class SparkParticle extends PhysicalParticle {
    * @returns {number} The lifespan of the particle
    */
   spawn(time, config, header, heap) {
-    const lifeSpan = super.spawn(time, config, header, heap);
+    super.spawn(time, config, header, heap);
 
     // assign the heap segment BEFORE any operations
     this.shape.segment = heap;
@@ -70,8 +70,6 @@ export default class SparkParticle extends PhysicalParticle {
       this.shape.trFactor = 1 / config.trailLength;
       this.shape.trTail = 0;
     }
-
-    return lifeSpan;
   }
 
   /**

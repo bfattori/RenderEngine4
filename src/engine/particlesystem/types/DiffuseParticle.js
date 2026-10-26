@@ -60,7 +60,7 @@ export default class DiffuseParticle extends BasicParticle {
   * @returns {number} The particle's lifespan
    */
   spawn(time, config, header, heap) {
-    const lifeSpan = super.spawn(time, config, header, heap);
+    super.spawn(time, config, header, heap);
 
     // assign the heap segment BEFORE any operations
     this.shape.segment = heap;
@@ -68,8 +68,6 @@ export default class DiffuseParticle extends BasicParticle {
     this.shape.softness = this.softness;               
     this.shape.fade = $Math.getRangeValue(this.fadeRate);
     this.shape.alpha = 1.0;                                 
-
-    return lifeSpan;
   }
 
   /**
@@ -84,10 +82,19 @@ export default class DiffuseParticle extends BasicParticle {
   drawShape(time, deltaTime, surface, header, heap, pos) {
     this.shape.segment = heap;
 
-    const gradient = this.#gradient(heap, pos);
+    const size = this.shape.particleSize;
+    const colorIdx = this.shape.particleColor;
+    const color = this.colors[colorIdx];
+    const alpha = this.shape.alpha;
+    const soft = this.shape.softness;
+    const fade = this.shape.fade;
+    if (fade > 0) {
+       this.shape.alpha = Math.max(0.0, alpha - fade);
+    }
+
     surface.beginPath();
-    surface.arc(pos[0], pos[1], this.shape.particleSize, 0, $Math.TWO_PI);
-    surface.fillStyle = gradient;
+    surface.arc(pos[0], pos[1], size, 0, $Math.TWO_PI);
+    surface.fillStyle = this.#gradient(pos, size, color, alpha, soft);;
     surface.fill();
   }
 
@@ -97,22 +104,12 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {*} pos - The position of the particle
    * @returns 
    */
-  #gradient(heap, pos) {
-    this.shape.segment = heap;
-
-    const color = this.colors[this.shape.particleColor];
-    const alpha = this.shape.alpha;
-    const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], this.shape.particleSize);
+  #gradient(pos, size, color, alpha, soft) {
+    const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], size);
     const alphaColor = Util.setAlpha(alpha, color)
-
-    const fade = this.shape.fade;
-    if (fade > 0) {
-       this.shape.alpha = Math.max(0.0, alpha - fade);
-    }
 
     // start us off
     gradient.addColorStop(0, alphaColor);
-    const soft = this.shape.softness;
 
     if (soft < 1.0) {
         const halfAlpha = Util.setAlpha(0.5, color);

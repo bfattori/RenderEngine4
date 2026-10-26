@@ -67,6 +67,10 @@ const Constants = {
     /* Default Point Size */
     POINT_SIZE: 0.5,
 
+    /* Smallest Particle Size */
+    PARTICLE_SIZE_THRESHOLD: 0.3,
+    PH_BYTES: 13,
+
     /* PI's cousins */
     TWO_PI: Math.PI * 2,
     HALF_PI: Math.PI / 2,

@@ -168,7 +168,9 @@ export default class ParticleEffect extends TransferrableConfig {
                 const pType = this.particleTypes.at(typeIdx);
                 if (pType) {
                     const spawned = this.engine.spawnParticle(worldPos, time, pType);
-                    this.initParticle(spawned.header, spawned.memSegment, pType, spawned.pos, spawned.vel);
+                    if (spawned !== null) {
+                        this.initParticle(spawned.header, spawned.memSegment, pType, spawned.pos, spawned.vel);
+                    }
                 }
             }
         }

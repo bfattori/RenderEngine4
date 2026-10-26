@@ -231,8 +231,8 @@ export default class ParticleManager {
                             }
                         }
 
-                        const updateLoad = update / event.data.deltaTime;
-                        const renderLoad = render / event.data.deltaTime;
+                        const updateLoad = (update / this.#initProps.threading.workers) / event.data.deltaTime;
+                        const renderLoad = (render / this.#initProps.threading.workers) / event.data.deltaTime;
 
                         this.#engineLoadView.update('Update:Time', update);
                         this.#engineLoadView.update('Render:Time', render);

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="/js/re4inspector.js"></script>
+    <style>
+      #app {
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 10px;
+      }
+
+      div.title {
+        font-size: 110%;
+      }
+
+      div.tabs {
+        display: flex;
+        justify-content: space-around;
+      }
+
+      div.tab-page {
+        display: none;
+        flex-direction: column;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="title">Render Engine Inspector</div>
+      <div class="tabs">
+        <div class="tab" onclick="showTab('tab1')">Engine</div>
+        <div class="tab" onclick="showTab('tab2')">Game Objects</div>
+        <div class="tab" onclick="showTab('tab3')">Particle System</div>
+        <div class="tab" onclick="showTab('tab4')">Render Settings</div>
+      </div>
+      <div class="tab1 tab-page engine">
+        Engine stats
+      </div>
+      <div class="tab2 tab-page objects">
+        Game Objects
+      </div>
+      <div class="tab3 tab-page particles">
+        Particle System
+      </div>
+      <div class="tab4 tab-page render">
+        Render Settings
+      </div>
+    </div>
+  </body>
+</html>

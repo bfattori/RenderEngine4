@@ -70,15 +70,13 @@ export default class SmokeParticle extends PhysicalParticle {
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
     spawn(time, config, header, heap) {
-        const lifeSpan = super.spawn(time, config, header, heap);
+        super.spawn(time, config, header, heap);
 
         // assign the heap segment BEFORE any operations
         this.shape.segment = heap;
 
         this.shape.curl = $Math.getRangeValue(this.curl);                                   // 16-bit float
         this.shape.curlVar = Util.selectRandomOf(-this.curlVariance, this.curlVariance);    // 16-bit float
-
-        return lifeSpan;
     }
 
     /**

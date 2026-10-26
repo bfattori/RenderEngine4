@@ -1,3 +1,4 @@
+import Constants from '../Constants.js';
 import RenderEngineError from '../core/RenderEngineError.js';
 import Engine from '../core/Engine.js';
 import Context from '../Context.js';
@@ -72,6 +73,8 @@ export default class $ParticleEngine {
 
     #particleMemSize = 0;
     #particleHeader = null;
+
+    #cleaningLatch = false;
 
     /**
      * Get the instance of the `ParticleEngine`.  This method should be used instead of creating 
@@ -271,10 +274,9 @@ export default class $ParticleEngine {
 
         this.#pPos = new Float32Array(count * 2);   // two 32-bit floats (x & y)
         this.#pVel = new Float32Array(count * 2);   // two 32-bit floats (xV & yV)
-        this.#pSpan = new Uint16Array(count);       // one 2-byte integer
 
         // Particle memory req: headerSize + maxParticleSize
-        const memoryHeap = new ArrayBuffer(count * (this.#particleHeader.sizeOf + this.#particleMemSize));
+        const memoryHeap = new ArrayBuffer(count * (Constants.PH_BYTES + this.#particleMemSize));
         this.#memories = new Spark(memoryHeap);
         return Promise.resolve(true);
     }
@@ -301,13 +303,21 @@ export default class $ParticleEngine {
      * @private
      */
     get #nextIndex() {
-        if (this.isCircular && this.#particleIdx > this.maxParticles)
+        if (this.isCircular && this.#particleIdx === this.maxParticles - 1)
             this.#particleIdx = 0;    // wrap
         else if (this.isCircular)
             this.#particleIdx++;
         else if (!this.isCircular) {
             // find first free index (could be -1)
-            //this.#particleIdx = this.#memories.findIndex((e) => e === null);
+            const offsetSize = this.genParticleHeader().sizeOf + this.#particleMemSize;
+            this.#particleIdx = -1;
+            for (let p = 0; p < this.maxParticles - 1; p++) {
+                const lifeByte = this.#memories.getUint8(p * offsetSize);
+                if (lifeByte === $ParticleEngine.PARTICLE_DEAD) {
+                    this.#particleIdx = p;
+                    break;
+                }
+            }
         }
 
         return this.#particleIdx;
@@ -471,34 +481,28 @@ export default class $ParticleEngine {
     spawnParticle(worldPos, time, particleType) {
         const idx = this.#nextIndex;
         if (idx !== -1) {
+            // making a particle, need to clean up
+            this.#cleaningLatch = false;
+
             // position and velocity
             this.#pPos[idx * 2] = worldPos[0]; 
             this.#pPos[(idx * 2) + 1] = worldPos[1];
             this.#pVel[idx * 2] = 0.0;
             this.#pVel[(idx * 2) + 1] = 0.0;
             
-            // spawn the particle
-            const pHeader = this.#particleHeader, 
-                headerSize = pHeader.sizeOf;
-
             // The header offset
-            const memOffset = idx * (this.#particleMemSize + headerSize);
+            const memOffset = idx * (this.#particleMemSize + Constants.PH_BYTES);
 
             // set the header segment
-            pHeader.segment = new Spark(this.#memories.buffer, memOffset, headerSize);
-            pHeader.lifeByte = $ParticleEngine.PARTICLE_LIVE;
-            pHeader.opaqueId = particleType.opaqueId;
-            pHeader.spawnTime = BigInt(Math.floor(time));
+            const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
+            header.setUint8(4, particleType.opaqueId);
+            header.setBigUint64(5, BigInt(Math.floor(time)));
 
             // the particle's instantaneous memory segment
-            const memSegment = new Spark(this.#memories.buffer, memOffset + headerSize, this.#particleMemSize);
+            const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
             
             // spawn a particle
-            const lifeSpan = particleType.spawn(time, particleType.opts, pHeader, memSegment);
-
-            // store the lifespan
-            pHeader.lifeSpan = lifeSpan;
-            this.#pSpan[idx] = lifeSpan;
+            particleType.spawn(time, particleType.opts, header, memSegment);
             
             // pvOffs is short for "position & velocity offsets"
             // (idx * 2 elements) * 4 bytes each
@@ -510,14 +514,14 @@ export default class $ParticleEngine {
             const spawned = {
                 pos: new Float32Array(this.#pPos.buffer, pvOffs, 2),
                 vel: new Float32Array(this.#pVel.buffer, pvOffs, 2),
-                header: pHeader,
+                header: header,
                 memSegment: memSegment
             };
 
-            this.#newParticles = true;
+            this.#liveParticles++;
             return spawned;
         } else if (ctx.debug)
-            console.warn(`Failed to spawn particle: ${particle.$pType} - no available memory`);        
+            console.warn(`Failed to spawn particle: ${particleType.constructor.name} - no available memory`);        
 
         return null;
     }
@@ -565,7 +569,8 @@ export default class $ParticleEngine {
         if (!this.enabled) return 0;
 
         // If there are no new particles in the buffer, and no live particles, don't do anything
-        if (!this.#newParticles && this.liveParticles === 0) {
+        if (this.liveParticles === 0) {
+            this.#cleanMemory();
             return 0;
         }
 
@@ -573,35 +578,30 @@ export default class $ParticleEngine {
 
         // run all particles
         let livingParticles = 0;
-        const header = this.#particleHeader;
-        const headSize = header.sizeOf;
-        for (let p = 0; p < this.config.maxParticles; p++) {
-            const offset = p * (this.#particleMemSize + headSize);
-            const pHead = new Spark(this.#memories.buffer, offset, headSize);
-            header.segment = pHead;
+        for (let p = 0; p < this.maxParticles; p++) {
+            const memOffset = p * (this.#particleMemSize + Constants.PH_BYTES);
+            const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
             
-            const lifeByte = header.lifeByte;
-            if (lifeByte !== 0 && lifeByte !== 1) { console.warn("lifebyte misaligned"); break; }
-            if (lifeByte === $ParticleEngine.PARTICLE_LIVE) {
+            const lifeSpan = header.getUint16(0);
+            if (lifeSpan > 0) {
                 const pvOffs = (p * 2) * 4; // Float32Array.BYTES_PER_ELEMENT;
                 const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
                 const vel = new Float32Array(this.#pVel.buffer, pvOffs, 2);
-                const life = new Uint16Array(this.#pSpan.buffer, p * 2, 1);
 
-                const pType = this.getParticleType(header.opaqueId);
-                const memSegment = new Spark(this.#memories.buffer, offset + headSize, this.#particleMemSize);
+                const pType = this.getParticleType(header.getUint8(4));
+                const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
 
                 // run the particle
-                this.#runParticle(pType, header, memSegment, pos, vel, life, time, deltaTime);
+                this.#runParticle(pType, header, memSegment, pos, vel, lifeSpan, time, deltaTime);
 
                 // age particle
-                life[0] = Math.max(0, life[0] - Math.floor(deltaTime));
+                const remaining = Math.max(0, lifeSpan - Math.floor(deltaTime));
+                header.setUint16(0, remaining <= 0 ? 0 : remaining);
 
                 // free-up space when dead
                 // ... or when no longer in the visible area
-                if (!this.#inBounds(pos) || life[0] === 0) {
-                    header.lifeByte = $ParticleEngine.PARTICLE_DEAD;
-                    pType.cleanUp(memSegment);
+                if (!this.#inBounds(pos) || remaining === 0) {
+                    pType.cleanUp(header, memSegment);
                 } else {
                     livingParticles++;
                 }
@@ -674,26 +674,21 @@ export default class $ParticleEngine {
 
         let surf = directSurface || this.#surface;
 
-        const header = this.#particleHeader;
-        const headSize = header.sizeOf;
-        for (let p = 0; p < this.config.maxParticles; p++) {
-            const memOffset = p * (this.#particleMemSize + headSize);
-            const pHead = new Spark(this.#memories.buffer, memOffset, headSize);
-            header.segment = pHead;
+        for (let p = 0; p < this.maxParticles; p++) {
+            const memOffset = p * (this.#particleMemSize + Constants.PH_BYTES);
+            const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
             
-            const lifeByte = header.lifeByte;
-            if (lifeByte !== 0 && lifeByte !== 1) { console.warn("lifebyte misaligned"); break; }
-            if (lifeByte === $ParticleEngine.PARTICLE_LIVE) {
-                const pType = this.getParticleType(header.opaqueId);
-                const memSegment = new Spark(this.#memories.buffer, memOffset + headSize, this.#particleMemSize);
+            const lifeSpan = header.getUint16(0);
+            if (lifeSpan > $ParticleEngine.PARTICLE_DEAD) {
+                const pType = this.getParticleType(header.getUInt8(4));
+                const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
                 
                 // position & velocity offset
                 const pvOffs = (p * 2) * 4;
                 const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
-                const life = new Uint16Array(this.#pSpan.buffer, p * 2, 1);
 
                 // render the particle
-                pType.render(time, deltaTime, header, memSegment, pos, life, 'canvas', surf); 
+                pType.render(time, deltaTime, header, memSegment, pos, lifeSpan, 'canvas', surf); 
             }
         }
 
@@ -746,7 +741,15 @@ export default class $ParticleEngine {
             _particleMemories: this.#memories,
             _particlePositions: this.#pPos,
             _particleVelocities: this.#pVel,
-            _particleLifespans: this.#pSpan
+        }
+    }
+
+    #cleanMemory() {
+        if (!this.#cleaningLatch) {
+            const memBuf = new Uint8Array(this.#memories.buffer);
+            memBuf.fill(0);
+            this.#particleIdx = 0;
+            this.#cleaningLatch = true;
         }
     }
 }

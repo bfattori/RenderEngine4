@@ -6,3 +6,8 @@ chrome.devtools.panels.create(
     // Panel-specific initialization code here
   }
 );
+
+
+function showTab(tabName) {
+  
+}

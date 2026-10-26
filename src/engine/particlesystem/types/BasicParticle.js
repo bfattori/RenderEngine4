@@ -1,3 +1,4 @@
+import Constants from '../../Constants.js';
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
@@ -193,8 +194,10 @@ export default class BasicParticle extends TransferrableConfig {
 
         this.shape.tileOpaqueId = tile;
 
-        // generate a lifespan for the particle
-        return $Math.getRangeValueInt(config.lifeSpan);               
+        // store lifespan 
+        const lifeSpan = $Math.getRangeValueInt(config.lifeSpan);
+        header.setUint16(0, lifeSpan);  // current lifeSpan
+        header.setUint16(2, lifeSpan);  // original lifeSpan
     }
 
     /**
@@ -205,49 +208,50 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Spark} heap - The memory segment containing the particle's instantaneous properties
      * @param {Float32Array} pos - The particle's current position (2-element x & y)
      * @param {Float32Array} vel - The particle's velocity vector (2-element x & y)
-     * @param {UInt16Array} life - Remaining life of the particle (1-element)
+     * @param {UInt16} life - Remaining life of the particle
      */
     update(time, deltaTime, header, heap, pos, vel, life) {
         // assign the segment BEFORE any operations
         this.shape.segment = heap;
 
-        const lifeSpan = header.lifeSpan;
+        const lifeSpan = header.getUint16(2);   // original lifespan
         const initSize = this.shape.startSize;
         const sizeDecay = this.shape.sizeDecay;
 
         // shrink over the lifespan
         if (sizeDecay > 0.0) {
-            this.shape.particleSize = ((life[0] / lifeSpan) * initSize) / sizeDecay;
+            this.shape.particleSize = ((life / lifeSpan) * initSize) / sizeDecay;
         }
 
-        if (this.shape.particleSize <= 0.0) {
+        if (this.shape.particleSize <= Constants.PARTICLE_SIZE_THRESHOLD) {
             // kill the particle
-            life[0] = 0;
+            this.cleanUp(header, heap);
+        } else {
+            // get the drag and drag rate
+            const curDrag = this.shape.dragRate;
+            const dragDelta = this.shape.dragDelta;
+
+            // calculate instaneous drag
+            const drag = curDrag === 0 ? 1 : (1 / curDrag);
+
+            // write back the updated drag
+            this.shape.dragRate = drag + dragDelta;
+
+            // add velocity to position then add gravity to velocity
+            const cV = [vel[0], vel[1]];
+            const v = $Math.vecMulScalar(cV, drag);
+            v[0] += this.gravity[0];
+            v[1] += this.gravity[1];
+            const p = [pos[0], pos[1]];
+            p[0] += v[0];
+            p[1] += v[1];
+            pos[0] = p[0]
+            pos[1] = p[1];
+            vel[0] = v[0];
+            vel[1] = v[1];
         }
-        
-        // get the drag and drag rate
-        const curDrag = this.shape.dragRate;
-        const dragDelta = this.shape.dragDelta;
-
-        // calculate instaneous drag
-        const drag = curDrag === 0 ? 1 : (1 / curDrag);
-
-        // write back the updated drag
-        this.shape.dragRate = drag + dragDelta;
-
-        // add velocity to position then add gravity to velocity
-        const cV = [vel[0], vel[1]];
-        const v = $Math.vecMulScalar(cV, drag);
-        v[0] += this.gravity[0];
-        v[1] += this.gravity[1];
-        const p = [pos[0], pos[1]];
-        p[0] += v[0];
-        p[1] += v[1];
-        pos[0] = p[0]
-        pos[1] = p[1];
-        vel[0] = v[0];
-        vel[1] = v[1];
     }
+
 
     /**
      * Render the particle
@@ -329,10 +333,13 @@ export default class BasicParticle extends TransferrableConfig {
     
     /**
      * Called to clean up the particle, such as for freeing resources
+     * @param {Spark} header - The particle header
      * @param {Spark} heap - The memory object containing the particle's instantaneous properties
      * @type {Function}
      */
-    cleanUp(heap) {
+    cleanUp(header, heap) {
+        header.setUint16(0, 0);    // dead
+        header.setUint16(2, 0);    // dead
     }
 
     /**
