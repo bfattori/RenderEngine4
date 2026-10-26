@@ -20,9 +20,6 @@ export default class $ParticleEngine {
     static #instance = null;
     static #useBuilder = true;
     
-    static PARTICLE_LIVE = 1;
-    static PARTICLE_DEAD = 0;
-
     #config = null;
     #threading = null;
 
@@ -309,11 +306,11 @@ export default class $ParticleEngine {
             this.#particleIdx++;
         else if (!this.isCircular) {
             // find first free index (could be -1)
-            const offsetSize = this.genParticleHeader().sizeOf + this.#particleMemSize;
+            const offsetSize = Constants.PH_BYTES + this.#particleMemSize;
             this.#particleIdx = -1;
             for (let p = 0; p < this.maxParticles - 1; p++) {
-                const lifeByte = this.#memories.getUint8(p * offsetSize);
-                if (lifeByte === $ParticleEngine.PARTICLE_DEAD) {
+                const lifeSpan = this.#memories.getUint16(p * offsetSize);
+                if (lifeSpan === Constants.DEAD_PARTICLE) {
                     this.#particleIdx = p;
                     break;
                 }
@@ -495,8 +492,8 @@ export default class $ParticleEngine {
 
             // set the header segment
             const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
-            header.setUint8(4, particleType.opaqueId);
-            header.setBigUint64(5, BigInt(Math.floor(time)));
+            header.setUint8(Constants.OFFS_OPAQUE_ID, particleType.opaqueId);
+            header.setBigUint64(Constants.OFFS_SPAWN_TIME, BigInt(Math.floor(time)));
 
             // the particle's instantaneous memory segment
             const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
@@ -582,13 +579,13 @@ export default class $ParticleEngine {
             const memOffset = p * (this.#particleMemSize + Constants.PH_BYTES);
             const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
             
-            const lifeSpan = header.getUint16(0);
+            const lifeSpan = header.getUint16(Constants.OFFS_LIFESPAN_REMAINING);
             if (lifeSpan > 0) {
                 const pvOffs = (p * 2) * 4; // Float32Array.BYTES_PER_ELEMENT;
                 const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
                 const vel = new Float32Array(this.#pVel.buffer, pvOffs, 2);
 
-                const pType = this.getParticleType(header.getUint8(4));
+                const pType = this.getParticleType(header.getUint8(Constants.OFFS_OPAQUE_ID));
                 const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
 
                 // run the particle
@@ -596,11 +593,11 @@ export default class $ParticleEngine {
 
                 // age particle
                 const remaining = Math.max(0, lifeSpan - Math.floor(deltaTime));
-                header.setUint16(0, remaining <= 0 ? 0 : remaining);
+                header.setUint16(Constants.OFFS_LIFESPAN_REMAINING, remaining <= 0 ? Constants.DEAD_PARTICLE : remaining);
 
                 // free-up space when dead
                 // ... or when no longer in the visible area
-                if (!this.#inBounds(pos) || remaining === 0) {
+                if (!this.#inBounds(pos) || remaining === Constants.DEAD_PARTICLE) {
                     pType.cleanUp(header, memSegment);
                 } else {
                     livingParticles++;
@@ -678,9 +675,9 @@ export default class $ParticleEngine {
             const memOffset = p * (this.#particleMemSize + Constants.PH_BYTES);
             const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
             
-            const lifeSpan = header.getUint16(0);
-            if (lifeSpan > $ParticleEngine.PARTICLE_DEAD) {
-                const pType = this.getParticleType(header.getUInt8(4));
+            const lifeSpan = header.getUint16(Constants.OFFS_LIFESPAN_REMAINING);
+            if (lifeSpan > Constants.DEAD_PARTICLE) {
+                const pType = this.getParticleType(header.getUInt8(Constants.OFFS_OPAQUE_ID));
                 const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
                 
                 // position & velocity offset

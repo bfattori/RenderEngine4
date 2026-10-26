@@ -196,8 +196,8 @@ export default class BasicParticle extends TransferrableConfig {
 
         // store lifespan 
         const lifeSpan = $Math.getRangeValueInt(config.lifeSpan);
-        header.setUint16(0, lifeSpan);  // current lifeSpan
-        header.setUint16(2, lifeSpan);  // original lifeSpan
+        header.setUint16(Constants.OFFS_LIFESPAN_REMAINING, lifeSpan);  // current lifeSpan
+        header.setUint16(Constants.OFFS_LIFESPAN_ORIGINAL, lifeSpan);  // original lifeSpan
     }
 
     /**
@@ -214,13 +214,13 @@ export default class BasicParticle extends TransferrableConfig {
         // assign the segment BEFORE any operations
         this.shape.segment = heap;
 
-        const lifeSpan = header.getUint16(2);   // original lifespan
+        const originalLifeSpan = header.getUint16(Constants.OFFS_LIFESPAN_ORIGINAL);   // original lifespan
         const initSize = this.shape.startSize;
         const sizeDecay = this.shape.sizeDecay;
 
         // shrink over the lifespan
         if (sizeDecay > 0.0) {
-            this.shape.particleSize = ((life / lifeSpan) * initSize) / sizeDecay;
+            this.shape.particleSize = ((life / originalLifeSpan) * initSize) / sizeDecay;
         }
 
         if (this.shape.particleSize <= Constants.PARTICLE_SIZE_THRESHOLD) {
@@ -338,8 +338,8 @@ export default class BasicParticle extends TransferrableConfig {
      * @type {Function}
      */
     cleanUp(header, heap) {
-        header.setUint16(0, 0);    // dead
-        header.setUint16(2, 0);    // dead
+        header.setUint16(Constants.OFFS_LIFESPAN_REMAINING, 0);    // dead
+        header.setUint16(Constants.OFFS_LIFESPAN_ORIGINAL, 0);    // dead
     }
 
     /**
