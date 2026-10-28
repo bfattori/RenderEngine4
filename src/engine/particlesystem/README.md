@@ -99,6 +99,6 @@ The orchestrator coordinates all of the workers and updates the `ParticleManager
 ## Particle Worker
 Each worker is running its own `$ParticleEngine` and manages a segment of the overall budget for particles. The workers are responsible for creating and updating particles, as well as rendering their view of particles to send to the `Orchestrator`.
 
-Particle workers run separate from the game loop, allowing them to process thousands of particles without impacting the game loop's performance. A worker runs a very simple update-render loop for particles, an nothing else.
+Particle workers run separate from the game loop, allowing them to process thousands of particles without impacting the game loop's performance. A worker runs a very simple update-render loop for particles, and nothing else.
 
 Particle workers generate several frames of rendered particles, often faster than the game loop can render one frame. Because of this, it is possible to tune the timing for the workers so they better match the game loop.
