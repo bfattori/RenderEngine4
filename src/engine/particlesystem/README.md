@@ -4,75 +4,52 @@ The RenderEngine4 provides a particle system grown for speed and flexibility. Th
 The particle engine provides a simple API for creating particle effects, which can be used to add visual flair to games or simulations. Additionally occlusion masking of particles is near-automatic with hinting to help the system know what to show and what to hide in the final output. This allows the particles to run within the render planes provided by the render contexts.
 
 ## **Spark** Memory Manager
-The `Spark` memory manager is designed to make memory management simple, yet still performant while minimizing garbage collection. Memory is allocated ahead of time for particle storage and remains until the particle system exits. Particle memory is overwritten in a circular fashion to eliminate new allocations at runtime. This provides for efficient memory management while still providing a simple API for creating and managing particles via `MemShape`.
+The `Spark` memory manager is designed to make memory management flexible, yet still performant while minimizing garbage collection. Memory is allocated at start time for particle storage and is retained until the game exits. Particle memory is overwritten in a circular fashion to eliminate new allocations at runtime.
 
-The `Spark` memory manager extends from the `DataView` with methods added for memory types not native to it. For example, `Spark` allows for the creation of `VecF32` or `VecF32Array` which represent
-two 32-bit floats per element. Or the `Color32` type that can store hex color values and retrieve them in native web hex-color format.
+The `Spark` memory manager extends from the `DataView` with methods added for memory types not native to it. For example, `Spark` allows for the creation of `VecF32` or `VecF32Array` which represent two 32-bit floats per element. Or the `Color32` type that can store hex color values and retrieve them in native web hex-color format.
 
-### **MemShape**
-Memory shapes define a memory segment allocator. The shape is defined by the property name and memory type to access. A `MemShape` calculates the byte offsets for each property and creates getters/setters to read and write the values.
+### Memory Management
+With `Spark`, manipulating memory becomes _your task_. Each particle memory segment is the size (in bytes) of the _largest_ particle type used. Inside the `Particle` or `BasicParticle`, memory is read and written directly with pre-computed byte offsets. Only numerical types are stored in the particle memory so operations can be fast. The trade-off between using `Objects` vs fixed allocation is made up for by the reduced amount of garbage collection that occurs.
 
-#### **Particle Header**
-Every particle has a header defining basic properties.
+Standard JavaScript memory management is highly-optimized to work with JavaScript object types. Creating and destroying thousands of particles requires frequent garbage collection and causes stuttering in the game loop. But, by using a fixed memory allocator, we can virtually eliminate garbage collection. 
 
-```javascript
-  const particleHeader = new MemShape();
-  particleHeader.set('lifeByte',  'UInt8');
-  particleHeader.set('opaqueId',  'UInt8');
-  particleHeader.set('spawnTime', 'UInt64');
-  particleHeader.set('lifeSpan',  'UInt16');
-  particleHeader.build();  
-```
-
-#### **Particle Body**
-The actual shape of a particle is dependent on the particle and what it inherits from.  For example, a `MemShape` for the `BasicParticle` defines the following properties:
-```javascript
-  this.#particleShape = new MemShape();
-  this.#particleShape.set('particleColor',  'UInt8');
-  this.#particleShape.set('startSize',      'Float32');
-  this.#particleShape.set('particleSize',   'Float32');
-  this.#particleShape.set('sizeDecay',      'Float32');
-  this.#particleShape.set('dragRate',       'Float32');
-  this.#particleShape.set('dragDelta',      'Float32');
-  this.#particleShape.set('tileOpaqueId',   'UInt16');
-  this.#particleShape.build();
-```
-The call to `build()` creates the memory shape and assigns the property accessors to set and retrieve each memory type by name. The memory shape is used with the `Spark` memory manager to manage particle memory, allowing for efficient access and manipulation of particle data. This approach ensures that particles are stored in a structured format that can be easily accessed during update and render.
-
-To use it you only need set the heap segment and then reading/writing properties is achieved with a cleaner syntax. Update and render method of particles are passed a `heap` which represents a particle's memory segment. An example:
+An example of writing and reading memory is shown below. Particle lifecycle methods are passed a `memSegment` representing the block of memory allocated for the particle.
 
 ```javascript
-update(time, deltaTime, heap, pos, vel, life) {
-  super.update(time, deltaTime, heap, pos, vel, life);
+  spawn(worldPos, time, memSegment) {
+    // lifespan 
+    const lifeSpan = $Math.getRangeValueInt(this.lifeSpan);
+    const variance = $Math.getRangeValueInt(this.lifeVariance);
+    memSegment.setUint16(Particle.OFFSETS.LF_REMAINING, lifeSpan + variance);
+    memSegment.setUint16(Particle.OFFSETS.LF_ORIGINAL, lifeSpan + variance);
 
-  // assign the segment BEFORE any operations
-  this.shape.segment = heap;
+    // opaque Id
+    memSegment.setUint8(Particle.OFFSETS.OPAQUE_ID, this.opaqueId);
 
-  // calculate the trail if the particle has a trail length greater than 0
-  const trLen = this.trailLength;
-  if (trLen > 0) {
-    this.shape.trail = Util.unshift(this.shape.trail, pos[0], pos[1]);
-    this.shape.trTail += 1;
-    this.shape.trTail = Math.min(trLen, this.shape.trTail);
+    // spawn time
+    memSegment.setBigUint64(Particle.OFFSETS.SPAWN_TIME, BigInt(Math.floor(time)));
+
+    // position
+    memSegment.setVecF32(Particle.OFFSETS.POSITION, worldPos);
   }
-}
 ```
 
-### **Particle Inheritance**
-Because of the way `Spark` works, standard inheritance does not work for `MemShape` and we must instead explicitly define what we inherit from. For example, the `DiffuseParticle` inherits from the `BasicParticle` but you must _explicitly call_ `shape.inherit(super.shape)` immediately after creating the shape to maintain memory offsets.
+During update, a particle may need to read and write values in the memory segment. Updating a value pulled from the memory segment _will not change the value in memory_. If you update a value in the function scope, you **must explicitly write-back** any values you want to retain into the particle's instantaneous memory.
 
 ```javascript
-   get shape() {
-    if (!this.#particleShape) {
-      const shape = new MemShape();
-      shape.inherit(super.shape);
-      shape.set('softness',   'Float32');
-      shape.set('fade',       'Float32');
-      shape.set('alpha',      'Float32');
-      this.#particleShape = shape;
-      this.#particleShape.build();
-    }
-    return this.#particleShape;
+  update(time, deltaTime, memSegment, life) {
+      super.update(time, deltaTime, memSegment, life);
+      
+      const fade = memSegment.getFloat32(DiffuseParticle.OFFSETS.FADE);
+      if (fade > 0.0) {
+        let alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
+        alpha -= fade;
+        memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, Math.max(0.0, alpha));
+
+        if (alpha <= 0) {
+          this.cleanUp(memSegment);
+        }
+      }
   }
 ```
 
@@ -108,11 +85,20 @@ There are several styles of particle and effect generators to select from, or to
 - **FireworksEffect** - Pre-defined color palettes, renders as points, particles spawn sub-particles, built-in types: **Peony, chrysanthemum, comet, palm, brocade, willow, pistil, tourbillion, fish, and strobe.**
 - **SmokeEffect** - Configurable color palette, renders as diffuse points, rises slowly, narrow spread-angle emission.
 
+# Particle Threading using WebWorkers
+The RenderEngine4 supports multi-threading to enhance particle performance. However, it is important to remember that even with multiple workers, the particle engine is still running on the CPU only. While you can increase the number of particles being rendered at once, the overall performance will still be limited by the CPU's processing power.
+
 ## Particle Manager
-The threaded particle system uses a `ParticleManager` as a controller the for `$ParticleEngine`. The manager reroutes calls normally processed by the particle system to an orchestrator.
+The threaded particle system uses a `ParticleManager` as a controller for the `$ParticleEngine`. The manager reroutes calls normally processed by the particle system to the orchestrator. The `ParticleManager` runs in the main thread and spawns the `Orchestrator` in a worker thread to break from the game's update-render loop.
 
 ## Particle Orchestrator
-The `Orchestrator` is responsible for creating `ParticleWorker`s and managing the distribution of particle types, effects, affectors, and particles themselves. It is also the system that combines the images generated by the `ParticleWorker`s.
+The `Orchestrator` is responsible for spawning `ParticleWorker`s and managing the distribution of particle types, effects, affectors, and particles themselves. It is also the system that combines the images generated by the `ParticleWorker`s. 
+
+The orchestrator coordinates all of the workers and updates the `ParticleManager` with the results of the `ParticleWorker`s.
 
 ## Particle Worker
-Each worker is a thread that generates particles based on the configuration provided to it. The workers are responsible for creating and updating particles, as well as rendering them.
+Each worker is running its own `$ParticleEngine` and manages a segment of the overall budget for particles. The workers are responsible for creating and updating particles, as well as rendering their view of particles to send to the `Orchestrator`.
+
+Particle workers run separate from the game loop, allowing them to process thousands of particles without impacting the game loop's performance. A worker runs a very simple update-render loop for particles, an nothing else.
+
+Particle workers generate several frames of rendered particles, often faster than the game loop can render one frame. Because of this, it is possible to tune the timing for the workers so they better match the game loop.
