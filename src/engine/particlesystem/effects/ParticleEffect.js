@@ -89,7 +89,7 @@ export default class ParticleEffect extends TransferrableConfig {
      */
     dehydrate() {
         const props = super.dehydrate();
-        props.particleTypes = props.particleTypes.map(e => e.props.opaqueId);
+        props.particleTypes = props.particleTypes.map(e => e.$name);
         return props;
     }
 
@@ -100,16 +100,16 @@ export default class ParticleEffect extends TransferrableConfig {
     async rehydrate(obj) {
         await new Promise((resolve) => {
             const resolveParticleTypes = () => {
-                const success = obj.particleTypes.every(e => this.engine.types.get(e));
+                const success = obj.particleTypes.every(e => this.engine.typesByName.get(e));
                 if (success)
                     return resolve(true);
                 else
-                    setTimeout(resolveParticleTypes, 1000);
+                    setTimeout(resolveParticleTypes, 250);
             };
             resolveParticleTypes();
         });
-        
-        obj.particleTypes = obj.particleTypes.map(e => this.engine.types.get(e));
+
+        obj.particleTypes = obj.particleTypes.map(e => this.engine.typesByName.get(e));
         await super.rehydrate(obj);
         return obj;
     }
@@ -167,9 +167,9 @@ export default class ParticleEffect extends TransferrableConfig {
                 const typeIdx = $Math.randomRangeInt(0, this.particleTypes.length - 1);
                 const pType = this.particleTypes.at(typeIdx);
                 if (pType) {
-                    const spawned = this.engine.spawnParticle(worldPos, time, pType);
-                    if (spawned !== null) {
-                        this.initParticle(spawned.header, spawned.memSegment, pType, spawned.pos, spawned.vel);
+                    const memSegment = this.engine.spawnParticle(worldPos, time, pType);
+                    if (memSegment !== null) {
+                        this.initParticle(pType, memSegment);
                     }
                 }
             }
@@ -190,12 +190,9 @@ export default class ParticleEffect extends TransferrableConfig {
      * Sub-classes should override this method to modify the spawned 
      * particle before it is introduced into the `ParticleSystem`.
      * 
-     * @param {Spark} header - The particle header
-     * @param {Spark} heap - Initialized particle memory
-     * @param {BasicParticle} particleType - Particle configuration
-     * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
-     * @param {Float32Array} vel - The velocity of the particle
+     * @param {Particle} particle - The particle config
+     * @param {Spark} memSegment - Initialized particle memory
      */
-    initParticle(header, heap, particleType, pos, vel) {        
+    initParticle(particle, memSegment) {        
     }
 }

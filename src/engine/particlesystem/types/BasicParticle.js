@@ -1,10 +1,10 @@
 import Constants from '../../Constants.js';
-import TransferrableConfig from '../../core/TransferrableConfig.js';
+import Particle from './Particle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';
-import { MemShape } from '../../core/Spark.js';
+
 
 /**
  * @class BasicParticle
@@ -12,13 +12,25 @@ import { MemShape } from '../../core/Spark.js';
  * and behaviors of individual particles, including their color, size, velocity, drag, lifespan, and rendering methods. The 
  * class provides methods for spawning, updating, rendering, and cleaning up particles, allowing for customization of particle 
  * behavior and appearance. BasicParticle can be extended or configured to create various particle effects within the particle system.
- * @extends TransferrableConfig
+ * @extends Particle
  */
-export default class BasicParticle extends TransferrableConfig {
-    static AS_POINT = 0;
-    #opaqueId = null;
-    #particleShape = null;
-    #sizeBytes = null;
+export default class BasicParticle extends Particle {
+    /**
+     * The size of the particle in bytes
+     * @type {number}
+     */
+    static sizeOf = 23;
+    static byteOffset = 31;
+
+    static OFFSETS = {
+        COLOR:          BasicParticle.byteOffset + 0,
+        ORIG_SIZE:      BasicParticle.byteOffset + 1,
+        CUR_SIZE:       BasicParticle.byteOffset + 5,
+        SIZE_DECAY:     BasicParticle.byteOffset + 9,
+        DRAG:           BasicParticle.byteOffset + 13,
+        DRAG_DELTA:     BasicParticle.byteOffset + 17,
+        TILE_OPAQUE_ID: BasicParticle.byteOffset + 21
+    }
 
     /**
      * Create a `BasicParticle` with options for colors, sizes, velocity range,
@@ -67,17 +79,6 @@ export default class BasicParticle extends TransferrableConfig {
              */
             dragRate: 1.3,
             /**
-             * Lifespan range of the particle in milliseconds
-             * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
-             */
-            lifeSpan: [90, 3000],
-            /**
-             * Variance to add to the lifespan to make
-             * particles feel unique
-             * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
-             */
-            lifeVariance: 80,
-            /**
              * Gravity effect on the particle (can act in any dimension)
              * @type {Array<number>} - vector of gravitational influence
              */
@@ -85,38 +86,21 @@ export default class BasicParticle extends TransferrableConfig {
         }, url);
         this.merge(overrides);
         this.name = 'basicParticle';
-
-        // convert colors to 4 8-bit color channels
-        this.#preComputeColors();
     }
 
     static getInstance() {
         return new BasicParticle();
     }
 
-    #preComputeColors() {
+    initializeParticleType() {
+        super.initializeParticleType();
         for (let i = 0; i < this.colors.length; i++) {
-            this.colors[i] = Util.color8Hex(this.colors[i]);
+            this.colors[i] = Util.getRGBA(this.colors[i]);
         }
     }
 
-    get shape() {
-        if (!this.#particleShape) {
-            this.#particleShape = new MemShape();
-            this.#particleShape.set('particleColor',  'UInt8');
-            this.#particleShape.set('startSize',      'Float32');
-            this.#particleShape.set('particleSize',   'Float32');
-            this.#particleShape.set('sizeDecay',      'Float32');
-            this.#particleShape.set('dragRate',       'Float32');
-            this.#particleShape.set('dragDelta',      'Float32');
-            this.#particleShape.set('tileOpaqueId',   'UInt16');
-            this.#particleShape.build();
-        }
-        return this.#particleShape;
-    }
-
-    get sizeBytes() {
-        return this.shape.sizeOf;
+    get memoryRequirement() {
+        return Particle.sizeOf + BasicParticle.sizeOf;
     }
 
     /**
@@ -138,117 +122,89 @@ export default class BasicParticle extends TransferrableConfig {
     }
 
     /**
-     * The opaque Id references this type of particle. This is used to identify particles in the engine's memory.
-     * @type {number} - The opaque Id of the particle type
-     */
-    set opaqueId(opaqueId) {
-        this.#opaqueId = opaqueId;
-    }
-
-    /**
-     * The opaque Id representing this particle type
-     * @returns {number}
-     */
-    get opaqueId() {
-        return this.#opaqueId;
-    }
-
-    /**
      * Called when a particle is spawned to initialize its settings.
+     * @param {Array<number>} worldPos - X & Y coordinates of the particle
      * @param {number} time - The current world time in milliseconds
-     * @param {BasicParticle} config - The particle's configuration
-     * @param {Spark} header - The particle header
-     * @param {Spark} heap - The particle's instantaneous memory
+     * @param {Particle} config - The particle's configuration
+     * @param {Spark} memSegment - The particle's instantaneous memory
      * @returns {number} The particle's lifespan
      */
-    spawn(time, config, header, heap) {
-        // assign the heap segment BEFORE any operations
-        this.shape.segment = heap;
+    spawn(worldPos, time, memSegment) {
+        super.spawn(worldPos, time, memSegment);
 
         // color: index to the computed color array
-        const color = $Math.randomRangeInt(0, config.colors.length - 1);
-        this.shape.particleColor = color;
+        const color = $Math.randomRangeInt(0, this.colors.length - 1);
+        memSegment.setUint8(BasicParticle.OFFSETS.COLOR, color);
 
         // initial size of the particle
-        const initSize = $Math.getRangeValue(config.particleSize);
-        this.shape.startSize = initSize;
-
-        // the size of the particle as rendered (this value will change)
-        this.shape.particleSize = initSize;
+        const initSize = $Math.getRangeValue(this.particleSize);
+        memSegment.setFloat32(BasicParticle.OFFSETS.ORIG_SIZE, initSize);
+        memSegment.setFloat32(BasicParticle.OFFSETS.CUR_SIZE, initSize)
 
         // rate of size decay
-        this.shape.sizeDecay = config.sizeDecay;
+        memSegment.setFloat32(BasicParticle.OFFSETS.SIZE_DECAY, this.sizeDecay);
 
         // the drag for the particle (this value changes)
-        this.shape.dragRate = $Math.getRangeValue(config.drag);
+        memSegment.setFloat32(BasicParticle.OFFSETS.DRAG, $Math.getRangeValue(this.drag));
 
         // rate of drag increase
-        this.shape.dragDelta = $Math.getRangeValue(config.dragRate);
+        memSegment.setFloat32(BasicParticle.OFFSETS.DRAG_DELTA, $Math.getRangeValue(this.dragRate));
 
         // tile or point?
-        let tile = BasicParticle.AS_POINT;
+        let tile = Particle.AS_POINT;
         if (this.tileSheet !== null) {
             // select a random tile
             tile = this.tileSheet.getTileAt($Math.randomRangeInt(0, this.tileSheet.count)).opaqueId;      // 16-bit unsigned int
         }
 
-        this.shape.tileOpaqueId = tile;
-
-        // store lifespan 
-        const lifeSpan = $Math.getRangeValueInt(config.lifeSpan);
-        header.setUint16(Constants.OFFS_LIFESPAN_REMAINING, lifeSpan);  // current lifeSpan
-        header.setUint16(Constants.OFFS_LIFESPAN_ORIGINAL, lifeSpan);  // original lifeSpan
+        memSegment.setUint16(BasicParticle.OFFSETS.TILE_OPAQUE_ID, tile);
     }
 
     /**
      * Update the particle
      * @param {number} time - Current world time in milliseconds
      * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-     * @param {Spark} header - The particle's header
-     * @param {Spark} heap - The memory segment containing the particle's instantaneous properties
-     * @param {Float32Array} pos - The particle's current position (2-element x & y)
-     * @param {Float32Array} vel - The particle's velocity vector (2-element x & y)
+     * @param {Spark} memSegment - The memory segment containing the particle's instantaneous properties
      * @param {UInt16} life - Remaining life of the particle
      */
-    update(time, deltaTime, header, heap, pos, vel, life) {
-        // assign the segment BEFORE any operations
-        this.shape.segment = heap;
-
-        const originalLifeSpan = header.getUint16(Constants.OFFS_LIFESPAN_ORIGINAL);   // original lifespan
-        const initSize = this.shape.startSize;
-        const sizeDecay = this.shape.sizeDecay;
+    update(time, deltaTime, memSegment, life) {
+        super.update(time, deltaTime, memSegment, life);
+        
+        const originalLifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_ORIGINAL);   // original lifespan
+        const initSize = memSegment.getFloat32(BasicParticle.OFFSETS.ORIG_SIZE);
+        const sizeDecay = memSegment.getFloat32(BasicParticle.OFFSETS.SIZE_DECAY);
 
         // shrink over the lifespan
-        if (sizeDecay > 0.0) {
-            this.shape.particleSize = ((life / originalLifeSpan) * initSize) / sizeDecay;
+        let curSize = memSegment.getFloat32(BasicParticle.OFFSETS.CUR_SIZE);
+        if (sizeDecay !== 0) {
+            curSize = ((life / originalLifeSpan) * initSize) - sizeDecay;
+            memSegment.setFloat32(BasicParticle.OFFSETS.CUR_SIZE, curSize);
         }
 
-        if (this.shape.particleSize <= Constants.PARTICLE_SIZE_THRESHOLD) {
+        if (curSize <= Constants.PARTICLE_SIZE_THRESHOLD) {
             // kill the particle
-            this.cleanUp(header, heap);
+            this.cleanUp(memSegment);
         } else {
+
             // get the drag and drag rate
-            const curDrag = this.shape.dragRate;
-            const dragDelta = this.shape.dragDelta;
+            const curDrag = memSegment.getFloat32(BasicParticle.OFFSETS.DRAG);
+            const dragDelta = memSegment.getFloat32(BasicParticle.OFFSETS.DRAG_DELTA);
 
             // calculate instaneous drag
             const drag = curDrag === 0 ? 1 : (1 / curDrag);
 
             // write back the updated drag
-            this.shape.dragRate = drag + dragDelta;
+            memSegment.setFloat32(BasicParticle.OFFSETS.DRAG, drag + dragDelta);
 
-            // add velocity to position then add gravity to velocity
-            const cV = [vel[0], vel[1]];
-            const v = $Math.vecMulScalar(cV, drag);
+            // add drag and gravity to velocity
+            const vel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);
+            //const cV = [vel[0], vel[1]];
+            const v = $Math.vecMulScalar(vel, drag);
             v[0] += this.gravity[0];
             v[1] += this.gravity[1];
-            const p = [pos[0], pos[1]];
-            p[0] += v[0];
-            p[1] += v[1];
-            pos[0] = p[0]
-            pos[1] = p[1];
-            vel[0] = v[0];
-            vel[1] = v[1];
+
+            // store back velocity
+            memSegment.setVecF32(Particle.OFFSETS.VELOCITY, v);
         }
     }
 
@@ -257,27 +213,22 @@ export default class BasicParticle extends TransferrableConfig {
      * Render the particle
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
-     * @param {Spark} header - The particle header
-     * @param {Spark} heap - The particle's instantaneous memory
-     * @param {Float32Array} pos - The current position of the particle
-     * @param {Uint16Array} life - the life left in the particle
+     * @param {Spark} memSegment - The particle's instantaneous memory
+     * @param {number} lifeSpan - the life left in the particle
      * @param {String} target - The name of the renderer ('canvas', 'webgl', ...)
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, header, heap, pos, life, target, surface) {
-        // assign the memory segment BEFORE any access to the shape
-        this.shape.segment = heap;
-
+    render(time, deltaTime, memSegment, lifeSpan, target, surface) {
         // get the tile's opaque Id or 0 if it's a simple point
-        const opaqueId = this.shape.tileOpaqueId;
+        const opaqueId = memSegment.getUint16(BasicParticle.OFFSETS.TILE_OPAQUE_ID);
 
         switch (target) {
             case 'canvas':
-                if (opaqueId === BasicParticle.AS_POINT) {
-                    this.drawShape(time, deltaTime, surface, header, heap, pos);
+                if (opaqueId === Particle.AS_POINT) {
+                    this.drawShape(time, deltaTime, surface, memSegment);
                 } else {
-                    this.drawTile(opaqueId, surface, header, heap, pos);
+                    this.drawTile(opaqueId, surface, memSegment);
                 }
                 break;
             case 'webgl':
@@ -287,29 +238,22 @@ export default class BasicParticle extends TransferrableConfig {
 
     /**
      * Render the particle - a filled rectangle
-     * @param {ParticleEngine} pEngine - The particle engine
      * @param {Number} time - The current world time in milliseconds
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      * @param {CanvasRenderingContext2D} surface - The rendering context
-     * @param {Object} $memory - The memory object containing the particle's instantaneous properties
-     * @param {Array<number>} pos - The current position of the particle
-     * @type {Function}
+     * @param {Spark} memSegment - The memory object containing the particle's instantaneous properties
      */
-    drawShape(time, deltaTime, surface, header, heap, pos) {
-        // assign the memory segment BEFORE any access to the shape
-        this.shape.segment = heap;
-
+    drawShape(time, deltaTime, surface, memSegment) {
         // color index
-        const colorIdx = this.shape.particleColor;
+        const colorIdx = memSegment.getUint8(BasicParticle.OFFSETS.COLOR);
 
-        // step over initial size to get the current size
-        const curSz = this.shape.particleSize;
+        // update current size
+        const curSz = memSegment.getFloat32(BasicParticle.OFFSETS.CUR_SIZE);
         const sz = Math.ceil(curSz / 2);
-        const pX = pos[0];
-        const pY = pos[1];
+        const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
 
         surface.fillStyle = this.colors[colorIdx];
-        surface.fillRect(pX - sz, pY - sz, curSz, curSz);
+        surface.fillRect(pos[0] - sz, pos[1] - sz, curSz, curSz);
     }
 
     /**
@@ -321,34 +265,19 @@ export default class BasicParticle extends TransferrableConfig {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawTile(opaqueId, surface, header, heap, pos) {
-        this.shape.segment = heap;
+    drawTile(opaqueId, surface, memSegment) {
         const tile = Assembler.assemblerInstance.getCompiledTile(opaqueId);
         const frame = tile.frameRect;
-        const pX = pos[0];
-        const pY = pos[1];
-        surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pX, pY, frame[2], frame[3]);
+        const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
+        surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame [3], pos[0], pos[1], frame[2], frame[3]);
     }
-
     
-    /**
-     * Called to clean up the particle, such as for freeing resources
-     * @param {Spark} header - The particle header
-     * @param {Spark} heap - The memory object containing the particle's instantaneous properties
-     * @type {Function}
-     */
-    cleanUp(header, heap) {
-        header.setUint16(Constants.OFFS_LIFESPAN_REMAINING, 0);    // dead
-        header.setUint16(Constants.OFFS_LIFESPAN_ORIGINAL, 0);    // dead
-    }
-
     /**
      * Reduce the particle types to their names
      * @returns {Object}
      */
     dehydrate() {
         const props = super.dehydrate();
-        props.opaqueId = this.#opaqueId;
         props.tileSheet = this.tileSheet ? {name: this.tileSheet.$name, resourceUrl: this.tileSheet.resourceUrl.toString()} : null;
         return props;
     }
@@ -367,4 +296,4 @@ export default class BasicParticle extends TransferrableConfig {
         await super.rehydrate(obj);
         return obj;
     }
-}
+} 

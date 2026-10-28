@@ -1,6 +1,5 @@
-import Constants from '../../Constants.js';
 import $Math from '../../core/Math.js';
-import SprayParticle from '../types/BasicParticle.js';
+import Particle from '../types/Particle.js';
 import ParticleEffect from './ParticleEffect.js';
 
 /**
@@ -48,26 +47,22 @@ export default class FountainEffect extends ParticleEffect {
     }
 
     /**
-     * Modify a spawned particle, calculating the spawn angle from
-     * the velocity scalar value.
+     * Sub-classes should override this method to modify the spawned 
+     * particle before it is introduced into the `ParticleSystem`.
      * 
-     * @param {Spark} header - The particle header
-     * @param {Spark} heap - Initialized particle memory
-     * @param {BasicParticle} particleType - Particle configuration
-     * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
-     * @param {Float32Array} vel - The velocity of the particle
+     * @param {Particle} particle - The particle config
+     * @param {Spark} memSegment - Initialized particle memory
      */
-    initParticle(header, heap, particleType, pos, vel) {
+    initParticle(particle, memSegment) {
         const variance = $Math.randomRange(0, Math.round(Math.min(this.spread / 2, this.spreadVariance)), true);
         const lowAngle = this.angle - (this.spread - variance);
         const highAngle = this.angle + (this.spread - variance);
 
-        const v = $Math.vecMulScalar(
+        const vel = $Math.vecMulScalar(
             $Math.getDirectionVector([0, 0], $Math.randomRangeInt(lowAngle, highAngle)), 
-            $Math.getRangeValue(particleType.velocity)
+            $Math.getRangeValue(particle.velocity)
         );
-        vel[0] = v[0];
-        vel[1] = v[1];
 
+        memSegment.setVecF32(Particle.OFFSETS.VELOCITY, vel);
     }
 }

@@ -1,18 +1,16 @@
 import Constants from '../Constants.js';
 import RenderEngineError from '../core/RenderEngineError.js';
-import Engine from '../core/Engine.js';
 import Context from '../Context.js';
 import LoadCounter from '../ui/debug/LoadCounter.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
 import PhysicalParticle from '../particlesystem/types/PhysicalParticle.js';
 import ParticleAffector from '../particlesystem/physics/ParticleAffector.js';
-
-import $Math from '../core/Math.js';
+import Particle from './types/Particle.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 
-import Spark, { MemShape } from '../core/Spark.js';
+import Spark from '../core/Spark.js';
 
 const ctx = Context.getInstance();
 
@@ -160,9 +158,6 @@ export default class $ParticleEngine {
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);
         this.#surface = this.#offscreen.getContext('2d');
-
-        // the particle header
-        this.genParticleHeader();
     }
 
     /**
@@ -227,6 +222,12 @@ export default class $ParticleEngine {
      */
     get types() {
         return this.#particleTypes;
+    }
+
+    get typesByName() {
+        const byName = new Map();
+        this.#particleTypes.forEach(pType => byName.set(pType.$name, pType));
+        return byName;
     }
 
     /**
@@ -352,10 +353,11 @@ export default class $ParticleEngine {
         }
 
         this.types.set(particle.opaqueId, particle);
+        particle.setUp(this);
 
         // find the largest particle (by memory size) that will exist
-        if (particle.sizeBytes > this.#particleMemSize) {
-            this.#particleMemSize = particle.sizeBytes;
+        if (particle.memoryRequirement > this.#particleMemSize) {
+            this.#particleMemSize = particle.memoryRequirement;
         }
     }
 
@@ -441,88 +443,6 @@ export default class $ParticleEngine {
         this.#buffered.push(particle);
     }
 
-    //------------------------------------------------------------
-    // basic particle shape
-
-    /**
-     * The shape of a particle header containing:
-     * - lifeByte (1 byte)  : Particle alive (1) or dead (0)
-     * - opaqueId (1 byte)  : Particle type's opaque Id in the engine
-     * - spawnTime (8 bytes): World time at spawn
-     * - lifeSpan (2 bytes) : The initial lifespan of the particle
-     * - **Total:** 12 bytes
-     * 
-     * @returns {MemShape} The particle header's memory shape
-     */
-    genParticleHeader() {
-        if (this.#particleHeader === null) {
-            this.#particleHeader = new MemShape();
-            this.#particleHeader.set('lifeByte',   'UInt8');
-            this.#particleHeader.set('opaqueId',   'UInt8');
-            this.#particleHeader.set('spawnTime',  'UInt64');
-            this.#particleHeader.set('lifeSpan',   'UInt16');
-            this.#particleHeader.build();
-        }
-
-        return this.#particleHeader;
-    }   
-
-    /**
-     * Spawn a particle in the engine. Particles are spawned from particles added
-     * to the engine. Adding particles puts them into an insertion queue. Spawing them
-     * creates the instance of the particle in the engine.
-     * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
-     * @param {number} time - The current world time in milliseconds
-     * @param {Object} particleConfig - Initialized particle data 
-     */
-    spawnParticle(worldPos, time, particleType) {
-        const idx = this.#nextIndex;
-        if (idx !== -1) {
-            // making a particle, need to clean up
-            this.#cleaningLatch = false;
-
-            // position and velocity
-            this.#pPos[idx * 2] = worldPos[0]; 
-            this.#pPos[(idx * 2) + 1] = worldPos[1];
-            this.#pVel[idx * 2] = 0.0;
-            this.#pVel[(idx * 2) + 1] = 0.0;
-            
-            // The header offset
-            const memOffset = idx * (this.#particleMemSize + Constants.PH_BYTES);
-
-            // set the header segment
-            const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
-            header.setUint8(Constants.OFFS_OPAQUE_ID, particleType.opaqueId);
-            header.setBigUint64(Constants.OFFS_SPAWN_TIME, BigInt(Math.floor(time)));
-
-            // the particle's instantaneous memory segment
-            const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
-            
-            // spawn a particle
-            particleType.spawn(time, particleType.opts, header, memSegment);
-            
-            // pvOffs is short for "position & velocity offsets"
-            // (idx * 2 elements) * 4 bytes each
-            const pvOffs = (idx * 2) * 4;
-
-            // store the generated position, velocity, and memory segment values.
-            // would be good to use other arrays to pass these values instead of
-            // creating a variable object in memory
-            const spawned = {
-                pos: new Float32Array(this.#pPos.buffer, pvOffs, 2),
-                vel: new Float32Array(this.#pVel.buffer, pvOffs, 2),
-                header: header,
-                memSegment: memSegment
-            };
-
-            this.#liveParticles++;
-            return spawned;
-        } else if (ctx.debug)
-            console.warn(`Failed to spawn particle: ${particleType.constructor.name} - no available memory`);        
-
-        return null;
-    }
-
     /**
      * Emit particles using an effect, into the particle engine, at a specified world position. 
      * 
@@ -556,6 +476,39 @@ export default class $ParticleEngine {
     // Lifecycle methods
 
     /**
+     * Spawn a particle in the engine. Particles are spawned from particles added
+     * to the engine. Adding particles puts them into an insertion queue. Spawing them
+     * creates the instance of the particle in the engine.
+     * 
+     * @param {Array<number>} worldPos - [x,y] world position to spawn the particle 
+     * @param {number} time - The current world time in milliseconds
+     * @param {Object} particleConfig - Initialized particle data
+     * @returns {Spark} The particle's memory segment 
+     */
+    spawnParticle(worldPos, time, particleType) {
+        const idx = this.#nextIndex;
+        if (idx !== -1) {
+            // making a particle, need to clean up
+            this.#cleaningLatch = false;
+            
+            // The memory offset
+            const memOffset = idx * this.#particleMemSize;
+
+            // the particle's instantaneous memory segment
+            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleMemSize);
+            
+            // spawn a particle
+            particleType.spawn(worldPos, time, memSegment);
+            
+            this.#liveParticles++;
+            return memSegment;
+        } else if (ctx.debug)
+            console.warn(`Failed to spawn particle: ${particleType.constructor.name} - no available memory`);        
+
+        return null;
+    }
+
+    /**
      * Update the particles within the render context, and for the specified time.
      *
      * @param time {Number} The global time within the engine.
@@ -576,31 +529,29 @@ export default class $ParticleEngine {
         // run all particles
         let livingParticles = 0;
         for (let p = 0; p < this.maxParticles; p++) {
-            const memOffset = p * (this.#particleMemSize + Constants.PH_BYTES);
-            const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
+            const memOffset = p * this.#particleMemSize;
+            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleMemSize);
             
-            const lifeSpan = header.getUint16(Constants.OFFS_LIFESPAN_REMAINING);
+            const lifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_REMAINING);
             if (lifeSpan > 0) {
-                const pvOffs = (p * 2) * 4; // Float32Array.BYTES_PER_ELEMENT;
-                const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
-                const vel = new Float32Array(this.#pVel.buffer, pvOffs, 2);
+                const pType = this.getParticleType(memSegment.getUint8(Particle.OFFSETS.OPAQUE_ID));
 
-                const pType = this.getParticleType(header.getUint8(Constants.OFFS_OPAQUE_ID));
-                const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
+                if (pType) {
+                    // run the particle
+                    this.#runParticle(pType, memSegment, lifeSpan, time, deltaTime);
 
-                // run the particle
-                this.#runParticle(pType, header, memSegment, pos, vel, lifeSpan, time, deltaTime);
+                    // get the particle's new position
+                    const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
 
-                // age particle
-                const remaining = Math.max(0, lifeSpan - Math.floor(deltaTime));
-                header.setUint16(Constants.OFFS_LIFESPAN_REMAINING, remaining <= 0 ? Constants.DEAD_PARTICLE : remaining);
-
-                // free-up space when dead
-                // ... or when no longer in the visible area
-                if (!this.#inBounds(pos) || remaining === Constants.DEAD_PARTICLE) {
-                    pType.cleanUp(header, memSegment);
-                } else {
-                    livingParticles++;
+                    // age particle
+                    let remaining = Math.max(0, lifeSpan - deltaTime);
+                    if (!this.#inBounds(pos) || remaining === Constants.DEAD_PARTICLE) {
+                        this.freeParticle(memSegment);
+                        continue;
+                    } else {
+                        memSegment.setUint16(Particle.OFFSETS.LF_REMAINING, remaining);
+                        livingParticles++;
+                    }
                 }
             }
         }
@@ -632,13 +583,13 @@ export default class $ParticleEngine {
      * @param {number} time - The world time
      * @param {number} deltaTime - delta time in milliseconds since last frame
      */
-    #runParticle(particleType, header, memSegment, pos, vel, life, time, deltaTime) {
+    #runParticle(particleType, memSegment, life, time, deltaTime) {
         // update the particle
-        particleType.update(time, deltaTime, header, memSegment, pos, vel, life);
+        particleType.update(time, deltaTime, memSegment, life);
         
         // only physical particles are affected by repulsors and colliders
         if (particleType instanceof PhysicalParticle) {
-            this.#addImpulse(pos, vel, time, deltaTime);
+            this.#addImpulse(memSegment, time, deltaTime);
         }
     }
 
@@ -652,9 +603,9 @@ export default class $ParticleEngine {
      * @param {*} time - Current world time
      * @param {*} deltaTime - Time since last frame
      */
-    #addImpulse(pos, vel, time, deltaTime) {
+    #addImpulse(memSegment, time, deltaTime) {
         this.affectors.forEach(affector => {
-            affector.affect(pos, vel, time, deltaTime);
+            affector.affect(memSegment, time, deltaTime);
         });
     }
 
@@ -672,20 +623,17 @@ export default class $ParticleEngine {
         let surf = directSurface || this.#surface;
 
         for (let p = 0; p < this.maxParticles; p++) {
-            const memOffset = p * (this.#particleMemSize + Constants.PH_BYTES);
-            const header = new Spark(this.#memories.buffer, memOffset, Constants.PH_BYTES);
+            const memOffset = p * this.#particleMemSize;
+            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleMemSize);
             
-            const lifeSpan = header.getUint16(Constants.OFFS_LIFESPAN_REMAINING);
+            const lifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_REMAINING);
             if (lifeSpan > Constants.DEAD_PARTICLE) {
-                const pType = this.getParticleType(header.getUInt8(Constants.OFFS_OPAQUE_ID));
-                const memSegment = new Spark(this.#memories.buffer, memOffset + Constants.PH_BYTES, this.#particleMemSize);
+                const pType = this.getParticleType(memSegment.getUint8(Particle.OFFSETS.OPAQUE_ID));
                 
-                // position & velocity offset
-                const pvOffs = (p * 2) * 4;
-                const pos = new Float32Array(this.#pPos.buffer, pvOffs, 2);
-
                 // render the particle
-                pType.render(time, deltaTime, header, memSegment, pos, lifeSpan, 'canvas', surf); 
+                if (pType) {
+                    pType.render(time, deltaTime, memSegment, lifeSpan, 'canvas', surf); 
+                }
             }
         }
 
@@ -711,6 +659,16 @@ export default class $ParticleEngine {
         });
 
         return renderTime;
+    }
+
+    /**
+     * Frees (zeros) the memory of a particle. Effectively making it dead.
+     * @param {Spark} memSegment - the particle's memory segment
+     */
+    freeParticle(memSegment) {
+        for (let i = 0; i < this.#particleMemSize; i++) {
+            memSegment.setUint8(i, 0);
+        }
     }
 
     reset() {

@@ -46,11 +46,13 @@ wEffect3.name = 'sparkler';
 
 
 const sparkEffect = new SparkEffect({
-    count: 10,
+    count: 5,
     countVariance: 20,
     frequencyVariance: 150,
     particleTypes: [sparkParticle],
-    angle: 110
+    angle: 110,
+    delay: [10, 100],
+    delayVariance: 0
 });
 sparkEffect.name = 'sparks1';
 
@@ -59,7 +61,8 @@ const sparkEffect2 = new SparkEffect({
     countVariance: 20,
     frequencyVariance: 150,
     particleTypes: [sparkParticle],
-    angle: -110
+    angle: -110,
+    delay: [10, 100]
 });
 sparkEffect2.name = 'sparks2';
 

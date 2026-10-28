@@ -149,13 +149,19 @@ class Orchestrator {
      * @param {Event} event 
      */
     #waitAcknowledge(event) {
+        let name;
         this.#workers.forEach(worker => {
-            if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_TYPE)
-                worker.ackParticles.push(event.data.particle.$name)
-            else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_EFFECT)
-                worker.ackEffects.push(event.data.effect.$name);
-            else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR)
-                worker.ackAffectors.push(event.data.affector.$name);
+            if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_TYPE) {
+                name = event.data.particle.$name;
+                worker.ackParticles.push(name)
+            } else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_EFFECT) {
+                name = event.data.effect.$name;
+                worker.ackEffects.push(name);
+            } else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR) {
+                name = event.data.affector.$name;
+                worker.ackAffectors.push(name);
+            }
+            // console.debug(`Orchestrator => Worker ${worker.id}: ${name} [${event.data.type}]`);
         });
     }
 

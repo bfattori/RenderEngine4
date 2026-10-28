@@ -12,7 +12,8 @@ import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 20000
+    maxParticles: 20000,
+    circularBuffer: true
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
@@ -67,7 +68,7 @@ const eParticle3 = new BurstParticle({
     drag: [1.8, 2.3],
     dragRate: 0.1,
     lifeSpan: [1000, 2000],
-    velocity: [1.6, 5.0]
+    velocity: [0.8, 1.7]
 });
 eParticle3.name = 'blues';
 
@@ -83,7 +84,7 @@ RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4)
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 1000,
+    count: 500,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);
@@ -111,9 +112,9 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    gameObject.PARTS.transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 590, true)];
+    gameObject.PARTS.transform.position = [$Math.randomRangeInt(10, 790), $Math.randomRangeInt(5, 590)];
     emitter.once();
-    setTimeout(explode, $Math.randomRange(80, 250, true));
+    setTimeout(explode, $Math.randomRangeInt(20, 80));
 }
 
 explode();

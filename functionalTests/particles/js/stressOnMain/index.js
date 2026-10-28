@@ -75,9 +75,9 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
+    t.position = [$Math.randomRange(10, 790, true), $Math.randomRangeInt(10, 590)];
     emitter.reset().enable();
-    setTimeout(explode, $Math.randomRange(10, 100, true));
+    setTimeout(explode, $Math.randomRangeInt(20, 80));
 }
 
 

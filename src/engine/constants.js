@@ -74,13 +74,6 @@ const Constants = {
     /* Particle Header Bytes */
     PH_BYTES: 13,
 
-    /* Particle Header Offsets */
-    OFFS_LIFESPAN_REMAINING: 0,
-    OFFS_LIFESPAN_ORIGINAL: 2,
-    OFFS_OPAQUE_ID: 4,
-    OFFS_SPAWN_TIME: 5,
-
-
     /* PI's cousins */
     TWO_PI: Math.PI * 2,
     HALF_PI: Math.PI / 2,

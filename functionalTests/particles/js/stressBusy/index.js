@@ -52,7 +52,7 @@ await RenderEngine.init(import.meta.url, {
 // set up the particles and effects we'll use
 const exParticle = new BurstParticle();
 const pEffect = new BurstEffect({
-    count: 1000,
+    count: 2000,
     particleTypes: [exParticle]
 });
 
@@ -76,9 +76,9 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
+    t.position = [$Math.randomRange(10, 790, true), $Math.randomRangeInt(10, 590)];
     emitter.reset().enable();
-    setTimeout(explode, $Math.randomRange(10, 100, true));
+    setTimeout(explode, $Math.randomRangeInt(20, 80));
 }
 
 // create game objects
@@ -91,7 +91,7 @@ for (let i = 0; i < numObjects; i++) {
         .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
 
     const t2 = gameObject.getComponentByName("transform");
-    t2.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
+    t2.position = [$Math.randomRange(10, 790, true), $Math.randomRangeInt(10, 590)];
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(gameObject);

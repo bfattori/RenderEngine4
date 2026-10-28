@@ -39,7 +39,7 @@ const wParticle2 = new WaterParticle({
 wParticle2.name = 'hotYellows';
 
 const sparkParticle = new SparkParticle({
-    trailLength: 10
+    trailLength: 5
 });
 sparkParticle.name = 'sparky';
 

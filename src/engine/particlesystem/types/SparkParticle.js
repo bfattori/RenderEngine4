@@ -1,10 +1,24 @@
 import PhysicalParticle from './PhysicalParticle.js';
 import Util from '../../core/Util.js';
-import { MemShape } from '../../core/Spark.js';
+import Particle from './Particle.js';
+import BasicParticle from './BasicParticle.js';
+import DiffuseParticle from './DiffuseParticle.js';
 
 export default class SparkParticle extends PhysicalParticle {
-  #particleShape = null;
   static MAX_TRAIL_LENGTH = 10;
+
+  /**
+   * The size of the particle in bytes
+   * @type {number}
+   */
+  static sizeOf = 85;
+  static byteOffset = 66;
+
+  static OFFSETS = {
+    ROLLOFF:        SparkParticle.byteOffset + 0,
+    TRAIL_LEN:      SparkParticle.byteOffset + 1,
+    TRAIL:          SparkParticle.byteOffset + 5
+  }
 
   constructor(overrides = {}, url = import.meta.url) {
     super({
@@ -38,37 +52,24 @@ export default class SparkParticle extends PhysicalParticle {
       return new SparkParticle();
   }
 
-  get shape() {
-    if (!this.#particleShape) {
-      const shape = new MemShape();
-      shape.inherit(super.shape);
-      shape.set('trFactor', 'Float32');
-      shape.set('trTail',   'UInt8');
-      shape.set('trail',    'VecF32', this.trailLength);
-      this.#particleShape = shape;
-      this.#particleShape.build();
-    }
-    return this.#particleShape;
+  get memoryRequirement() {
+    return Particle.sizeOf + BasicParticle.sizeOf + DiffuseParticle.sizeOf + SparkParticle.sizeOf;
   }
 
   /**
    * Called when a particle is spawned to initialize its settings
+   * @param {Array<number>} worldPos - The spawn position
    * @param {number} time - The current world time in milliseconds
-   * @param {Object} config - The particle's configuration
-   * @param {Spark} header - The particle header
-   * @param {Spark} heap - The particle's instantaneous memory
-   * @returns {number} The lifespan of the particle
+   * @param {Spark} memSegment - The particle's instantaneous memory
    */
-  spawn(time, config, header, heap) {
-    super.spawn(time, config, header, heap);
+  spawn(worldPos, time, memSegment) {
+    super.spawn(worldPos, time, memSegment);
 
-    // assign the heap segment BEFORE any operations
-    this.shape.segment = heap;
-
-    if (config.trailLength !== 0) {
-      this.shape.trail.fill(0.0);
-      this.shape.trFactor = 1 / config.trailLength;
-      this.shape.trTail = 0;
+    if (this.trailLength !== 0) {
+      memSegment.setFloat32(SparkParticle.OFFSETS.ROLLOFF, 1 / this.trailLength);
+      memSegment.setUint8(SparkParticle.OFFSETS.TRAIL_LEN, 0);
+      const initArray = new Array(SparkParticle.MAX_TRAIL_LENGTH * 2).fill(0.0);
+      memSegment.setVecF32Array(SparkParticle.OFFSETS.TRAIL, initArray, SparkParticle.MAX_TRAIL_LENGTH);
     }
   }
 
@@ -76,25 +77,22 @@ export default class SparkParticle extends PhysicalParticle {
    * Update the particle
    * @param {number} time - Current world time in milliseconds
    * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-   * @param {Spark} header - The particle header
-   * @param {Spark} heap - The particle's instantaneous memory
-   * @param {Array<number>} pos - The particle's current position
-   * @param {Array<number>} vel - The particle's velocity vector
-   * @param {number} life - Remaining life of the particle
-   * @type {Function}
+   * @param {Spark} memSegment - The memory segment containing the particle's instantaneous properties
+   * @param {UInt16} life - Remaining life of the particle
    */
-  update(time, deltaTime, header, heap, pos, vel, life) {
-    super.update(time, deltaTime, header, heap, pos, vel, life);
-
-    // assign the segment BEFORE any operations
-    this.shape.segment = heap;
+  update(time, deltaTime, memSegment, life) {
+    super.update(time, deltaTime, memSegment, life);
 
     // calculate the trail if the particle has a trail length greater than 0
     const trLen = this.trailLength;
     if (trLen > 0) {
-      this.shape.trail = Util.unshift(this.shape.trail, pos[0], pos[1]);
-      this.shape.trTail += 1;
-      this.shape.trTail = Math.min(trLen, this.shape.trTail);
+      let curLen = memSegment.getUint8(SparkParticle.OFFSETS.TRAIL_LEN);
+      const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
+      const trail = memSegment.getVecF32Array(SparkParticle.OFFSETS.TRAIL, SparkParticle.MAX_TRAIL_LENGTH);
+      const shifted = Util.unshift(trail, pos[0], pos[1]);
+      curLen = Math.min(trLen, curLen + 1);
+      memSegment.setVecF32Array(SparkParticle.OFFSETS.TRAIL, shifted, SparkParticle.MAX_TRAIL_LENGTH);
+      memSegment.setUint8(SparkParticle.OFFSETS.TRAIL_LEN, curLen);
     }
   }
 
@@ -108,15 +106,18 @@ export default class SparkParticle extends PhysicalParticle {
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(time, deltaTime, surface, header, heap, pos) {
-    super.drawShape(time, deltaTime, surface, header, heap, pos);
+  drawShape(time, deltaTime, surface, memSegment) {
+    super.drawShape(time, deltaTime, surface, memSegment);
 
     if (this.trailLength > 0) {
-      // assign the segment BEFORE any operations
-      this.shape.segment = heap;
+      const colorIdx = memSegment.getUint8(BasicParticle.OFFSETS.COLOR);
+      const color = this.colors[colorIdx];
+      const rolloff = memSegment.getFloat32(SparkParticle.OFFSETS.ROLLOFF);
+      const trail = memSegment.getVecF32Array(SparkParticle.OFFSETS.TRAIL, SparkParticle.MAX_TRAIL_LENGTH);
+      const trailLen = memSegment.getUint8(SparkParticle.OFFSETS.TRAIL_LEN); 
+      const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
 
-      const color = this.colors[this.shape.particleColor];
-      this.drawTrail(surface, this.shape.trail, this.shape.trTail, this.shape.trFactor, color, pos);
+      this.drawTrail(surface, trail, trailLen, rolloff, color, pos);
     }
   }
 

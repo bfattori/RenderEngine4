@@ -28,18 +28,26 @@ export default class Util {
      */
     static extractColorChannels(color) {
         let r = 0, g = 0, b = 0, a = 255;
-        if (isNaN(color) && color.charAt(0) === '#') {
-            // hex short or long (#fff or #ffffff or #ffffffff)
-            const small = color.length === 4;
-            color = color.substring(1); // remove hash
-            r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 2), 16);
-            g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 4), 16);
-            b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 6), 16);
-            if (color.length > 6) {
-                a = parseInt(color.substring(6, 8), 16);
+        if (isNaN(color)) {
+            if (color.charAt(0) === '#') {
+                // hex short or long (#fff or #ffffff or #ffffffff)
+                const small = color.length <= 5;
+                color = color.substring(1); // remove hash
+                r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 2), 16);
+                g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 4), 16);
+                b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 6), 16);
+                if (color.length > 6) {
+                    a = parseInt(color.substring(6, 8), 16);
+                }
+            } else if (color.charAt(0) === 'r') {
+                color = color.split(',');
+                r = parseInt(color[0].substring(5));
+                g = parseInt(color[1]);
+                b = parseInt(color[2]);
+                a = parseInt(color[3].substring(0, color[3].length - 1));
+            } else {
+                throw new RenderEngineError(`Invalid color format ${color} (${r},${g},${b},${a})  - must be #rrggbb[aa] or rgba(r,g,b,a)`);
             }
-        } else {
-            throw new RenderEngineError(`Invalid color format ${color} (${r},${g},${b},${a})  - must be #rrggbb[aa]`);
         }
         return [r,g,b,a];
     }
@@ -63,21 +71,24 @@ export default class Util {
      * @param {number} a 
      * @returns The hex color value, or the name of the color
      */
-    static getColor(r, g, b, a) {
+    static getColor(r, g = 0, b = 0, a = 1) {
         // Convert to hex if RGB values provided
         if (!isNaN(r)) {
-            const r8 = Math.round(r * 255).toString(16).padStart(2, '0');
-            const g8 = g !== null ? Math.round(g * 255).toString(16).padStart(2, '0') : '00';
-            const b8 = Math.round(b * 255).toString(16).padStart(2, '0');
-            const alphaHex = a !== undefined && a < 1 ? 
-            Math.round(a * 255).toString(16).padStart(2, '0') : '';
-            
-            return `#${r8}${g8}${b8}${alphaHex}`;
+            r = r <= 1.0 ? r * 255 : r;
+            g = g <= 1.0 ? g * 255 : g;
+            b = b <= 1.0 ? b * 255 : b;
+            a = a <= 1.0 ? a * 255 : a;
+            return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
         } else if (typeof r === 'string') {
             // Keep hex or named colors as-is
             return r;
         }
         return "#000000";
+    }
+
+    static getRGBA(color) {
+        const channels = Util.extractColorChannels(color);
+        return 'rgba(' + channels[0] + ',' + channels[1] + ',' + channels[2] + ',' + channels[3] + ')';
     }
 
     /**
@@ -107,17 +118,30 @@ export default class Util {
     static setAlpha(alpha, color, g, b) {
         let r = color, a = alpha;
         if (isNaN(color)) {
-            const small = color.length === 4;
-            color = color.substring(1); // remove hash
-            r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 2), 16) / 255;
-            g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 4), 16) / 255;
-            b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 6), 16) / 255;
-            if (color.length > 6) {
-                a = (parseInt(color.substring(6,8), 16) / 255);
-                alpha *= a;
+            if (color.charAt(0) === '#') {
+                const small = color.length <= 5;
+                color = color.substring(1); // remove hash
+                r = parseInt(small ? `${color[0]}${color[0]}` : color.substring(0, 2), 16);
+                g = parseInt(small ? `${color[1]}${color[1]}` : color.substring(2, 4), 16);
+                b = parseInt(small ? `${color[2]}${color[2]}` : color.substring(4, 6), 16);
+                if (color.length > 6) {
+                    a = parseInt(color.substring(6,8), 16);
+                    a *= alpha;
+                } else if (color.length === 4) {
+                    a = parseInt(`${color[3]}${color[3]}`, 16);
+                    a *= alpha;
+                } else {
+                    a *= 255;
+                }
+            } else {
+                color = color.split(',');
+                r = parseInt(color[0].substring(5));
+                g = parseInt(color[1]);
+                b = parseInt(color[2]);
+                a *= parseInt(color[3].substring(0, color[3].length - 1));
             }
         }
-        return Util.getColor(r, g, b, alpha);
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + Math.floor(a) + ')';
     }
 
     /**

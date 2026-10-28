@@ -1,5 +1,6 @@
 import $Math from '../../core/Math.js';
 import ParticleEffect from './ParticleEffect.js';
+import Particle from '../types/Particle.js';
 
 /**
  * @class SmokeEffect
@@ -32,19 +33,15 @@ export default class SmokeEffect extends ParticleEffect {
    * Sub-classes should override this method to modify the spawned 
    * particle before it is introduced into the `ParticleSystem`.
    * 
-   * @param {Spark} header - The particle header
-   * @param {Spark} heap - Initialized particle memory
-   * @param {BasicParticle} particleType - Particle configuration
-   * @param {Float32Array} pos - The position of the particle (x, y) in world coordinates
-   * @param {Float32Array} vel - The velocity of the particle
+   * @param {Particle} particle - The particle config
+   * @param {Spark} memSegment - Initialized particle memory
    */
-  initParticle(header, heap, particleType, pos, vel) {        
+  initParticle(particle, memSegment) {
     // mostly straight up
-    const v = $Math.vecMulScalar(
+    const vel = $Math.vecMulScalar(
         $Math.getDirectionVector([0, 0], $Math.randomRange(-this.spread, this.spread, true)), 
-        $Math.getRangeValue(particleType.velocity)
+        $Math.getRangeValue(particle.velocity)
     );
-    vel[0] = v[0];
-    vel[1] = v[1];
+    memSegment.setVecF32(Particle.OFFSETS.VELOCITY, vel);
   }
 }

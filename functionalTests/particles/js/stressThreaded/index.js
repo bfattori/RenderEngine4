@@ -17,7 +17,7 @@ self.PARTICLE_ENGINE_OPTIONS = {
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
-    workers: 3,
+    workers: 4,
     framesPerSecond: 120
 };
 
@@ -82,9 +82,9 @@ emitter.effect = pEffect;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
+    t.position = [$Math.randomRange(10, 790, true), $Math.randomRangeInt(10, 590)];
     emitter.once();
-    setTimeout(explode, $Math.randomRange(20, 80, true));
+    setTimeout(explode, $Math.randomRangeInt(20, 80));
 }
 
 // game object and component parts

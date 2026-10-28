@@ -1,7 +1,9 @@
+import Particle from './Particle.js';
+import BasicParticle from './BasicParticle.js';
 import PhysicalParticle from './PhysicalParticle.js';
 import $Math from '../../core/Math.js';
 import Util from '../../core/Util.js';
-import { MemShape } from '../../core/Spark.js';
+import DiffuseParticle from './DiffuseParticle.js';
 
 /**
  * @class SmokeParticle
@@ -11,19 +13,24 @@ import { MemShape } from '../../core/Spark.js';
  * @extends PhysicalParticle
  */
 export default class SmokeParticle extends PhysicalParticle {
-    #particleShape = null;
+    static sizeOf = 12;
+    static byteOffset = 66;
+
+    static OFFSETS = {
+        CURL: SmokeParticle.byteOffset + 0,
+        CURL_VAR: SmokeParticle.byteOffset + 4
+    }
 
     constructor(overrides = {}, url = import.meta.url) {
         super({
-            colors: ['#35352c','#686851','#878785','#919191','#4e2424','#5c4b38','#793e3e'],
+            colors: ['#35352c52','#6868513b','#87878557','#9191912f','#4e242494','#5c4b3869','#793e3e6b'],
             lifeSpan: [10000, 12000],
             drag: 0,
             dragRate: 0,
             particleSize: [10, 16],
             velocity: 0.008,
-            growth: 0.1,
             gravity: [0.0, -0.004],
-            softness: 0.15,
+            softness: 0.9,
 
             /**
              * The amount of curl applied to each particle throughout its life
@@ -51,54 +58,44 @@ export default class SmokeParticle extends PhysicalParticle {
         return new SmokeParticle();
     }
 
-   get shape() {
-    if (!this.#particleShape) {
-        const shape = new MemShape();
-        shape.inherit(super.shape);
-        shape.set('curl',       'Float32');
-        shape.set('curlVar',    'Float32');
-        this.#particleShape = shape;
-        this.#particleShape.build();
+    get memoryRequirement() {
+        return Particle.sizeOf + BasicParticle.sizeOf + DiffuseParticle.sizeOf + SmokeParticle.sizeOf;
     }
-    return this.#particleShape;
-  }
 
     /**
      * Called when a particle is spawned to initialize its settings
+     * @param {Array<number>} worldPos - The spawn position for the particle
      * @param {number} time - The current world time in milliseconds
-     * @param {Object} config - The particle's configuration
+     * @param {Spark} memSegment - The particle's instantaneous memory
      * @returns {Object} An object containing `life` and `vel`, the lifeSpan and initial veloctiy of the particle
      */
-    spawn(time, config, header, heap) {
-        super.spawn(time, config, header, heap);
+    spawn(worldPos, time, memSegment) {
+        super.spawn(worldPos, time, memSegment);
 
-        // assign the heap segment BEFORE any operations
-        this.shape.segment = heap;
-
-        this.shape.curl = $Math.getRangeValue(this.curl);                                   // 16-bit float
-        this.shape.curlVar = Util.selectRandomOf(-this.curlVariance, this.curlVariance);    // 16-bit float
+        memSegment.setFloat32(SmokeParticle.OFFSETS.CURL, $Math.getRangeValue(this.curl));
+        memSegment.setFloat32(SmokeParticle.OFFSETS.CURL_VAR, Util.selectRandomOf(-this.curlVariance, this.curlVariance));
     }
 
     /**
      * Update the particle
      * @param {number} time - Current world time in milliseconds
      * @param {number} deltaTime - Time since last frame was rendered in milliseconds.
-     * @param {Spark} header - The particle header
-     * @param {Spark} heap - The memory object containing the particle's instantaneous properties
-     * @param {Array<number>} pos - The particle's current position
-     * @param {Array<number>} vel - The particle's velocity vector
+     * @param {Spark} memSegment - The memory object containing the particle's instantaneous properties
      * @param {number} life - Remaining life of the particle
      * @type {Function}
      */
-    update(time, deltaTime, header, heap, pos, vel, life) {
-        super.update(time, deltaTime, header, heap, pos, vel, life);
+    update(time, deltaTime, memSegment, life) {
+        super.update(time, deltaTime, memSegment, life);
 
-        // assign the segment BEFORE any operations
-        this.shape.segment = heap;
+        const vel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);
+        const curl = memSegment.getFloat32(SmokeParticle.OFFSETS.CURL);
+        const curlVar = memSegment.getFloat32(SmokeParticle.OFFSETS.CURL_VAR);
 
         // apply curl
         const factor = time / (this.curlIntensity * 1000);
-        vel[0] += (this.shape.curl * Math.cos(factor) * this.shape.curlVar);
-        vel[1] += this.shape.curl * Math.sin(factor);
+        vel[0] += (curl * Math.cos(factor) * curlVar);
+        vel[1] += curl * Math.sin(factor);
+
+        memSegment.setVecF32(Particle.OFFSETS.VELOCITY, vel);
     }
 }

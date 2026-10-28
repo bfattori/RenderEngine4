@@ -3,6 +3,7 @@ import TransferrableConfig from '../../core/TransferrableConfig.js';
 import Enum from '../../core/Enum.js';
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
+import Particle from '../types/Particle.js';
 
 /**
  * @class ParticleAffector
@@ -141,32 +142,39 @@ export default class ParticleAffector extends TransferrableConfig {
    * @param {number} time - The current world time
    * @param {number} deltaTime - The time since the last frame 
    */
-  affect(position, velocity, time, deltaTime) {
+  affect(memSegment, time, deltaTime) {
     if (this.shape === ParticleAffector.SHAPE.CIRCLE) {
-      this.#circleImpulse(position, velocity);
+      this.#circleImpulse(memSegment);
     } else {
-      this.#rectangleImpulse(position, velocity);
+      this.#rectangleImpulse(memSegment);
     }
   }
 
-  #circleImpulse(position, velocity) {
-    // early out
-    const dist = $Math.distance(position, this.pos);
-    if (dist < this.radius && dist > 0) {
-      const normX = (position[0] - this.pos[0]) / dist;
-      const normY = (position[1] - this.pos[1]) / dist;
+  #circleImpulse(memSegment) {
+    const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
+    const vel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);
 
-      const fallOff = this.#getFallOff(position[0], position[1], dist);
+    // early out
+    const dist = $Math.distance(pos, this.pos);
+    if (dist < this.radius && dist > 0) {
+      const normX = (pos[0] - this.pos[0]) / dist;
+      const normY = (pos[1] - this.pos[1]) / dist;
+
+      const fallOff = this.#getFallOff(pos[0], pos[1], dist);
       const impulseVec = $Math.vecMulScalar($Math.vecMulScalar([normX, normY], fallOff), this.restitution);
 
       // nudge away from the repulsor
-      const v = $Math.vecAdd(velocity, impulseVec);
-      velocity[0] = v[0] * this.friction;
-      velocity[1] = v[1] * this.friction;
+      let v = $Math.vecAdd(vel, impulseVec);
+      v = $Math.vecMulScalar(v, this.friction)
+      
+      memSegment.setVecF32(Particle.OFFSETS.VELOCITY, v);
     }
   }
 
-  #rectangleImpulse(position, velocity) {
+  #rectangleImpulse(memSegment) {
+    const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
+    const vel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);
+
     // create the rectangle shape and position it
     const mtx = Matrix2d.identity();
     mtx.setTo({
@@ -178,25 +186,26 @@ export default class ParticleAffector extends TransferrableConfig {
     $Math.transformPoints(sh, mtx);
 
     // if the particle is inside the shape, exit
-    if ($Math.pointInPoly(position, sh)) return;
+    if ($Math.pointInPoly(pos, sh)) return;
 
     // get the distance from the nearest line to determine impulse
-    const lDist = this.#lineDist(sh[0], sh[3], position);
-    const rDist = this.#lineDist(sh[1], sh[2], position);
-    const tDist = this.#lineDist(sh[0], sh[1], position);
-    const bDist = this.#lineDist(sh[2], sh[3], position);
+    const lDist = this.#lineDist(sh[0], sh[3], pos);
+    const rDist = this.#lineDist(sh[1], sh[2], pos);
+    const tDist = this.#lineDist(sh[0], sh[1], pos);
+    const bDist = this.#lineDist(sh[2], sh[3], pos);
     const d = [lDist,rDist,tDist,bDist].sort()[0];
 
-    const normX = (position[0] - this.pos[0]) / d;
-    const normY = (position[1] - this.pos[1]) / d;
+    const normX = (pos[0] - this.pos[0]) / d;
+    const normY = (pos[1] - this.pos[1]) / d;
 
-    const fallOff = this.#getFallOff(position[0], position[1], d);
+    const fallOff = this.#getFallOff(pos[0], pos[1], d);
     const impulseVec = $Math.vecMulScalar($Math.vecMulScalar([normX, normY], fallOff), this.restitution);
 
     // nudge away from the repulsor
-    const v = $Math.vecAdd(velocity, impulseVec);
-    velocity[0] = v[0] * this.friction;
-    velocity[1] = v[1] * this.friction;
+    let v = $Math.vecAdd(vel, impulseVec);
+    v = $Math.vecMulScalar(v, this.friction);
+
+    memSegment.setVecF32(Particle.OFFSETS.VELOCITY, v);
   }
 
   #sideOfLine(start, end, p) {

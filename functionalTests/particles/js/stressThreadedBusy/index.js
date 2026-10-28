@@ -17,7 +17,7 @@ import Util from '../../../../src/engine/core/Util.js';
 const numObjects = 500;
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 100000
+    maxParticles: 80000
 };
 
 self.PARTICLE_THREADING_OPTIONS = {
@@ -87,7 +87,7 @@ emitter.effect = pEffect;
 function explode() {
     t.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
     emitter.once();
-    setTimeout(explode, $Math.randomRange(80, 100, true));
+    setTimeout(explode, $Math.randomRange(20, 80, true));
 }
 
 // create game objects
