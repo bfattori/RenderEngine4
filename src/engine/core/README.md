@@ -36,8 +36,8 @@ The `Matrix2d` class extends the `DOMMatrix` object to implement additional meth
 ## `RenderEngineError`
 The base class for all exceptions thrown by the **RenderEngine4**.
 
-## `Util`
-Several useful utility functions for color manipulation, hashing,npm and an `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values with configurable setters.
-
 ## `Spark`
 Spark is a fixed-allocation memory manager used to increase the performance of the particle engine. It is a specialized `DataView` with additional support for data types typically found in games.
+
+## `Util`
+Several useful utility functions for color manipulation, hashing,npm and an `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values with configurable setters.
