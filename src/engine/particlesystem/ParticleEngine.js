@@ -3,7 +3,6 @@ import Config from '../core/Config.js';
 import Context from '../Context.js';
 
 import Engine, { Paths } from '../core/Engine.js';
-import SparkHeap from '../core/SparkHeap.js';
 
 const ctx = Context.getInstance();
 

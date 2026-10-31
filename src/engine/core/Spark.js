@@ -21,7 +21,7 @@ export { SparkConfig };
  * a way to manage memory while minimizing the need for the browser's garbage collection.
  * Together, this provides a good trade-off for speed and memory usage.
  *
- * @param {SparkHeap} heap - The heap allocator for the `Spark` instance
+ * @param {ArrayBuffer} heap - The heap space
  */
 export default class Spark extends DataView {
     constructor(buffer, offset, lengthInBytes) {
@@ -229,9 +229,8 @@ export default class Spark extends DataView {
      * @param {Array<number>} vecF32 - 2-element array
      */
     setVecF32(offset, vecF32) {
-        vecF32.forEach((e, i) => {
-            this.setFloat32(offset + (i * 4), e);
-        });
+        this.setFloat32(offset, vecF32[0]);
+        this.setFloat32(offset + 4, vecF32[1]);
     }
 
     /**
@@ -240,10 +239,7 @@ export default class Spark extends DataView {
      * @returns {Float32Array} A 2-element array
      */
     getVecF32(offset) {
-        const view = new Float32Array(2);
-        view[0] = this.getFloat32(offset);
-        view[1] = this.getFloat32(offset + 4);
-        return view;
+        return [this.getFloat32(offset), this.getFloat32(offset + 4)];
     }
 
     /**
@@ -252,9 +248,8 @@ export default class Spark extends DataView {
      * @param {Array<number>} vecF64 - 2-element array
      */
     setVecF64(offset, vecF64) {
-        vecF64.forEach((e, i) => {
-            this.setFloat64(offset + (i * 8), e);
-        });
+        this.setFloat64(offset, vecF64[0]);
+        this.setFloat64(offset + 8, vecF64[1]);
     }
 
     /**
@@ -263,10 +258,7 @@ export default class Spark extends DataView {
      * @returns {Float64Array} A 2-element array
      */
     getVecF64(offset) {
-        const view = new Float64Array(2);
-        view[0] = this.getFloat64(offset);
-        view[1] = this.getFloat64(offset + 2);
-        return view;
+        return [this.getFloat32(offset), this.getFloat32(offset + 8)];
     }
 
     //-----------------------------------------
@@ -278,9 +270,10 @@ export default class Spark extends DataView {
      * @param {Int8Array} int8Array - The array to store
      */
     setInt8Array(offset, int8Array) {
-        int8Array.forEach((e, i) => {
-            this.setInt8(offset + i, e);
-        });
+        const view = SPARK_MM.alloc8(int8Array.length);
+        const arr = new Int8Array(view.buffer, view.byteOffset, int8Array.length);
+        arr.set(int8Array, 0);
+        this.setUint32(offset, view.byteOffset);
     }
 
     /**
@@ -289,11 +282,9 @@ export default class Spark extends DataView {
      * @returns {Int8Array<ArrayBuffer>} An array of 8-bit signed integers
      */
     getInt8Array(offset, len) {
-        const buf = new Int8Array(len);
-        for (let i = 0; i < len; i++) {
-            buf.set(this.getInt8(offset + i), i);
-        }
-        return buf;
+        const arrPtr = this.getUint32(offset);
+        const view = SPARK_MM.readBytes(arrPtr, len);
+        return new Int8Array(view.buffer, view.byteOffset, len);
     }
 
     /**
@@ -302,9 +293,10 @@ export default class Spark extends DataView {
      * @param {Array<number>} int8Array - The array to store
      */
     setInt16Array(offset, int16Array) {
-        int16Array.forEach((e, i) => {
-            this.setInt16(offset + (i * Int16Array.BYTES_PER_ELEMENT), e);
-        });
+        const view = SPARK_MM.alloc16(int16Array.length);
+        const arr = new Int16Array(view.buffer, view.byteOffset, int16Array.length);
+        arr.set(int16Array, 0);
+        this.setUint32(offset, view.byteOffset);
     }
 
     /**
@@ -313,11 +305,9 @@ export default class Spark extends DataView {
      * @returns {Int16Array<ArrayBuffer>} An array of 16-bit signed integers
      */
     getInt16Array(offset, len) {
-        const buf = new Int16Array(len);
-        for (let i = 0; i < len; i++) {
-            buf[i] = this.getInt16(offset + (i * Int16Array.BYTES_PER_ELEMENT));
-        }
-        return buf;
+        const arrPtr = this.getUint32(offset);
+        const view = SPARK_MM.readBytes(arrPtr, len * 2);
+        return new Int16Array(view.buffer, view.byteOffset, len);
     }
 
     /**
@@ -326,9 +316,10 @@ export default class Spark extends DataView {
      * @param {Array<number>} int32Array - The array to store
      */
     setInt32Array(offset, int32Array) {
-        int32Array.forEach((e, i) => {
-            this.setInt32(offset + (i * Int32Array.BYTES_PER_ELEMENT), e);
-        });
+        const view = SPARK_MM.alloc32(int32Array.length);
+        const arr = new Int32Array(view.buffer, view.byteOffset, int32Array.length);
+        arr.set(int32Array, 0);
+        this.setUint32(offset, view.byteOffset);
     }
 
     /**
@@ -337,11 +328,9 @@ export default class Spark extends DataView {
      * @returns {Int32Array<ArrayBuffer>} An array of 32-bit signed integers
      */
     getInt32Array(offset, len) {
-        const buf = new Int32Array(len);
-        for (let i = 0; i < len; i++) {
-            buf[i] = this.getInt32(offset + (i * Int32Array.BYTES_PER_ELEMENT));
-        }
-        return buf;
+        const arrPtr = this.getUint32(offset);
+        const view = SPARK_MM.readBytes(arrPtr, len * 4);
+        return new Int32Array(view.buffer, view.byteOffset, len);
     }
 
     /**
@@ -350,9 +339,10 @@ export default class Spark extends DataView {
      * @param {Array<number>} int64Array - The array to store
      */
     setInt64Array(offset, int64Array) {
-        int64Array.forEach((e, i) => {
-            this.setBigInt64(offset + (i * BigInt64Array.BYTES_PER_ELEMENT), e);
-        });
+        const view = SPARK_MM.alloc32(int64Array.length);
+        const arr = new BigInt64Array(view.buffer, view.byteOffset, int64Array.length);
+        arr.set(int64Array, 0);
+        this.setUint32(offset, view.byteOffset);
     }
 
     /**
@@ -361,11 +351,9 @@ export default class Spark extends DataView {
      * @returns {BigInt64Array<ArrayBuffer>} An array of 64-bit signed integers
      */
     getInt64Array(offset, len) {
-        const buf = new BigInt64Array(len);
-        for (let i = 0; i < len; i++) {
-            buf[i] = this.getInt64(offset + (i * BigInt64Array.BYTES_PER_ELEMENT));
-        }
-        return buf;
+        const arrPtr = this.getUint32(offset);
+        const view = SPARK_MM.readBytes(arrPtr, len * 8);
+        return new BigInt64Array(view.buffer, view.byteOffset, len);
     }
 
     /**
@@ -374,9 +362,12 @@ export default class Spark extends DataView {
      * @param {Array<number>} float32Array - The array to store
      */
     setFloat32Array(offset, float32Array) {
-        float32Array.forEach((e, i) => {
-            this.setFloat32(offset + (i * Float32Array.BYTES_PER_ELEMENT), e);
-        });
+        const view = SPARK_MM.alloc32(float32Array.length);
+        const arr = new Float32Array(view.buffer, view.byteOffset, float32Array.length);
+        arr.set(float32Array, 0);
+
+        // store the pointer to the array
+        this.setUint32(offset, view.byteOffset);
     }
 
     /**
@@ -385,11 +376,9 @@ export default class Spark extends DataView {
      * @returns {Float32Array<ArrayBuffer>} An array of 32-bit floating points
      */
     getFloat32Array(offset, len) {
-        const buf = new Float32Array(len);
-        for (let i = 0; i < len; i++) {
-            buf[i] = this.getFloat32(offset + (i * Float32Array.BYTES_PER_ELEMENT));
-        }
-        return buf;
+        const arrPtr = this.getUint32(offset);
+        const view = SPARK_MM.readBytes(arrPtr, len * 4);
+        return new Float32Array(view.buffer, view.byteOffset, len);
     }
 
     /**
@@ -398,9 +387,10 @@ export default class Spark extends DataView {
      * @param {Array<number>} float64Array - The array to store
      */
     setFloat64Array(offset, float64Array) {
-        float64Array.forEach((e, i) => {
-            this.setFloat64(offset + (i * Float64Array.BYTES_PER_ELEMENT), e);
-        });
+        const view = SPARK_MM.alloc64(float64Array.length);
+        const arr = new Float64Array(view.buffer, view.byteOffset, float64Array.length);
+        arr.set(float64Array);
+        this.setUint32(offset, view.byteOffset);
     }
 
     /**
@@ -409,11 +399,9 @@ export default class Spark extends DataView {
      * @returns {Float64Array<ArrayBuffer>} An array of 64-bit floating points
      */
     getFloat64Array(offset, len) {
-        const buf = new Float64Array(len);
-        for (let i = 0; i < len; i++) {
-            buf[i] = this.getFloat64(offset + (i * Float64Array.BYTES_PER_ELEMENT));
-        }
-        return buf;
+        const arrPtr = this.getUint32(offset);
+        const view = SPARK_MM.readBytes(arrPtr, len * 8);
+        return new Float64Array(view.buffer, view.byteOffset, len);
     }
 
     //----------------------------------------
@@ -426,9 +414,6 @@ export default class Spark extends DataView {
      * @param {number} len - The number of elements in the array
      */
     setVecF32Array(offset, vecf32Array, len) {
-        // allocate the array in SparkHeap
-        
-
         this.setFloat32Array(offset, vecf32Array, len * 2);
     }
 

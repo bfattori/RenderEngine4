@@ -19,7 +19,6 @@ import GridBroadphase from '../collisionModels/broadphase/GridBroadphase.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
 
-
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
  * @type {Object} primary - Namespace object containing references to Engine, EventEngine, World, and RenderContext.

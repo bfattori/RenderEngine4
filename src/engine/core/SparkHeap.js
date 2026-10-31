@@ -1,7 +1,8 @@
 import Config from './Config.js';
 import Context from '../Context.js';
 import RenderEngineError from './RenderEngineError.js';
-import Spark from './Sparky.js';
+import Util from './Util.js';
+import Spark from './Spark.js';
 
 const ctx = Context.getInstance();
 
@@ -72,27 +73,22 @@ export default class SparkHeap {
     #BOUNDARY_LAYER;
     
     constructor() {
-        spLog("Initializing -")
         this.#config = new SparkHeapConfig();
         this.#allocateHeap();
     }
 
     #allocateHeap() {
-        spLog(`   alloc ${this.#config.heapSize} bytes`);
+        // heap buffer
         this.#internalHeap = new ArrayBuffer(this.#config.heapSize);
-
-        spLog(`     - [Unit ${this.#config.baseUnit} bytes]`);
-
+        
         // spacing between segments
         this.#BOUNDARY_LAYER = this.#config.baseUnit * this.#config.boundaryElementOffset;
-        spLog(`     - BoundaryLayer :: ${this.#BOUNDARY_LAYER}b`);
 
         // set up allocation segments
-        const favor = this.#config.segmentUseFavorability,
-            favoredSize = Math.floor(this.#config.heapSize * favor);
+        const pctReserve = this.#config.reserveSize,
+            reservedSegSize = Math.floor(this.#config.heapSize * pctReserve);
 
-        if (favor > 0)
-            spLog(`     - +${Math.floor(favor * 100)}% (${favoredSize}b)`);
+        spLog(`Initialize ${this.#config.baseUnit}B unit, alloc ${this.#config.heapSize}B, ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}% (res: ${(reservedSegSize / 1024).toFixed(1)}KB)`);
 
         switch (this.#config.baseUnit) {
             case SparkHeap.BYTE_8:
@@ -103,8 +99,8 @@ export default class SparkHeap {
             case SparkHeap.BYTE_16:
                 this.#segSize = Math.ceil(this.#config.heapSize / 2);
                 this.#segmentBB[SparkHeap.IB_16] = this.#config.heapSize;
-                if (favor > 0) {
-                    this.#segmentHD[SparkHeap.IB_16] = this.#config.heapSize - favoredSize;
+                if (pctReserve > 0) {
+                    this.#segmentHD[SparkHeap.IB_16] = this.#config.heapSize - reservedSegSize;
                 } else {
                     this.#segmentHD[SparkHeap.IB_16] = this.#config.heapSize - this.#segSize;
                 }
@@ -116,8 +112,8 @@ export default class SparkHeap {
             case SparkHeap.BYTE_32:
                 this.#segSize = Math.ceil(this.#config.heapSize / 3);
                 this.#segmentBB[SparkHeap.IB_32] = this.#config.heapSize;
-                if (favor > 0) {
-                    this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - favoredSize;
+                if (pctReserve > 0) {
+                    this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - reservedSegSize;
                     this.#segSize = Math.ceil(this.#segmentHD[SparkHeap.IB_32] / 2);
                 } else {
                     this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - this.#segSize;
@@ -132,8 +128,8 @@ export default class SparkHeap {
             case SparkHeap.BYTE_64:
                 this.#segSize = Math.ceil(this.#config.heapSize / 4);
                 this.#segmentBB[SparkHeap.IB_64] = this.#config.heapSize;
-                if (favor > 0) {
-                    this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - favoredSize;
+                if (pctReserve > 0) {
+                    this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - reservedSegSize;
                     this.#segSize = Math.ceil(this.#segmentHD[SparkHeap.IB_64] / 3);
                 } else {
                     this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - this.#segSize;
@@ -150,7 +146,6 @@ export default class SparkHeap {
 
         // ensure the boundaries byte-align
         this.#adjustBoundaries();
-
         this.dumpTable();
     }
 
@@ -189,7 +184,7 @@ export default class SparkHeap {
     }
 
     dumpTable() {
-        const table = ['Mem Alloc ['],
+        const table = [],
 
             h64 = this.#segmentHD[SparkHeap.IB_64], t64 = this.#segmentBB[SparkHeap.IB_64],
             h32 = this.#segmentHD[SparkHeap.IB_32], t32 = this.#segmentBB[SparkHeap.IB_32] - this.#BOUNDARY_LAYER,
@@ -197,14 +192,14 @@ export default class SparkHeap {
             h8 = this.#segmentHD[SparkHeap.IB_8], t8 = this.#segmentBB[SparkHeap.IB_8];
 
         if (this.#config.baseUnit === SparkHeap.BYTE_64)
-            table.push(`64: ${h64}-${t64} (${(((t64 - h64) / SparkHeap.BYTE_64) / 1024).toFixed(1)}k)`);
+            table.push(`64: ${h64}-${t64} [${(t64-h64) / SparkHeap.BYTE_64}] ${((t64 - h64) / 1024).toFixed(1)}KB`);
         if (this.#config.baseUnit <= SparkHeap.BYTE_64)
-            table.push(`32: ${h32}-${t32} (${(((t32 - h32) / SparkHeap.BYTE_32) / 1024).toFixed(1)}k)`);
+            table.push(`32: ${h32}-${t32} [${(t32-h32) / SparkHeap.BYTE_32}] ${((t32 - h32) / 1024).toFixed(1)}KB`);
         if (this.#config.baseUnit <= SparkHeap.BYTE_32)
-            table.push(`16: ${h16}-${t16} (${(((t16 - h16) / SparkHeap.BYTE_16) / 1024).toFixed(1)}k)`);
+            table.push(`16: ${h16}-${t16} [${(t16-h16) / SparkHeap.BYTE_16}] ${((t16 - h16) / 1024).toFixed(1)}KB`);
 
-        table.push(`8: ${h8}-${t8} (${((t8 - h8) / 1024).toFixed(1)}k)`);
-        spLog(table.join(' |') + ']');
+        table.push(`8: ${h8}-${t8} [${t8-h8}] ${((t8 - h8) / 1024).toFixed(1)}KB`);
+        spLog('Mem Alloc [' + table.join('|') + ']');
     }
 
     dumpMemory(offs, len) {
@@ -324,7 +319,7 @@ class SparkHeapConfig extends Config {
            * most used type. Zero indicates equal distribution.
            * @type {number} A percentage
            */
-          segmentUseFavorability: 0.65,
+          reserveSize: 0.65,
 
           /**
            * The offset (in base units) between memory segments.
