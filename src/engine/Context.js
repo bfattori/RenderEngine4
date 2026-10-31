@@ -6,6 +6,7 @@ export default class Context {
     #debug = true;
     #debugOpts = {};
     #engineOpts = {};
+    #sparkMM = null;
     
     constructor() {}
 
@@ -54,5 +55,13 @@ export default class Context {
 
     get engineOpts() {
         return this.#engineOpts;
+    }
+
+    set Spark(sparkMM) {
+        this.#sparkMM = sparkMM;
+    }
+
+    get Spark() {
+        return this.#sparkMM;
     }
 }

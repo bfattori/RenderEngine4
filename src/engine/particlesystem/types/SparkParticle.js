@@ -11,12 +11,12 @@ export default class SparkParticle extends PhysicalParticle {
    * The size of the particle in bytes
    * @type {number}
    */
-  static sizeOf = 85;
+  static sizeOf = 9;
   static byteOffset = 66;
 
   static OFFSETS = {
-    ROLLOFF:        SparkParticle.byteOffset + 0,
-    TRAIL_LEN:      SparkParticle.byteOffset + 1,
+    TRAIL_LEN:      SparkParticle.byteOffset + 0,
+    ROLLOFF:        SparkParticle.byteOffset + 1,
     TRAIL:          SparkParticle.byteOffset + 5
   }
 
@@ -66,8 +66,8 @@ export default class SparkParticle extends PhysicalParticle {
     super.spawn(worldPos, time, memSegment);
 
     if (this.trailLength !== 0) {
-      memSegment.setFloat32(SparkParticle.OFFSETS.ROLLOFF, 1 / this.trailLength);
       memSegment.setUint8(SparkParticle.OFFSETS.TRAIL_LEN, 0);
+      memSegment.setFloat32(SparkParticle.OFFSETS.ROLLOFF, 1 / this.trailLength);
       const initArray = new Array(SparkParticle.MAX_TRAIL_LENGTH * 2).fill(0.0);
       memSegment.setVecF32Array(SparkParticle.OFFSETS.TRAIL, initArray, SparkParticle.MAX_TRAIL_LENGTH);
     }
@@ -89,9 +89,8 @@ export default class SparkParticle extends PhysicalParticle {
       let curLen = memSegment.getUint8(SparkParticle.OFFSETS.TRAIL_LEN);
       const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
       const trail = memSegment.getVecF32Array(SparkParticle.OFFSETS.TRAIL, SparkParticle.MAX_TRAIL_LENGTH);
-      const shifted = Util.unshift(trail, pos[0], pos[1]);
+      Util.unshift(trail, pos[0], pos[1]);
       curLen = Math.min(trLen, curLen + 1);
-      memSegment.setVecF32Array(SparkParticle.OFFSETS.TRAIL, shifted, SparkParticle.MAX_TRAIL_LENGTH);
       memSegment.setUint8(SparkParticle.OFFSETS.TRAIL_LEN, curLen);
     }
   }

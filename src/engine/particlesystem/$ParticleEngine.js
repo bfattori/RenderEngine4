@@ -10,7 +10,7 @@ import Particle from './types/Particle.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 
-import Spark from '../core/Spark.js';
+import Spark from '../core/Sparky.js';
 
 const ctx = Context.getInstance();
 
@@ -40,9 +40,6 @@ export default class $ParticleEngine {
     // these are the arrays of particle "memories", positions, velocities, and lifespans.  
     // the particle engine only has access to this information during the lifecycle stages
     #memories = null;
-    #pPos = null;
-    #pVel = null;
-    #pSpan = null;
     
     // pointer to the arrays above
     #particleIdx = -1;
@@ -66,9 +63,7 @@ export default class $ParticleEngine {
     #height = 0;
     #assembler = null;
 
-    #particleMemSize = 0;
-    #particleHeader = null;
-
+    #particleByteSize = 0;
     #cleaningLatch = false;
 
     /**
@@ -270,11 +265,8 @@ export default class $ParticleEngine {
     async initialize() {
         const count = this.config.maxParticles;
 
-        this.#pPos = new Float32Array(count * 2);   // two 32-bit floats (x & y)
-        this.#pVel = new Float32Array(count * 2);   // two 32-bit floats (xV & yV)
-
         // Particle memory req: headerSize + maxParticleSize
-        const memoryHeap = new ArrayBuffer(count * (Constants.PH_BYTES + this.#particleMemSize));
+        const memoryHeap = new ArrayBuffer(count * (Constants.PH_BYTES + this.#particleByteSize));
         this.#memories = new Spark(memoryHeap);
         return Promise.resolve(true);
     }
@@ -307,7 +299,7 @@ export default class $ParticleEngine {
             this.#particleIdx++;
         else if (!this.isCircular) {
             // find first free index (could be -1)
-            const offsetSize = Constants.PH_BYTES + this.#particleMemSize;
+            const offsetSize = Constants.PH_BYTES + this.#particleByteSize;
             this.#particleIdx = -1;
             for (let p = 0; p < this.maxParticles - 1; p++) {
                 const lifeSpan = this.#memories.getUint16(p * offsetSize);
@@ -356,8 +348,8 @@ export default class $ParticleEngine {
         particle.setUp(this);
 
         // find the largest particle (by memory size) that will exist
-        if (particle.memoryRequirement > this.#particleMemSize) {
-            this.#particleMemSize = particle.memoryRequirement;
+        if (particle.memoryRequirement > this.#particleByteSize) {
+            this.#particleByteSize = particle.memoryRequirement;
         }
     }
 
@@ -492,10 +484,10 @@ export default class $ParticleEngine {
             this.#cleaningLatch = false;
             
             // The memory offset
-            const memOffset = idx * this.#particleMemSize;
+            const memOffset = idx * this.#particleByteSize;
 
             // the particle's instantaneous memory segment
-            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleMemSize);
+            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleByteSize);
             
             // spawn a particle
             particleType.spawn(worldPos, time, memSegment);
@@ -529,8 +521,8 @@ export default class $ParticleEngine {
         // run all particles
         let livingParticles = 0;
         for (let p = 0; p < this.maxParticles; p++) {
-            const memOffset = p * this.#particleMemSize;
-            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleMemSize);
+            const memOffset = p * this.#particleByteSize;
+            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleByteSize);
             
             const lifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_REMAINING);
             if (lifeSpan > 0) {
@@ -623,8 +615,8 @@ export default class $ParticleEngine {
         let surf = directSurface || this.#surface;
 
         for (let p = 0; p < this.maxParticles; p++) {
-            const memOffset = p * this.#particleMemSize;
-            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleMemSize);
+            const memOffset = p * this.#particleByteSize;
+            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleByteSize);
             
             const lifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_REMAINING);
             if (lifeSpan > Constants.DEAD_PARTICLE) {
@@ -666,7 +658,7 @@ export default class $ParticleEngine {
      * @param {Spark} memSegment - the particle's memory segment
      */
     freeParticle(memSegment) {
-        for (let i = 0; i < this.#particleMemSize; i++) {
+        for (let i = 0; i < this.#particleByteSize; i++) {
             memSegment.setUint8(i, 0);
         }
     }
@@ -693,9 +685,7 @@ export default class $ParticleEngine {
             ParticleEffects: this.particleEffects,
 
             _pointer: this.#particleIdx,
-            _particleMemories: this.#memories,
-            _particlePositions: this.#pPos,
-            _particleVelocities: this.#pVel,
+            _particleMemories: this.#memories
         }
     }
 

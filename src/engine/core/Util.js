@@ -135,13 +135,15 @@ export default class Util {
                 }
             } else {
                 color = color.split(',');
+                // 0 - 255
                 r = parseInt(color[0].substring(5));
                 g = parseInt(color[1]);
                 b = parseInt(color[2]);
-                a *= parseInt(color[3].substring(0, color[3].length - 1));
+                // 0.0 - 1.0
+                a *= (parseInt(color[3].substring(0, color[3].length - 1)) / 255);
             }
         }
-        return 'rgba(' + r + ',' + g + ',' + b + ',' + Math.floor(a) + ')';
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     }
 
     /**

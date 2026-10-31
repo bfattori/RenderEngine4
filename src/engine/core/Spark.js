@@ -1,9 +1,31 @@
-export default class Spark extends DataView {
-    #options = null;
+import Config from './Config.js';
 
-    constructor(buffer, offset, lengthInBytes, options = {}) {
+class SparkConfig extends Config {
+    constructor() {
+        super({
+
+        });
+    }
+
+    get varname() {
+        return 'SPARK_OPTIONS';
+    }
+}
+
+export { SparkConfig };
+
+/**
+ * @class Spark
+ * @classdesc `Spark` is an extension of `DataView`, providing several extra methods to
+ * access datatypes native to game development. Tied with the `SparkAllocator`, this provides
+ * a way to manage memory while minimizing the need for the browser's garbage collection.
+ * Together, this provides a good trade-off for speed and memory usage.
+ *
+ * @param {SparkHeap} heap - The heap allocator for the `Spark` instance
+ */
+export default class Spark extends DataView {
+    constructor(buffer, offset, lengthInBytes) {
         super(buffer, offset, lengthInBytes);
-        this.#options = options;
     }
 
     /**
@@ -404,6 +426,9 @@ export default class Spark extends DataView {
      * @param {number} len - The number of elements in the array
      */
     setVecF32Array(offset, vecf32Array, len) {
+        // allocate the array in SparkHeap
+        
+
         this.setFloat32Array(offset, vecf32Array, len * 2);
     }
 

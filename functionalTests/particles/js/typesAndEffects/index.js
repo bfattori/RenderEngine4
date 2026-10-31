@@ -119,7 +119,6 @@ sparkObject2
 // add the objects to the render engine world
 RenderEngine.world.addObjects(explosionObject, fountain1, fountain2, sparkler, sparkObject, sparkObject2);
 
-
 // set the positions of the various static objects in the world
 fountain1.PARTS.transform.position = [5, 580];
 fountain2.PARTS.transform.position = [795, 580];
@@ -159,7 +158,7 @@ function explode() {
     setTimeout(explode, $Math.randomRangeInt(80, 200));
 }
 
-// start the first explosion
+// // start the first explosion
 explode();
 
 // Start the render loop   

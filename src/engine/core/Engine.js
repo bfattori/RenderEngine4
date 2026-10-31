@@ -19,6 +19,7 @@ import GridBroadphase from '../collisionModels/broadphase/GridBroadphase.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
 
+
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
  * @type {Object} primary - Namespace object containing references to Engine, EventEngine, World, and RenderContext.
@@ -705,38 +706,42 @@ function animationLoop() {
   // start frame generation
   const frameStart = PERF('frameStart');
   const currentTime = e.stepTime || frameStart;     // allows stepping
-  lifecycleHooks?.onBeforeFrame(currentTime);
 
-  // Calculate delta time in milliseconds
-  const deltaTime = (currentTime - e.lastTime); // / this.frameTime;
-  e.lastTime = currentTime;
-  
-  // Update the scene
-  const updateStart = PERF('updateStart');
-  lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
-  e.update(currentTime, deltaTime);
-  const updateEnd = PERF('updateEnd');
-  lifecycleHooks?.onUpdate(currentTime, deltaTime);
-  
-  // Render the world
-  const renderStart = PERF('renderStart');
-  lifecycleHooks?.onPreRender(renderStart - frameStart);
-  e.renderWorld(currentTime, deltaTime);
-  const renderEnd = PERF('renderEnd');
-  lifecycleHooks?.onRender(currentTime, deltaTime);
+  if (currentTime >= e.lastTime + e.frameTime) {
+    lifecycleHooks?.onBeforeFrame(currentTime);
 
-  // one frame generated
-  lifecycleHooks.onFrame(performance.now() - frameStart);
-  const frameEnd = PERF('frameEnd');
+    // Calculate delta time in milliseconds
+    const deltaTime = (currentTime - e.lastTime); // / this.frameTime;
+    e.lastTime = currentTime;
+    
+    // Update the scene, once per frame
+    const updateStart = PERF('updateStart');
+    lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
+    e.update(currentTime, deltaTime);
+    const updateEnd = PERF('updateEnd');
+    lifecycleHooks?.onUpdate(currentTime, deltaTime);
+    
+    // Render the world
+    const renderStart = PERF('renderStart');
+    lifecycleHooks?.onPreRender(renderStart - frameStart);
+    e.renderWorld(currentTime, deltaTime);
+    const renderEnd = PERF('renderEnd');
+    lifecycleHooks?.onRender(currentTime, deltaTime);
 
-  if (e.isRunning) {
+    // one frame generated
+    lifecycleHooks.onFrame(performance.now() - frameStart);
+    const frameEnd = PERF('frameEnd');
+
     MEASURE('Generate Frame', 'frameStart', 'frameEnd');
     MEASURE('Update World', 'updateStart', 'updateEnd');
     MEASURE('Render Scene', 'renderStart', 'renderEnd');
+
     if (e.options.flags.showFps) {
       e.fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
     }
+  }
 
+  if (e.isRunning) {
     e.frameController = requestAnimationFrame(animationLoop);
     e.stepTime = 0.0;
   }
