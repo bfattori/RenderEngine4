@@ -14,4 +14,5 @@
 - `Constants.js` - The game engine's constant values
 - `Context.js` - A shared context that is used to access debug and engine options at run-time
 - `renderEngine4.js` - The engine bootstrapper
+- `renderEngine4_debug.js` - The engine bootstrapper including the DevTools bridge
 - `README.md` - This file
