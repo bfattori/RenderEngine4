@@ -692,10 +692,16 @@ export default class $ParticleEngine {
 
     #cleanMemory() {
         if (!this.#cleaningLatch) {
-            const memBuf = new Uint8Array(this.#memories.buffer);
-            memBuf.fill(0);
+            if (this.#memories) {
+                const memBuf = new Uint8Array(this.#memories.buffer);
+                memBuf.fill(0);
+            }
             this.#particleIdx = 0;
             this.#cleaningLatch = true;
         }
+    }
+
+    snapshotStats() {
+        return {};
     }
 }

@@ -1,6 +1,0 @@
-{
-  "manifest_version": 3,
-  "name": "RenderEngine4",
-  "version": "1.0",
-  "devtools_page": "html/re4Inspector.html"
-}

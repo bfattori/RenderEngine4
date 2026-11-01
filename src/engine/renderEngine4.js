@@ -23,15 +23,15 @@ const RenderEngine = {
         engineOptions = options;
         RenderEngine.RE4 = await Engine.init(gamePath, import.meta.url, engineOptions);
 
-        // also assign to Window and Global scope
-        if (window) {
-            window.RE4 = RenderEngine.RE4;
-            window.RenderEngine4 = RenderEngine.RE4;
-        } else if (global) {
-            global.RE4 = RenderEngine.RE4;
-            global.RenderEngine4 = RenderEngine.RE4;
-        }
+        // assign to Global scope
+        globalThis.RE4 = RenderEngine.RE4;
+        globalThis.RenderEngine4 = RenderEngine.RE4;
 
+        // initialize the render engine bootstrapper
+        RenderEngine.initialize(engineOptions);
+    },
+
+    initialize(engineOptions) {
         console.info("Render Engine 4 initialized", engineOptions);
     },
 
@@ -54,7 +54,7 @@ const RenderEngine = {
     /**
      * Start the engine
      */
-    start(seedTime) {
+    start() {
         RE4.start();
         console.info(" - started", RE4.engine.options);
         RenderEngine.paused = false;
@@ -153,7 +153,7 @@ const RenderEngine = {
 /**
  * `F2` while the engine is running will pause it. Pressing it again will resume the engine.
  * Pressing `F4` while the engine is running will stop and reset the engine. Pressing it again will 
- * shut the engine down.
+ * shut the engine down. `F9` while the engine is paused will step the engine by one frame.
  */
 window.addEventListener('keyup', (event) => {
     if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F2)
@@ -177,7 +177,7 @@ window.addEventListener('keyup', (event) => {
             RenderEngine.stop();
         }
     
-    if ([KeyboardInput.KEY_CODES.RESERVED_F2, KeyboardInput.KEY_CODES.RESERVED_F4].includes(event.keyCode)) {
+    if ([KeyboardInput.KEY_CODES.RESERVED_F2, KeyboardInput.KEY_CODES.RESERVED_F4, KeyboardInput.KEY_CODES.RESERVED_F9].includes(event.keyCode)) {
         event.preventDefault = true;
         return false;
     }

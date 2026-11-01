@@ -69,6 +69,9 @@ export default class Engine {
 
   #runOneFrame;
 
+  #frameNumber = 0;
+  #fpsRealtime = 0;
+
   constructor(options) {
     if (!waitInit) {
       throw new RenderEngineError("Engine must be initialized before use. Please call 'init' first.")
@@ -283,6 +286,14 @@ export default class Engine {
     this.#lastTime = time;
   }
 
+  get realFPS() {
+    return this.#fpsRealtime;
+  }
+
+  set realFPS(value) {
+    this.#fpsRealtime = value;
+  }
+
   get fpsCounter() {
     return this.#fpsCounter;
   }
@@ -303,6 +314,34 @@ export default class Engine {
   }
 
   //--------------------------------
+
+  /**
+   * 
+   * @param {number} deltaTime - 
+   * @param {*} updateTime 
+   * @param {*} renderTime 
+   * @param {*} frameTime 
+   * @returns 
+   */
+  snapshotStats(deltaTime, updateTime, renderTime, frameTime) {
+    return {
+      "World": this.world.allObjects.length,
+      "Event Engine": this.eventEngine.listenersCount,
+      "Particle Engine": this.particleEngine ? this.particleEngine.liveParticles : null
+    };
+  }
+
+  get state() {
+    return this.isRunning ? (this.isStepping ? 'stepping' : 'running') : 'paused';
+  }
+
+  get frameNumber() {
+    return this.#frameNumber;
+  }
+
+  nextFrame() {
+    this.#frameNumber++;
+  }
 
   /**
    * Check if the engine is running
@@ -553,6 +592,9 @@ export default class Engine {
     this.stepTime += this.frameTime || timeDelta;
     console.warn(`  - stepped ${this.frameTime}ms (worldTime: ${this.stepTime}ms)`);
     this.frameController = requestAnimationFrame(animationLoop);
+
+    // engine started
+    this.#ENGINE_OPTIONS.hooks.onStep(this.#frameNumber, this.#stepTime);
   }
 
   /**
@@ -707,7 +749,10 @@ function animationLoop() {
   const currentTime = e.stepTime || frameStart;     // allows stepping
 
   if (currentTime >= e.lastTime + e.frameTime) {
-    lifecycleHooks?.onBeforeFrame(currentTime);
+    // advance the frame counter
+    e.nextFrame();
+
+    lifecycleHooks?.onBeforeFrame(currentTime, e.frameNumber);
 
     // Calculate delta time in milliseconds
     const deltaTime = (currentTime - e.lastTime); // / this.frameTime;
@@ -728,7 +773,10 @@ function animationLoop() {
     lifecycleHooks?.onRender(currentTime, deltaTime);
 
     // one frame generated
-    lifecycleHooks.onFrame(performance.now() - frameStart);
+    const frameTime = performance.now() - frameStart;
+    const fps = 1000 / frameTime;
+    e.realFPS = (fps > 1000 / e.frameTime ? 1000 / e.frameTime : fps).toFixed(1); // 1000 / frameTime;
+    lifecycleHooks.onFrame(performance.now(), e.frameNumber, e.realFPS, e.snapshotStats(deltaTime, updateEnd - updateStart, renderEnd - renderStart, frameTime));
     const frameEnd = PERF('frameEnd');
 
     MEASURE('Generate Frame', 'frameStart', 'frameEnd');

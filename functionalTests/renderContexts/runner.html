@@ -3,7 +3,10 @@
     <head>
         <title>Render Engine 4 - Render Context Testing</title>
         <link rel="stylesheet" href="../../src/re4.css">
-        <script src="../../src/engine/renderEngine4.js" type="module"></script>
+        <link rel="stylesheet" href="../../src/re4_debug.css">
+        <script src="../../devtools/protocol/messages.js"></script>
+        <script src="../../devtools/bridge/re4-debug-bridge.js"></script>
+        <script src="../../src/engine/renderEngine4_debug.js" type="module"></script>
         <script type="module">
             await (async () => {
                 const params = new URLSearchParams(window.location.search);

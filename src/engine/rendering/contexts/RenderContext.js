@@ -843,4 +843,8 @@ export default class RenderContext {
   serialize() {
     return Engine.engine.serialize.call(this);
   }
+
+  snapshotStats() {
+    return {};
+  }
 }

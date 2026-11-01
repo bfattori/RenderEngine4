@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RenderEngine4 Inspector</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="app" class="app">
+
+    <!-- Header: identity + connection state + run control -->
+    <header class="app-header">
+      <div class="app-title">
+        <img src="icons/icon-16.png" alt="" class="app-logo" width="16" height="16">
+        <h1>RenderEngine4 Inspector</h1>
+        <span id="connection-badge" class="badge badge-offline" title="Bridge not detected">offline</span>
+      </div>
+      <div class="toolbar" role="toolbar" aria-label="Run control">
+        <button id="btn-start" class="tool tool-start" type="button" disabled title="Start the engine (re4/cmd/start)">
+          <span class="tool-glyph" aria-hidden="true">&#9654;</span> Start
+        </button>
+        <button id="btn-pause" class="tool tool-pause" type="button" disabled title="Pause the engine (re4/cmd/pause)">
+          <span class="tool-glyph" aria-hidden="true">&#9208;</span> Pause
+        </button>
+        <!--
+        <button id="btn-stop" class="tool tool-stop" type="button" disabled title="Stop the engine (re4/cmd/stop)">
+          <span class="tool-glyph" aria-hidden="true">&#9632;</span> Stop
+        </button>
+        -->
+        <button id="btn-step" class="tool tool-step" type="button" disabled title="Advance one frame (re4/cmd/step)">
+          <span class="tool-glyph" aria-hidden="true">&#10150;</span> Step
+        </button>
+        <span id="engine-state" class="engine-state" title="Engine state (from re4/evt/status)">—</span>
+      </div>
+    </header>
+
+    <!-- Top area: engine runtime information -->
+    <section class="runtime-area" aria-label="Engine runtime">
+      <div class="runtime-head">
+        <h2>Engine Runtime</h2>
+        <span id="runtime-hint" class="runtime-hint">waiting for bridge…</span>
+      </div>
+      <div id="runtime-strip" class="runtime-strip" aria-live="polite"></div>
+      <details class="runtime-raw">
+        <summary>Last <code>re4/evt/status</code> (raw)</summary>
+        <pre id="runtime-raw">—</pre>
+      </details>
+    </section>
+
+    <!-- Bottom area: tabs (sidebar + content area per tab) -->
+    <main class="tabs-area">
+      <nav id="tabbar" class="tabbar" role="tablist" aria-label="Engine subsystems"></nav>
+      <div id="tabbody" class="tabbody"></div>
+    </main>
+
+  </div>
+
+  <script type="module" src="panel/main.js"></script>
+</body>
+</html>

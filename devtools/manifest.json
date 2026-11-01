@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "RenderEngine4 Inspector",
+  "version": "0.1.0",
+  "description": "DevTools panel for real-time debugging of the RenderEngine4 game engine: run control, engine runtime state, and per-subsystem inspection.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "128": "icons/icon-128.png"
+  },
+  "devtools_page": "devtools.html"
+}

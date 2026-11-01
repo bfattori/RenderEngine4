@@ -289,6 +289,10 @@ export default class EventEngine {
   // Properties
   //-------------------------------
 
+  get listenersCount() {
+    return this.#listeners.size;
+  }
+
   /**
    * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
    * @returns {Object} An object containing the component's properties

@@ -193,6 +193,14 @@ class EngineConfig extends Config {
            * Callback function executed when the engine exits. Default is No-op. 
            */
           onShutdown: NOP,
+          /**
+           * Callback function executed when the engine is paused. Default is No-op.
+           */
+          onPause: NOP,
+          /**
+           * Callback function executed when the engine is stepped. Default is No-op.
+           */
+          onStep: NOP,
           
           //-----------------------------
           // Stateful runtime hooks
@@ -214,9 +222,10 @@ class EngineConfig extends Config {
 
           /**
            * Triggered at the start of a frame.
-           * @param {number} time - The current engine time
+           * @param {number} time - The performance time at the start of the frame
+           * @param {number} frameNumber - The current frame number
            */
-          onBeforeFrame: (time) => {},
+          onBeforeFrame: (time, frameNumber) => {},
 
           /**
            * Triggered before world update.
@@ -246,9 +255,12 @@ class EngineConfig extends Config {
 
           /**
            * Triggered at the end of a frame.
-           * @param {number} frameTime - The total time to generate the frame.
+           * @param {number} frameNumber - The current frame number
+           * @param {number} time - The performance time at the end of the frame
+           * @param {number} fps - The current frames per second
+           * @param {Object} stats - An object containing performance statistics for the frame
            */
-          onFrame: (frameTime) => {}
+          onFrame: (time, frameNumber, fps, stats) => {}
       },
       system: {
         engineLocation: null,

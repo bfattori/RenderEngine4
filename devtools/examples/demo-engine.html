@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RenderEngine4 — Demo Engine (DevTools test harness)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #14151a;
+      color: #e8eaf0;
+      font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { color: #9aa0ae; max-width: 62ch; }
+    code { background: #262932; border-radius: 4px; padding: 1px 5px; }
+    #hud {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+    }
+    #hud button {
+      font: inherit;
+      color: #e8eaf0;
+      background: #262932;
+      border: 1px solid #33363f;
+      border-radius: 6px;
+      padding: 5px 14px;
+      cursor: pointer;
+    }
+    #hud button:hover { background: #2d3039; }
+    #state { font-weight: 600; color: #8b5cf6; }
+    canvas {
+      border: 1px solid #33363f;
+      border-radius: 8px;
+      background: #0d0e12;
+    }
+  </style>
+</head>
+<body>
+  <h1>RenderEngine4 Demo Engine</h1>
+  <p>
+    Minimal stand-in for the real engine, so the <strong>RenderEngine4 Inspector</strong>
+    DevTools panel can be exercised end-to-end. It uses the exact same bridge +
+    protocol files the real engine will. <em>This file is not part of the shipped
+    extension</em> — it lives in <code>examples/</code> purely for testing.
+  </p>
+  <p>
+    Load this page, open DevTools (F12), and click the <strong>RenderEngine4</strong>
+    panel. Start/Stop/Step work both from the panel toolbar and from here.
+  </p>
+
+  <div id="hud">
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+    <button id="step">Step</button>
+    <span>state:</span> <span id="state">stopped</span>
+    <span>frame:</span> <span id="frame">0</span>
+  </div>
+
+  <canvas id="c" width="640" height="200"></canvas>
+
+  <!-- Engine-side protocol + bridge (the same files the real game includes) -->
+  <script src="../protocol/messages.js"></script>
+  <script src="../bridge/re4-debug-bridge.js"></script>
+
+  <script>
+    'use strict';
+
+    const bridge = globalThis.__RE4_DEBUG__;
+    const M = globalThis.RE4_MESSAGES;
+
+    /* ------------------------------------------------------------------ *
+     * Minimal stand-in "engine".
+     * In the real engine, replace these bodies with calls into
+     * Engine.start() / Engine.stop() / a single-frame step, and emit the
+     * richer EVT.* payloads from your subsystems.
+     * ------------------------------------------------------------------ */
+    const engine = {
+      state: 'stopped', // stopped | running | paused
+      frame: 0,
+      fps: null,
+      startedAt: null,
+      raf: 0,
+      world: {
+        camera: { position: [0, 1.6, 0], fov: 70, near: 0.1, far: 200 },
+        gameObjects: ['Player', 'Crate_01', 'Light_01'],
+        collisionModel: { broadphase: 'grid', shapes: 3 },
+        renderContext: { backend: 'webgl2', width: 640, height: 200 },
+        renderer: { passes: 2, wireframe: false },
+      },
+      particles: {
+        mode: 'bound',
+        manager: { jobs: 0, budget: 4096 },
+        orchestrator: { active: false },
+        workers: 0,
+      },
+      memory: {
+        pools: {
+          ParticlePool: { live: 0, capacity: 4096, watermark: 0 },
+          TransformPool: { live: 3, capacity: 256, watermark: 3 },
+        },
+      },
+    };
+
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    function snapshot() {
+      return {
+        state: engine.state,
+        frame: engine.frame,
+        fps: engine.fps ? Math.round(engine.fps) : null,
+        stats: {
+          'World objects': engine.world.gameObjects.length,
+          'Memory pools': Object.keys(engine.memory.pools).length,
+          'Uptime (s)': engine.startedAt ? ((Date.now() - engine.startedAt) / 1000).toFixed(1) : '0.0',
+        },
+      };
+    }
+
+    function publish() {
+      bridge.emit(M.EVT.STATUS, snapshot());
+      document.getElementById('state').textContent = engine.state;
+      document.getElementById('frame').textContent = String(engine.frame);
+    }
+
+    let lastTs = 0;
+    function tick(ts) {
+      if (engine.state !== 'running') return;
+      if (ts && lastTs > 0) {
+        const dt = ts - lastTs;
+        engine.fps = engine.fps ? engine.fps * 0.9 + (1000 / dt) * 0.1 : 1000 / dt;
+      }
+      lastTs = ts;
+      engine.frame += 1;
+      draw();
+      publish(); // every frame here; throttle to ~10-30 Hz in the real engine
+      engine.raf = requestAnimationFrame(tick);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const x = 40 + (engine.frame % 14) * 40;
+      ctx.fillStyle = '#8b5cf6';
+      ctx.fillRect(x, 80, 20, 40);
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.arc(x + 10, 60, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function start() {
+      if (engine.state === 'running') return;
+      engine.state = 'running';
+      if (!engine.startedAt) engine.startedAt = Date.now();
+      lastTs = 0;
+      publish();
+      engine.raf = requestAnimationFrame(tick);
+    }
+
+    function stop() {
+      engine.state = 'stopped';
+      cancelAnimationFrame(engine.raf);
+      engine.frame = 0;
+      engine.fps = null;
+      engine.startedAt = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      publish();
+    }
+
+    function step() {
+      if (engine.state === 'running') return;
+      engine.state = 'paused';
+      engine.frame += 1;
+      draw();
+      publish();
+    }
+
+    /* ------------------------------------------------------------------ *
+     * Bridge wiring — this is the contract the real engine must implement.
+     * ------------------------------------------------------------------ */
+    bridge.on(M.CMD.START, () => start());
+    bridge.on(M.CMD.STOP, () => stop());
+    bridge.on(M.CMD.STEP, () => step());
+
+    // Request/response: echo the envelope id back in a RESPONSE payload.
+    bridge.on(M.CMD.QUERY, (_payload, envelope) => {
+      bridge.emit(M.EVT.RESPONSE, {
+        id: envelope.id,
+        ok: true,
+        snapshot: snapshot(),
+        world: engine.world,
+        particles: engine.particles,
+        memory: engine.memory,
+      });
+    });
+
+    // Page-local controls (independent of the DevTools panel).
+    document.getElementById('start').addEventListener('click', start);
+    document.getElementById('stop').addEventListener('click', stop);
+    document.getElementById('step').addEventListener('click', step);
+
+    publish();
+  </script>
+</body>
+</html>
