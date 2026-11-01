@@ -39,5 +39,8 @@ The base class for all exceptions thrown by the **RenderEngine4**.
 ## `Spark`
 `Spark` is a fixed-allocation memory manager used to increase the performance of the particle engine. It is a specialized `DataView` with additional support for data types typically found in games.
 
+## `SparkHeap`
+Creating and destroying many thousand objects can lead to a lot of garbage collection. The `SparkHeap` is a memory allocator designed to reduce the overhead of garbage collection by allocating memory in fixed-size blocks. It is used internally by the `Spark` array types.
+
 ## `Util`
 Several useful utility functions for color manipulation, hashing,npm and an `org.projectlombok.lombok`'esque function that generates setters and getters from an array of field names, or from an object with pre-existing values with configurable setters.
