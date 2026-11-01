@@ -47,10 +47,10 @@ const Debug = {
             Debug.overrideCallbacks();
 
             // start us off
-            console.debug("Debugging bridge started");
+            console.debug("DevTools bridge started");
             Debug.publish();
         } else {
-            console.warn("Debugger bridge not found.");
+            console.warn("DevTools bridge not found.");
         }
     },
 
@@ -115,4 +115,4 @@ RenderEngine.initialize = (engineOptions) => {
     Debug.initialize(engineOptions);
 }
 
-console.debug("Initializing debugging bridge...");
+console.debug("Initializing DevTools bridge...");
