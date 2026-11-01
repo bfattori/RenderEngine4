@@ -74,6 +74,9 @@ const engineOptions = {
 renderEngine4(engineOptions);
 ```
 
+## DevTools Extension
+The engine comes with a DevTools extension built specifically for the RenderEngine4. To install it, you will need to enable the Chrome DevTools "Developer mode" to load the unbundled extension located in the `/devtools` folder. Please be aware that **this is a work in progress** and is missing features, or may not work as expected.
+
 ## Contributing
 Contributions are welcome! To contribute:
 1.  Fork the repository.
