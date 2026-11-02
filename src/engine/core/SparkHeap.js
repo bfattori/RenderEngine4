@@ -21,7 +21,7 @@ class SparkError extends RenderEngineError {
 // Spark logger mech
 const spLog = function(...args) {
     if (!ctx.debug) return;
-    console.debug("🗲 SparkHeap 🗲", ...args);
+    console.debug(...args);
 }
 
 /**
@@ -87,7 +87,7 @@ export default class SparkHeap {
         const pctReserve = this.#config.reserveSize,
             reservedSegSize = Math.floor(this.#config.heapSize * pctReserve);
 
-        spLog(`Initialize ${this.#config.baseUnit}B unit, alloc ${this.#config.heapSize}B, ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}% (res: ${(reservedSegSize / 1024).toFixed(1)}KB)`);
+        spLog(`🗲 SparkHeap: alloc ${this.#config.heapSize}B (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}% (res: ${(reservedSegSize / 1024).toFixed(1)}KB) 🗲`);
 
         switch (this.#config.baseUnit) {
             case SparkHeap.BYTE_8:

@@ -24,7 +24,7 @@ export default class TrailParticle extends DiffuseParticle {
        * The quanitity of particles to spawn as a trail. This can be a single number or an array of numbers to allow for randomization.
        * @type {number|Array<number>}
        */
-      trailQuantity: [2, 3],
+      trailQuantity: [1, 2],
 
       /**
        * The angle at which the trail particles are ejected relative to the direction of the parent particle. 
