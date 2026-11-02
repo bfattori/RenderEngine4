@@ -107,7 +107,7 @@ RenderEngine.world.addObjects(explosionObject, fountain1, fountain2, sparkObject
 // set the positions of the various static objects in the world
 fountain1.PARTS.transform.position = [5, 580];
 fountain2.PARTS.transform.position = [795, 580];
-sparkObject.PARTS.transform.position = [10, 25];
+sparkObject.PARTS.transform.position = [0, 25];
 
 // configure fountain emitters and enable them to continuously emit particles
 const emitter1 = fountain1.PARTS.emitter;

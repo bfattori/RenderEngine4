@@ -38,10 +38,11 @@ wEffect2.name = 'fountain2';
 
 const sparkEffect = new SparkEffect({
     count: 5,
-    countVariance: 20,
-    frequencyVariance: 150,
+    countVariance: 8,
+    frequencyVariance: 550,
     particleTypes: [sparkParticle],
     angle: 110,
+    spread: 50,
     delay: [10, 100],
     delayVariance: 0
 });
