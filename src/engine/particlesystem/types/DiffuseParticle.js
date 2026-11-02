@@ -31,8 +31,9 @@ export default class DiffuseParticle extends BasicParticle {
       fadeRate: 0,
       
       /**
-       * The diffuse blurring of the particle. Higher values imply more blurring.
-       * @type {number}
+       * The diffuse blurring of the particle.Higher values imply more blurring.
+       * Anything outside the range, and the particle will be rendered as a solid shape.
+       * @type {number} A value between 0 and 1
        */
       softness: 1.0
     }, url);
@@ -67,7 +68,11 @@ export default class DiffuseParticle extends BasicParticle {
   spawn(worldPos, time, memSegment) {
     super.spawn(worldPos, time, memSegment);
 
-    memSegment.setFloat32(DiffuseParticle.OFFSETS.SOFT, 1.0 - this.softness);
+    if (this.softness < 0.0 || this.softness > 1.0) {
+      memSegment.setFloat32(DiffuseParticle.OFFSETS.SOFT, -1.0);
+    } else {
+      memSegment.setFloat32(DiffuseParticle.OFFSETS.SOFT, 1.0 - this.softness);
+    }
     memSegment.setFloat32(DiffuseParticle.OFFSETS.FADE, this.fadeRate > 0 ? this.fadeRate : 0.0);
 
     // initialize the alpha values for each color channel based on the color index and alpha value
@@ -83,18 +88,18 @@ export default class DiffuseParticle extends BasicParticle {
      * @param {UInt16} life - Remaining life of the particle
      */
     update(time, deltaTime, memSegment, life) {
-        super.update(time, deltaTime, memSegment, life);
-        
-        const fade = memSegment.getFloat32(DiffuseParticle.OFFSETS.FADE);
-        if (fade > 0.0) {
-          let alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
-          alpha -= fade;
-          memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, Math.max(0.0, alpha));
+      super.update(time, deltaTime, memSegment, life);
+      
+      const fade = memSegment.getFloat32(DiffuseParticle.OFFSETS.FADE);
+      if (fade > 0.0) {
+        let alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
+        alpha -= fade;
+        memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, Math.max(0.0, alpha));
 
-          if (alpha <= 0) {
-            this.cleanUp(memSegment);
-          }
+        if (alpha <= 0) {
+          this.cleanUp(memSegment);
         }
+      }
     }
 
   /**
@@ -105,16 +110,22 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {Spark} memSegment - The memory object containing the particle's instantaneous properties
    */
   drawShape(time, deltaTime, surface, memSegment) {
-    const size = memSegment.getFloat32(BasicParticle.OFFSETS.CUR_SIZE);
-    const color = this.colors[memSegment.getUint8(BasicParticle.OFFSETS.COLOR)];
-    const alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
     const soft = memSegment.getFloat32(DiffuseParticle.OFFSETS.SOFT);
-    const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
 
-    surface.beginPath();
-    surface.arc(pos[0], pos[1], size, 0, $Math.TWO_PI);
-    surface.fillStyle = this.#gradient(pos, size, color, alpha, soft);;
-    surface.fill();
+    if (soft === -1.0) {
+      // a softness of -1 means no diffuse effect, so we can just draw a solid particle
+      super.drawShape(time, deltaTime, surface, memSegment);
+    } else {
+      const size = memSegment.getFloat32(BasicParticle.OFFSETS.CUR_SIZE);
+      const color = this.colors[memSegment.getUint8(BasicParticle.OFFSETS.COLOR)];
+      const alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
+      const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
+
+      surface.beginPath();
+      surface.arc(pos[0], pos[1], size, 0, $Math.TWO_PI);
+      surface.fillStyle = this.#gradient(pos, size, color, alpha, soft);;
+      surface.fill();
+    }
   }
 
   /**

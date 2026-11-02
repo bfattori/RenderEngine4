@@ -67,6 +67,14 @@ export default class Particle extends TransferrableConfig {
       return this.#opaqueId;
   }
   
+  get engine() {
+    return this.#engineRef;
+  }
+
+  set engine(engine) {
+    this.#engineRef = engine;
+  }
+
   /**
    * Set up the particle, giving it a chance to initialize
    * after is has been configured and added to the engine.

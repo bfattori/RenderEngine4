@@ -15,7 +15,6 @@ export default class WaterParticle extends BasicParticle {
             drag: 1,
             dragRate: 0,
             particleSize: [1, 4],
-            velocity: [4, 8],
             gravity: [0.0, 0.08],
             sizeDecay: 0.45,
         }, url);
