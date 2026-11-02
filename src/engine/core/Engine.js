@@ -18,6 +18,7 @@ import Camera from '../rendering/cameras/Camera.js';
 import GridBroadphase from '../collisionModels/broadphase/GridBroadphase.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
+import Core from './Core.js';
 
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
@@ -94,6 +95,9 @@ export default class Engine {
     this.#lastTime = 0;
     this.#deltaTime = 0;
     
+    // initialize memory management
+    Core.initialize();
+
     // render context (initialized later)
     const renderContext = this.#ENGINE_OPTIONS.world.renderContext || new RenderContext(new Renderer());
     renderContext.viewport = this.#ENGINE_OPTIONS.world.viewport;

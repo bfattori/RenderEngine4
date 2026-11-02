@@ -275,6 +275,56 @@ class EngineConfig extends Config {
   }
 }
 
+class SparkHeapConfig extends Config {
+    constructor() {
+        super({
+          /**
+           * This is the maximum sized value that will be
+           * stored in the heap for all data types.
+           * @type {number}
+           */
+          baseUnit: 4,  // SparkHeap.BYTE_32
+
+          /**
+           * The total amount of memory to reserve in bytes.
+           * @type {number} The number of bytes to allocate
+           */
+          heapSize: 1048576, // 1MB (1024 * 1024)
+
+          /**
+           * Balance the amount of memory to favor the
+           * most used type. Zero indicates equal distribution.
+           * @type {number} A percentage
+           */
+          reserveSize: 0.65,
+
+          /**
+           * The offset (in base units) between memory segments.
+           * @type {number}
+           */
+          boundaryElementOffset: 5,
+          
+          /**
+           * When set to `true`, `SparkHeap` will throw `SparkError` when memory is 
+           * unavailable to allocate. Otherwise, the head pointer for the segment is reset 
+           * to zero allowing for endless allocations. The latter method is destructive in 
+           * that it overwrites memory that is possibly in use.
+           * @type {boolean}
+           */
+          throwAllocErrors: false
+        });
+    }
+
+    /**
+     * Override configuration options with this global variable name
+     * @returns {String} The variable name
+     */
+    get varname() {
+        return 'SPARK_OPTIONS';
+    }
+}
+
 export {
-    EngineConfig
+    EngineConfig,
+    SparkHeapConfig
 };

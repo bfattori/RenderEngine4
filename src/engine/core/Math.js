@@ -1,4 +1,5 @@
 import Constants from '../Constants.js';
+import { MathPool } from './Core.js';
 
 /**
  * RenderEngine4 math functions
@@ -255,14 +256,16 @@ export default class $Math {
     }
 
     /**
-     * Given a rectanlge dimensions, generate a random point within it.
+     * Given a rectangle dimensions, generate a random point within it.
      *
      * @param {Object} rect The rectangle defined by `x, y, width, and height`
-     * @return {Array<number>} A random point [x, y] within the rectangle
+     * @return {Float32Array} A random point [x, y] within the rectangle
      */
     static randomPoint({x, y, width, height}) {
-        return [Math.floor(x + Math.random() * width),
-            Math.floor(y + Math.random() * height)];
+        const point = MathPool.getF32Array(2);
+        point[0] = Math.floor(x + Math.random() * width);
+        point[1] = Math.floor(y + Math.random() * height);
+        return point;
     }
 
     /**
@@ -271,11 +274,11 @@ export default class $Math {
      * @return {Array<number>} The center of the given points `[x, y]`
      */
     static logicalCenter(points) {
-        var p = [0, 0];
+        const point = MathPool.getF32Array(2);
         for (let pt = 0; pt < points.length; pt++) {
-            p = $Math.vecAdd(p, points[pt]);
+            $Math.vecAdd(point, points[pt]);
         }
-        return $Math.vecDivScalar(p, points.length);
+        return $Math.vecDivScalar(point, points.length);
     }
 
     /**
@@ -296,13 +299,13 @@ export default class $Math {
      * @return {Array<number>} The direction vector
      */
     static getDirectionVector(origin = [0, 0], angle, baseVec = Constants.UP_VECTOR) {
+        const vec = MathPool.getF32Array(2);
         const r = $Math.degToRad(angle);
         const x = Math.cos(r) * baseVec[0] - Math.sin(r) * baseVec[1];
         const y = Math.sin(r) * baseVec[0] + Math.cos(r) * baseVec[1];
-        let v = [x, y];
-        v[0] -= origin[0];
-        v[1] -= origin[1];
-        return $Math.normalize(v);
+        vec[0] = x - origin[0];
+        vec[1] = y - origin[1];
+        return $Math.normalize(vec);
     }
     
     /**
@@ -311,18 +314,18 @@ export default class $Math {
      * @param {Array<number>} vector2 A second point on the line
      * @return {number} the vector cross-product
      */
-    static xproduct([x1, y1], [x2, y2]) {
-        return (x1 * y2) - (y1 * x2);
+    static xproduct(vec1, vec2) {
+        return (vec1[0] * vec2[1]) - (vec1[1] * vec2[0]);
     }
 
     /**
      * 2d dot product of two vectors
      * @param {Array<number>} vector1 - The first vector
      * @param {Array<number>} vector2 - The second vector
-     * @return {number} The dot product
+     * @return {number} The dot product of the two vectors
      */
-    static dot([x1, y1], [x2, y2]) {
-        return (x1 * x2) + (y1 * y2);
+    static dot(vec1, vec2) {
+        return (vec1[0] * vec2[0]) + (vec1[1] * vec2[1]);
     }
 
     /**
@@ -331,8 +334,8 @@ export default class $Math {
      * @param {Array<number>} point2 - The second point
      * @returns {number} The distance between the two points
      */
-    static distance([x1, y1], [x2, y2]) {
-        return Math.sqrt($Math.distanceSqrd([x1, y1], [x2, y2]));
+    static distance(point1, point2) {
+        return Math.sqrt($Math.distanceSqrd(point1, point2));
     }
 
     /**
@@ -341,30 +344,31 @@ export default class $Math {
      * @param {Array<number>} point2 - The second point
      * @returns {number} The squared distance between the two points
      */
-    static distanceSqrd([x1, y1], [x2, y2]) {
-        return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+    static distanceSqrd(point1, point2) {
+        return (point2[0] - point1[0]) * (point2[0] - point1[0]) + 
+            (point2[1] - point1[1]) * (point2[1] - point1[1]);
     }
 
     /**
      * Returns the magnitude of the vector
      * @param {Array<number>} vector - The vector 
-     * @returns 
+     * @returns {number} The magnitude of the vector
      */
-    static magnitude([x1, y1]) {
-        return Math.sqrt((x1 * x1) + (y1 * y1));
+    static magnitude(vector) {
+        return Math.sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]));
     }
 
     /**
      * Normalize the vector
      * @param {Array<number>} vector - The vector to normalize
-     * @return {number} The unit length of the vector
+     * @return {Array<number>} The unit length vector
      */
-    static normalize([vX, vY]) {
-        const norm = [0,0];
-        const ln = $Math.magnitude([vX, vY]);
-        if (ln != 0) {
-            norm[0] = vX / ln;
-            norm[1] = vY / ln;
+    static normalize(vector) {
+        const norm = MathPool.getF32Array(2);
+        const ln = $Math.magnitude(vector);
+        if (ln !== 0) {
+            norm[0] = vector[0] / ln;
+            norm[1] = vector[1] / ln;
         }
         return norm;
     }
@@ -375,9 +379,9 @@ export default class $Math {
      * @param {Array<number>} v2 - The second vector
      * @returns {number} The angle in degrees
      */
-    static angleBetween(v1, v2) {
-        const dot = $Math.dot(v1, v2);
-        const xprod = $Math.xproduct(v1, v2);
+    static angleBetween(vec1, vec2) {
+        const dot = $Math.dot(vec1, vec2);
+        const xprod = $Math.xproduct(vec1, vec2);
 
         const rad = Math.atan2(xprod, dot);
         let degrees = $Math.radToDeg(rad);
@@ -391,7 +395,8 @@ export default class $Math {
     // Vector arithmetic
 
     /**
-     * Multiply the elements of `vec` by the scalar value.
+     * Multiply the elements of `vec` by the scalar value. This modifies
+     * the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The vector 
      * @param {number} scalar - The scalar value
      * @returns {Array<number>} The result of the multiplication
@@ -401,7 +406,8 @@ export default class $Math {
     }
 
     /**
-     * Multiply the elements in `vec` by the corresponding elements in `vec2`
+     * Multiply the elements in `vec` by the corresponding elements in `vec2`. This modifies
+     * the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The first vector
      * @param {Array<number>} vec2 - The second vector
      * @returns {Array<number>} The result of the multiplication
@@ -411,7 +417,8 @@ export default class $Math {
     }
 
     /**
-     * Add the scalar value to each element of `vec`.
+     * Add the scalar value to each element of `vec`. This modifies
+     * the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The vector 
      * @param {number} scalar - The scalar value
      * @returns {Array<number>} The result of the addition
@@ -421,7 +428,8 @@ export default class $Math {
     }
 
     /**
-     * Add the elements in `vec` to the corresponding elements in `vec2`
+     * Add the elements in `vec` to the corresponding elements in `vec2`. This modifies
+     * the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The first vector
      * @param {Array<number>} vec2 - The second vector
      * @returns {Array<number>} The result of the addition
@@ -430,18 +438,31 @@ export default class $Math {
         return vec.map((e, i) => e + vec2[i]);
     }
 
+    /**
+     * Subtract the scalar value from each element of `vec`. This modifies
+     * the vector in place and returns the modified vector.
+     * @param {Array<number>} vec - The vector
+     * @param {number} scalar - The scalar value
+     * @returns {Array<number>} The result of the subtraction
+     */
     static vecSubtractScalar(vec, scalar) {
         return vec.map(e => e - scalar);
     }
 
+    /**
+     * Subtract the second vector from the first. This modifies
+     * the vector in place and returns the modified vector.
+     * @param {Array<number>} vec - The first vector
+     * @param {Array<number>} vec2 - The vector to subtract from the first vector
+     * @returns {Array<number>} The result of the subtraction
+     */
     static vecSubtract(vec, vec2) {
         return vec.map((e, i) => e - vec2[i]);
     }
 
-
-
     /**
-     * Divide the elements of `vec` by the scalar value.
+     * Divide the elements of `vec` by the scalar value. This modifies
+     * the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The vector 
      * @param {number} scalar - The scalar value
      * @returns {Array<number>} The result of the division
@@ -451,7 +472,8 @@ export default class $Math {
     }
 
     /**
-     * Divide the elements in `vec` by the corresponding elements in `vec2`
+     * Divide the elements in `vec` by the corresponding elements in `vec2`. This modifies
+     * the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The first vector
      * @param {Array<number>} vec2 - The second vector
      * @returns {Array<number>} The result of the division
@@ -461,7 +483,7 @@ export default class $Math {
     }
 
     /**
-     * Invert the vector's elements.
+     * Invert the vector's elements. This modifies the vector in place and returns the modified vector.
      * @param {Array<number>} vec - The vector 
      * @returns {Array<number>} The inverted vector
      */
@@ -510,10 +532,10 @@ export default class $Math {
     static pointInPoly(point, poly) {
         var sides = poly.length, i = 0, j = sides - 1, oddNodes = false;
         for (i = 0; i < sides; i++) {
-            if ((poly[i].y < point.y && poly[j].y >= point.y) ||
-                (poly[j].y < point.y && poly[i].y >= point.y)) {
+            if ((poly[i][1] < point[1] && poly[j][1] >= point[1]) ||
+                (poly[j][1] < point[1] && poly[i][1] >= point[1])) {
 
-                if (poly[i].x + (point.y - poly[i].y) / (poly[j].y - poly[i].y) * (poly[j].x - poly[i].x) < point.x) {
+                if (poly[i][0] + (point[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) * (poly[j][0] - poly[i][0]) < point[0]) {
                     oddNodes = !oddNodes;
                 }
             }
@@ -710,44 +732,49 @@ export default class $Math {
      */
     static bresenham(start, end) {
         function swap(pt) {
-            pt.set(pt.y, pt.x);
+            pt.set(pt[1], pt[0]);
         }
 
-        var points = [], steep = Math.abs(end.y - start.y) > Math.abs(end.x - start.x), swapped = false;
+        let steep = Math.abs(end[1] - start[1]) > Math.abs(end[0] - start[0]), swapped = false;
         if (steep) {
             // Reflect the line
             swap(start);
             swap(end);
         }
 
-        if (start.x > end.x) {
+        if (start[0] > end[0]) {
             // Make sure the line goes downward
-            var t = start.x;
-            start.x = end.x;
-            end.x = t;
-            t = start.y;
-            start.y = end.y;
-            end.y = t;
+            var t = start[0];
+            start[0] = end[0];
+            end[0] = t;
+            t = start[1];
+            start[1] = end[1];
+            end[1] = t;
             swapped = true;
         }
 
-        var deltax = end.x - start.x, // x slope
-            deltay = Math.abs(end.y - start.y), // y slope, positive because the lines always go down
-            error = deltax / 2, // error is used instead of tracking the y values
-            ystep, y = start.y;
+        let deltaX = end[0] - start[0], // x slope
+            deltaY = Math.abs(end[1] - start[1]), // y slope, positive because the lines always go down
+            error = deltaX / 2, // error is used instead of tracking the y values
+            yStep, y = start[1], ptr = 0;
 
-        ystep = (start.y < end.y ? 1 : -1);
-        for (var x = start.x; x < end.x; x++) {   // for each point
+        const points = MathPool.getF32Array(end[0]-start[0]); 
+
+        yStep = (start[1] < end[1] ? 1 : -1);
+        for (let x = start[0]; x < end[0]; x++) {   // for each point
             if (steep) {
-                points.push(R.math.Point2D.create(y, x));  // if it's stepp, push flipped version
+                points[ptr]= y;
+                points[ptr + 1] = x;  // if it's steep, push flipped version
             } else {
-                points.push(R.math.Point2D.create(x, y));  // push normal
+                points[ptr] = x;
+                points[ptr + 1] = y;
             }
-            error -= deltay;  // change the error
+            error -= deltaY;  // change the error
             if (error < 0) {
-                y += ystep;    // if the error is too much, adjust the ystep
-                error += deltax;
+                y += yStep;    // if the error is too much, adjust the ystep
+                error += deltaX;
             }
+            ptr +=2 ;
         }
 
         if (swapped) {

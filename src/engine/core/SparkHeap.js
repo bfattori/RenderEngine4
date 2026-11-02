@@ -1,7 +1,6 @@
-import Config from './Config.js';
+import { SparkHeapConfig } from './Config.js';
 import Context from '../Context.js';
 import RenderEngineError from './RenderEngineError.js';
-import Util from './Util.js';
 import Spark from './Spark.js';
 
 const ctx = Context.getInstance();
@@ -72,8 +71,8 @@ export default class SparkHeap {
     #segmentHD = new Uint32Array(4);        // segment head allocator
     #BOUNDARY_LAYER;
     
-    constructor() {
-        this.#config = new SparkHeapConfig();
+    constructor(config = null) {
+        this.#config = config || new SparkHeapConfig();
         this.#allocateHeap();
     }
 
@@ -99,47 +98,70 @@ export default class SparkHeap {
             case SparkHeap.BYTE_16:
                 this.#segSize = Math.ceil(this.#config.heapSize / 2);
                 this.#segmentBB[SparkHeap.IB_16] = this.#config.heapSize;
-                if (pctReserve > 0) {
+                if (pctReserve === 1) {
+                    this.#segmentHD[SparkHeap.IB_16] = this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_8] = 0;
+                    this.#segmentBB[SparkHeap.IB_8] = 0;
+                } else if (pctReserve > 0) {
                     this.#segmentHD[SparkHeap.IB_16] = this.#config.heapSize - reservedSegSize;
                 } else {
                     this.#segmentHD[SparkHeap.IB_16] = this.#config.heapSize - this.#segSize;
+
+                    // what remains
+                    this.#segmentBB[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_8] = 0;
                 }
-                
-                // what remains
-                this.#segmentBB[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
-                this.#segmentHD[SparkHeap.IB_8] = 0;
                 break;
             case SparkHeap.BYTE_32:
                 this.#segSize = Math.ceil(this.#config.heapSize / 3);
                 this.#segmentBB[SparkHeap.IB_32] = this.#config.heapSize;
-                if (pctReserve > 0) {
-                    this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - reservedSegSize;
-                    this.#segSize = Math.ceil(this.#segmentHD[SparkHeap.IB_32] / 2);
+                if (pctReserve === 1) {
+                    this.#segmentHD[SparkHeap.IB_32] = this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_16] = 0;
+                    this.#segmentHD[SparkHeap.IB_8] = 0;
+                    this.#segmentBB[SparkHeap.IB_16] = 0;
+                    this.#segmentBB[SparkHeap.IB_8] = 0;
                 } else {
-                    this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - this.#segSize;
-                }
-                this.#segmentBB[SparkHeap.IB_16] = this.#segmentHD[SparkHeap.IB_32] - this.#BOUNDARY_LAYER;
-                this.#segmentHD[SparkHeap.IB_16] = this.#segmentBB[SparkHeap.IB_16] - this.#segSize;
+                    if (pctReserve > 0) {
+                        this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - reservedSegSize;
+                        this.#segSize = Math.ceil(this.#segmentHD[SparkHeap.IB_32] / 2);
+                    } else {
+                        this.#segmentHD[SparkHeap.IB_32] = this.#config.heapSize - this.#segSize;
+                    }
 
-                // remainder
-                this.#segmentBB[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
-                this.#segmentHD[SparkHeap.IB_8] = 0;
+                    this.#segmentBB[SparkHeap.IB_16] = this.#segmentHD[SparkHeap.IB_32] - this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_16] = this.#segmentBB[SparkHeap.IB_16] - this.#segSize;
+
+                    // remainder
+                    this.#segmentBB[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_8] = 0;
+                }
                 break;
             case SparkHeap.BYTE_64:
                 this.#segSize = Math.ceil(this.#config.heapSize / 4);
                 this.#segmentBB[SparkHeap.IB_64] = this.#config.heapSize;
-                if (pctReserve > 0) {
-                    this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - reservedSegSize;
-                    this.#segSize = Math.ceil(this.#segmentHD[SparkHeap.IB_64] / 3);
+                if (pctReserve === 1) {
+                    this.#segmentHD[SparkHeap.IB_64] = this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_32] = 0;
+                    this.#segmentHD[SparkHeap.IB_16] = 0;
+                    this.#segmentHD[SparkHeap.IB_8] = 0;
+                    this.#segmentBB[SparkHeap.IB_32] = 0;
+                    this.#segmentBB[SparkHeap.IB_16] = 0;
+                    this.#segmentBB[SparkHeap.IB_8] = 0;
                 } else {
-                    this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - this.#segSize;
+                    if (pctReserve > 0) {
+                        this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - reservedSegSize;
+                        this.#segSize = Math.ceil(this.#segmentHD[SparkHeap.IB_64] / 3);
+                    } else {
+                        this.#segmentHD[SparkHeap.IB_64] = this.#config.heapSize - this.#segSize;
+                    }
+                    this.#segmentBB[SparkHeap.IB_32] = this.#segmentHD[SparkHeap.IB_64] - this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_32] = this.#segmentBB[SparkHeap.IB_32] - this.#segSize;
+                    this.#segmentBB[SparkHeap.IB_16] = this.#segmentHD[SparkHeap.IB_32] - this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_16] = this.#segmentBB[SparkHeap.IB_16] - this.#segSize; 
+                    this.#segmentBB[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
+                    this.#segmentHD[SparkHeap.IB_8] = 0;
                 }
-                this.#segmentBB[SparkHeap.IB_32] = this.#segmentHD[SparkHeap.IB_64] - this.#BOUNDARY_LAYER;
-                this.#segmentHD[SparkHeap.IB_32] = this.#segmentBB[SparkHeap.IB_32] - this.#segSize;
-                this.#segmentBB[SparkHeap.IB_16] = this.#segmentHD[SparkHeap.IB_32] - this.#BOUNDARY_LAYER;
-                this.#segmentHD[SparkHeap.IB_16] = this.#segmentBB[SparkHeap.IB_16] - this.#segSize; 
-                this.#segmentBB[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
-                this.#segmentHD[SparkHeap.IB_8] = 0;
                 break;
             default: throw new SparkError(`Unknown base unit type ${this.#config.baseUnit} - halting.`);
         }
@@ -155,20 +177,23 @@ export default class SparkHeap {
      * boundaries, a problem with `DataView` in general.
      */
     #adjustBoundaries() {
+        const pctReserve = this.#config.reserveSize;
         const h64 = this.#segmentHD[SparkHeap.IB_64], t64 = this.#segmentBB[SparkHeap.IB_64],
             h32 = this.#segmentHD[SparkHeap.IB_32], t32 = this.#segmentBB[SparkHeap.IB_32] - this.#BOUNDARY_LAYER,
-            h16 = this.#segmentHD[SparkHeap.IB_16], t16 = this.#segmentBB[SparkHeap.IB_16] - this.#BOUNDARY_LAYER,
-            h8 = this.#segmentHD[SparkHeap.IB_8], t8 = this.#segmentBB[SparkHeap.IB_8];
-        
-        if (this.#config.baseUnit === SparkHeap.BYTE_64)
+            h16 = this.#segmentHD[SparkHeap.IB_16], t16 = this.#segmentBB[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
+
+        // adjust the head pointer to the nearest byte boundary (64-bit)
+        if (this.#config.baseUnit === SparkHeap.BYTE_64 && pctReserve < 1)
             if ((t64 - h64) % SparkHeap.BYTE_64 !== 0)
                 this.#segmentHD[SparkHeap.IB_64] -= ((t64 - h64) % SparkHeap.BYTE_64);
             
-        if (this.#config.baseUnit <= SparkHeap.BYTE_64)
+        // adjust the head pointer to the nearest byte boundary (32-bit)
+        if (this.#config.baseUnit <= SparkHeap.BYTE_64 && pctReserve < 1)
             if ((t32 - h32) % SparkHeap.BYTE_32 !== 0)
                 this.#segmentHD[SparkHeap.IB_32] -= ((t32 - h32) % SparkHeap.BYTE_32);
          
-        if (this.#config.baseUnit <= SparkHeap.BYTE_32)
+        // adjust the head pointer to the nearest byte boundary (16-bit)
+        if (this.#config.baseUnit <= SparkHeap.BYTE_32 && pctReserve < 1)
             if ((t16 - h16) % SparkHeap.BYTE_16 !== 0)
                 this.#segmentHD[SparkHeap.IB_16] -= ((t16 - h16) % SparkHeap.BYTE_16);
 
@@ -179,10 +204,20 @@ export default class SparkHeap {
         this.#segmentTP[SparkHeap.IB_8] = this.#segmentHD[SparkHeap.IB_8];
     }
 
+    /**
+     * The buffer backing the `SparkHeap` allocator. This is the 
+     * `ArrayBuffer` that is segmented into 8, 16, 32, and 64-bit 
+     * segments for allocation.
+     * @return {ArrayBuffer} The buffer backing the `SparkHeap` allocator
+     */
     get buffer() {
         return this.#internalHeap;
     }
 
+    /**
+     * Log the cuurent allocation table to the console. This is useful for debugging and understanding
+     * how the memory is being allocated and used.
+     */
     dumpTable() {
         const table = [],
 
@@ -202,11 +237,16 @@ export default class SparkHeap {
         spLog('Mem Alloc [' + table.join('|') + ']');
     }
 
+    /**
+     * RESERVED FOR FUTURE USE
+     * @param {number} offs 
+     * @param {number} len 
+     */
     dumpMemory(offs, len) {
     }
 
     /**
-     * Verify the allocation can succeed.
+     * Verify the allocation will succeed.
      * @param {number} byteSize - One of the byte sizes (BYTE_8, BYTE_16...)
      * @returns {number} The memory segment
      */
@@ -298,57 +338,6 @@ export default class SparkHeap {
     }
 }
 
-class SparkHeapConfig extends Config {
-    constructor() {
-        super({
-          /**
-           * This is the maximum sized value that will be
-           * stored in the heap for all data types.
-           * @type {number}
-           */
-          baseUnit: SparkHeap.BYTE_32,
-
-          /**
-           * The total amount of memory to reserve in bytes.
-           * @type {number} The number of bytes to allocate
-           */
-          heapSize: 1048576, // 1MB (1024 * 1024)
-
-          /**
-           * Balance the amount of memory to favor the
-           * most used type. Zero indicates equal distribution.
-           * @type {number} A percentage
-           */
-          reserveSize: 0.65,
-
-          /**
-           * The offset (in base units) between memory segments.
-           * @type {number}
-           */
-          boundaryElementOffset: 5,
-          
-          /**
-           * When set to `true`, `SparkHeap` will throw `SparkError` when memory is 
-           * unavailable to allocate. Otherwise, the head pointer for the segment is reset 
-           * to zero allowing for endless allocations. The latter method is destructive in 
-           * that it overwrites memory that is possibly in use.
-           * @type {boolean}
-           */
-          throwAllocErrors: false
-        });
-    }
-
-    /**
-     * Override configuration options with this global variable name
-     * @returns {String} The variable name
-     */
-    get varname() {
-        return 'SPARK_OPTIONS';
-    }
-}
-
-export { SparkHeapConfig };
-
 class SparkArray64 extends BigUint64Array {
     #head = null;
     constructor(buffer, offset, lengthInBytes, pointer = -1) {
@@ -391,6 +380,3 @@ export {
     SparkArray16,
     SparkArray8
 };
-
-// initialize the array heap for global scope
-self.SPARK_MM = new SparkHeap();

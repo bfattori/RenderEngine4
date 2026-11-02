@@ -1,19 +1,3 @@
-import Config from './Config.js';
-
-class SparkConfig extends Config {
-    constructor() {
-        super({
-
-        });
-    }
-
-    get varname() {
-        return 'SPARK_OPTIONS';
-    }
-}
-
-export { SparkConfig };
-
 /**
  * @class Spark
  * @classdesc `Spark` is an extension of `DataView`, providing several extra methods to

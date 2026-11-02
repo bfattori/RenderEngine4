@@ -15,6 +15,11 @@ import { CanvasRasterAssembler, CanvasVectorAssembler } from '../../rendering/as
 
 import { Paths } from '../../core/Engine.js';
 
+import Core from '../../core/Core.js';
+
+// setup memory management
+Core.initialize();
+
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
 
