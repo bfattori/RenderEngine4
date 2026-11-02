@@ -41,6 +41,13 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
+// give them a hint
+const div = document.createElement('div');
+div.classList.add('test-description');
+div.innerHTML = 'Press Spacebar, Go Boom...';
+document.body.appendChild(div)
+
+
 const exParticle = new BurstParticle();
 RenderEngine.particleEngine.addParticleType(exParticle);
 
@@ -84,7 +91,7 @@ const s = new Slider(document.body, {
     label: 'Particles Per Burst',
     type: Slider.TYPE.RANGE,
     maxValue: 10000,
-    initialValue: 150,
+    initialValue: 1000,
     step: 100,
     display: {
         withInput: true,

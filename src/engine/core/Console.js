@@ -6,15 +6,20 @@
 import Context from '../Context.js';
 
 const ctx = Context.getInstance();
-const ref = console;
 
 export default class Console {
+  #ref = null;
+
+  constructor(refConsole = console) {
+    this.#ref = refConsole;
+  }
+  
   /**
    * Logs a warning message to console
    * @param {string} message - The warning message to log
    */
   warn(...message) {
-    ref.warn('[RenderEngine4]', ...message);
+    this.#ref.warn('[RenderEngine4]', ...message);
   }
 
   /**
@@ -22,7 +27,7 @@ export default class Console {
    * @param {string} message - The error message to log
    */
   error(...message) {
-    ref.error('[RenderEngine4]', ...message);
+    this.#ref.error('[RenderEngine4]', ...message);
   }
 
   /**
@@ -30,7 +35,7 @@ export default class Console {
    * @param {string} message - The info message to log
    */
   info(...message) {
-    ref.info('[RenderEngine4]', ...message);
+    this.#ref.info('[RenderEngine4]', ...message);
   }
 
   /**
@@ -51,10 +56,10 @@ export default class Console {
 
   shutdown() {
     if (typeof global !== 'undefined') {
-      global.console = ref;
+      global.console = this.#ref;
       delete global.PRAGMA;
     } else {
-      self.console = ref;
+      self.console = this.#ref;
       delete self.PRAGMA;
     }
   }

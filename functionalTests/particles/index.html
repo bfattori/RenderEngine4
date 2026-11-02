@@ -68,19 +68,6 @@
                     <p>Particle affectors can also be used with web workers to distribute the computational load and improve performance.</p>
                 </div>
             </li>
-            <li><a href="runner.html?js=occlusion">Occlusion</a>
-                <div class="test-description">
-                    <p>The particle engine runs separate from the game engine. Its only purpose is to move and render particles, so it doesn't care about the game's
-                    objects or surfaces. You can use repulsors and colliders, sparingly, to create the effects of environment interaction, but particles just render
-                    across the entire viewport unless blocked.</p>
-                    <p>That's where occlusion comes in. When objects in the game update, they can utilize the <b><code>ParticleOccluder</code></b> component to automatically 
-                    generate an occlusion shape. With <b><code>RenderContexts</code></b> supporting multi-planar rendering (for parallax support or depth-of-field), objects
-                    with a <code>ParticleOccluder</code> component will generate an occluder shape based on their rendering-plane: none for <i>background</i>, hinted for <i>middle</i>, 
-                    and assumed on for <i>front</i>. You can configure this per-object to override the default behavior.</p>
-                    <p>Occluders are collected into an "occlusion mask" that is applied to the particles as they are rendered into the scene. Occluders can create the effect of
-                    depth for the particles generated.</p>
-                </div>
-            </li>
             <li><a href="runner.html?js=typesAndEffects">Included particle types &amp; effects</a>
                 <div class="test-description">
                     <p>The particle engine is flexible with base types for particles and effects, but extensible with a simple inehritance scheme.
@@ -110,6 +97,19 @@
                         <li><b><code>WaterParticle</code></b> - Blue color palette, particle sizes, gravity influenced, renders as points, spread-angle emission</li>
                     </ul>
                     </p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=occlusion">Scene Occlusion</a>
+                <div class="test-description">
+                    <p>The particle engine runs separate from the game engine. Its only purpose is to move and render particles, so it doesn't care about the game's
+                    objects or surfaces. You can use repulsors and colliders, sparingly, to create the effects of environment interaction, but particles just render
+                    across the entire viewport unless blocked.</p>
+                    <p>That's where occlusion comes in. When objects in the game update, they can utilize the <b><code>ParticleOccluder</code></b> component to automatically 
+                    generate an occlusion shape. With <b><code>RenderContexts</code></b> supporting multi-planar rendering (for parallax support or depth-of-field), objects
+                    with a <code>ParticleOccluder</code> component will generate an occluder shape based on their rendering-plane: none for <i>background</i>, hinted for <i>middle</i>, 
+                    and assumed on for <i>front</i>. You can configure this per-object to override the default behavior.</p>
+                    <p>Occluders are collected into an "occlusion mask" that is applied to the particles as they are rendered into the scene. Occluders can create the effect of
+                    depth for the particles generated.</p>
                 </div>
             </li>
         </ul>        

@@ -10,7 +10,6 @@ import Particle from './types/Particle.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 
-import SparkHeap from '../core/SparkHeap.js';
 import Spark from '../core/Spark.js';
 
 const ctx = Context.getInstance();

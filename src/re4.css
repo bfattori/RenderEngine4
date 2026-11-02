@@ -11,7 +11,7 @@ img.image-resource {
 }
 
 div#context {
-    position: absolute;
+    position: relative;
     border: 1px solid black;
     border-radius:5px;
     box-shadow:0 2px 25px rgba(39, 1, 1, 0.4);

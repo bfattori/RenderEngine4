@@ -129,9 +129,7 @@ div.loadBar span.loadBarText {
 
 /*** Slider Input */
 div.slider {
-    position: absolute;
-    left: 500px;
-    top: 650px;
+    position: relative;
     width: 400px;
     height: 60px;
     font-size: 9pt;

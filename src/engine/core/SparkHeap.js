@@ -177,23 +177,22 @@ export default class SparkHeap {
      * boundaries, a problem with `DataView` in general.
      */
     #adjustBoundaries() {
-        const pctReserve = this.#config.reserveSize;
         const h64 = this.#segmentHD[SparkHeap.IB_64], t64 = this.#segmentBB[SparkHeap.IB_64],
             h32 = this.#segmentHD[SparkHeap.IB_32], t32 = this.#segmentBB[SparkHeap.IB_32] - this.#BOUNDARY_LAYER,
             h16 = this.#segmentHD[SparkHeap.IB_16], t16 = this.#segmentBB[SparkHeap.IB_16] - this.#BOUNDARY_LAYER;
 
         // adjust the head pointer to the nearest byte boundary (64-bit)
-        if (this.#config.baseUnit === SparkHeap.BYTE_64 && pctReserve < 1)
+        if (this.#config.baseUnit === SparkHeap.BYTE_64)
             if ((t64 - h64) % SparkHeap.BYTE_64 !== 0)
                 this.#segmentHD[SparkHeap.IB_64] -= ((t64 - h64) % SparkHeap.BYTE_64);
             
         // adjust the head pointer to the nearest byte boundary (32-bit)
-        if (this.#config.baseUnit <= SparkHeap.BYTE_64 && pctReserve < 1)
+        if (this.#config.baseUnit <= SparkHeap.BYTE_64)
             if ((t32 - h32) % SparkHeap.BYTE_32 !== 0)
                 this.#segmentHD[SparkHeap.IB_32] -= ((t32 - h32) % SparkHeap.BYTE_32);
          
         // adjust the head pointer to the nearest byte boundary (16-bit)
-        if (this.#config.baseUnit <= SparkHeap.BYTE_32 && pctReserve < 1)
+        if (this.#config.baseUnit <= SparkHeap.BYTE_32)
             if ((t16 - h16) % SparkHeap.BYTE_16 !== 0)
                 this.#segmentHD[SparkHeap.IB_16] -= ((t16 - h16) % SparkHeap.BYTE_16);
 
@@ -222,8 +221,8 @@ export default class SparkHeap {
         const table = [],
 
             h64 = this.#segmentHD[SparkHeap.IB_64], t64 = this.#segmentBB[SparkHeap.IB_64],
-            h32 = this.#segmentHD[SparkHeap.IB_32], t32 = this.#segmentBB[SparkHeap.IB_32] - this.#BOUNDARY_LAYER,
-            h16 = this.#segmentHD[SparkHeap.IB_16], t16 = this.#segmentBB[SparkHeap.IB_16] - this.#BOUNDARY_LAYER,
+            h32 = this.#segmentHD[SparkHeap.IB_32], t32 = this.#segmentBB[SparkHeap.IB_32] !== 0 ? this.#segmentBB[SparkHeap.IB_32] - this.#BOUNDARY_LAYER : 0,
+            h16 = this.#segmentHD[SparkHeap.IB_16], t16 = this.#segmentBB[SparkHeap.IB_16] !== 0 ? this.#segmentBB[SparkHeap.IB_16] - this.#BOUNDARY_LAYER : 0,
             h8 = this.#segmentHD[SparkHeap.IB_8], t8 = this.#segmentBB[SparkHeap.IB_8];
 
         if (this.#config.baseUnit === SparkHeap.BYTE_64)

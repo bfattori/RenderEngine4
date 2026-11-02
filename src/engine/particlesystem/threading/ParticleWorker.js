@@ -1,3 +1,6 @@
+import WorkerConsole from './WorkerConsole.js';
+
+import Core from '../../core/Core.js';
 import Context from '../../Context.js';
 import Constants from '../../Constants.js';
 
@@ -14,11 +17,6 @@ import { Matrix2d } from '../../core/Matrix.js';
 import { CanvasRasterAssembler, CanvasVectorAssembler } from '../../rendering/assemblers/canvas/CanvasAssemblers.js';
 
 import { Paths } from '../../core/Engine.js';
-
-import Core from '../../core/Core.js';
-
-// setup memory management
-Core.initialize();
 
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
@@ -48,8 +46,15 @@ export default class ParticleWorker {
     #latched = true;
 
     constructor(workerId, assembler, width, height, config, threading, systemOpts) {
-        this.#engineInstance = $ParticleEngine.getWorkerInstance(width, height, config, threading);
         this.#workerId = workerId;
+
+        // override the console
+        self.console = new WorkerConsole(this, self.console);
+
+        // setup memory management
+        Core.initialize();
+
+        this.#engineInstance = $ParticleEngine.getWorkerInstance(width, height, config, threading);
 
         // initialize the context with the system options
         ctx.debugOpts = systemOpts.debugOpts;

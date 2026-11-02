@@ -276,7 +276,7 @@ class EngineConfig extends Config {
 }
 
 class SparkHeapConfig extends Config {
-    constructor() {
+    constructor(overrides = {}) {
         super({
           /**
            * This is the maximum sized value that will be
@@ -313,6 +313,7 @@ class SparkHeapConfig extends Config {
            */
           throwAllocErrors: false
         });
+        this.merge(overrides);
     }
 
     /**
