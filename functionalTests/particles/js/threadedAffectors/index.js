@@ -12,8 +12,6 @@ import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffe
 
 import ParticleAffector from '../../../../src/engine/particlesystem/physics/ParticleAffector.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
-
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 5000
 };

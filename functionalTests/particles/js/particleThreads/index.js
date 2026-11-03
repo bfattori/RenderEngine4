@@ -8,7 +8,6 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {

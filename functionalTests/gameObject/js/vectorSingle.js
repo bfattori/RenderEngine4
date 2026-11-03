@@ -2,7 +2,7 @@ import RenderEngine from '../../../src/engine/renderEngine4.js';
 import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
+import CompiledRenderPart from '../../../src/engine/parts/render/CompiledRenderPart.js';
 
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
 
@@ -42,7 +42,7 @@ const gameObject = new GameObject();
 gameObject
     .addComponentParts(
         new Transform2dPart("transform"), 
-        new VectorRendererPart("renderer"));
+        new CompiledRenderPart("renderer"));
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);

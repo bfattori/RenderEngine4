@@ -10,6 +10,7 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
+// effect and particle types
 import { pEffect, pEffect2, wEffect1, wEffect2, sparkEffect } from './effects.js';
 import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff } from './particles.js';
 

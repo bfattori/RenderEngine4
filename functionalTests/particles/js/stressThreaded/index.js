@@ -7,9 +7,8 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
-import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
+import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRenderPart.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
@@ -91,7 +90,7 @@ function explode() {
 // - set world position, rotation, and scale
 const gameObject2 = new GameObject();
 gameObject2
-    .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
+    .addComponentParts(new Transform2dPart("transform"), new CompiledRenderPart("renderer"));
 const t2 = gameObject2.getComponentByName("transform");
 t2.position = [400, 300];
 

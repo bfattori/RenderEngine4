@@ -7,7 +7,6 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
 import ParticleEffect from '../../../../src/engine/particlesystem/effects/ParticleEffect.js';
-import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
 
 import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
@@ -56,26 +55,21 @@ RenderEngine.particleEngine.addEffect(effectName, pEffect);
 // - set world position, rotation, and scale
 const gameObject = new GameObject();
 gameObject
-    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"))
-    .worldTransform = Matrix2d.identity().update({
-        position: [400, 300],
-        rotation: 0,
-        scale: [1, 1]
-    });
+    .addComponentParts(new Transform2dPart("transform"), new ParticleEmitterPart("emitter"));
+
+gameObject.PARTS.transform.position = [400, 300];
 
 // add the object to the world - before making any modifications to it
 RenderEngine.world.addObject(gameObject);
 
 // configure the emitter to use the explosion effect
-const emitter = gameObject.getComponentByName("emitter");
+const emitter = gameObject.PARTS.emitter;
 emitter.effect = effectName;
 
 // every few seconds we'll generate an explosion
 function explode() {
-    gameObject.worldTransform.setTo({
-        position: [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)]
-    });
-    emitter.emit();
+    gameObject.PARTS.transform.position = [$Math.randomRange(10, 790, true), $Math.randomRange(5, 300, true)];
+    emitter.once();
     setTimeout(explode, $Math.randomRange(500, 2000, true));
 }
 

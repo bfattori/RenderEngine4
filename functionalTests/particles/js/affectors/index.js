@@ -12,8 +12,6 @@ import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffe
 
 import ParticleAffector from '../../../../src/engine/particlesystem/physics/ParticleAffector.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
-
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {

@@ -4,7 +4,7 @@ import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRender
 
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import VectorRendererPart from '../../../src/engine/parts/render/VectorRendererPart.js';
+import CompiledRenderPart from '../../../src/engine/parts/render/CompiledRenderPart.js';
 
 import $Math from '../../../src/engine/core/Math.js';
 import Util from '../../../src/engine/core/Util.js';
@@ -50,7 +50,7 @@ for (let i = 0; i < numObjects; i++) {
     gameObject
         .addComponentParts(
             new Transform2dPart("transform"), 
-            new VectorRendererPart("renderer"));
+            new CompiledRenderPart("renderer"));
 
     // add the object to the world - before making any modifications to it
     RenderEngine.world.addObject(gameObject);

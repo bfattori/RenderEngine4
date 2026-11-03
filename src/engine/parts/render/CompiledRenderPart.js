@@ -5,7 +5,7 @@ import { Matrix2d } from '../../core/Matrix.js';
 import IL from '../../rendering/assemblers/IntermediateLanguages.js';
 import getAPI from '../../rendering/api/RenderingAPI.js';
 
-export default class VectorRendererPart extends RenderPart {
+export default class CompiledRenderPart extends RenderPart {
     #instructions = [];
     #api = null;
     // the compiled shape object (if supported by the render context)

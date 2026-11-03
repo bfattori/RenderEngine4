@@ -7,9 +7,8 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
-import VectorRendererPart from '../../../../src/engine/parts/render/VectorRendererPart.js';
+import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRenderPart.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
@@ -97,7 +96,7 @@ for (let i = 0; i < numObjects; i++) {
     const gameObject = new GameObject(`MultiObject${i}`);
     const scale = $Math.randomRange(0.25, 1.5);
     gameObject
-        .addComponentParts(new Transform2dPart("transform"), new VectorRendererPart("renderer"));
+        .addComponentParts(new Transform2dPart("transform"), new CompiledRenderPart("renderer"));
 
     const t2 = gameObject.getComponentByName("transform");
     t2.position = [$Math.randomRange(10, 790, true), $Math.randomRange(10, 590, true)];
