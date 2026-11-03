@@ -12,13 +12,13 @@ const api = context.getAPI();
 
 // chainable for multiple calls
 api
-    .color("#0000ff").width(5)                // stroke color: blue, line width 5 pixels
-    .line(100, 100, 300, 300)                   // line from 100,100 to 300,300
-    .fillColor("#8800cc")                     // fill color: purple
-    .circle(100, 100, 50, true)                 // filled circle w/radius 50 at 100,100
-    .color("#ff9100").width(10)               // stroke color: orange, line width 10 pixels
-    .circle(100, 100, 50, false)                // stroked circle w/radius 50 at 100,100
-    .resetWidth();                              // reset line width to default
+    .color("#0000ff").width(5)            // stroke color: blue, line width 5 pixels
+    .line(100, 100, 300, 300)             // line from 100,100 to 300,300
+    .fillColor("#8800cc")                 // fill color: purple
+    .circle(100, 100, 50, true)           // filled circle w/radius 50 at 100,100
+    .color("#ff9100").width(10)           // stroke color: orange, line width 10 pixels
+    .circle(100, 100, 50, false)          // stroked circle w/radius 50 at 100,100
+    .resetWidth();                        // reset line width to default
 ```
 
 ## **Intermediate Language**
