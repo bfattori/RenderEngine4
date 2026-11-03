@@ -27,8 +27,9 @@ export default class SmokeParticle extends PhysicalParticle {
             lifeSpan: [10000, 12000],
             drag: 0,
             dragRate: 0,
-            particleSize: [10, 16],
+            particleSize: [18, 36],
             velocity: 0.008,
+            sizeDecay: 0.001,
             gravity: [0.0, -0.004],
             softness: 0.9,
 

@@ -1,5 +1,5 @@
 import Constants from '../../Constants.js';
-import { IL as RASTER_IL } from '../../rendering/assemblers/IntermediateLanguages.js';
+import IL from '../../rendering/assemblers/IntermediateLanguages.js';
 import TextParser from './TextParser.js';
 import Context from '../../Context.js';
 

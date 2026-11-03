@@ -1,5 +1,5 @@
 import RenderEngine from '../../../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
 import GameObject from '../../../../src/engine/gameobject/GameObject.js';
@@ -28,7 +28,7 @@ await RenderEngine.init(import.meta.url, {
         }
     },
     world: {
-        renderContext: new VectorRenderContext(
+        renderContext: new RenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {
@@ -99,7 +99,7 @@ let textBox = [0,0];
 const renderer = gameObject2.getComponentByName("renderer");
 renderer.API
     .fontSize(20)
-    .text("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l", {}, textBox);
+    .vecText("{#00f}C{#f00}{+3}o{#080}{+2}l{#ee0}{+0.5}o{#808}{-0.5}r{#088}{-1}f{#800}{-1}u{orange}{-1}l", {}, textBox);
 renderer.compile();
 
 // set the origin at the center of the text

@@ -8,21 +8,20 @@ import ParticleWorkerError from './ParticleWorkerError.js';
 
 import $ParticleEngine from '../$ParticleEngine.js';
 import ParticleEffect from '../effects/ParticleEffect.js';
-import BasicParticle from '../types/BasicParticle.js';
+import Particle from '../types/Particle.js';
 
 import TransferrableConfig from '../../core/TransferrableConfig.js';
 import $Math from '../../core/Math.js';
 import { Matrix2d } from '../../core/Matrix.js';
 
-import { CanvasRasterAssembler, CanvasVectorAssembler } from '../../rendering/assemblers/canvas/CanvasAssemblers.js';
+import CanvasAssembler from '../../rendering/assemblers/CanvasAssembler.js';
 
 import { Paths } from '../../core/Engine.js';
 
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
 
-self.CanvasRasterAssembler = CanvasRasterAssembler;
-self.CanvasVectorAssembler = CanvasVectorAssembler;
+self.CanvasAssembler = CanvasAssembler;
 
 // this will reference ourselves in the worker thread so we can access the worker instance from the message handler
 self.$$worker = null;
@@ -61,7 +60,7 @@ export default class ParticleWorker {
         ctx.engineOpts = systemOpts.engineOpts;
 
         // add the root particle type
-        this.#classMap.set('BasicParticle', BasicParticle);
+        this.#classMap.set('Particle', Particle);
         this.#fps = Math.floor(1000 / threading.framesPerSecond);
         this.#assembler = self[assembler].getInstance();
 

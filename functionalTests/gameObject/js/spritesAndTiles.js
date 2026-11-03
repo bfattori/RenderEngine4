@@ -1,5 +1,5 @@
 import RenderEngine from '../../../src/engine/renderEngine4.js';
-import RasterRenderContext from '../../../src/engine/rendering/contexts/RasterRenderContext.js';
+import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
 import PlatformerMap from '../../../src/engine/resources/loaders/PlatformerMap.js';
@@ -20,7 +20,7 @@ await RenderEngine.init(import.meta.url, {
         }
     },
     world: {
-        renderContext: new RasterRenderContext(
+        renderContext: new RenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {

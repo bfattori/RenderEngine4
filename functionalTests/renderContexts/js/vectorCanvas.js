@@ -1,5 +1,5 @@
 import RenderEngine from '../../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
 // create a double-buffered canvas renderer
@@ -8,7 +8,7 @@ await RenderEngine.init(import.meta.url, {
         debugMode: false
     },
     world: {
-        renderContext: new VectorRenderContext(
+        renderContext: new RenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {
@@ -53,7 +53,7 @@ api
     .pushTransform()
     .translate(50, 330)
     .width(2)
-    .text("{15}{#00f}**I{#f00}n**{green}{+12}l{orange}~i~{gold}{-2}n{mediumvioletred}e")
+    .vecText("{15}{#00f}**I{#f00}n**{green}{+12}l{orange}~i~{gold}{-2}n{mediumvioletred}e")
     .resetFontSize()
     .popTransform();
 
@@ -63,7 +63,7 @@ api
     .pushTransform()
     .translate(100, 400)
     .width(5)
-    .text("{50}{#808}**F{-5}o{-5}r{-5}m{-5}a{-5}t**")
+    .vecText("{50}{#808}**F{-5}o{-5}r{-5}m{-5}a{-5}t**")
     .resetFontSize()
     .popTransform();
 
@@ -71,7 +71,7 @@ api
 api    
     .pushTransform()
     .translate(80, 20)
-    .text("Simple text,\tplain formatting.", 
+    .vecText("Simple text,\tplain formatting.", 
         {color: "black", lineWidth: 1})
     .popTransform();
 
@@ -79,7 +79,7 @@ api
 api
     .pushTransform()
     .translate(210, 90)
-    .text("{20}_{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l_{!f}")
+    .vecText("{20}_{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l_{!f}")
     .resetFontSize()
     .popTransform()
 
@@ -87,7 +87,7 @@ api
     .pushTransform()
     .color("royalblue")
     .translate(270, 180)
-    .text("**{30}_Absolute_\n{10}    Sizing**")
+    .vecText("**{30}_Absolute_\n{10}    Sizing**")
     .popTransform();
 
 api.popTransform()
@@ -96,13 +96,13 @@ api
     .pushTransform()
     .translate(20, 500)
     .color("black")
-    .text("ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz")
+    .vecText("ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz")
     .popTransform();
 
 api.pushTransform()
     .translate(20, 545)
     .color("blue")
-    .text(`!@#$%^&*()\\_-=+[];:'",<.>/?`)
+    .vecText(`!@#$%^&*()\\_-=+[];:'",<.>/?`)
     .popTransform();
 
 // testing curves

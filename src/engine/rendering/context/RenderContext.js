@@ -5,29 +5,27 @@
  * @extends RenderContext
  */
 import Constants from '../../Constants.js';
-import RenderContext from './RenderContext.js';
-import { Matrix2d } from '../../core/Matrix.js';
-import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
-import getAPI from './api/VectorAPI.js';
+import ContextBase from './ContextBase.js';
+import IL from '../assemblers/IntermediateLanguages.js';
+import getAPI from '../api/RenderingAPI.js';
 
 /**
- * @class VectorRenderContext
+ * @class RenderContext
  * 
- * Provides vector-style graphics rendering using an intermediate language format
- * that is consumed by a rendering engine to produce the visual output. During scene
- * generation, the class will generate primitive instructions that reproduce vector
+ * Provides graphics rendering context implementing an intermediate language format
+ * that is consumed by a renderer to produce the visual output. During scene
+ * generation, the class will generate primitive instructions that reproduce 
  * drawing operations. This simplifies the communication, allowing for a variety of
- * rendering engines. 
+ * renderers. 
  * 
  * This approach reduces the complexity of rendering operations and
  * simplifies integration, supporting shape container instructions for grouping multiple 
  * shapes into a single instruction, which can be useful for optimizing performance by 
  * reducing the number of draw calls.
  * 
- * @extends RenderContext
- * @module RenderContext/VectorRenderContext
+ * @extends ContextBase
  */
-export default class VectorRenderContext extends RenderContext {
+export default class RenderContext extends ContextBase {
   static get DEFAULT_COLOR() {
     return Constants.VECTOR_DEFAULTS.LINE_COLOR;
   }
@@ -94,26 +92,79 @@ export default class VectorRenderContext extends RenderContext {
 
   pushTransform(transform) {
     super.pushTransform(transform);
-    this.addInstruction(`${VECTOR_IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
+    this.addInstruction(`${IL.PUSH} ${transform ? transform.toCanvas() : ''}`);
   }
 
   popTransform() {
     const xfm = super.popTransform();
-    this.addInstruction(`${VECTOR_IL.POP}`);
+    this.addInstruction(`${IL.POP}`);
     return xfm;
   }
 
   resetTransforms() {
     super.resetTransforms();
-    this.addInstruction(`${VECTOR_IL.XFORM_RESET}`);
+    this.addInstruction(`${IL.XFORM_RESET}`);
   }
 
   setCursorPosition(x, y) {
-    this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+    this.addInstruction(`${IL.TRANSLATE} ${x} ${y}`);
   }
 
   getAPI() {
     return getAPI.call(this);
+  }
+
+//-----------------------------
+  // tiles & sprites
+  //-----------------------------
+
+  compileTiles(tiles) {
+    const results = {};
+    tiles.forEach(tile => {
+      results[tile.name] = this.compileTile(tile);
+    });
+    return results;
+  }
+
+  compileTile(tile) {
+    return this.renderer.compileSprite(tile);
+  }
+
+  renderTiles(tileIds, time, deltaTime) {
+    tileIds.forEach(opaqueId => this.renderTile(opaqueId, time, deltaTime));
+  }
+
+  renderTile(opaqueId, time, deltaTime) {
+    this.renderer.renderTile(opaqueId, time, deltaTime);
+  }
+
+  compileTileMaps(tileMaps) {
+    const result = {};
+    tileMaps.forEach(tileMap => {
+      results[tileMap.name] = this.compileTileMap(tileMap);
+    });
+    return results;
+  }
+
+  compileTileMap(tileMap) {
+    return this.renderer.compileTileMap(tileMap);
+  }
+
+  renderTileMap(opaqueId, time, deltaTime) {
+    this.addInstruction(`${IL.TILEMAP} ${opaqueId}`);
+  }
+
+  compileSprite(sprite, tag) {
+    return this.renderer.compileSprite(sprite, tag);
+  }
+
+  destroySprite(opaqueId) {
+    this.renderer.destroySprite(opaqueId);
+  }
+
+  renderSprite(opaqueId, x, y, time, deltaTime) {
+    this.addInstruction(`${IL.SPRITE} ${opaqueId} ${x} ${y}`);
+    //this.renderer.renderSprite(opaqueId, x, y, time, deltaTime);
   }
 
   //-----------------------------
@@ -129,7 +180,7 @@ export default class VectorRenderContext extends RenderContext {
   }
 
   renderCompiledShape(opaqueId) {
-    this.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+    this.addInstruction(`${IL.SHAPE} ${opaqueId}`);
   }
 
   //--------------------------------------
@@ -142,24 +193,4 @@ export default class VectorRenderContext extends RenderContext {
     }
     return this.#api;
   }
-
-    //-------------------------------
-  // Properties
-  //-------------------------------
-
-  get properties() {
-      return { ...super.properties, ...{
-        API: this.API,
-
-        _screenDimensions: this.#screenDimensions,
-        _worldDimensions: this.#worldDimensions,
-
-        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
-        DEFAULT_LINE_WIDTH: VectorRenderContext.DEFAULT_LINE_WIDTH,
-        DEFAULT_FILL_COLOR: VectorRenderContext.DEFAULT_FILL_COLOR,
-        DEFAULT_COLOR: VectorRenderContext.DEFAULT_COLOR,
-        DEFAULT_FONT_SIZE: VectorRenderContext.DEFAULT_FONT_SIZE,
-      }};
-  }
-
 }

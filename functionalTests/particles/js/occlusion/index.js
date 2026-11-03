@@ -1,5 +1,5 @@
 import RenderEngine from '../../../../src/engine/renderEngine4.js';
-import VectorRenderContext from '../../../../src/engine/rendering/contexts/VectorRenderContext.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
 import GameObject from '../../../../src/engine/gameobject/GameObject.js';
@@ -24,7 +24,7 @@ await RenderEngine.init(import.meta.url, {
         }
     },
     world: {
-        renderContext: new VectorRenderContext(
+        renderContext: new RenderContext(
             CanvasRenderer.build(
                 document.getElementById("context"), 
                 {

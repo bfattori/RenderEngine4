@@ -1,10 +1,9 @@
 import Constants from '../../Constants.js';
-import Engine from '../../core/Engine.js';
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
 import { Matrix2d } from '../../core/Matrix.js';
-import { VECTOR_IL } from '../../rendering/assemblers/IntermediateLanguages.js';
-import getAPI from '../../rendering/contexts/api/VectorAPI.js';
+import IL from '../../rendering/assemblers/IntermediateLanguages.js';
+import getAPI from '../../rendering/api/RenderingAPI.js';
 
 export default class VectorRendererPart extends RenderPart {
     #instructions = [];
@@ -53,25 +52,6 @@ export default class VectorRendererPart extends RenderPart {
         return this.host.world.renderContext;
     }
 
-    //-------------------------------
-    // Properties
-    //-------------------------------
-
-    get properties() {
-        return {...super.properties, ...{
-            Renderer: this.renderer,
-            renderingInstructions: this.#instructions,
-            API: this.#api,
-            formatting: this.formatting,
-            letterSpacing: this.letterSpacing,
-            lineHeight: this.lineHeight,
-
-            _renderTransform: this.renderTransform,
-            _compiledShape: this.#compiledShape,
-
-        }};
-    }
-
     /**
      * Adds a rendering instruction to the shape.
      * @param {String} inst - Instruction from the render method 
@@ -81,7 +61,7 @@ export default class VectorRendererPart extends RenderPart {
     }
 
     setCursorPosition(x, y) {
-        this.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+        this.addInstruction(`${IL.TRANSLATE} ${x} ${y}`);
     }
 
     /**

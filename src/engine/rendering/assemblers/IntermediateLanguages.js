@@ -15,8 +15,9 @@ const IL = langs.IL;
 const VECTOR_IL = langs.VECTOR_IL;
 const RASTER_IL = langs.RASTER_IL;
 
+export default IL;
+
 export {
-  IL,
   VECTOR_IL,
   RASTER_IL
 };

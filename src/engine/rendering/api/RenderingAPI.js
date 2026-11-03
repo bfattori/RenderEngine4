@@ -1,16 +1,20 @@
-import Constants from '../../../Constants.js';
-import { Matrix2d } from '../../../core/Matrix.js';
-import Util from '../../../core/Util.js';
-import $Math from '../../../core/Math.js';
-import { IL as VECTOR_IL } from '../../assemblers/IntermediateLanguages.js';
-import VectorTextParser from '../../../ui/text/VectorTextParser.js';
+import Constants from '../../Constants.js';
+import { Matrix2d } from '../../core/Matrix.js';
+import Util from '../../core/Util.js';
+import $Math from '../../core/Math.js';
+import IL from '../assemblers/IntermediateLanguages.js';
+import VectorTextParser from '../../ui/text/VectorTextParser.js';
+import RasterTextParser from '../../ui/text/RasterTextParser.js';
 
 /**
  * @returns {Object} Returns the high-level API methods for vector drawing.
  */
 export default function getAPI() {
     const context = this;
-    const textParser = VectorTextParser.getInstance(context);
+    const textParsers = {
+        vector: VectorTextParser.getInstance(context),
+        raster: RasterTextParser.getInstance(context)
+    };
 
     const state = {
         // Color state - RGB values (0-1 range) with optional alpha
@@ -31,15 +35,31 @@ export default function getAPI() {
         previousFillColor: [],
         currentFillColor: Constants.VECTOR_DEFAULTS.FILL_COLOR,
 
+        // Font state
+        previousFont: [],
+        currentFont: Constants.RASTER_DEFAULTS.FONT_NAME,
+        lastFont: null, 
+
+        // Font style state
+        fontStyle: { ...Constants.RASTER_DEFAULTS.FONT_STYLE },
+        previousFontStyle: [],
+        currentFontStyle: { ...Constants.RASTER_DEFAULTS.FONT_STYLE },
+
         // Transform state
         currentTransform: Matrix2d.identity(),
         
+        // raster ops
+        raster: {
+            scale: [1, 1]
+        },
+
         // Text cursor state
         cursor: {
             x: 0,
             y: 0
         },
-        limits: {
+
+        margins: {
             left: 0,
             right: 0
         }
@@ -48,7 +68,7 @@ export default function getAPI() {
     return {
         //-----------------------------------------------
         systemText(str) {
-            context.addInstruction(`${VECTOR_IL.SYSTEXT} ${str}`);
+            context.addInstruction(`${IL.SYSTEXT} ${str}`);
             return context.API;
         },
 
@@ -62,7 +82,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         translate: (x, y) => {
-            context.addInstruction(`${VECTOR_IL.TRANSLATE} ${x} ${y}`);
+            context.addInstruction(`${IL.TRANSLATE} ${x} ${y}`);
             state.currentTransform.translateSelf(x, y);
             return context.API;
         },
@@ -73,7 +93,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         rotate: (angle) => {
-            context.addInstruction(`${VECTOR_IL.ROTATE} ${angle}`);
+            context.addInstruction(`${_IL.ROTATE} ${angle}`);
             state.currentTransform.rotateSelf(angle);
             return context.API;
         },
@@ -85,8 +105,32 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         scale: (x, y) => {
-            context.addInstruction(`${x === y ? VECTOR_IL.USCALE + ' ' + x : VECTOR_IL.SCALE + ' ' + x + ' ' + y}`);
+            context.addInstruction(`${x === y ? IL.USCALE + ' ' + x : IL.SCALE + ' ' + x + ' ' + y}`);
             state.currentTransform.scaleSelf(x, y);
+            return context.API;
+        },
+
+        /**
+         * (RASTER) Scale the current transform by X and Y
+         * @param {number} x 
+         * @param {number} y 
+         * @returns {Object} Returns this for chaining
+         */
+        rasterScale: (x, y) => {
+            context.addInstruction(`${x === y ? IL.RSCALEU + ' ' + x : IL.RSCALE + ' ' + x + ' ' + y}`);
+            state.currentTransform.scale(x, y);
+            return context.API;
+        },
+
+
+        /**
+         * Uniformly scale the transform by a scalar value
+         * @param {number} scalar 
+         * @returns {Object} Returns this for chaining
+         */
+        uniformScale: (scalar) => {
+            context.addInstruction(`${IL.USCALE} ${scalar}`);
+            state.currentTransform.scale(scalar, scalar);
             return context.API;
         },
 
@@ -95,9 +139,9 @@ export default function getAPI() {
          * @param {number} scalar 
          * @returns {Object} Returns this for chaining
          */
-        uniformScale: (scalar) => {
-            context.addInstruction(`${VECTOR_IL.USCALE} ${scalar}`);
-            state.currentTransform.scale(scalar, scalar);
+        rasterUniformScale: (scalar) => {
+            context.addInstruction(`${IL.RSCALEU} ${scalar}`);
+            state.currentTransform.uniformScale(scalar, scalar);
             return context.API;
         },
 
@@ -108,7 +152,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         skew: (sX, sY) => {
-            context.addInstruction(`${VECTOR_IL.SKEW} ${sX} ${sY || 0}`);
+            context.addInstruction(`${IL.SKEW} ${sX} ${sY || 0}`);
             state.currentTransform.skewSelf(sX, sY);
             return context.API;
         },
@@ -119,7 +163,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         transform: (matrix) => {
-            context.addInstruction(`${VECTOR_IL.TRANSFORM} ${matrix.toCanvas()}`);
+            context.addInstruction(`${IL.TRANSFORM} ${matrix.toCanvas()}`);
             state.currentTransform = matrix;
             return context.API;
         },
@@ -130,7 +174,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         absTransform: (matrix) => {
-            context.addInstruction(`${VECTOR_IL.ABS_TRANSFORM} ${matrix.toCanvas()}`);
+            context.addInstruction(`${IL.ABS_TRANSFORM} ${matrix.toCanvas()}`);
             state.currentTransform = matrix;
             return context.API;
         },
@@ -139,7 +183,7 @@ export default function getAPI() {
          * Save the surface state
          */
         push: () => {
-            context.addInstruction(VECTOR_IL.PUSH);
+            context.addInstruction(IL.PUSH);
             return context.API;
         },
 
@@ -157,7 +201,7 @@ export default function getAPI() {
          * Restore the surface state
          */
         pop: () => {
-            context.addInstruction(VECTOR_IL.POP);
+            context.addInstruction(IL.POP);
             return context.API;
         },
 
@@ -184,6 +228,18 @@ export default function getAPI() {
             return context.API;
         },
 
+        /**
+         * Move the drawing position to X and Y coordinates.
+         * @param {number} x - The X coordinate
+         * @param {number} y - The Y coodinate
+         * @returns {Object} Returns this for chaining
+         */
+        moveTo: (x, y) => {
+            context.addInstruction(`${IL.MOVETO} ${x} ${y}`);
+            return context.API;
+        },
+
+
         //--------------------------------------------
         // STATE MANAGEMENT
 
@@ -209,7 +265,7 @@ export default function getAPI() {
             }
             // Add color instruction
             if (!same)
-                context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`);
+                context.addInstruction(`${IL.COLOR} ${state.currentColor}`);
             
             return context.API;
         },
@@ -222,11 +278,20 @@ export default function getAPI() {
             return state.currentColor;
         },
 
-        setColor: (r, g = null, b = null, { a = 1 } = {}) => {
+        /**
+         * Set the current line (stroke) color, overriding the value on the stack and
+         * not modifying the stack.
+         * @param {number|String} r - Color name or red component
+         * @param {number} g - Green component
+         * @param {number} b - Blue component
+         * @param {number} a - Alpha component
+         * @returns {Object} Returns this for chaining
+         */
+        setColor: (r, g = null, b = null, a = 1) => {
             const c = Util.getColor(r, g, b, a);
             if (c !== state.currentColor) {
                 state.currentColor = c;
-                context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`)
+                context.addInstruction(`${IL.COLOR} ${state.currentColor}`)
             }
             return context.API;
         },
@@ -238,7 +303,7 @@ export default function getAPI() {
         resetColor: () => {
             state.currentColor = Constants.VECTOR_DEFAULTS.FILL_COLOR;
             state.previousColor = [];
-            context.addInstruction(`${VECTOR_IL.COLOR} ${state.currentColor}`);
+            context.addInstruction(`${IL.COLOR} ${state.currentColor}`);
             return context.API;
         },
 
@@ -246,13 +311,13 @@ export default function getAPI() {
          * Set fill color with decorator pattern - tracks previous value. If no values are provided,
          * it will set the fill color to the previous color on the stack, until the stack is empty. Then
          * it will set to the default color.
-         * @param {number|string} r - Red value (0-1) or hex string E.g. "#da7d12"
+         * @param {number|string} r - Red value (0-1) or CSS color string E.g. "#da7d12"
          * @param {number|string} g - Green value (0-1) 
          * @param {number|string} b - Red value (0-1)
          * @param {number|string} a - Alpha value (0-1)
          * @returns {Object} Returns this for chaining
          */
-        fillColor: (r, g = null, b = null, { a = 1 } = {}) => {
+        fillColor: (r, g = null, b = null, a = 1) => {
             const f = Util.getColor(r, g, b, a);
             let same = false;
             if (f) {
@@ -264,7 +329,7 @@ export default function getAPI() {
             }
 
             if (!same)
-                context.addInstruction(`${VECTOR_IL.FILL} ${state.currentFillColor}`);
+                context.addInstruction(`${IL.FILL} ${state.currentFillColor}`);
             
             return context.API;
         },
@@ -277,11 +342,20 @@ export default function getAPI() {
             return state.currentFillColor;
         },
 
-        setFillColor: (r, g = null, b = null, { a = 1 } = {}) => {
+        /**
+         * Set the fill color, overriding the value on the stack and
+         * not modifying the stack.
+         * @param {number|String} r - Color string or red component
+         * @param {number} g - Green component
+         * @param {number} b - Blue component
+         * @param {number} a - Alpha component
+         * @returns {Object} This for chaining
+         */
+        setFillColor: (r, g = null, b = null, a = 1) => {
             const f = Util.getColor(r, g, b, a);
             if (f !== state.currentFillColor) {
                 state.currentFillColor = f;
-                context.addInstruction(`${VECTOR_IL.FILL} ${f}`);
+                context.addInstruction(`${IL.FILL} ${f}`);
             }
             return context.API;
         },
@@ -293,12 +367,68 @@ export default function getAPI() {
         resetFillColor: () => {
             state.currentFillColor = Constants.VECTOR_DEFAULTS.FILL_COLOR;
             state.previousFillColor = [];
-            context.addInstruction(`${VECTOR_IL.FILL} ${state.currentFillColor}`);
+            context.addInstruction(`${IL.FILL} ${state.currentFillColor}`);
             return context.API;
         },
 
         /**
-         * Set line width with decorator pattern - tracks previous value.
+         * Set the raster font name - tracks previous value. If no values are provided,
+         * it will set the font name to the previous name on the stack, until the stack is empty. Then
+         * it will set to the default font name.
+         * @param {String} fontName - The name of the font
+         * @returns {Object} Returns this for chaining
+         */
+        font: (fontName) => {
+            let same = false;
+            if (fontName) {
+                if (fontName === state.currentFont) same = true;
+                state.previousFont.push(state.currentFont);
+                state.currentFont = fontName;
+            } else if (!fontName) {
+                state.currentFont = state.previousFont.length > 0 ? state.previousFont.pop() : Constants.RASTER_DEFAULTS.FONT_NAME;
+            }
+
+            if (!same)
+                context.addInstruction(`${IL.FONT} ${state.currentFont}`);
+            
+            return context.API;
+        },
+        
+        /**
+         * Get the current font
+         * @returns {String} The current font
+         */
+        getFont: () => {
+            return state.currentFont;
+        },
+
+        /**
+         * Set the raster font name, overriding the value on the stack and
+         * not modifying the stack.
+         * @param {String} fontName - The font name
+         * @returns {Object} This for chaining
+         */
+        setFont: function (fontName) {
+            if (fontName !== state.currentFont) {
+                state.currentFont = fontName;
+                context.addInstruction(`${IL.FONT} ${fontName}`);
+            }
+            return context.API;
+        },
+        
+        /**
+         * Reset fill color to default color and reset memory stack.
+         * @returns {Object} Returns this for chaining
+         */
+        resetFont: () => {
+            state.currentFont = Constants.RASTER_DEFAULTS.FONT_NAME;
+            state.previousFont = [];
+            context.addInstruction(`${IL.FONT} ${fontName}`);
+            return context.API;
+        },        
+
+        /**
+         * Set line (stroke) width with decorator pattern - tracks previous value.
          * @param {number} w - Line thickness in pixels. If not provided, restoresd the previous line with.
          * @returns {Object} Returns this for chaining
          */
@@ -314,60 +444,66 @@ export default function getAPI() {
 
             // Add width instruction
             if (!same)
-                context.addInstruction(`${VECTOR_IL.WIDTH} ${state.currentWidth}`);
+                context.addInstruction(`${IL.WIDTH} ${state.currentWidth}`);
             
             return context.API;
         },
 
         /**
-         * Get the current context stroke width
+         * Get the current line (stroke) width
          * @returns {number} The line width
          */
         getWidth: () => {
             return state.currentWidth;
         },
 
+        /**
+         * Set the current line (stroke) width, overriding the value on the stack and
+         * not modifying the stack.
+         * @param {number} w 
+         * @returns {Object} This for chaining
+         */
         setWidth: (w) => {
             if (w !== state.currenWidth) {
                 state.currentWidth = w;
-                context.addInstruction(`${VECTOR_IL.WIDTH} ${w}`);
+                context.addInstruction(`${IL.WIDTH} ${w}`);
             }
             return context.API;
         },
         
         /**
-         * Reset line width to default width and reset memory stack.
+         * Reset line (strok) width to default width and reset memory stack.
          * @returns {Object} Returns this for chaining
          */
         resetWidth: () => {
             state.currentWidth = Constants.VECTOR_DEFAULTS.LINE_WIDTH;
             state.previousWidth = [];
-            context.addInstruction(`${VECTOR_IL.WIDTH} ${state.currentWidth}`);
+            context.addInstruction(`${IL.WIDTH} ${state.currentWidth}`);
             return context.API;
         },
         
         /**
          * Set font size with decorator pattern - tracks previous value.
-         * @param {number} s - Font size in pixels. If empty, pops the last font size off the stack
+         * @param {number} size - Font size in pixels. If empty, pops the last font size off the stack
          * @returns {Object} Returns this for chaining
          */
-        fontSize: (s) => {
+        fontSize: (size) => {
             let same = false;
             let last = state.currentFontSize;
-            let next = Math.max(0, Math.min(s, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
-            if (s && s > 0 && s <= Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE) {
-                if (s === state.currentFontSize) same = true;
+            let next = Math.max(0, Math.min(size, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
+            if (size && size > 0 && size <= Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE) {
+                if (size === state.currentFontSize) same = true;
                 state.previousFontSize.push(state.currentFontSize);
-                next = s;
+                next = size;
                 state.currentFontSize = next;
-            } else if (!s) {
+            } else if (!size) {
                 next = state.previousFontSize.length > 0 ? state.previousFontSize.pop() : Constants.VECTOR_DEFAULTS.FONT_SIZE;
                 state.currentFontSize = next;
             }
 
             // Add fontsize instruction
             if (!same) {
-                context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+                context.addInstruction(`${IL.FONTSIZE} ${next} ${last}`);
             }
             return context.API;
         },
@@ -380,11 +516,17 @@ export default function getAPI() {
             return state.currentFontSize;
         },
 
+        /**
+         * Set the font size, overriding the value on the stack and
+         * not modifying the stack.
+         * @param {number} s - The font size
+         * @returns 
+         */
         setFontSize: (s) => {
             let last = state.currentFontSize;
             let next = Math.max(0, Math.min(s, Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE));
             if (next !== state.currentFontSize) {
-                context.addInstruction(`${VECTOR_IL.FONTSIZE} ${next} ${last}`);
+                context.addInstruction(`${IL.FONTSIZE} ${next} ${last}`);
             }
             return context.API;
         },
@@ -397,7 +539,7 @@ export default function getAPI() {
             const prev = state.currentFontSize;
             state.currentFontSize = Constants.VECTOR_DEFAULTS.FONT_SIZE;
             state.previousFontSize = [];
-            context.addInstruction(`${VECTOR_IL.FONTSIZE} ${state.currentFontSize} ${prev}`);
+            context.addInstruction(`${IL.FONTSIZE} ${state.currentFontSize} ${prev}`);
             return context.API;
         },
         
@@ -407,11 +549,12 @@ export default function getAPI() {
         /**
          * Perform a "carriage return", advancing the cursor down one line and resetting the
          * cursor back to the value in index 0 of <code>context.cursorLimits</code>.
+         * @returns {Object} This for chaining
          */
         carriageReturn: () => {
             const oldC = context.API.getCursor()
-            const newC = {x: state.limits.left, y: state.cursor.y + context.lineHeight};
-            context.API.translate(newC.x - oldC.x, newC.y - oldC.y);
+            const newC = [state.margins.left, state.cursor.y + context.lineHeight];
+            context.API.translate(newC[0] - oldC.x, newC[1] - oldC.y);
             return context.API;
         },
 
@@ -435,11 +578,10 @@ export default function getAPI() {
 
         /**
          * Sets the cursor X & Y simultaneously
-         * @param {Object} coordinates 
-         * @param {number} coordinates.x - X coordinate in screen space
-         * @param {number} coordinates.y - Y coordinate in screen space
+         * @param {number} x - X coordinate in screen space
+         * @param {number} y - Y coordinate in screen space
          */
-        cursor: ({x, y}) => {
+        cursor: (x, y) => {
             state.cursor.x = x;
             state.cursor.y = y;
             return context.API;
@@ -451,13 +593,13 @@ export default function getAPI() {
          * @param {number} right 
          */
         setCursorMargins: (left, right) => {
-            state.limits.left = left;
-            state.limits.right = right;
+            state.margins.left = left;
+            state.margins.right = right;
         },
 
         /**
-         * Get the cursor position: {x, y}
-         * @returns {Object} x & y - The X and Y position of the cursor
+         * Get the cursor position: [x, y]
+         * @returns {Array<number>} The X and Y position of the cursor
          */
         getCursor: () => {
             return state.cursor;
@@ -465,8 +607,8 @@ export default function getAPI() {
 
         /**
          * Moves the cursor relatively along each axis.
-         * @param {number} x - Relative X to add to the cursor X
-         * @param {number} y - Relative Y to add to the cursor Y
+         * @param {number} deltaX - Relative X to add to the cursor X
+         * @param {number} deltaY - Relative Y to add to the cursor Y
          */
         cursorDelta: (deltaX, deltaY) => {
             state.cursor.x += deltaX;
@@ -479,13 +621,12 @@ export default function getAPI() {
 
         /**
          * Draw a point at specified coordinates
-         * @param {Array} [pos=[x, y]] - Point coordinates [x, y] in screen space
-         * @param {Object} [options] - Optional settings
-         * @param {string|boolean} [options.round] - Round to nearest integer coordinate
-         * @param {string|boolean} [options.square] - Use square (instead of round) coordinates
+         * @param {number} x - X coordinate
+         * @param {number} y - Y coordinate
+         * @param {boolean} round - `true` draws the point as a circle, `false` (default) as a rectangle.
          * @returns {Object} Returns this for chaining
          */
-        point: (x, y, round) => {
+        point: (x, y, round = false) => {
             // Convert to screen coordinates if using world coordinates
             let screenPos = [x, y];
             
@@ -503,7 +644,7 @@ export default function getAPI() {
             let pointX = Math.round(screenPos[0]);
             let pointY = Math.round(screenPos[1]);
             
-            context.addInstruction(`${VECTOR_IL.POINT} ${pointX} ${pointY} ${state.currentWidth} ${round ? 1 : 0}`);
+            context.addInstruction(`${IL.POINT} ${pointX} ${pointY} ${state.currentWidth} ${round ? 1 : 0}`);
             return context.API;
         },
         
@@ -511,34 +652,34 @@ export default function getAPI() {
          * Draw a line between two points (absolute coordinates)
          * @param {number} x - X coordinate for the start point in screen/world space
          * @param {number} y - Y coordinate for the start point in screen/world space
-         * @param {number} ex - X coordinate for the end point in screen/world space
-         * @param {number} ey - Y coordinate for the end point in screen/world space
+         * @param {number} eX - X coordinate for the end point in screen/world space
+         * @param {number} eY - Y coordinate for the end point in screen/world space
          * @returns {Object} Returns this for chaining
          */
-        line: (x, y, ex, ey) => {
+        line: (x, y, eX, ey) => {
             // Convert to screen coordinates if using world coordinates
             let startScreen = [x, y];
-            let endScreen = [ex, ey];
+            let endScreen = [eX, ey];
             
             if (context.enableCulling) {
                 const startObj = context.worldToScreen(x, y);
-                const endObj = context.worldToScreen(ex, ey);
+                const endObj = context.worldToScreen(eX, ey);
                 
                 if (startObj && endObj) {
-                startScreen = startObj;
-                endScreen = endObj;
+                    startScreen = startObj;
+                    endScreen = endObj;
                 } else {
-                // Start or end point outside view bounds - skip rendering
-                return context.API;
+                    // Start or end point outside view bounds - should we clamp to the boundary?
+                    return context.API;
                 }
             }
             
-            context.addInstruction(`${VECTOR_IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
+            context.addInstruction(`${IL.LINE} ${startScreen[0]} ${startScreen[1]} ${endScreen[0]} ${endScreen[1]}`);
             return context.API;
         },
 
         /**
-         * 
+         * Draw a line segment, starting at the end of the last drawing operation.
          * @param {number} x - The x coordinate for the line 
          * @param {number} y - The y coordinate for the line 
          * @returns {Object} Returns this for chaining
@@ -558,36 +699,37 @@ export default function getAPI() {
                 }
             }
 
-            context.addInstruction(`${VECTOR_IL.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
+            context.addInstruction(`${IL.LINEREL} ${startScreen[0]} ${startScreen[1]}`);
             return context.API;
         },
         
         /**
          * Draw a line segment container for grouped lines
          * @param {boolean} filled - Closed line segment will be filled with fill color
-         * @param {Array} [start=[x, y]] - Start point in screen/world space
-         * @param {...Array} [point=[x, y]] - Follow on points in screen/world space
+         * @param {number} x - The starting X coordinate for the line segment
+         * @param {number} y - The starting Y coordinate for the line segment
+         * @param {...Array<number>} coords - Points in screen/world space
          * @returns {Object} Returns this for chaining
          */
-        lineSegment: (filled, [x1, y1], ... coords) => {
-            context.addInstruction(`${VECTOR_IL.LINESEG} ${filled ? '1' : '0'}`);
+        lineSegment: (filled, x, y, ... coords) => {
+            context.addInstruction(`${IL.LINESEG} ${filled ? '1' : '0'}`);
             
             // first line of segment
             const lineTo = coords.shift();
-            context.API.line(x1, y1, lineTo[0], lineTo[1]);
+            context.API.line(x, y, lineTo[0], lineTo[1]);
 
             // run out the remainder of the coordinates in the line segment
             for (let rel of coords) {
                 context.API.lineRel(rel[0], rel[1]);
             }
             
-            context.addInstruction(`${VECTOR_IL.ENDSEG}`);
+            context.addInstruction(`${IL.ENDSEG}`);
             return context.API;
         },
 
         /**
-         * Helper to generate the appropriate structure for quadratic curves
-         * to use with the <code>curve()</code> method.
+         * Helper generates the appropriate structure for **Quadratic curves**
+         * to use with the {@link #curve} method.
          * @param {number} controlX - The X control point 
          * @param {number} controlY - The Y control point
          * @param {number} endX - The X end point of the curve
@@ -599,8 +741,8 @@ export default function getAPI() {
         },
 
         /**
-         * Helper to generate the appropriate structure for Bezier curves
-         * to use with the <code>curve()</code> method.
+         * Helper generates the appropriate structure for **Bezier curves**
+         * to use with the {@link #curve} method.
          * @param {number} controlX - The X control point 
          * @param {number} controlY - The Y control point
          * @param {number} endX - The X end point of the curve
@@ -616,31 +758,33 @@ export default function getAPI() {
          * filled or not. See the helper methods for generating points for the curve.
          * {@link #quadratic} and {@link #bezier}
          * @param {boolean} filled - True to fill the curve
-         * @param {Array<number>} [x1, y1] - The starting point of the curve 
+         * @param {number} x - The starting X coordinate of the curve 
+         * @param {number} y - The starting Y coordinate of the curve 
          * @param  {...any} coords - The remaining coordinates of the curve expressed as 
          *                           either 4-element (quadratic) or 6-element (bezier) arrays
+         *                           using the two helper methods.
          * @returns {Object} Returns the API for chaining
          */
-        curve: (filled, [x1, y1], ... coords) => {
-            context.addInstruction(`${VECTOR_IL.CURVE} ${filled ? '1' : '0'} ${x1} ${y1}`);
+        curve: (filled, x, y, ... coords) => {
+            context.addInstruction(`${IL.CURVE} ${filled ? '1' : '0'} ${x} ${y}`);
             
             // the rest of the coordinates need to be either 4 coordinates (quadratic) or 6 coordinates (bezier)
             for (let rel of coords) {
                 if (rel.length === 4) {
-                    context.addInstruction(`${VECTOR_IL.QUAD} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]}`)
+                    context.addInstruction(`${IL.QUAD} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]}`)
                 } else if (rel.length === 6) {
-                    context.addInstruction(`${VECTOR_IL.BEZIER} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]} ${rel[4]} ${rel[5]} ${rel[6]}`);
+                    context.addInstruction(`${IL.BEZIER} ${rel[0]} ${rel[1]} ${rel[2]} ${rel[3]} ${rel[4]} ${rel[5]} ${rel[6]}`);
                 } else {
                     throw new RenderContextError(this, "Invalid number of coordinates for a curve (4 or 6)");
                 }
             }
             
-            context.addInstruction(`${VECTOR_IL.ENDCURVE}`);
+            context.addInstruction(`${IL.ENDCURVE}`);
             return context.API;
         },
         
         /**
-         * Draw an arc, or arc segment
+         * Draw an arc (ellipse), or arc segment.
          * @param {number} cx - Center X coordinate in screen space
          * @param {number} cy - Center Y coordinate in screen space
          * @param {number} rX - X radius of the ellipse
@@ -657,14 +801,14 @@ export default function getAPI() {
                 const startObj = context.worldToScreen(cx, cy);
                 
                 if (startObj) {
-                center = [startObj[0], startObj[1]];
+                    center = [startObj[0], startObj[1]];
                 } else {
-                // Center is outside the context
-                return context.API;
+                    // Center is outside the context
+                    return context.API;
                 }
             }
 
-            context.addInstruction(`${VECTOR_IL.ARC} ${cx} ${cy} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
+            context.addInstruction(`${IL.ARC} ${center[0]} ${center[1]} ${rX} ${rY} ${startAngle} ${endAngle} ${filled ? 1 : 0}`);
             return context.API;
         },
 
@@ -701,8 +845,7 @@ export default function getAPI() {
          */
         rectangle: (x1, y1, x2, y2, filled) => {
             // Convert to absolute coordinates from top-left corner
-            context.API.lineSegment(filled, 
-                [x1, y1],
+            context.API.lineSegment(filled, x1, y1,
                 [x2, y1],
                 [x2, y2],
                 [x1, y2],
@@ -725,7 +868,7 @@ export default function getAPI() {
         
         /**
          * Draw a polygon with variable vertices
-         * @param {...Array} vertices - Array of [x, y] vertex coordinates
+         * @param {...Array<number>} vertices - Array of [x, y] vertex coordinates
          * @returns {Object} Returns this for chaining
          */
         polygon: (filled, ...vertices) => {
@@ -740,7 +883,7 @@ export default function getAPI() {
             restVertices.push(firstVertex);
 
             // Draw each edge of the polygon
-            context.API.lineSegment(filled, firstVertex, ...restVertices);
+            context.API.lineSegment(filled, firstVertex[0], firstVertex[1], ...restVertices);
             return context.API;
         },
         
@@ -766,13 +909,55 @@ export default function getAPI() {
             return context.API;
         },
 
+        //-----------------------------------
+        // Complex types
+
+        /**
+         * Render a compiled vector shape to the context.
+         * @param {number} opaqueId - The shape opaque Id returned from the Assembler
+         * @returns 
+         */
         shape: (opaqueId) => {
-            context.addInstruction(`${VECTOR_IL.SHAPE} ${opaqueId}`);
+            context.addInstruction(`${IL.SHAPE} ${opaqueId}`);
             return context.API;
         },
 
         /**
-         * Text rendering method - generates IL instructions for text content with formatting
+         * Draw a sprite
+         * 
+         * @param {Sprite} sprite - The sprite to render
+         * @param {number} x - The x coordinate
+         * @param {number} y - The y coordinate 
+         * @returns 
+         */
+        sprite: (sprite, x, y) => {
+            context.addInstruction(`${IL.SPRITE} ${sprite.opaqueId} ${x} ${y}`);
+            return context.API;
+        },
+
+        /**
+         * Draw a tile. Tiles are either static, or have animation, but no states.
+         * 
+         * @param {Number} opaqueId - The Id representing the Tile as returned from the assembler 
+         */
+        tile: (tile, x, y) => {
+            context.addInstruction(`${IL.TILE} ${tile.opaqueId} ${x} ${y}`);
+            return context.API;
+        },
+
+        /**
+         * Draws a tilemap. TileMaps are a rectangular grid of proportionally-sized tiles.
+         * 
+         * @param {Number} opaqueId - The Id representing the TileMap as returned from the assembler
+         */
+        tileMap: (tileMap, x, y) => {
+            context.addInstruction(`${IL.TILEMAP} ${tileMap.opaqueId} ${x} ${y}`);
+            return context.API;
+        },
+
+        /**
+         * Vector text rendering. Uses internal line drawing methods to generate a vector-style
+         * font. Supports various formatting options and colorizing.
          * @param {string} text - Text content to render
          * @param {Object} options - Configuration options
          * @param {Array<number>} textSize - After the text is processed this array will be populated with the overall size of the text rendered.
@@ -782,7 +967,7 @@ export default function getAPI() {
          * @param {Object} [options.formatting] - Initial formatting states: {bold, italics, underline}
          * @returns {Object} Returns this for chaining
          */
-        text(text, options, textSize = [0, 0]) {
+        vecText(text, options, textSize = [0, 0]) {
             // Validate input
             if (typeof text !== 'string' || text.length === 0) {
                 return context.API;
@@ -828,7 +1013,66 @@ export default function getAPI() {
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text to generate render instructions
-            const result = textParser.parse(text);
+            const result = textParsers.vector.parse(text);
+            textSize[0] = result.width;
+            textSize[1] = result.height;
+
+            return context.API;
+        },
+
+        /**
+         * Raster text rendering. This uses the native surface (Canvas, WebGL, SVG) text rendering.
+         * @param {string} text - Text content to render
+         * @param {Object} style - Text styling options
+         * @returns {Object} Returns this for chaining
+         */
+        text(text, style = {}) {
+            // Validate input
+            if (typeof text !== 'string' || text.length === 0) {
+                return context.API;
+            }
+
+            options = { ...{ formatting: { bold: false, italics: false, underline: false } }, ...options };
+
+            context.API.uniformScale(1.5);
+
+            // set the cursor position from world transform
+            const currentWorldTransform = Matrix2d.identity();
+            context.API.cursorX(currentWorldTransform.e);
+            context.API.cursorY(currentWorldTransform.f);
+            context.API.setCursorMargins(currentWorldTransform.e, context.world.width - currentWorldTransform.e);
+
+            // Apply initial color if provided
+            if (options.color && options.color !== context.lineColor) {
+                if (typeof options.color === 'string') {
+                    context.API.color(options.color);
+                } else if (typeof options.color === 'number') {
+                    const r8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
+                    const g8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
+                    const b8 = Math.round(options.color * 255).toString(16).padStart(2, '0');
+                    context.API.color(`#${r8}${g8}${b8}`);
+                }
+            }
+
+            // Apply initial font size if provided
+            if (options.fontSize)
+                context.API.fontSize(options.fontSize);
+            
+            if (options.lineWidth) 
+                context.API.width(options.lineWidth || context.API.getWidth());
+            
+
+            if (options.formatting.bold)
+                context.API.width(Constants.VECTOR_DEFAULTS.TEXT_BOLD);
+
+            if (options.formatting.italics)
+                this.API.skew(-12);
+
+            if (options.formatting.underline) {}
+            //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
+
+            // Process text to generate render instructions
+            const result = textParsers.raster.parse(text);
             textSize[0] = result.width;
             textSize[1] = result.height;
 

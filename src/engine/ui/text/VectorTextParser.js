@@ -1,5 +1,5 @@
 import Constants from '../../Constants.js';
-import { IL as VECTOR_IL } from '../../rendering/assemblers/IntermediateLanguages.js';
+import IL from '../../rendering/assemblers/IntermediateLanguages.js';
 import CHARACTER_MAP from './vector_character_set.js';
 import Context from '../../Context.js';
 import TextParser from './TextParser.js';
@@ -105,10 +105,10 @@ export default class VectorTextParser extends TextParser {
                     if (char !== ' ') {
                         const shapeId = this.renderContext.renderer.compile(ci.instructions, `CHAR '${char}'`);
                         glyphCache.set(char, shapeId);
-                        this.renderContext.addInstruction(`${VECTOR_IL.SHAPE} ${shapeId}`);
+                        this.renderContext.addInstruction(`${IL.SHAPE} ${shapeId}`);
                     }
                 } else {
-                    this.renderContext.addInstruction(`${VECTOR_IL.SHAPE} ${glyphCache.get(char)}`);
+                    this.renderContext.addInstruction(`${IL.SHAPE} ${glyphCache.get(char)}`);
                 }
             } else {
                 ci.instructions.forEach(inst => {
@@ -193,19 +193,19 @@ export default class VectorTextParser extends TextParser {
             const halfHeight = Math.round(charHeight * 0.5);
 
             if (ctx.debug && ctx.debugOpts.charOrigin)
-                instructions.push(`${VECTOR_IL.POINT} 0 0`);
+                instructions.push(`${IL.POINT} 0 0`);
 
-            instructions.push(VECTOR_IL.PUSH);
-            instructions.push(`${VECTOR_IL.TRANSLATE} 0 -10`);
-            instructions.push(`${VECTOR_IL.LINESEG} 0`);
+            instructions.push(IL.PUSH);
+            instructions.push(`${IL.TRANSLATE} 0 -10`);
+            instructions.push(`${IL.LINESEG} 0`);
             for (let j = 0; j < points.length; j++) {
                 const point = points[j];
                 const next = j+1 < points.length ? points[j + 1] : [0,0];
 
                 if (point === null) {
                     // End of line segment
-                    instructions.push(VECTOR_IL.ENDSEG);
-                    instructions.push(`${VECTOR_IL.LINESEG} 0`);
+                    instructions.push(IL.ENDSEG);
+                    instructions.push(`${IL.LINESEG} 0`);
                     first = true;    
                     continue;
                 }
@@ -215,15 +215,15 @@ export default class VectorTextParser extends TextParser {
                 if (first) {                
                     // Add first 2 points with initial line instruction
                     const [ex, ey] = next != null ? [next[0] + halfWidth, next[1] + halfHeight] : [0,0];
-                    instructions.push(`${VECTOR_IL.LINE} ${x} ${y} ${ex} ${ey}`); // Invert Y for screen coordinates
+                    instructions.push(`${IL.LINE} ${x} ${y} ${ex} ${ey}`); // Invert Y for screen coordinates
                     first = false;
                     j++;
                 } else {
-                    instructions.push(`${VECTOR_IL.LINEREL} ${x} ${y}`);
+                    instructions.push(`${IL.LINEREL} ${x} ${y}`);
                 }
             }
-            instructions.push(VECTOR_IL.ENDSEG);
-            instructions.push(VECTOR_IL.POP);
+            instructions.push(IL.ENDSEG);
+            instructions.push(IL.POP);
 
             return {
                 instructions: instructions,

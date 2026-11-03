@@ -5,7 +5,7 @@
 import Engine from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import Config from '../../core/Config.js';
-import Renderer from '../../rendering/renderers/Renderer.js';
+import Renderer from '../renderers/Renderer.js';
 import RenderPart from '../../parts/render/RenderPart.js';
 
 class RenderContextConfig extends Config {
@@ -114,7 +114,7 @@ export {
  * This serves as the contract that all render contexts (VectorRenderContext, RasterRenderContext)
  * must implement. Actual implementations should extend this class or follow its interface.
  */
-export default class RenderContext {
+export default class ContextBase {
   #opts = new RenderContextConfig();
   #renderer = null;
   #world = null;

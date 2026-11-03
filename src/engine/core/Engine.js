@@ -11,7 +11,7 @@ import RenderEngineError from './RenderEngineError.js';
 import { EngineConfig } from './Config.js';
 import GameWorld from './GameWorld.js'
 import EventEngine from './EventEngine.js'
-import RenderContext from '../rendering/contexts/RenderContext.js';
+import RenderContext from '../rendering/context/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine, { ParticleEngineConfig, ParticleEngineThreadingConfig } from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';

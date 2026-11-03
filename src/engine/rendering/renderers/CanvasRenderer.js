@@ -4,9 +4,8 @@ import { RendererError } from './Renderer.js';
 import Renderer from './Renderer.js';
 import Engine from '../../core/Engine.js';
 import { RendererConfig } from './Renderer.js';
-import CanvasVectorAssembler from '../assemblers/canvas/CanvasVectorAssembler.js';
-import CanvasRasterAssembler from '../assemblers/canvas/CanvasRasterAssembler.js';
-import { IL as VECTOR_IL } from '../assemblers/IntermediateLanguages.js';
+import CanvasAssembler from '../assemblers/CanvasAssembler.js';
+import IL from '../assemblers/IntermediateLanguages.js';
 
 import { sysText } from '../../ui/text/RasterTextParser.js'; 
 
@@ -65,6 +64,8 @@ export default class CanvasRenderer extends Renderer {
         this.config.formatting.set('b', false);
         this.config.formatting.set('i', false);
         this.config.formatting.set('u', false);
+
+        this.assembler = CanvasAssembler.getInstance();
     }
 
     get offscreen() {
@@ -80,20 +81,6 @@ export default class CanvasRenderer extends Renderer {
 
     get blitter() {
         return this.#blit;
-    }
-
-    get assembler() {
-        if (!super.assembler) {
-            if (this.renderContext.constructor.name === 'VectorRenderContext') {
-                super.assembler = CanvasVectorAssembler.getInstance();
-            } else if (this.renderContext.constructor.name === 'RasterRenderContext') {
-                super.assembler = CanvasRasterAssembler.getInstance();
-            } else {
-                throw new RenderEngineError("Unsupported render context type");
-            }
-        }
-
-        return super.assembler;
     }
 
     set pathId(id) {
@@ -301,7 +288,6 @@ export default class CanvasRenderer extends Renderer {
      */
     #immediate(instruction, time, deltaTime) {
         let fillSeg = 0;
-        const vector = VECTOR_IL;
         const parts = instruction.trim().split(' ');
         const {operand, strArgs} = {operand: parts.shift(), strArgs: parts};
         // coerce args
@@ -318,23 +304,23 @@ export default class CanvasRenderer extends Renderer {
                 }) : [];
         
         switch (operand) {
-            case vector.SYSTEXT:
+            case IL.SYSTEXT:
                 sysText(args.join(' '), this.surface);
                 break;
 
             //-----------------------------------
             // State modifiers
 
-            case vector.COLOR:
+            case IL.COLOR:
                 this.surface.strokeStyle = args[0];
                 break;
-            case vector.FILL:
+            case IL.FILL:
                 this.surface.fillStyle = args[0];
                 break;
-            case vector.WIDTH:
+            case IL.WIDTH:
                 this.surface.lineWidth = args[0];
                 break;
-            case vector.FONTSIZE:
+            case IL.FONTSIZE:
                 const current = args[0] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
                 const last = args[1] / Constants.VECTOR_DEFAULTS.MAX_FONT_SIZE;
                 const delta = (current / last);
@@ -345,7 +331,7 @@ export default class CanvasRenderer extends Renderer {
             //--------------------------------
             // Imperative Drawing
 
-            case vector.POINT:
+            case IL.POINT:
                 // this little hack propagates the stroke style to the fill style, ONLY for the raster renderer
                 if (args[4] && args[4] === 1)
                     this.surface.fillStyle = this.surface.strokeStyle;
@@ -357,17 +343,17 @@ export default class CanvasRenderer extends Renderer {
                 }
                 this.surface.fill();
                 break;
-            case vector.LINESEG:
+            case IL.LINESEG:
                 this.path = new Path2D;
                 fillSeg = args[0];
                 break;
-            case vector.CURVE:
+            case IL.CURVE:
                 this.path = new Path2D;
                 this.path.moveTo(args[1], args[2]);
                 fillSeg = args[0];
                 break;
-            case vector.ENDCURVE:
-            case vector.ENDSEG:
+            case IL.ENDCURVE:
+            case IL.ENDSEG:
                 if (fillSeg === 1) {
                     this.surface.fill(this.path);
                 } else {
@@ -376,8 +362,8 @@ export default class CanvasRenderer extends Renderer {
                 fillSeg = 0; // Reset fill to false after drawing the path
                 this.path = null;
                 break;
-            case vector.LINE:
-            case vector.LINEREL:
+            case IL.LINE:
+            case IL.LINEREL:
                 if (this.path) {
                     if (args.length === 4) {
                         this.path.moveTo(args[0], args[1]);
@@ -395,8 +381,8 @@ export default class CanvasRenderer extends Renderer {
                     this.surface.stroke();
                 }
                 break;
-            case vector.QUAD:
-            case vector.BEZIER:
+            case IL.QUAD:
+            case IL.BEZIER:
                 if (this.path) {
                     if (args.length === 4) {
                         this.path.quadraticCurveTo(args[0], args[1], args[2], args[3]);
@@ -407,7 +393,7 @@ export default class CanvasRenderer extends Renderer {
                     throw new RendererError(this, 'Cannot draw a curve without a path!');
                 }
                 break;
-            case vector.ARC:
+            case IL.ARC:
                 this.surface.beginPath();
                 this.surface.ellipse(args[0], args[1], args[2], args[3], 0, args[4], args[5]);
                 if (args[6] === 1) {
@@ -420,58 +406,58 @@ export default class CanvasRenderer extends Renderer {
             //-----------------------------
             // Shape Drawing
 
-            case vector.SHAPE:
+            case IL.SHAPE:
                 this.renderCompiledShape(args[0], time, deltaTime);
                 break;
 
-            case vector.SPRITE:
+            case IL.SPRITE:
                 this.renderSprite(args[0], args[1], args[2], time, deltaTime);
                 break;
 
-            case vector.TILE:
+            case IL.TILE:
                 this.renderSprite(args[0], args[1], args[2], time, deltaTime);
                 break;
 
-            case vector.TILEMAP:
+            case IL.TILEMAP:
                 this.renderSprite(args[0], args[1], args[2], time, deltaTime);
                 break;
 
             //--------------------------------------------
             // Transformations
 
-            case vector.TRANSFORM:
+            case IL.TRANSFORM:
                 this.surface.transform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
-            case vector.ABS_TRANSFORM:
+            case IL.ABS_TRANSFORM:
                 this.surface.setTransform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
-            case vector.PUSH:
+            case IL.PUSH:
                 this.surface.save();
                 if (args.length === 6)
                     this.surface.transform(args[0], args[1], args[2], args[3], args[4], args[5]);
                 break;
-            case vector.POP:
+            case IL.POP:
                 this.surface.restore();
                 break;
-            case vector.XFORM_RESET:
+            case IL.XFORM_RESET:
                 this.surface.resetTransform();
                 break;                
-            case vector.MOVETO:
+            case IL.MOVETO:
                 this.surface.moveTo(args[0], args[1]);
                 break;
-            case vector.TRANSLATE:
+            case IL.TRANSLATE:
                 this.surface.translate(args[0], args[1]);
                 break;
-            case vector.ROTATE:
+            case IL.ROTATE:
                 this.surface.rotate(args[0]);
                 break;
-            case vector.SCALE:
+            case IL.SCALE:
                 this.surface.scale(args[0], args[1]);
                 break;
-            case vector.USCALE:
+            case IL.USCALE:
                 this.surface.scale(args[0], args[0]);
                 break;
-            case vector.SKEW:
+            case IL.SKEW:
                 this.surface.setTransform(this.surface.getTransform().skewXSelf(args[0]));
                 break;
 
@@ -493,23 +479,4 @@ export default class CanvasRenderer extends Renderer {
         this.#path = null;
         super.destroy();
     }
-
-    //-------------------------------
-    // Properties
-    //-------------------------------
-
-    get properties() {
-        return {
-            config: this.config,
-            doubleBuffered: this.isDoubleBuffered,
-            useCompiler: this.isUseCompiler,
-
-            blitter: this.blitter,
-            _offscreenCanvas: this.#offscreen,
-            _htmlElement: this.#htmlElement,
-            _pathId: this.#pathId,
-            _path: this.#path
-        };
-    }
-    
 }
