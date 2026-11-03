@@ -66,10 +66,12 @@ export default class Slider extends Config {
             input = slider.querySelector('input.slider-input');
 
         const barSize = this.style === Slider.STYLE.HORIZONTAL ? bar.clientWidth : bar.clientHeight;
-        const offset = this.style === Slider.STYLE.HORIZONTAL ? bar.offsetLeft : bar.offsetTop;
+        const thumbSize = this.style === Slider.STYLE.HORIZONTAL ? thumb.clientWidth : thumb.clientHeight;
 
         // scale it to a percentage of the value
-        let thumbPos = offset + Math.round(this.value / barSize);
+        const range = this.maxValue - this.minValue;
+        const scalar = this.#value / range;
+        const thumbPos = Math.floor(barSize * scalar) - (thumbSize / 2);
 
         if (this.style === Slider.STYLE.HORIZONTAL)
             thumb.style.left = `${thumbPos}px`;
@@ -77,7 +79,7 @@ export default class Slider extends Config {
             thumb.style.top = `${thumbPos}px`;
 
         // update the input
-        input.value = this.value;
+        input.value = Math.floor(this.value);
     }
 
     async build(parentEl) {
@@ -162,8 +164,8 @@ export default class Slider extends Config {
     }
 
     #hookEvents(slider) {
-        if (this.withInput) {
-            slider.querySelector('div.slider-input').addEventListener('change', (e) => {
+        if (this.display.withInput) {
+            slider.querySelector('input.slider-input').addEventListener('change', (e) => {
                 const value = parseFloat(e.target.value);
                 if (!isNaN(value)) {
                     this.value = value;
@@ -175,7 +177,7 @@ export default class Slider extends Config {
             thumb = bar.querySelector('div.thumb');
         
         const $this = this;
-        const scalar = (this.maxValue - this.minValue) / bar.clientWidth;
+        const scalar = (this.maxValue - this.minValue) / (this.style === Slider.STYLE.HORIZONTAL ? bar.clientWidth : bar.clientHeight);
 
         bar.addEventListener('mousedown', e => {
             e.preventDefault = true;
@@ -192,13 +194,9 @@ export default class Slider extends Config {
             e.preventDefault = true;
 
             if ($this.style === Slider.STYLE.HORIZONTAL) {
-                const left = slider.offsetLeft + bar.offsetLeft;
-                const val = $this.dragThumb(left, left + bar.clientWidth, e.clientX);
-                $this.value = (val * scalar);
+                $this.value = $this.dragThumb(slider.offsetLeft + bar.offsetLeft, slider.offsetLeft + bar.offsetLeft + bar.clientWidth, e.clientX) * scalar;
             } else { 
-                const top = slider.offsetTop + bar.offsetTop;
-                const val = $this.dragThumb(top, top + bar.clientHeight, e.clientY);
-                $this.value = val * scalar;
+                $this.value = $this.dragThumb(slider.offsetTop + bar.offsetTop, slider.offsetTop + bar.offsetTop + bar.clientHeight, e.clientY) * scalar;
             }
         });
     }
@@ -222,7 +220,7 @@ export default class Slider extends Config {
             pos = Math.round(pos / this.step) * this.step;
         }
 
-        return pos;
+        return pos - low;
     }
 
     // override to get feeback from the slider

@@ -90,14 +90,18 @@ window.addEventListener('keypress', (event) => {
 const s = new Slider(document.body, {
     label: 'Particles Per Burst',
     type: Slider.TYPE.RANGE,
-    maxValue: 10000,
-    initialValue: 1000,
+    maxValue: 2000,
+    initialValue: 500,
     step: 100,
     display: {
         withInput: true,
         class: 'per-burst'
     }    
 });
+
+s.onSlide = (value) => {
+    pEffect.count = value;
+}
 
 // Start the render loop   
 RenderEngine.start();

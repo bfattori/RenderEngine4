@@ -1,3 +1,5 @@
+import { MathPool } from './Core.js';
+
 /**
  * @class Spark
  * @classdesc `Spark` is an extension of `DataView`, providing several extra methods to
@@ -71,7 +73,10 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec8(offset) {
-        return [this.getInt8(offset), this.getInt8(offset + 1)];
+        const vec = MathPool.getVecI8();
+        vec[0] = this.getInt8(offset);
+        vec[1] = this.getInt8(offset + 1);
+        return vec;
     }
 
     /**
@@ -90,7 +95,10 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU8(offset) {
-        return [this.getUint8(offset), this.getUint8(offset + 1)];
+        const vec = MathPool.getVecU8();
+        vec[0] = this.getUint8(offset);
+        vec[1] = this.getUint8(offset + 1);
+        return vec;
     }
 
     /**
@@ -109,7 +117,10 @@ export default class Spark extends DataView {
      * @returns {Int16Array} A 2-element array
      */
     getVec16(offset) {
-        return [this.getInt16(offset), this.getInt16(offset + 2)];
+        const vec = MathPool.getVecI16();
+        vec[0] = this.getInt16(offset);
+        vec[1] = this.getInt16(offset + 2);
+        return vec;
     }
 
     /**
@@ -128,7 +139,10 @@ export default class Spark extends DataView {
      * @returns {Uint16Array} A 2-element array
      */
     getVecU16(offset) {
-        return [this.getUint16(offset), this.getUint16(offset + 2)];
+        const vec = MathPool.getVecU16();
+        vec[0] = this.getUint16(offset);
+        vec[1] = this.getUint16(offset + 2);
+        return vec;
     }
 
     /**
@@ -147,7 +161,10 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec32(offset) {
-        return [this.getInt32(offset), this.getInt32(offset + 4)];
+        const vec = MathPool.getVecI32();
+        vec[0] = this.getInt32(offset);
+        vec[1] = this.getInt32(offset + 4);
+        return vec;
     }
 
     /**
@@ -166,7 +183,10 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU32(offset) {
-        return [this.getUint32(offset), this.getUint32(offset + 4)];
+        const vec = MathPool.getVecU32();
+        vec[0] = this.getUint32(offset);
+        vec[1] = this.getUint32(offset + 4);
+        return vec;
     }
 
     /**
@@ -185,7 +205,10 @@ export default class Spark extends DataView {
      * @returns {BigInt64Array} A 2-element array
      */
     getVec64(offset) {
-        return [this.getBigInt64(offset), this.getBigInt64(offset + 8)];
+        const vec = MathPool.getVecI64();
+        vec[0] = this.getBigInt64(offset);
+        vec[1] = this.getBigInt64(offset + 8);
+        return vec;
     }
 
     /**
@@ -204,7 +227,10 @@ export default class Spark extends DataView {
      * @returns {BigUint64Array} A 2-element array
      */
     getVecU64(offset) {
-        return [this.getBigUint64(offset), this.getBigUint64(offset + 8)];
+        const vec = MathPool.getVecU64();
+        vec[0] = this.getBigUint64(offset);
+        vec[1] = this.getBigUint64(offset + 8);
+        return vec;
     }
 
     /**
@@ -223,7 +249,10 @@ export default class Spark extends DataView {
      * @returns {Float32Array} A 2-element array
      */
     getVecF32(offset) {
-        return [this.getFloat32(offset), this.getFloat32(offset + 4)];
+        const vec = MathPool.getVecF32();
+        vec[0] = this.getFloat32(offset);
+        vec[1] = this.getFloat32(offset + 4);
+        return vec;
     }
 
     /**
@@ -242,7 +271,10 @@ export default class Spark extends DataView {
      * @returns {Float64Array} A 2-element array
      */
     getVecF64(offset) {
-        return [this.getFloat32(offset), this.getFloat32(offset + 8)];
+        const vec = MathPool.getVecF64();
+        vec[0] = this.getFloat64(offset);
+        vec[1] = this.getFloat64(offset + 4);
+        return vec;
     }
 
     //-----------------------------------------
