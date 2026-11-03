@@ -411,13 +411,7 @@ export default class CanvasRenderer extends Renderer {
                 break;
 
             case IL.SPRITE:
-                this.renderSprite(args[0], args[1], args[2], time, deltaTime);
-                break;
-
             case IL.TILE:
-                this.renderSprite(args[0], args[1], args[2], time, deltaTime);
-                break;
-
             case IL.TILEMAP:
                 this.renderSprite(args[0], args[1], args[2], time, deltaTime);
                 break;
