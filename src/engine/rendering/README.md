@@ -19,10 +19,30 @@ api
     .color("#ff9100").width(10)           // stroke color: orange, line width 10 pixels
     .circle(100, 100, 50, false)          // stroked circle w/radius 50 at 100,100
     .resetWidth();                        // reset line width to default
+
+// Run out one frame to render it   
+RE4.update(0, 0);
+RE4.renderWorld();    
+```
+The example above shows a direct call to the engine to render out a single frame. In a game context, this is  handled internally by `RenderPart` components and the game engine during the update/render loop. Starting the engine begins the loop until the engine is stopped, paused, or shut down.
+
+### Engine control methods:
+```javascript
+// Start the render loop   
+RenderEngine.start();
+
+// Pause the render loop - restart with ".start()"
+RenderEngine.stop();
+
+// Step a single frame - engine must be paused
+RenderEngine.step();
+
+// Shutdown the engine, freeing everything
+RenderEngine.shutdown();
 ```
 
 ## **Intermediate Language**
-The high-level API is generated into an "intermediate language" by the `RenderContext` to generate an intermediate language (`IL`) syntax that creates visual output. It resembles Assembly language: an operator (command) and its operands (arguments). Each command produces a single rendered element in the renderer. The elements may be simple (line, point, rectangle) or complex (`CompiledShape`, `Sprite`, `Tile`, or `TileMap`), but the invocation is always the same. Examples:
+The high-level API is generated into an "intermediate language" by the `RenderContext` to generate a syntax that creates the visual output. It resembles Assembly language with an operator (command) and its operands (arguments). Each command produces a single rendered element in the renderer. The elements may be simple (line, point, rectangle) or complex (line segment, polygon, curve, `CompiledShape`, `Sprite`, `Tile`, or `TileMap`), but the invocation is always the same. Examples:
 
 **A simple box**
 ```javascript
@@ -53,12 +73,8 @@ SHAPE 36
 POP
 ```
 
-For vector-stlye, the language emits `points`, `lines`, `arcs`, `circles`, `ovals`, `line-` and `curve-paths`. A vector text renderer is provided, drawing simple line-based text a'la the retro games: **Asteroids**, **Battletank**, **Major Havoc**, etc. 
-
-For raster-style, the language emits `sprites`, `tiles`, `tilemaps`, and native text output provided by the renderer.
-
-## **RenderContext** - A rendering abstraction
-A `RenderContext` is the abstraction of rendering, and provides a high-level API that is exposed to the game. Using `RenderPart` component parts, the game emits an intermediate language representing the render actions, and the renderer consumes the actions to draw them. The render context generates both vector-style (line) and raster (sprite) intermediate language.
+## **RenderContext** - Rendering abstraction
+A `RenderContext` is the abstraction for rendering and provides the high-level API that is exposed to the game. Using `RenderPart` components, or direct calls to the context's API, the game emits the `IL` representing each render action. The renderer consumes the actions and renders them to its display surface. The render context generates both vector-style (line) and raster (sprite) intermediate language.
 
 ## **Renderers** - Concrete rendering implementation
 A `Renderer` consumes the `IL` produced by the context and interprets it into the actual rendering code for the target renderer. 
