@@ -20,6 +20,10 @@ export default class ParticleEmitterPart extends RenderPart {
         super(priority, name);
     }
 
+    get enabled() {
+        return this.#doEmit;
+    }
+
     /**
      * Method to check if the emitter is set to emit.
      * @return {Boolean}

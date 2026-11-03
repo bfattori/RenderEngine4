@@ -10,6 +10,8 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import $Math from '../../../../src/engine/core/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
+import SwitchPanel from '../../../../src/engine/ui/SwitchPanel.js';
+
 // effect and particle types
 import { pEffect, pEffect2, wEffect1, wEffect2, sparkEffect } from './effects.js';
 import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff } from './particles.js';
@@ -57,6 +59,21 @@ await RenderEngine.init(import.meta.url, {
 
 // set background to blue
 document.getElementById("context").classList.add("types-and-effects");
+
+const p = new SwitchPanel(document.body, {
+    label: 'Particle Control',
+    groups: [
+        {
+            label: 'Toggle Particle Types',
+            buttons: {
+                'Burst (off)': () => { return toggleBurstEffect(); },
+                'Fountain (off)': () => { return toggleFountainEffect(); },
+                'Trails (off)': () => { return toggleTrailEffect(); },
+                'Sparks (off)': () => { return toggleSparkEffect(); }
+            }
+        }
+    ]
+});
 
 //----------------------------------
 // configure the particle engine
@@ -117,26 +134,69 @@ const emitter2 = fountain2.PARTS.emitter;
 emitter1.effect = wEffect1;
 emitter2.effect = wEffect2;
 
-emitter1.enable();
-emitter2.enable();
+// emitter1.enable();
+// emitter2.enable();
 
 // configure spark emitters and enable them to continuously emit particles
 const sparkEmitter = sparkObject.PARTS.emitter;
 sparkEmitter.effect = sparkEffect;
-sparkEmitter.enable();
+//sparkEmitter.enable();
 
 // generate an explosion randomly every 80 to 200 milliseconds
+let explodeTimeout = null;
 function explode() {
     explosionObject.PARTS.transform.position = [$Math.randomRangeInt(10, 790), $Math.randomRangeInt(5, 300)];
 
     // choose a random effect
     explosionObject.PARTS.emitter.effect = Util.selectRandomOf(pEffect, pEffect2);
     explosionObject.PARTS.emitter.once();
-    setTimeout(explode, $Math.randomRangeInt(80, 200));
+    explodeTimeout = setTimeout(explode, $Math.randomRangeInt(80, 200));
 }
 
 // // start the first explosion
-explode();
+//explode();
+
+function toggleBurstEffect() {
+    if (explodeTimeout !== null) {
+        clearTimeout(explodeTimeout);
+        explodeTimeout = null;
+        return 'Burst (off)';
+    } else {
+        explode();
+        return 'Burst';
+    }
+}
+
+function toggleFountainEffect() {
+    if (emitter1.enabled) {
+        emitter1.disable();
+        return 'Fountain (off)';
+    } else {
+        emitter1.enable();
+        return 'Fountain';
+    }
+}
+
+function toggleTrailEffect() {
+    if (emitter2.enabled) {
+        emitter2.disable();
+        return 'Trails (off)';
+    } else {
+        emitter2.enable();
+        return 'Trails';
+    }
+}
+
+function toggleSparkEffect() {
+    if (sparkEmitter.enabled) {
+        sparkEmitter.disable();
+        return 'Sparks (off)';
+    } else {
+        sparkEmitter.enable();
+        return 'Sparks';
+    }
+}
+
 
 // Start the render loop   
 RenderEngine.start();

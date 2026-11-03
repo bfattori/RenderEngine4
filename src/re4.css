@@ -17,3 +17,131 @@ div#context {
     box-shadow:0 2px 25px rgba(39, 1, 1, 0.4);
     padding:10px;
 }
+
+/*** Slider Input */
+div.slider {
+    position: relative;
+    width: 400px;
+    height: 60px;
+    font-size: 9pt;
+    border: 1px solid;
+    box-shadow:0 2px 4px rgba(39, 1, 1, 0.4);
+    margin-top: 10px;
+}
+
+div.slider div.title {
+    background-color: lightblue;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid navy;
+}
+
+div.slider div.bar {
+    width: 260px;
+    height: 10px;
+    background: navy;
+    position: relative;
+    margin-top: 10px;
+    margin-left: 30px;
+}
+
+div.slider div.bar > div.thumb {
+    position: absolute;
+    left: 0px;
+    top: -6px;
+    width: 10px;
+    height: 20px;
+    background-color: red;
+    border-radius: 5px;
+    border: 1px solid black;
+}
+
+div.slider div.rangeLabel {
+    position: absolute;
+    top: 25px;
+    font-size: 8px;
+}
+
+div.slider div.rangeLabel.min {
+    left: 5px;
+}
+
+div.slider div.rangeLabel.max {
+    right: 80px;
+}
+
+div.slider input.slider-input {
+    position: absolute;
+    right: 10px;
+    width: 50px;
+    top: 21px;
+}
+
+div.slider div.bar div.tick {
+    position: absolute;
+    border-left: 1px solid;
+    width: 2px;
+    height: 8px;
+    bottom: -17px;
+}
+
+/*** Switch Panel */
+div.switch-panel {
+    position: relative;
+    width: 350px;
+    font-size: 9pt;
+    border: 1px solid;
+    box-shadow:0 2px 4px rgba(39, 1, 1, 0.4);
+    margin-top: 10px;
+}
+
+div.switch-panel div.title {
+    position: relative;
+    background-color: lightblue;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid navy;
+}
+
+div.switch-panel div.group {
+    position: relative;
+    width: 100%;
+    padding-top: 5px;
+    margin-bottom: 5px;
+    min-height: 80px;
+}
+
+div.switch-panel div.group div.group-title {
+    position: relative;
+    width: 100%;
+    padding-top: 5px;
+    margin-bottom: 3px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 130%;
+}
+
+div.switch-panel div.group div.button-set {
+    position: relative;
+    width: 100%;
+    padding-top: 2px;
+}
+
+div.switch-panel div.button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 40px;
+    border-top: 2px solid silver;
+    border-left: 2px solid silver;
+    border-right: 2px solid gray;
+    border-bottom: 2px solid gray;
+    margin-left: 2px;
+    margin-top: 2px;
+}
+
+div.switch-panel div.button:hover {
+    background-color: #dfdfff;
+}
