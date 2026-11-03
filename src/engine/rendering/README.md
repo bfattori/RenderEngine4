@@ -42,7 +42,7 @@ RenderEngine.shutdown();
 ```
 
 ## **Intermediate Language**
-The high-level API is generated into an "intermediate language" by the `RenderContext` to generate a syntax that creates the visual output. It resembles Assembly language with an operator (command) and its operands (arguments). Each command produces a single rendered element in the renderer. The elements may be simple (line, point, rectangle) or complex (line segment, polygon, curve, `CompiledShape`, `Sprite`, `Tile`, or `TileMap`), but the invocation is always the same. Examples:
+The high-level API is generated into an "intermediate language" by the `RenderContext` which is the syntax that creates the visual output. It resembles Assembly language with an operator (command) and its operands (arguments). Each command produces a single rendered element in the renderer. The elements may be simple (line, point, rectangle) or complex (line segment, polygon, curve, `CompiledShape`, `Sprite`, `Tile`, or `TileMap`), but the invocation is always the same. Examples:
 
 **A simple box**
 ```javascript
