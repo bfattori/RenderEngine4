@@ -4,6 +4,7 @@ import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import LoadCounter from '../../ui/debug/LoadCounter.js';
 
 import OrchestratorError from './OrchestratorError.js';
+import { Logger } from '../../core/Console.js';
 
 const ctx = Context.getInstance();
 
@@ -36,6 +37,8 @@ export default class ParticleManager {
     #assembler = null;
 
     #opaqueId = 0;
+    #liveParticles = 0;
+    #log;
 
     constructor(renderContext, width, height, config, threading, opts, paths) {
         this.#initProps = {
@@ -47,6 +50,7 @@ export default class ParticleManager {
             paths: paths
         };
         this.#assembler = renderContext.renderer.assembler;
+        this.#log = new Logger(this, null, true);
     }
 
     /**
@@ -97,6 +101,10 @@ export default class ParticleManager {
     set bitmap(bitmap) {
         this.#bitmap = bitmap;
     }
+
+    get liveParticles() {
+        return this.#liveParticles;
+    }
     
     async initialize() {
         return new Promise((resolve) => {
@@ -109,7 +117,7 @@ export default class ParticleManager {
                     });
 
                     this.initialized = true;
-                    console.debug(`Particle orchestrator started with ${this.#initProps.threading.workers} workers`);
+                    this.#log.debug(`Orchestrator reports ${this.#initProps.threading.workers} workers ready`);
                     resolve(true);
                 } else {
                     // wait for the orchestrator to be ready
@@ -159,7 +167,7 @@ export default class ParticleManager {
             this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
         });
 
-        console.debug('Loading particle orchestrator');
+        this.#log.debug('Loading orchestrator');
         
         // load the particle engine orchestrator thread
         this.#createOrchestrator();       
@@ -215,10 +223,13 @@ export default class ParticleManager {
                     this.bitmap = event.data.image;
                     this.#ready = true;
 
+                    // sum up the live particles
+                    let total = 0;
+                    this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
+
                     PRAGMA('showParticleEngineLoad', () => {
                         let update = 0, render = 0;
                         const burden = (this.#initProps.config.maxParticles / this.#initProps.threading.workers);
-                        let totalLive = 0;
                         for (let i = 0; i < event.data.metrics.length; i++) {
                             if (event.data.metrics[i]) {
                                 update += event.data.metrics[i].updateTime || 0;
@@ -227,7 +238,6 @@ export default class ParticleManager {
                                 const live = event.data.metrics[i].live;
                                 this.#engineLoadView.update(`Workers:Thread ${i}`, (live !== 0 ? live / burden : 0) * 100);
                                 this.#engineLoadView.update(`Particles:Thread ${i}`, live);
-                                totalLive += live;
                             }
                         }
 
@@ -238,7 +248,7 @@ export default class ParticleManager {
                         this.#engineLoadView.update('Render:Time', render);
                         this.#engineLoadView.update('Update:Load', isNaN(updateLoad) ? 0 : updateLoad * 100);
                         this.#engineLoadView.update('Render:Load', isNaN(renderLoad) ? 0 : renderLoad * 100);
-                        this.#engineLoadView.update('Render:Particles', totalLive);
+                        this.#engineLoadView.update('Render:Particles', this.#liveParticles);
                     });
 
                     break;
@@ -250,16 +260,16 @@ export default class ParticleManager {
                 case Constants.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();
                     this.#thread = null;
-                    console.debug('Orchestrator thread terminated');
+                    this.#log.debug('Orchestrator thread terminated');
                     break;
                 default:
-                    console.error('[Particle Manager] Unknown message type from orchestrator:', event.data.type);
+                    this.#log.error('Unknown message type from orchestrator:', event.data.type);
             }
         }
     }
 
     #orchestratorError(event) {
-        console.error(event.message, event);
+        this.#log.error(event.message, event);
         throw new OrchestratorError(this.#thread, event.message, event);
     }
 
@@ -434,5 +444,11 @@ export default class ParticleManager {
      * @param {Path2D} occlusionMask - Optional mask to clip areas that are occluded by objects
      */
     renderParticles(time, deltaTime, occlusionMask = null) { // no-op 
+    }
+
+    snapshotStats() {
+        return {
+            "Live Particles": this.#liveParticles
+        }
     }
 }

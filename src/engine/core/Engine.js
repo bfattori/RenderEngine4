@@ -5,7 +5,7 @@
  */
 import Constants from '../Constants.js';
 import Context from '../Context.js';
-import Console from './Console.js';
+import { initializeConsole } from './Console.js';
 import RenderEngineError from './RenderEngineError.js';
 
 import { EngineConfig } from './Config.js';
@@ -37,6 +37,8 @@ const _paths = {
 
 const ctx = Context.getInstance();
 let waitInit = false;
+
+initializeConsole();
 
 /**
  * Creates a new Engine instance.
@@ -328,11 +330,17 @@ export default class Engine {
    * @returns 
    */
   snapshotStats(deltaTime, updateTime, renderTime, frameTime) {
-    return {
-      "World": this.world.allObjects.length,
-      "Event Engine": this.eventEngine.listenersCount,
-      "Particle Engine": this.particleEngine ? this.particleEngine.liveParticles : null
+    let stats = {
+      ...this.world.snapshotStats(), 
+      ...this.eventEngine.snapshotStats()
     };
+    if (this.particleEngine) {
+      stats = {
+        ...stats,
+        ...this.particleEngine.snapshotStats()
+      };
+    }
+    return stats;
   }
 
   get state() {
@@ -431,29 +439,6 @@ export default class Engine {
 
   get runOneFrame() {
     return this.#runOneFrame;
-  }
-
-  //-------------------------------
-  // Properties
-  //-------------------------------
-
-  /**
-   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
-   * @returns {Object} An object containing the component's properties
-   */
-  get properties() {
-    return {
-      World: this.world,
-      EventEngine: this.eventEngine,
-      ParticleEngine: this.particleEngine,
-      RenderContext: this.renderContext,
-      CollisionModel: this.collisionModel,
-      currentWorldTime: this.time,
-      lastFrameTime: this.lastTime,
-      deltaFrameTime: this.deltaTime,
-      running: this.isRunning,
-      options: this.options
-    };
   }
 
   //-------------------------------

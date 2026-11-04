@@ -382,28 +382,11 @@ class GameWorld {
   //-------------------------------
 
   snapshotStats() {
-    return {};
-  }
-
-  /**
-   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
-   * @returns {Object} An object containing the component's properties
-   */
-  get properties() {
     return {
-      Camera: this.camera,
-      RenderContext: this.renderContext,
-      CollisionModel: this.collisionModel,
-      dimensions: this.dimensions,
-      collisionModel: this.collisionModel,
-      width: this.width,
-      height: this.height,
-      allObjects: this.allObjects,
-      currentTransform: this.currentTransform,
-      transformStack: this.#transformStack
+      "Game Objects": this.allObjects.length,
+      "Collisions": this.#collisionEvents.length > 0 ? this.#collisionEvents.length : null
     };
   }
-
 }
 
 // Export the GameWorld for use by Engine

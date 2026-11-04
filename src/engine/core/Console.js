@@ -9,17 +9,23 @@ const ctx = Context.getInstance();
 
 export default class Console {
   #ref = null;
+  #label;
 
-  constructor(refConsole = console) {
+  constructor(label = '[RenderEngine4]', refConsole = console) {
     this.#ref = refConsole;
+    this.#label = label;
   }
-  
+
+  get referenceConsole() {
+    return this.#ref;
+  }
+
   /**
    * Logs a warning message to console
    * @param {string} message - The warning message to log
    */
   warn(...message) {
-    this.#ref.warn('[RenderEngine4]', ...message);
+    this.#ref.warn(this.#label, ...message);
   }
 
   /**
@@ -27,7 +33,7 @@ export default class Console {
    * @param {string} message - The error message to log
    */
   error(...message) {
-    this.#ref.error('[RenderEngine4]', ...message);
+    this.#ref.error(this.#label, ...message);
   }
 
   /**
@@ -35,7 +41,7 @@ export default class Console {
    * @param {string} message - The info message to log
    */
   info(...message) {
-    this.#ref.info('[RenderEngine4]', ...message);
+    this.#ref.info(this.#label, ...message);
   }
 
   /**
@@ -64,6 +70,23 @@ export default class Console {
     }
   }
 };
+
+// game engine console replacement
+const re4Console = new Console();
+
+class Logger extends Console {
+  /**
+   * Create a console where the class constructor name is displayed
+   * in the log output. Optionally attached to the browser console, bypassing the game console.
+   * @param {*} instance - Object to reference in the console
+   * @param {String} label - Optional label to append to the constructor class
+   * @param {boolean} root - If `true`, the console will attach to the browser console
+   */
+  constructor(instance, label = null, root = false) {
+    super(`[${instance.constructor.name}${label !== null ? ' ' + label : ''}]`, 
+      root ? re4Console.referenceConsole : re4Console);
+  }
+}
 
 // Debug insert points
 function pragma(name, fn) {
@@ -95,17 +118,25 @@ function measure(name, startMark, endMark) {
     return 0;
 }
 
-// Replace window.console or global.console 
-// with our console and assign the pragma directive
-const re4Console = new Console();
-if (typeof global !== 'undefined') {
-  global.console = re4Console;
-  global.PRAGMA = pragma;
-  global.PERF = perf;
-  global.MEASURE = measure;
-} else {
-  self.console = re4Console;
-  self.PRAGMA = pragma;
-  self.PERF = perf;
-  self.MEASURE = measure;
+const initializeConsole = () => {
+  // Replace globalThis.console with our console 
+  // and assign the pragma directives
+  const owner = globalThis ? globalThis : self;
+  owner.console = re4Console;
+  installDirectives(owner);
 }
+
+const installDirectives = (owner = self) => {
+  if (!owner.PRAGMA) {
+    // assign only once
+    owner.PRAGMA = pragma;
+    owner.PERF = perf;
+    owner.MEASURE = measure;
+  }
+}
+
+export {
+  Logger,
+  initializeConsole,
+  installDirectives
+};

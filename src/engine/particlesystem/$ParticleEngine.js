@@ -701,6 +701,8 @@ export default class $ParticleEngine {
     }
 
     snapshotStats() {
-        return {};
+        return {
+            "Live Particles": this.#liveParticles
+        }
     }
 }

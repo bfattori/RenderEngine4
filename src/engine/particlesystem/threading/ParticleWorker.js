@@ -1,4 +1,4 @@
-import WorkerConsole from './WorkerConsole.js';
+import { Logger, installDirectives } from '../../core/Console.js';
 
 import Core from '../../core/Core.js';
 import Context from '../../Context.js';
@@ -27,6 +27,8 @@ self.CanvasAssembler = CanvasAssembler;
 self.$$worker = null;
 const ctx = Context.getInstance();
 
+installDirectives(self);
+
 /**
  * @class ParticleWorker
  * @classdesc The ParticleWorker class is responsible for managing a single worker thread that handles particle system operations. It initializes the particle engine instance, 
@@ -43,12 +45,14 @@ export default class ParticleWorker {
     #startTime = 0;
     #assembler = null;
     #latched = true;
+    #log;
 
     constructor(workerId, assembler, width, height, config, threading, systemOpts) {
         this.#workerId = workerId;
 
         // override the console
-        self.console = new WorkerConsole(this, self.console);
+        this.#log = new Logger(this, `${workerId}`, true);
+        this.#log.debug('initializing ...');
 
         // setup memory management
         Core.initialize();
@@ -110,6 +114,7 @@ export default class ParticleWorker {
             type: Constants.MTYPE.WORKER.READY, 
             workerId: this.workerId 
         });
+        this.#log.debug('prepared');
     }
 
     /**
@@ -178,11 +183,11 @@ export default class ParticleWorker {
             case Constants.MTYPE.ORCHESTRATOR.SHUTDOWN:
                 this.#running = false;
                 this.instance.shutdown();
-                console.debug(`[ParticleWorker] Worker${this.#workerId} terminated`);
+                this.#log.debug(`terminated`);
                 self.close();
                 break;
             default:
-                console.error('[ParticleWorker] Unknown message type from orchestrator:', data.type);
+                this.#log.error('Unknown message type from orchestrator:', data.type);
         }
     }
 
@@ -193,6 +198,7 @@ export default class ParticleWorker {
             this.startTime = performance.now();
             this.updateParticles();
         }, 100);
+        this.#log.debug('Started update/render loop');
     }
 
     /**
@@ -232,7 +238,7 @@ export default class ParticleWorker {
                 await new Promise(resolve => setTimeout(resolve, this.#fps));
             }
         } catch (ex) {
-            console.error(ex);
+            this.#log.error(ex);
             throw new ParticleWorkerError(this, ex.message, ex);        
         }
     }
@@ -273,10 +279,6 @@ export default class ParticleWorker {
 addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.MSG.ORCHESTRATOR) {
         if (event.data.type === Constants.MTYPE.ORCHESTRATOR.INIT) {
-            console.debug(`Starting ParticleWorker ${event.data.workerId}`);
-
-            // set the engine paths for the worker to reference
-            console.debug(`Setting engine paths for worker ${event.data.workerId}:`, event.data.paths);
             Paths.engine = event.data.paths.engine;
             Paths.startup = event.data.paths.startup;
             Paths.game = event.data.paths.game;
@@ -294,7 +296,7 @@ addEventListener('message', (event) => {
             // fixme: prolly also losing shit here...
             self.$$worker.process(event.data);
         } else {
-            console.log("missed message in Worker", event);
+            console.log("Missed message in Worker", event);
         }
     }
 });

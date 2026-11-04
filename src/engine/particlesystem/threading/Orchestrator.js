@@ -1,16 +1,15 @@
+import { Logger, installDirectives } from '../../core/Console.js';
 import Context from '../../Context.js';
 import Constants from '../../Constants.js';
 import $Math from '../../core/Math.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
 
-// looks unused - but this is where PRAGMA comes from
-import Console from '../../core/Console.js';
-
-
 let orchestratorInstance = null;
 let messageHandler = null;
 const ctx = Context.getInstance();
+
+installDirectives(self);
 
 /**
  * @class Orchestrator
@@ -39,6 +38,8 @@ class Orchestrator {
     #workersInitialized = 0;
     #paths = null;
 
+    #log;
+
     constructor(assembler, viewPort, particlesConfig, threadingConfig, systemOpts, paths) {
         this.#compositor = new OffscreenCanvas(viewPort[0], viewPort[1]);
         this.#particlesConfig = particlesConfig;
@@ -53,6 +54,7 @@ class Orchestrator {
         ctx.engineOpts = systemOpts.engineOpts;
         this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
 
+        this.#log = new Logger(this, null, true);
         this.#spawnWorkers(assembler);
     }
 
@@ -80,6 +82,8 @@ class Orchestrator {
         this.#waitingWorkers = new Array(tConfig.workers).fill(true);
         this.#workersInitialized = 0;
 
+        this.#log.debug(`Starting ${tConfig.workers} ParticleWorkers ...`);
+
         // spawn the worker threads for the particle engine
         for (let i = 0; i < tConfig.workers; i++) {
             const worker = new Worker(new URL(`./ParticleWorker.js${ctx.preventThreadCache}`, import.meta.url), {
@@ -92,7 +96,6 @@ class Orchestrator {
                 this.#fromWorker(event); 
             };
             worker.onerror = (event) => {
-                console.error(event.message, event);
                 throw new ParticleWorkerError(worker, event.message, event);
             }
 
@@ -161,7 +164,7 @@ class Orchestrator {
                 name = event.data.affector.$name;
                 worker.ackAffectors.push(name);
             }
-            // console.debug(`Orchestrator => Worker ${worker.id}: ${name} [${event.data.type}]`);
+            // this.#log.debug(`Orchestrator => Worker ${worker.id}: ${name} [${event.data.type}]`);
         });
     }
 
@@ -211,7 +214,7 @@ class Orchestrator {
                 this.shutdown();
                 break;
             default:
-                console.error('[Orchestrator] Unknown message type from manager:', event.data.type);
+                this.#log.error('[Orchestrator] Unknown message type from manager:', event.data.type);
         }
     }
 
@@ -261,7 +264,7 @@ class Orchestrator {
                     }, [ combinedBitmap ]);
                     break;
                 default:
-                    console.error('[Orchestrator] Unknown message type:', event.data.type);
+                    this.#log.error('[Orchestrator] Unknown message type:', event.data.type);
             }
         }
     }
@@ -364,7 +367,7 @@ class Orchestrator {
 
         // tell workers to stop processing, 
         // they will clean up and close
-        console.debug('[Orchestrator] Shutdown workers');
+        this.#log.debug('[Orchestrator] Shutdown workers');
         this.broadcast({data: { type: Constants.MTYPE.ORCHESTRATOR.SHUTDOWN }});
         
         postMessage({ 
@@ -383,7 +386,6 @@ class Orchestrator {
 messageHandler = addEventListener('message', (event) => {
     if (event.data.re4 && event.data.re4 === Constants.MSG.MANAGER) {
         if (event.data.type === Constants.MTYPE.MANAGER.INIT) {
-            console.debug('Starting particle orchestrator');
             const assembler = event.data.assembler;
             const viewPort = [event.data.width, event.data.height];
             const particlesConfig = event.data.config;
@@ -395,7 +397,7 @@ messageHandler = addEventListener('message', (event) => {
             // fixme: This is probably why effect and shit don't make it to the workers
             orchestratorInstance.process(event);
         } else {
-            console.log("missed message in Orchestrator", event);
+            console.error("Missed message in Orchestrator", event);
         }
     }
 });

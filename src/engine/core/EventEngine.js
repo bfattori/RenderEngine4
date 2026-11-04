@@ -290,16 +290,13 @@ export default class EventEngine {
   //-------------------------------
 
   get listenersCount() {
-    return this.#listeners.size;
+    return this.#listeners.values().reduce((acc, listenerSet) => acc += listenerSet.length, 0);
   }
 
-  /**
-   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
-   * @returns {Object} An object containing the component's properties
-   */
-  get properties() {
+  snapshotStats() {
     return {
-      listeners: this.#listeners
+      "Event Listeners": this.listenersCount
     };
   }
+
 }

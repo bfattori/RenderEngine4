@@ -39,7 +39,7 @@ const badge = $('#connection-badge');
 const stateLabel = $('#engine-state');
 const runtimeHint = $('#runtime-hint');
 const btnStart = $('#btn-start');
-const btnStop = $('#btn-stop');
+//const btnStop = $('#btn-stop');
 const btnPause = $('#btn-pause');
 const btnStep = $('#btn-step');
 
@@ -140,7 +140,7 @@ function activateTab(id) {
     btn.classList.toggle('active', btn.dataset.tab === id);
   }
   for (const tab of tabs) {
-    tab.paneEl.hidden = tab.def.id !== id;
+    tab.paneEl.style.display = tab.def.id !== id ? 'none' : 'flex';
   }
 }
 
