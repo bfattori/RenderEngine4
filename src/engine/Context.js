@@ -7,6 +7,8 @@ export default class Context {
     #debugOpts = {};
     #engineOpts = {};
     #sparkMM = null;
+    #performanceTrack = false;
+    #allPragma = false;
     
     constructor() {}
 
@@ -55,6 +57,22 @@ export default class Context {
 
     get engineOpts() {
         return this.#engineOpts;
+    }
+
+    get trackPerformance() {
+        return this.#performanceTrack;
+    }
+
+    set trackPerformance(value) {
+        this.#performanceTrack = value;
+    }
+
+    get pragmas() {
+        return this.#allPragma;
+    }
+
+    set pragmas(val) {
+        this.#allPragma = val;
     }
 
     set Spark(sparkMM) {

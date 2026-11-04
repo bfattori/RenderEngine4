@@ -40,6 +40,8 @@ let waitInit = false;
 
 initializeConsole();
 
+self.RE4_Context = ctx;
+
 /**
  * Creates a new Engine instance.
  * 
@@ -91,6 +93,9 @@ export default class Engine {
 
     ctx.engineOpts = this.#ENGINE_OPTIONS.engineOpts;
     ctx.engineOpts.showFps = this.#ENGINE_OPTIONS.flags.showFps;
+
+    ctx.trackPerformance = this.#ENGINE_OPTIONS.flags.trackPerformance;
+    ctx.pragmas = this.#ENGINE_OPTIONS.flags.pragmaDebugging;
     
     // Game timer maintained by the engine
     this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;

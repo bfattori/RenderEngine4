@@ -92,7 +92,7 @@ export default class ParticleEmitterPart extends RenderPart {
     render(time, deltaTime) {
         if (this.#doEmit) {
             // convert to world coordinates
-            Engine.particleEngine.runEffect([this.host.worldTransform.e, this.host.worldTransform.f], this.effect.$name, this.effect.isReset, time, deltaTime, this.effect);
+            Engine.particleEngine.runEffect([this.host.worldTransform.e, this.host.worldTransform.f], this.#effect.opaqueId, this.#effect.isReset, time, deltaTime, this.#effect);
             if (this.#disableAfter) {
                 this.#doEmit = false;
                 this.#disableAfter = false;

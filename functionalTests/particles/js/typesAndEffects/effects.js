@@ -37,13 +37,13 @@ wEffect1.name = 'fountain1';
 wEffect2.name = 'fountain2';
 
 const sparkEffect = new SparkEffect({
-    count: 5,
+    count: 12,
     countVariance: 8,
     frequencyVariance: 550,
     particleTypes: [sparkParticle],
-    angle: 110,
-    spread: 50,
-    delay: [10, 100],
+    angle: 140,
+    spread: 20,
+    delay: [10, 80],
     delayVariance: 0
 });
 sparkEffect.name = 'sparks1';

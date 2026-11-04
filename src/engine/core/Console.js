@@ -90,7 +90,7 @@ class Logger extends Console {
 
 // Debug insert points
 function pragma(name, fn) {
-  if (ctx.debug && ctx.debugOpts[name.split(':')[0]] === true)
+  if (ctx.pragmas && ctx.debug && ctx.debugOpts[name.split(':')[0]] === true)
     fn();
 }
 
@@ -99,7 +99,7 @@ function pragma(name, fn) {
  * @param name
  */
 function perf(name) {
-  if (ctx.debug)
+  if (ctx.trackPerformance && ctx.debug)
     return performance.mark(name).startTime;
   else
     return performance.now();
@@ -112,7 +112,7 @@ function perf(name) {
  * @param endMark
  */
 function measure(name, startMark, endMark) {
-  if (ctx.debug)
+  if (ctx.trackPerformance && ctx.debug)
     return performance.measure(name, startMark, endMark).duration;
   else
     return 0;

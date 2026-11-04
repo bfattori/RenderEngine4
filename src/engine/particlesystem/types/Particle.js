@@ -149,19 +149,16 @@ export default class Particle extends TransferrableConfig {
    */
   dehydrate() {
       const props = super.dehydrate();
-      props.opaqueId = this.opaqueId;
+      props.$opaqueId = this.opaqueId;
       return props;
   }
 
   /**
    * Replace particle types with their configured instances
-   * @returns 
    */
-  async rehydrate(obj) {
-      this.opaqueId = obj.opaqueId;
-      this.name = obj.$name;
+  async rehydrate(props) {
+      this.opaqueId = props.$opaqueId;
       
-      await super.rehydrate(obj);
-      return obj;
+      await super.rehydrate(props);
   }
 }

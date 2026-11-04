@@ -1,10 +1,24 @@
 import Constants from '../Constants.js';
-import { MathPool } from './Core.js';
+import { MemoryPool } from './Core.js';
 
 /**
  * RenderEngine4 math functions
  */
 export default class $Math {
+    static #pool;
+
+    static get fmPool() {
+        if (!$Math.#pool)
+            $Math.#pool = new MemoryPool({
+            baseUnit: 4,        // 32-bit
+            heapSize: 8192,     // 8k
+            reserveSize: 1.0,   // full reserve
+            boundaryElementOffset: 0
+        }, 'FastMathPool');
+
+        return $Math.#pool;
+    }
+
     /**
      * An approximation of PI (3.14159)
      * @type {number}
@@ -262,7 +276,7 @@ export default class $Math {
      * @return {Float32Array} A random point [x, y] within the rectangle
      */
     static randomPoint({x, y, width, height}) {
-        const point = MathPool.getF32Array(2);
+        const point = $Math.fmPool.VecF32;
         point[0] = Math.floor(x + Math.random() * width);
         point[1] = Math.floor(y + Math.random() * height);
         return point;
@@ -274,7 +288,7 @@ export default class $Math {
      * @return {Array<number>} The center of the given points `[x, y]`
      */
     static logicalCenter(points) {
-        const point = MathPool.getF32Array(2);
+        const point = $Math.fmPool.VecF32;
         for (let pt = 0; pt < points.length; pt++) {
             $Math.vecAdd(point, points[pt]);
         }
@@ -299,7 +313,7 @@ export default class $Math {
      * @return {Array<number>} The direction vector
      */
     static getDirectionVector(origin = [0, 0], angle, baseVec = Constants.UP_VECTOR) {
-        const vec = MathPool.getF32Array(2);
+        const vec = $Math.fmPool.VecF32;
         const r = $Math.degToRad(angle);
         const x = Math.cos(r) * baseVec[0] - Math.sin(r) * baseVec[1];
         const y = Math.sin(r) * baseVec[0] + Math.cos(r) * baseVec[1];
@@ -364,7 +378,7 @@ export default class $Math {
      * @return {Array<number>} The unit length vector
      */
     static normalize(vector) {
-        const norm = MathPool.getF32Array(2);
+        const norm = $Math.fmPool.VecF32;
         const ln = $Math.magnitude(vector);
         if (ln !== 0) {
             norm[0] = vector[0] / ln;
@@ -758,7 +772,7 @@ export default class $Math {
             error = deltaX / 2, // error is used instead of tracking the y values
             yStep, y = start[1], ptr = 0;
 
-        const points = MathPool.getF32Array(end[0]-start[0]); 
+        const points = $Math.fmPool.F32Array(end[0]-start[0]); 
 
         yStep = (start[1] < end[1] ? 1 : -1);
         for (let x = start[0]; x < end[0]; x++) {   // for each point

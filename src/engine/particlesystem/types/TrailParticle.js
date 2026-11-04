@@ -106,11 +106,11 @@ export default class TrailParticle extends DiffuseParticle {
    * Resolves the trail particle type from its name.
    * @returns 
    */
-  async rehydrate(obj) {
-    if (obj.trailParticle !== null) {
+  async rehydrate(props) {
+    if (props.trailParticle !== null) {
       await new Promise((resolve) => {
         const resolveParticleType = () => {
-          if (this.engine.typesByName.get(obj.trailParticle))
+          if (this.engine.typesByName.get(props.trailParticle))
               return resolve(true);
           else
               setTimeout(resolveParticleType, 250);
@@ -118,10 +118,8 @@ export default class TrailParticle extends DiffuseParticle {
         resolveParticleType();
       });
       
-      obj.trailParticle = this.engine.typesByName.get(obj.trailParticle);
-      await super.rehydrate(obj);
+      this.trailParticle = this.engine.typesByName.get(props.trailParticle);
+      await super.rehydrate(props);
     }
-    
-    return obj;
   }
 }

@@ -84,7 +84,7 @@ export default class SparkHeap {
         const pctReserve = this.#config.reserveSize,
             reservedSegSize = Math.floor(this.#config.heapSize * pctReserve);
 
-        this.#log.debug(`alloc ${this.#config.heapSize}B (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}% (res: ${(reservedSegSize / 1024).toFixed(1)}KB)`);
+        this.#log.debug(`alloc ${this.#config.heapSize}B (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}%${reservedSegSize !== 0 ? ' (res: ' + (reservedSegSize / 1024).toFixed(1) + 'KB)' : ''}`);
 
         switch (this.#config.baseUnit) {
             case SparkHeap.BYTE_8:
@@ -182,18 +182,18 @@ export default class SparkHeap {
 
         // adjust the head pointer to the nearest byte boundary (64-bit)
         if (this.#config.baseUnit === SparkHeap.BYTE_64)
-            if ((t64 - h64) % SparkHeap.BYTE_64 !== 0)
-                this.#segmentHD[SparkHeap.IB_64] -= ((t64 - h64) % SparkHeap.BYTE_64);
+            if (h64 % SparkHeap.BYTE_64 !== 0)
+                this.#segmentHD[SparkHeap.IB_64] -= (h64 % SparkHeap.BYTE_64);
             
         // adjust the head pointer to the nearest byte boundary (32-bit)
         if (this.#config.baseUnit <= SparkHeap.BYTE_64)
-            if ((t32 - h32) % SparkHeap.BYTE_32 !== 0)
-                this.#segmentHD[SparkHeap.IB_32] -= ((t32 - h32) % SparkHeap.BYTE_32);
+            if (h32 % SparkHeap.BYTE_32 !== 0)
+                this.#segmentHD[SparkHeap.IB_32] -= (h32 % SparkHeap.BYTE_32);
          
         // adjust the head pointer to the nearest byte boundary (16-bit)
         if (this.#config.baseUnit <= SparkHeap.BYTE_32)
-            if ((t16 - h16) % SparkHeap.BYTE_16 !== 0)
-                this.#segmentHD[SparkHeap.IB_16] -= ((t16 - h16) % SparkHeap.BYTE_16);
+            if (h16 % SparkHeap.BYTE_16 !== 0)
+                this.#segmentHD[SparkHeap.IB_16] -= (h16  % SparkHeap.BYTE_16);
 
         // store the front boundary pointers of each allocation
         this.#segmentTP[SparkHeap.IB_64] = this.#segmentHD[SparkHeap.IB_64];
@@ -291,7 +291,8 @@ export default class SparkHeap {
         this.#segmentHD[segPtr] = segHeadPtr + allocSize;
 
         // return a view that is byte-aligned to the byteSize
-        return new Spark(this.buffer, segHeadPtr, allocSize);
+        const sp = new Spark(this.buffer, segHeadPtr, allocSize);
+        return sp;
     }
 
     free(ptr, byteLength) {

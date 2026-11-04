@@ -24,6 +24,8 @@ self.PARTICLE_THREADING_OPTIONS = {
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {
+        trackPerformance: false,
+        pragmaDebugging: true,
         debugMode: true,
         showFps: true,
         debugOpts: {

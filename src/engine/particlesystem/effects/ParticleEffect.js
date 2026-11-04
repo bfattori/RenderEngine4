@@ -14,6 +14,7 @@ export default class ParticleEffect extends TransferrableConfig {
     #lastTime = 0;
     #engine = null;
     #reset = false;
+    #opaqueId = null;
 
     /**
      * Create a `ParticleEffect` to use with the particle system. Particle effects
@@ -83,12 +84,21 @@ export default class ParticleEffect extends TransferrableConfig {
         return this.#engine;
     }
 
+    get opaqueId() {
+        return this.#opaqueId;
+    }
+
+    set opaqueId(id) {
+        this.#opaqueId = id;
+    }
+
     /**
      * Reduce the particle types to their names
      * @returns {Object}
      */
     dehydrate() {
         const props = super.dehydrate();
+        props.$opaqueId = this.opaqueId;
         props.particleTypes = props.particleTypes.map(e => e.$name);
         return props;
     }
@@ -97,10 +107,10 @@ export default class ParticleEffect extends TransferrableConfig {
      * Replace particle types with their configured instances
      * @returns 
      */
-    async rehydrate(obj) {
+    async rehydrate(props) {
         await new Promise((resolve) => {
             const resolveParticleTypes = () => {
-                const success = obj.particleTypes.every(e => this.engine.typesByName.get(e));
+                const success = props.particleTypes.every(e => this.engine.typesByName.get(e));
                 if (success)
                     return resolve(true);
                 else
@@ -109,9 +119,9 @@ export default class ParticleEffect extends TransferrableConfig {
             resolveParticleTypes();
         });
 
-        obj.particleTypes = obj.particleTypes.map(e => this.engine.typesByName.get(e));
-        await super.rehydrate(obj);
-        return obj;
+        this.opaqueId = props.$opaqueId;
+        props.particleTypes = props.particleTypes.map(e => this.engine.typesByName.get(e));
+        await super.rehydrate(props);
     }
 
     /**

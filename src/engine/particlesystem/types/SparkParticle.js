@@ -35,14 +35,14 @@ export default class SparkParticle extends PhysicalParticle {
 
       // reasonable defaults
       colors: ['#ff0', '#fff', '#f90', '#ffd'],
-      particleSize: 25,
+      particleSize: 15,
       drag: 0,
       dragRate: 0,
       fadeRate: 0.01,
       softness: 0.75,
-      velocity: [8, 25],
+      velocity: [15, 35],
       gravity: [0, 0.2],
-      lifeSpan: [80, 3000]
+      lifeSpan: [80, 250]
     }, url);
     this.merge(overrides);
     this.name = 'sparkParticle';

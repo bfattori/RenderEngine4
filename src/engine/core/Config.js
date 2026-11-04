@@ -67,6 +67,16 @@ class EngineConfig extends Config {
        * Feature flags
        */
       flags: {
+        /**
+         * Enable to track performance in the Browser's "Performance" tab.
+         * @type {boolean}
+         */
+        trackPerformance: false,
+        /**
+         * Process pragmas in the engine (debug blocks)
+         * @type {boolean}
+         */
+        pragmaDebugging: true,
         /** 
          * Enable engine debugging mode. Default is false.
          * @type {boolean}
@@ -289,7 +299,7 @@ class SparkHeapConfig extends Config {
            * The total amount of memory to reserve in bytes.
            * @type {number} The number of bytes to allocate
            */
-          heapSize: 1048576, // 1MB (1024 * 1024)
+          heapSize: 524288, // 512KB
 
           /**
            * Balance the amount of memory to favor the

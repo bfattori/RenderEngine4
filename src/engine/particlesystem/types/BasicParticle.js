@@ -286,14 +286,13 @@ export default class BasicParticle extends Particle {
      * Replace particle types with their configured instances
      * @returns 
      */
-    async rehydrate(obj) {
-        if (obj.tileSheet !== null) {
-            const sheet = new TileSheet(obj.tileSheet.name, obj.tileSheet.resourceUrl);
+    async rehydrate(props) {
+        if (props.tileSheet !== null) {
+            const sheet = new TileSheet(props.tileSheet.name, props.tileSheet.resourceUrl);
             await sheet.loading();
-            obj.tileSheet = sheet;
+            props.tileSheet = sheet;
         }
 
-        await super.rehydrate(obj);
-        return obj;
+        await super.rehydrate(props);
     }
 } 

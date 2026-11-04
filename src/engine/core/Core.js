@@ -1,140 +1,150 @@
+import { Logger } from './Console.js';
 import { SparkHeapConfig } from './Config.js';
 import SparkHeap from './SparkHeap.js';
 
-const MathPool = {
-    _heap: null,
+class MemoryPool {
+    #log;
+    #name;
+    #heap = null;
     
-    init: () => {
-        // allocate a pool of memory for math operations
-        MathPool._heap = new SparkHeap(new SparkHeapConfig({
-            heapSize: 16384,
-            reserveSize: 1.0
-        }));
-    },
+    constructor(config = {
+        baseUnit: SparkHeap.BYTE_64, // 64-bit values or lower
+        heapSize: 4096               // 32k
+    }, name = 'MemoryPool') {
+        this.#log = new Logger(this, `(${name})`);
+
+        // allocate a pool of memory for memory allocation operations
+        this.#heap = new SparkHeap(new SparkHeapConfig(config));
+        this.#name = name;
+    }
 
     // general allocator
 
-    $malloc: (byteSize, size) => {
-        return MathPool._heap.malloc(byteSize, size * byteSize);
-    },
+    #malloc(byteSize, size) {
+        return this.#heap.malloc(byteSize, size * byteSize);
+    }
 
     // typed arrays
 
-    getI8Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_8, size);
+    #getI8Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_8, size);
         return new Int8Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getI16Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_16, size);
+    #getI16Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_16, size);
         return new Int16Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getI32Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_32, size);
+    #getI32Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_32, size);
         return new Int32Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getI64Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_64, size);
+    #getI64Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_64, size);
         return new BigInt64Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getU8Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_8, size);
+    #getU8Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_8, size);
         return new Uint8Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getU16Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_16, size);
+    #getU16Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_16, size);
         return new Uint16Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getU32Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_32, size);
+    #getU32Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_32, size);
         return new Uint32Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getU64Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_64, size);
+    #getU64Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_64, size);
         return new BigUint64Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getF32Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_32, size);
+    #getF32Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_32, size);
         return new Float32Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
-    getF64Array: (size) => {
-        const spark = MathPool.$malloc(SparkHeap.BYTE_64, size);
+    #getF64Array(size) {
+        const spark = this.#malloc(SparkHeap.BYTE_64, size);
         return new Float64Array(spark.buffer, spark.byteOffset, size);
-    },
+    }
 
     // 2d vectors
 
-    getVecI8: () => {
-        return MathPool.getI8Array(2);
-    },
+    get VecI8() {
+        return this.#getI8Array(2);
+    }
 
-    getVecU8: () => {
-        return MathPool.getU8Array(2);
-    },
+    get VecU8() {
+        return this.#getU8Array(2);
+    }
 
-    getVecI16: () => {
-        return MathPool.getI16Array(2);
-    },
+    get VecI16() {
+        return this.#getI16Array(2);
+    }
 
-    getVecU16: () => {
-        return MathPool.getU16Array(2);
-    },
+    get VecU16() {
+        return this.#getU16Array(2);
+    }
 
-    getVecI32: () => {
-        return MathPool.getI32Array(2);
-    },
+    get VecI32() {
+        return this.#getI32Array(2);
+    }
 
-    getVecU32: () => {
-        return MathPool.getU32Array(2);
-    },
+    get VecU32() {
+        return this.#getU32Array(2);
+    }
 
-    getVecI64: () => {
-        return MathPool.getI64Array(2);
-    },
+    get VecI64() {
+        return this.#getI64Array(2);
+    }
 
-    getVecU64: () => {
-        return MathPool.getU64Array(2);
-    },
+    get VecU64() {
+        return this.#getU64Array(2);
+    }
 
-    getVecF32: () => {
-        return MathPool.getF32Array(2);
-    },
+    get VecF32() {
+        return this.#getF32Array(2);
+    }
 
-    getVecF64: () => {
-        return MathPool.getF64Array(2);
-    },
+    get VecF64() {
+        return this.#getF64Array(2);
+    }
 
     // 2d vector arrays
 
-    getVecF32Array: (size) => {
-        return MathPool.getF32Array(size * 2);
-    },
+    VecF32Array(size) {
+        return this.#getF32Array(size * 2);
+    }
 
-    getVecF64Array: (size) => {
-        return MathPool.getF64Array(size * 2);
+    VecF64Array(size) {
+        return this.#getF64Array(size * 2);
     }
 };
 
 const Core = {
   initialize: () => {
-    // initialize the spark memory manager
+    // initialize the primary memory manager
     self.SPARK_MM = new SparkHeap();
 
-    // initialize the MathPool
-    MathPool.init();
+    // intialize the main memory pool for the game
+    self.SPARK_POOL = new MemoryPool({
+        baseUnit: SparkHeap.BYTE_32,
+        heapSize: 32768,
+        reserveSize: 0.95
+    }, 'GamePool');
   }
 };
 
 export default Core;
 
 export {
-  MathPool
+  MemoryPool
 };

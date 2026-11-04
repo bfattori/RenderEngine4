@@ -1,4 +1,3 @@
-import { MathPool } from './Core.js';
 
 /**
  * @class Spark
@@ -73,7 +72,7 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec8(offset) {
-        const vec = MathPool.getVecI8();
+        const vec = self.SPARK_POOL.VecI8;
         vec[0] = this.getInt8(offset);
         vec[1] = this.getInt8(offset + 1);
         return vec;
@@ -95,7 +94,7 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU8(offset) {
-        const vec = MathPool.getVecU8();
+        const vec = self.SPARK_POOL.VecU8;
         vec[0] = this.getUint8(offset);
         vec[1] = this.getUint8(offset + 1);
         return vec;
@@ -117,7 +116,7 @@ export default class Spark extends DataView {
      * @returns {Int16Array} A 2-element array
      */
     getVec16(offset) {
-        const vec = MathPool.getVecI16();
+        const vec = self.SPARK_POOL.VecI16;
         vec[0] = this.getInt16(offset);
         vec[1] = this.getInt16(offset + 2);
         return vec;
@@ -139,7 +138,7 @@ export default class Spark extends DataView {
      * @returns {Uint16Array} A 2-element array
      */
     getVecU16(offset) {
-        const vec = MathPool.getVecU16();
+        const vec = self.SPARK_POOL.VecU16;
         vec[0] = this.getUint16(offset);
         vec[1] = this.getUint16(offset + 2);
         return vec;
@@ -161,7 +160,7 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVec32(offset) {
-        const vec = MathPool.getVecI32();
+        const vec = self.SPARK_POOL.VecI32;
         vec[0] = this.getInt32(offset);
         vec[1] = this.getInt32(offset + 4);
         return vec;
@@ -183,7 +182,7 @@ export default class Spark extends DataView {
      * @returns {Array<number>} A 2-element array
      */
     getVecU32(offset) {
-        const vec = MathPool.getVecU32();
+        const vec = self.SPARK_POOL.VecU32;
         vec[0] = this.getUint32(offset);
         vec[1] = this.getUint32(offset + 4);
         return vec;
@@ -205,7 +204,7 @@ export default class Spark extends DataView {
      * @returns {BigInt64Array} A 2-element array
      */
     getVec64(offset) {
-        const vec = MathPool.getVecI64();
+        const vec = self.SPARK_POOL.VecI64;
         vec[0] = this.getBigInt64(offset);
         vec[1] = this.getBigInt64(offset + 8);
         return vec;
@@ -227,7 +226,7 @@ export default class Spark extends DataView {
      * @returns {BigUint64Array} A 2-element array
      */
     getVecU64(offset) {
-        const vec = MathPool.getVecU64();
+        const vec = self.SPARK_POOL.VecU64;
         vec[0] = this.getBigUint64(offset);
         vec[1] = this.getBigUint64(offset + 8);
         return vec;
@@ -249,7 +248,7 @@ export default class Spark extends DataView {
      * @returns {Float32Array} A 2-element array
      */
     getVecF32(offset) {
-        const vec = MathPool.getVecF32();
+        const vec = self.SPARK_POOL.VecF32;
         vec[0] = this.getFloat32(offset);
         vec[1] = this.getFloat32(offset + 4);
         return vec;
@@ -271,7 +270,7 @@ export default class Spark extends DataView {
      * @returns {Float64Array} A 2-element array
      */
     getVecF64(offset) {
-        const vec = MathPool.getVecF64();
+        const vec = self.SPARK_POOL.VecF64;
         vec[0] = this.getFloat64(offset);
         vec[1] = this.getFloat64(offset + 4);
         return vec;

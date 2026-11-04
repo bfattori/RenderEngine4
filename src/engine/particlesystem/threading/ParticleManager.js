@@ -336,6 +336,9 @@ export default class ParticleManager {
      * @return {ParticleEffect} The instance of the effect
      */
     addEffect(particleEffect) {
+        // assign a unique id
+        particleEffect.opaqueId = this.#nextOpaque;
+
         this.#send({ 
             type: Constants.MTYPE.MANAGER.ADD_EFFECT, 
             effect: particleEffect.transferrable 
@@ -387,16 +390,16 @@ export default class ParticleManager {
      * Emit particles using an effect, into the particle engine at the given poisition.
      * 
      * @param {Array<number>} worldPos - The [x,y] world coordinates where the effect should emit particles
-     * @param {String} effectName - The name of the effect to run, effects contain the functionality to generate and modify particles emitted to the engine
+     * @param {number} opaqueId - The effect to run, effects contain the functionality to generate and modify particles emitted to the engine
      * @param {boolean} isReset - A flag indicating the effect needs to be reset before it is run (used in ParticleWorkers)
      * @param {number} time - Current world time in milliseconds 
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
-    runEffect([x, y], effectName, isReset, time, deltaTime) {
+    runEffect([x, y], opaqueId, isReset, time, deltaTime) {
         this.#send({ 
             type: Constants.MTYPE.MANAGER.RUN_EFFECT, 
-            pos: [x, y], 
-            name: effectName, 
+            pos: [x, y],
+            opaqueId: opaqueId, 
             time: time, 
             deltaTime: deltaTime,
             isReset: isReset

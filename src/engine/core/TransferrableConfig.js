@@ -209,7 +209,7 @@ export default class TransferrableConfig extends Config {
             if (binder && typeof binder === 'function') binder(obj);
             
             // rehydrate the object with transferrable's properties and name it
-            await obj.rehydrate(transferrable.props);
+            await obj.rehydrate.call(obj, transferrable.props);
             obj.$name = transferrable.$name;
             return obj;
         } catch (ex) {

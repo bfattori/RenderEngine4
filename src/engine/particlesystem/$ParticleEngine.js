@@ -233,6 +233,12 @@ export default class $ParticleEngine {
         return this.#particleEffects;
     }
 
+    get effectsByName() {
+        const byName = new Map();
+        this.#particleEffects.forEach(pEffect => byName.set(pEffect.$name, pEffect));
+        return byName;
+    }
+
     /**
      * The collection of particle affectors in the engine
      * @returns {Map<String, Array<ParticleAffector>>} A map of particle affectors by type.
@@ -376,17 +382,20 @@ export default class $ParticleEngine {
      * @return {ParticleEffect} The instance of the effect
      */
     addEffect(particleEffect) {
+        if (particleEffect.opaqueId === null) {
+            particleEffect.opaqueId = this.#nextOpaque;
+        }
         particleEffect.engine = this;
-        this.effects.set(particleEffect.$name, particleEffect);
+        this.effects.set(particleEffect.opaqueId, particleEffect);
     }
 
     /**
-     * Get a particle effect by name
-     * @param {String} name - The particle effect name
+     * Get a particle effect by opaque Id
+     * @param {number} opaqueId - The particle effect
      * @returns {ParticleEffect} The instance of the effect or null if it does not exist.
      */
-    getEffect(name) {
-        return this.effects.get(name);
+    getEffect(opaqueId) {
+        return this.effects.get(opaqueId);
     }
 
     /**
@@ -439,14 +448,13 @@ export default class $ParticleEngine {
      * Emit particles using an effect, into the particle engine, at a specified world position. 
      * 
      * @param {Array<number>} param0 - The [x,y] world coordinates where the effect should emit particles
-     * @param {String} effectName - The name of the effect to run, effects contain the functionality to generate and modify particles emitted to the engine
+     * @param {number} opaqueId - The effect to run, effects contain the functionality to generate and modify particles emitted to the engine
      * @param {boolean} isReset - A flag indicating if the effect has been reset (used in ParticleWorkers)
      * @param {number} time - Current world time in milliseconds 
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
-    runEffect([x, y], effectName, isReset, time, deltaTime) {
-        //console.debug(x, y, effectName);
-        const effect = this.getEffect(effectName);
+    runEffect([x, y], opaqueId, isReset, time, deltaTime) {
+       const effect = this.getEffect(opaqueId);
         if (effect) {
             //if (isReset) effect.reset();
             effect.run([x, y], time, deltaTime);

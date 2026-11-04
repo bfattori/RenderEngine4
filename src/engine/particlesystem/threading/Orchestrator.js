@@ -171,6 +171,8 @@ class Orchestrator {
     #testReady(workerId) {
         const worker = this.#workers.get(workerId);
         if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0 && worker.ackAffectors.length === 0) {
+            this.#log.debug(`Ack ${workerId}`)
+
             this.#workersInitialized++;
         }
         
