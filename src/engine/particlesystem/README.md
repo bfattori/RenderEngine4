@@ -3,57 +3,6 @@ The RenderEngine4 provides a particle system grown for speed and flexibility. Th
 
 The particle engine provides a simple API for creating particle effects, which can be used to add visual flair to games or simulations. Additionally occlusion masking of particles is near-automatic with hinting to help the system know what to show and what to hide in the final output. This allows the particles to run within the render planes provided by the render contexts.
 
-## **Spark** Memory Manager
-The `Spark` memory manager is designed to make memory management flexible, yet still performant while minimizing garbage collection. Memory is allocated at start time for particle storage and is retained until the game exits. Particle memory is overwritten in a circular fashion to eliminate new allocations at runtime.
-
-The `Spark` memory manager extends from the `DataView` with methods added for memory types not native to it. For example, `Spark` allows for the creation of `VecF32` or `VecF32Array` which represent two 32-bit floats per element. Or the `Color32` type that can store hex color values and retrieve them in native web hex-color format.
-
-### Memory Management
-With `Spark`, manipulating memory becomes _your task_. Each particle memory segment is the size (in bytes) of the _largest_ particle type used. Inside the `Particle` or `BasicParticle`, memory is read and written directly with pre-computed byte offsets. Only numerical types are stored in the particle memory so operations can be fast. The trade-off between using `Objects` vs fixed allocation is made up for by the reduced amount of garbage collection that occurs.
-
-Standard JavaScript memory management is highly-optimized to work with JavaScript object types. Creating and destroying thousands of particles requires frequent garbage collection and causes stuttering in the game loop. But, by using a fixed memory allocator, we can virtually eliminate garbage collection. 
-
-An example of writing and reading memory is shown below. Particle lifecycle methods are passed a `memSegment` representing the block of memory allocated for the particle.
-
-```javascript
-  spawn(worldPos, time, memSegment) {
-    // lifespan 
-    const lifeSpan = $Math.getRangeValueInt(this.lifeSpan);
-    const variance = $Math.getRangeValueInt(this.lifeVariance);
-    memSegment.setUint16(Particle.OFFSETS.LF_REMAINING, lifeSpan + variance);
-    memSegment.setUint16(Particle.OFFSETS.LF_ORIGINAL, lifeSpan + variance);
-
-    // opaque Id
-    memSegment.setUint8(Particle.OFFSETS.OPAQUE_ID, this.opaqueId);
-
-    // spawn time
-    memSegment.setBigUint64(Particle.OFFSETS.SPAWN_TIME, BigInt(Math.floor(time)));
-
-    // position
-    memSegment.setVecF32(Particle.OFFSETS.POSITION, worldPos);
-  }
-```
-
-During update, a particle may need to read and write values in the memory segment. Updating a value pulled from the memory segment _will not change the value in memory_. If you update a value in the function scope, you **must explicitly write-back** any values you want to retain into the particle's instantaneous memory.
-
-```javascript
-  update(time, deltaTime, memSegment, life) {
-      super.update(time, deltaTime, memSegment, life);
-      
-      const fade = memSegment.getFloat32(DiffuseParticle.OFFSETS.FADE);
-      if (fade > 0.0) {
-        let alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
-        alpha -= fade;
-        memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, Math.max(0.0, alpha));
-
-        if (alpha <= 0) {
-          this.cleanUp(memSegment);
-        }
-      }
-  }
-```
-
-
 ## **Particle Engine** - particle renderer extraordinare
 _The engine has a simple task:_ **update and render particles.** It is either frame-bound to the main update/rendering loop or can run unbound (distributed to threads) with an orchestrator that utilizes smaller worker threads. Particles can be sent to the system at any point during the engine's update stage so when the update completes, waiting particles are introduced into the system and the render operation is called. Following a rendering of live particles, the output is rendered to a bitmap that can is consumed during the render portion of the engine's update/render loop.
 

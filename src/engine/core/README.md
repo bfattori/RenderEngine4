@@ -49,3 +49,54 @@ Fast memory pools are `Spark` allocators that don't hold pointers to the memory 
 
 ### `/memory/SlowMemoryPool`
 The slow memory pools are `Spark` allocators with a pointer where the memory is held until it is freed. Additionally, coalescing of memory is done automatically when there is CPU idle time. Objects in a slow memory pool may be held for much longer periods of time than objects in fast memory pools since they must be freed before they can be reused.
+
+
+## The **Spark** Memory Manager
+The `Spark` data view is designed to make memory management flexible, yet still performant while minimizing garbage collection. Memory is allocated at start time for particle storage and is retained until the game exits. Particle memory is overwritten in a circular fashion to eliminate new allocations at runtime.
+
+`Spark` extends from the `DataView` with methods added for memory types not native to it. For example, `Spark` allows for the creation of `VecF32` or `VecF32Array` which represent two 32-bit floats per element. Or the `Color32` type that can store hex color values and retrieve them in native web hex-color format.
+
+### Memory Management Examples
+In the particle system, a particle's memory segment is the size (in bytes) of the _largest_ particle type used. Inside the `Particle` or `BasicParticle`, memory is read and written directly with pre-computed byte offsets. Only numerical types are stored in memory so operations can be fast. The trade-off between using variable `Object` allocation vs fixed allocation is made up for by the reduced amount of garbage collection that occurs.
+
+Standard JavaScript memory management is highly-optimized to work with JavaScript object types. Creating and destroying thousands of particles requires frequent garbage collection and causes stuttering in the game loop. But, by using a fixed memory allocator, we can virtually eliminate garbage collection.
+
+An example of writing and reading memory is shown below. Particle lifecycle methods are passed a `memSegment` representing the `Spark` data view for the particle.
+
+```javascript
+  spawn(worldPos, time, memSegment) {
+    // lifespan 
+    const lifeSpan = $Math.getRangeValueInt(this.lifeSpan);
+    const variance = $Math.getRangeValueInt(this.lifeVariance);
+    memSegment.setUint16(Particle.OFFSETS.LF_REMAINING, lifeSpan + variance);
+    memSegment.setUint16(Particle.OFFSETS.LF_ORIGINAL, lifeSpan + variance);
+
+    // opaque Id
+    memSegment.setUint8(Particle.OFFSETS.OPAQUE_ID, this.opaqueId);
+
+    // spawn time
+    memSegment.setBigUint64(Particle.OFFSETS.SPAWN_TIME, BigInt(Math.floor(time)));
+
+    // position
+    memSegment.setVecF32(Particle.OFFSETS.POSITION, worldPos);
+  }
+```
+
+During update, a particle may need to read and write values in the memory segment. Updating a value pulled from the memory segment _will not change the value in memory_. If you update a value in the function scope, you **must explicitly write-back** any values you want to retain into the particle's instantaneous memory.
+
+```javascript
+  update(time, deltaTime, memSegment, life) {
+      super.update(time, deltaTime, memSegment, life);
+      
+      const fade = memSegment.getFloat32(DiffuseParticle.OFFSETS.FADE);
+      if (fade > 0.0) {
+        let alpha = memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA);
+        alpha -= fade;
+        memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, Math.max(0.0, alpha));
+
+        if (alpha <= 0) {
+          this.cleanUp(memSegment);
+        }
+      }
+  }
+```
