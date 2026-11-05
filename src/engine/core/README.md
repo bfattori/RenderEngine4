@@ -100,3 +100,8 @@ During update, a particle may need to read and write values in the memory segmen
       }
   }
 ```
+Optionally, to avoid the introduction of the variable, one might consider this more efficient code:
+
+```javascript
+      memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, Math.max(0.0, memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA) - fade));
+```
