@@ -82,7 +82,7 @@ An example of writing and reading memory is shown below. Particle lifecycle meth
   }
 ```
 
-During update, a particle may need to read and write values in the memory segment. Updating a primitive value pulled from the memory segment _will not change the value in memory_. Primitive values are copy-by-value and must be explicitly written-back if the value must be retained. For array types, if you update an indexed value in the function scope, there is no need to perform a write-back. **Reading and writing array values _manipulates memory directly._**
+During update, a particle may need to read and write values in the memory segment. Changing primitive values pulled from the memory segment _will not change the value in memory_. Primitive values are copy-by-value and must be explicitly written-back if the value must be retained. For array types, if you update an indexed value in the function scope, there is no need to perform a write-back. **Reading and writing array values _manipulates memory directly._**
 
 ```javascript
   update(time, deltaTime, memSegment, life) {
@@ -99,10 +99,4 @@ During update, a particle may need to read and write values in the memory segmen
         }
       }
   }
-```
-Optionally, to avoid the introduction of the variable, one might consider this more efficient code fragment:
-
-```javascript
-      memSegment.setFloat32(DiffuseParticle.OFFSETS.ALPHA, 
-        Math.max(0.0, memSegment.getFloat32(DiffuseParticle.OFFSETS.ALPHA) - fade));
 ```
