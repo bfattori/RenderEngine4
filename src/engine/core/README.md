@@ -45,7 +45,7 @@ The `Matrix2d` class extends the `DOMMatrix` object to implement additional meth
 Creating and destroying many thousand objects can lead to a lot of garbage collection. The `SparkHeap` is a memory allocator designed to reduce the overhead of garbage collection by allocating memory in fixed-size blocks.
 
 ### `/memory/FastMemoryPool`
-Fast memory pools are allocators that don't hold pointers to memory in use. It is expected that space that is allocated is only alive for a short period of time, and it can be reused without needing to free the memory first. This reduces the overhead of garbage collection by avoiding the need to allocate and deallocate memory frequently.
+Fast memory pools are allocators that don't hold pointers to memory in use. It is expected that space that is allocated is only alive for a short period of time, and it can be reused without needing to free the memory first. This reduces the overhead of garbage collection by avoiding the need to allocate and deallocate memory frequently. These are used by the `$Math` and `$ParticleEngine` classes to improve performance.
 
 ### `/memory/SlowMemoryPool`
-The slow memory pools are allocated with a pointer and the memory is held until it is freed. Additionally, coalescing of memory is done when there is CPU idle time.
+The slow memory pools are allocated with a pointer and the memory is held until it is freed. Additionally, coalescing of memory is done when there is CPU idle time. Objects in a slow memory pool can be held for longer periods of time than objects in fast memory pools since they aren't overwritten unless freed.
