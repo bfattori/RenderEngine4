@@ -39,13 +39,13 @@ The `$Math` library provides functions useful in game development. Random number
 The `Matrix2d` class extends the `DOMMatrix` object to implement additional methods apparently missing from `DOMMatrix`, and some additional static utility methods.
 
 ### `/memory/Spark`
-`Spark` is an extension of `DataView` with support for data types typically found in games. It uses the `SparkHeap` for array types.
+`Spark` extends the browser's native `DataView` with support for data types typically found in games. This is type used internally by the `SparkHeap` and the memory pools.
 
 ### `/memory/SparkHeap`
-Creating and destroying many thousand objects can lead to a lot of garbage collection. The `SparkHeap` is a memory allocator designed to reduce the overhead of garbage collection by allocating memory in fixed-size blocks.
+Creating and destroying many thousand objects can lead to a lot of garbage collection. The `SparkHeap` is a memory allocator designed to reduce the overhead of garbage collection by allocating memory in fixed-size blocks. It allocates `Spark` memory units in the size required by the game's needs.
 
 ### `/memory/FastMemoryPool`
-Fast memory pools are allocators that don't hold pointers to memory in use. It is expected that space that is allocated is only alive for a short period of time, and it can be reused without needing to free the memory first. This reduces the overhead of garbage collection by avoiding the need to allocate and deallocate memory frequently. These are used by the `$Math` and `$ParticleEngine` classes to improve performance.
+Fast memory pools are `Spark` allocators that don't hold pointers to the memory in use. It is expected that space that is allocated is only alive for a short period of time, and it can be reused without needing to free the memory first. This reduces the overhead of garbage collection by avoiding the need to allocate and deallocate memory frequently. These are used by the `$Math` and `$ParticleEngine` classes to improve performance.
 
 ### `/memory/SlowMemoryPool`
-The slow memory pools are allocated with a pointer and the memory is held until it is freed. Additionally, coalescing of memory is done when there is CPU idle time. Objects in a slow memory pool can be held for longer periods of time than objects in fast memory pools since they aren't overwritten unless freed.
+The slow memory pools are `Spark` allocators with a pointer where the memory is held until it is freed. Additionally, coalescing of memory is done automatically when there is CPU idle time. Objects in a slow memory pool may be held for much longer periods of time than objects in fast memory pools since they must be freed before they can be reused.
