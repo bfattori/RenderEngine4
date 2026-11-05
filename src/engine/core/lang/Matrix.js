@@ -1,5 +1,5 @@
-import RenderEngineError from './RenderEngineError.js';
-import Util from './Util.js';
+import RenderEngineError from '../RenderEngineError.js';
+import Util from '../Util.js';
 
 /**
  * A 2d matrix class to simplify the several manipulations around the engine in 

@@ -1,4 +1,4 @@
-import Config from '../core/Config.js';
+import Config from '../core/config/Config.js';
 import Util from '../core/Util.js';
 
 export default class SwitchPanel extends Config {

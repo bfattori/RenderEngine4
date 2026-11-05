@@ -1,10 +1,12 @@
 import RenderEngine from '../../../src/engine/renderEngine4.js';
+
+import $Math from '../../../src/engine/core/lang/Math.js';
+import Util from '../../../src/engine/core/Util.js';
+
 import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
 import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
 import TileSheet from '../../../src/engine/resources/loaders/TileSheet.js';
-import $Math from '../../../src/engine/core/Math.js';
-import Util from '../../../src/engine/core/Util.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {

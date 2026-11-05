@@ -1,5 +1,5 @@
 import TileMap from './TileMap.js';
-import $Math from '../../core/Math.js';
+import $Math from '../../core/lang/Math.js';
 
 export default class PlatformerMap extends TileMap {
   #rows = null;

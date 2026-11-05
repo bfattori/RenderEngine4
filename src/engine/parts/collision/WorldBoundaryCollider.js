@@ -1,6 +1,7 @@
 import Constants from '../../Constants.js';
-import ColliderPart, { ColliderEvent } from './Collider.js';
 import Engine from '../../core/Engine.js';
+
+import ColliderPart, { ColliderEvent } from './Collider.js';
 
 export default class WorldBoundaryCollider extends ColliderPart {
     #stopOnCollision = true;

@@ -3,12 +3,14 @@ import ComponentPart from '../parts/ComponentPart.js';
 
 import RenderEngineError from '../core/RenderEngineError.js';
 import EventEngine from '../core/EventEngine.js';
-import { Matrix2d } from '../core/Matrix.js';
+import { Matrix2d } from '../core/lang/Matrix.js';
 import Engine from '../core/Engine.js';
-import DebugObjects from '../ui/debug/DebugObjects.js';
 import RenderPart from '../parts/render/RenderPart.js';
 
 const ctx = Context.getInstance();
+
+import DebugObjects from '../ui/debug/DebugObjects.js';
+
 
 /**
  * GameObjectError contains the {@link GameObject} related to the error.

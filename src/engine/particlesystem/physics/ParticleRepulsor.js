@@ -1,17 +1,17 @@
 import Engine from '../../core/Engine.js';
-import TransferrableConfig from '../../core/TransferrableConfig.js';
-import Enum from '../../core/Enum.js';
-import $Math from '../../core/Math.js';
-import { Matrix2d } from '../../core/Matrix.js';
+import TransferrableConfig from '../../core/config/TransferrableConfig.js';
+import Enum from '../../core/lang/Enum.js';
+import $Math from '../../core/lang/Math.js';
+import { Matrix2d } from '../../core/lang/Matrix.js';
 import Particle from '../types/Particle.js';
 
 /**
- * @class ParticleAffector
- * @classdesc The ParticleAffector class is responsible for applying forces to particles within a particle system. It defines the shape, position, and falloff of the affector, 
+ * @class ParticleRepulsor
+ * @classdesc The ParticleRepulsor class is responsible for applying forces to particles within a particle system. It defines the shape, position, and falloff of the affector, 
  * and calculates the resulting impulse on particles based on their position relative to the affector. The affector can be circular or linear in shape, and can have different 
  * types of falloff (linear, squared, attenuate, or custom). The affector also has properties for friction and restitution that affect how particles respond to its influence.
  */
-export default class ParticleAffector extends TransferrableConfig {
+export default class ParticleRepulsor extends TransferrableConfig {
   #engine = null;
 
   static FALLOFF_TYPE = new Enum(
@@ -36,9 +36,9 @@ export default class ParticleAffector extends TransferrableConfig {
 
       /**
        * The shape of the affector: CIRCLE or SURFACE. The shape determines how the affector influences particles within its area of effect.
-       * @type {ParticleAffector#SHAPE}
+       * @type {ParticleRepulsor#SHAPE}
        */
-      shape: ParticleAffector.SHAPE.CIRCLE,
+      shape: ParticleRepulsor.SHAPE.CIRCLE,
 
       /**
        * The radius for the affector's influence when the shape is `CIRCLE`.
@@ -55,9 +55,9 @@ export default class ParticleAffector extends TransferrableConfig {
 
       /**
        * The type of falloff applied
-       * @type {ParticleAffector#FALLOFF_TYPE} 
+       * @type {ParticleRepulsor#FALLOFF_TYPE} 
        */
-      falloffType: ParticleAffector.FALLOFF_TYPE.LINEAR,
+      falloffType: ParticleRepulsor.FALLOFF_TYPE.LINEAR,
 
       /**
        * The rolloff factor for the `ATTENUATE` style falloff.
@@ -79,7 +79,7 @@ export default class ParticleAffector extends TransferrableConfig {
       restitution: 0.0
     }, url);
     this.merge(overrides);
-    this.name = 'particleAffector';
+    this.name = 'particleRepulsor';
     try {
       this.#engine = Engine.particleEngine;
     } catch (ex) {
@@ -88,7 +88,7 @@ export default class ParticleAffector extends TransferrableConfig {
   }
 
   /**
-   * Set the associated particle engine this affector will impact.
+   * Set the associated particle engine this repulsor will impact.
    * @param {ParticleEngine} pEngine - The particle engine instance
    */
   set engine(pEngine) {
@@ -96,7 +96,7 @@ export default class ParticleAffector extends TransferrableConfig {
   }
 
   /**
-   * Get the particle engine the affector is associated with.
+   * Get the particle engine the repulsor is associated with.
    * @returns {ParticleEngine} The particle engine 
    */
   get engine() {
@@ -104,18 +104,18 @@ export default class ParticleAffector extends TransferrableConfig {
   }
 
   /**
-   * Override the name of the particle type. If you reuse a particle type, you need
+   * Override the name of the repulsor type. If you reuse a particle type, you need
    * to differentiate them by name or the particle engine will use the first instance
    * provided.
-   * @param {String} name - The particle name
+   * @param {String} name - The repulsor name
    */
   set name(name) {
     this.$name = name;
   }
 
   /**
-   * Get the name of this particle type.
-   * @returns {String} The name of the particle type
+   * Get the name of this repulsor type.
+   * @returns {String} The name of the repulsor type
    */
   get name() {
     return this.$name;
@@ -129,13 +129,13 @@ export default class ParticleAffector extends TransferrableConfig {
    */
   $propUpdated(property, newValue, oldValue) {
     if (property === 'pos' && this.engine !== null) {
-      this.engine.updateAffector(this);
+      this.engine.updateRepulsor(this);
     }
   }
 
   /**
    * Impact a particle's position and velocity based on the
-   * affector's properties. Return an object with updated position
+   * repulsor's properties. Return an object with updated position
    * and velocity for the particle.
    * @param {Array<number>} pos - The particle's poisition
    * @param {Array<number>} vel - The particle's velocity vector
@@ -143,7 +143,7 @@ export default class ParticleAffector extends TransferrableConfig {
    * @param {number} deltaTime - The time since the last frame 
    */
   affect(memSegment, time, deltaTime) {
-    if (this.shape === ParticleAffector.SHAPE.CIRCLE) {
+    if (this.shape === ParticleRepulsor.SHAPE.CIRCLE) {
       this.#circleImpulse(memSegment);
     } else {
       this.#rectangleImpulse(memSegment);
@@ -239,29 +239,29 @@ export default class ParticleAffector extends TransferrableConfig {
    * 
    * @param {number} x - The x position of the particle
    * @param {number} y - The x position of the particle
-   * @param {number} dist - The distance to the affector
+   * @param {number} dist - The distance to the repulsor
    * @returns 
    */
   #getFallOff(x, y, dist) {
     switch (+this.falloffType) {
-      case +ParticleAffector.FALLOFF_TYPE.LINEAR:
+      case +ParticleRepulsor.FALLOFF_TYPE.LINEAR:
         return $Math.clamp(1.0 - (dist / this.radius), 0.0, 1.0);  
-      case +ParticleAffector.FALLOFF_TYPE.SQUARED:
+      case +ParticleRepulsor.FALLOFF_TYPE.SQUARED:
         return $Math.clamp(1.0 / (dist * dist), 0.0, 1.0);
-      case +ParticleAffector.FALLOFF_TYPE.ATTENUATE:
+      case +ParticleRepulsor.FALLOFF_TYPE.ATTENUATE:
         return 1.0 / ((1.0 + this.rolloffFactor) * (dist - this.radius));
-      case +ParticleAffector.FALLOFF_TYPE.CUSTOM:
+      case +ParticleRepulsor.FALLOFF_TYPE.CUSTOM:
         return this.customFalloff(x, y, dist);
     }
   }
 
   /**
-   * Calculate the effector falloff based on the particle 
-   * position and distance to the effector.
+   * Calculate the repulsor falloff based on the particle 
+   * position and distance to the repulsor.
    *
    * @param {number} x - The x position of the particle
    * @param {number} y - The x position of the particle
-   * @param {number} dist - The distance to the affector
+   * @param {number} dist - The distance to the repulsor
    * @returns 
    */
   customFalloff(x, y, dist) {
@@ -284,8 +284,8 @@ export default class ParticleAffector extends TransferrableConfig {
    * @returns 
    */
   async rehydrate(obj) {
-      obj.falloffType = ParticleAffector.FALLOFF_TYPE[obj.falloffType];
-      obj.shape = ParticleAffector.SHAPE[obj.shape];
+      obj.falloffType = ParticleRepulsor.FALLOFF_TYPE[obj.falloffType];
+      obj.shape = ParticleRepulsor.SHAPE[obj.shape];
       await super.rehydrate(obj);
       return obj;
   }

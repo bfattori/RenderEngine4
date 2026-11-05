@@ -1,4 +1,4 @@
-import $Math from './Math.js';
+import $Math from './lang/Math.js';
 import RenderEngineError from './RenderEngineError.js';
 export default class Util {
     

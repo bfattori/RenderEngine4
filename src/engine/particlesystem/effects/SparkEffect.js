@@ -1,5 +1,5 @@
 import FountainEffect from './FountainEffect.js';
-import $Math from '../../core/Math.js';
+import $Math from '../../core/lang/Math.js';
 
 export default class SparkEffect extends FountainEffect {
     #nextEmission = 0;

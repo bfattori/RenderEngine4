@@ -1,4 +1,4 @@
-import $Math from '../../core/Math.js';
+import $Math from '../../core/lang/Math.js';
 import Particle from '../types/Particle.js';
 import ParticleEffect from './ParticleEffect.js';
 

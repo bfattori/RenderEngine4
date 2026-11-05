@@ -1,4 +1,4 @@
-import Constants from '../../constants.js';
+import Constants from '../../Constants.js';
 import Util from '../../core/Util.js';
 
 export default class LoadCounter {

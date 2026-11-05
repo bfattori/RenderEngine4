@@ -293,6 +293,11 @@ export default class EventEngine {
     return this.#listeners.values().reduce((acc, listenerSet) => acc += listenerSet.length, 0);
   }
 
+  /**
+   * Returns a set of stats for the Event Engine to display in the
+   * state bar at the top of the DevTools debugger.
+   * @returns {Object<String, *>} Snapshot stats for the DevTools debugger
+   */
   snapshotStats() {
     return {
       "Event Listeners": this.listenersCount

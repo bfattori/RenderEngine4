@@ -1,15 +1,20 @@
-import { Logger, installDirectives } from '../../core/Console.js';
+import { Logger, installDirectives } from '../../core/lang/Console.js';
 import Context from '../../Context.js';
-import Constants from '../../Constants.js';
-import $Math from '../../core/Math.js';
-import CanvasPIP from '../../ui/debug/CanvasPIP.js';
+import $Math from '../../core/lang/Math.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
+
+import protocol from './Protocol.js';
+
+import CanvasPIP from '../../ui/debug/CanvasPIP.js';
+
 
 let orchestratorInstance = null;
 let messageHandler = null;
 const ctx = Context.getInstance();
 
 installDirectives(self);
+
+let log;
 
 /**
  * @class Orchestrator
@@ -54,7 +59,6 @@ class Orchestrator {
         ctx.engineOpts = systemOpts.engineOpts;
         this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
 
-        this.#log = new Logger(this, null, true);
         this.#spawnWorkers(assembler);
     }
 
@@ -82,7 +86,7 @@ class Orchestrator {
         this.#waitingWorkers = new Array(tConfig.workers).fill(true);
         this.#workersInitialized = 0;
 
-        this.#log.debug(`Starting ${tConfig.workers} ParticleWorkers ...`);
+        log.debug(`spawning ${tConfig.workers} particle workers ...`);
 
         // spawn the worker threads for the particle engine
         for (let i = 0; i < tConfig.workers; i++) {
@@ -109,14 +113,14 @@ class Orchestrator {
                 live: 0,
                 ackEffects: [],
                 ackParticles: [],
-                ackAffectors: []
+                ackRepulsors: []
             });
 
             // initialize the worker thread
             const workerConfig = { ...pConfig, maxParticles: Math.floor(pConfig.maxParticles / tConfig.workers) };
             worker.postMessage({ 
-                re4: Constants.MSG.ORCHESTRATOR, 
-                type: Constants.MTYPE.ORCHESTRATOR.INIT, 
+                re4: protocol.MSG.ORCHESTRATOR, 
+                type: protocol.MTYPE.ORCHESTRATOR.INIT, 
                 workerId: i,
                 assembler: assembler,
                 width: vPort[0], 
@@ -154,31 +158,30 @@ class Orchestrator {
     #waitAcknowledge(event) {
         let name;
         this.#workers.forEach(worker => {
-            if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_TYPE) {
+            if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_TYPE) {
                 name = event.data.particle.$name;
-                worker.ackParticles.push(name)
-            } else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_EFFECT) {
+                worker.ackParticles.push(name);
+            } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_EFFECT) {
                 name = event.data.effect.$name;
                 worker.ackEffects.push(name);
-            } else if (event.data.type === Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR) {
+            } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_AFFECTOR) {
                 name = event.data.affector.$name;
-                worker.ackAffectors.push(name);
+                worker.ackRepulsors.push(name);
             }
-            // this.#log.debug(`Orchestrator => Worker ${worker.id}: ${name} [${event.data.type}]`);
         });
     }
 
     #testReady(workerId) {
         const worker = this.#workers.get(workerId);
-        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0 && worker.ackAffectors.length === 0) {
+        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0 && worker.ackRepulsors.length === 0) {
             this.#workersInitialized++;
         }
         
         if (this.#workersInitialized === this.#workers.size && this.#waitingWorkers.every(e => e === false)) {
             // the orchestrator is ready to handle requests
             postMessage({ 
-                re4: Constants.MSG.ORCHESTRATOR, 
-                type: Constants.MTYPE.ORCHESTRATOR.READY 
+                re4: protocol.MSG.ORCHESTRATOR, 
+                type: protocol.MTYPE.ORCHESTRATOR.READY 
             });    
         }
     }
@@ -189,32 +192,32 @@ class Orchestrator {
      */
     process(event) {
         switch(event.data.type) {
-            case Constants.MTYPE.MANAGER.ADD_PARTICLES:
-            case Constants.MTYPE.MANAGER.RUN_EFFECT:
-            case Constants.MTYPE.MANAGER.SPAWN:
+            case protocol.MTYPE.MANAGER.ADD_PARTICLES:
+            case protocol.MTYPE.MANAGER.RUN_EFFECT:
+            case protocol.MTYPE.MANAGER.SPAWN:
                 // forward to a worker
                 this.toWorker(event);
                 break;
-            case Constants.MTYPE.MANAGER.ADD_TYPE:
-            case Constants.MTYPE.MANAGER.ADD_EFFECT:
-            case Constants.MTYPE.MANAGER.ADD_AFFECTOR:
+            case protocol.MTYPE.MANAGER.ADD_TYPE:
+            case protocol.MTYPE.MANAGER.ADD_EFFECT:
+            case protocol.MTYPE.MANAGER.ADD_REPULSOR:
                 // particle types, effect, and affectors need to be
                 // acknowledged before workers are ready
                 this.#waitAcknowledge(event);
-            case Constants.MTYPE.ORCHESTRATOR.GENESIS:
-            case Constants.MTYPE.MANAGER.UPDATE_AFFECTOR:
+            case protocol.MTYPE.ORCHESTRATOR.GENESIS:
+            case protocol.MTYPE.MANAGER.UPDATE_REPULSOR:
                 // broadcast to all workers
                 this.broadcast(event);
                 break;
-            case Constants.MTYPE.MANAGER.RESET:
+            case protocol.MTYPE.MANAGER.RESET:
                 // terminate the threads and restart them
                 this.reset();
                 break;
-            case Constants.MTYPE.MANAGER.SHUTDOWN:
+            case protocol.MTYPE.MANAGER.SHUTDOWN:
                 this.shutdown();
                 break;
             default:
-                this.#log.error('[Orchestrator] Unknown message type from manager:', event.data.type);
+                log.error('Unknown message type from manager:', event.data);
         }
     }
 
@@ -223,21 +226,21 @@ class Orchestrator {
      * @param {Event} event 
      */
     #fromWorker(event) {
-        if (event.data.re4 && event.data.re4 === Constants.MSG.WORKER) {
+        if (event.data.re4 && event.data.re4 === protocol.MSG.WORKER) {
             switch(event.data.type) {
-                case Constants.MTYPE.WORKER.READY:
+                case protocol.MTYPE.WORKER.READY:
                     this.#waitingWorkers[event.data.workerId] = false;
                     break;
-                case Constants.MTYPE.WORKER.ACK:
+                case protocol.MTYPE.WORKER.ACK:
                     const worker = this.#workers.get(event.data.workerId);
                     switch (event.data.ack) {
-                        case Constants.MTYPE.WORKER.ACK_TYPE: worker.ackParticles.splice(worker.ackParticles.indexOf(event.data.name), 1); break;
-                        case Constants.MTYPE.WORKER.ACK_EFFECT: worker.ackEffects.splice(worker.ackEffects.indexOf(event.data.name), 1); break;
-                        case Constants.MTYPE.WORKER.ACK_AFFECTOR: worker.ackAffectors.splice(worker.ackAffectors.indexOf(event.data.name), 1); break;
+                        case protocol.MTYPE.WORKER.ACK_TYPE: worker.ackParticles.splice(worker.ackParticles.indexOf(event.data.name), 1); break;
+                        case protocol.MTYPE.WORKER.ACK_EFFECT: worker.ackEffects.splice(worker.ackEffects.indexOf(event.data.name), 1); break;
+                        case protocol.MTYPE.WORKER.ACK_REPULSOR: worker.ackRepulsors.splice(worker.ackRepulsors.indexOf(event.data.name), 1); break;
                     }
                     this.#testReady(event.data.workerId);
                     break;
-                case Constants.MTYPE.WORKER.RENDERED:
+                case protocol.MTYPE.WORKER.RENDERED:
                     // the worker thread has rendered the particles and returned a bitmap
                     this.#workerBitmaps[event.data.workerId] = event.data.image;
                     this.#workerState[event.data.workerId] = event.data.metrics;
@@ -245,9 +248,9 @@ class Orchestrator {
                     PRAGMA('showParticleWorkersPiP:rendered', () => {
                         const image = CanvasPIP.copyImage(event.data.image);
                         postMessage({ 
-                            re4: Constants.MSG.ORCHESTRATOR, 
+                            re4: protocol.MSG.ORCHESTRATOR, 
                             workerId: event.data.workerId, 
-                            type: Constants.MTYPE.ORCHESTRATOR.WORKER_RENDERED, 
+                            type: protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED, 
                             image: image 
                         }, [ image ]);
                     });
@@ -255,8 +258,8 @@ class Orchestrator {
                     // merge worker bitmaps
                     const combinedBitmap = this.#compositeWorkers();
                     postMessage({
-                        re4: Constants.MSG.ORCHESTRATOR,
-                        type: Constants.MTYPE.ORCHESTRATOR.RENDERED,
+                        re4: protocol.MSG.ORCHESTRATOR,
+                        type: protocol.MTYPE.ORCHESTRATOR.RENDERED,
                         time: event.data.time,                  // these are the time and 
                         deltaTime: event.data.deltaTime,        // deltaTime of the particle system
                         image: combinedBitmap,
@@ -264,7 +267,7 @@ class Orchestrator {
                     }, [ combinedBitmap ]);
                     break;
                 default:
-                    this.#log.error('[Orchestrator] Unknown message type:', event.data.type);
+                    log.error('Unknown message type from worker:', event.data);
             }
         }
     }
@@ -279,7 +282,7 @@ class Orchestrator {
         const workerId = this.#whichWorker();
         const worker = this.#workers.get(workerId).worker;
         if (worker) {
-            event.data.re4 = Constants.MSG.ORCHESTRATOR;
+            event.data.re4 = protocol.MSG.ORCHESTRATOR;
             worker.postMessage(event.data);
         }
     }
@@ -289,7 +292,7 @@ class Orchestrator {
      * @param {Event} event 
      */
     broadcast(event) {
-        event.data.re4 = Constants.MSG.ORCHESTRATOR;
+        event.data.re4 = protocol.MSG.ORCHESTRATOR;
         event.data.__broadcast = true;
         for (const [workerId, worker] of this.#workers) {
             worker.worker.postMessage(event.data);
@@ -367,13 +370,17 @@ class Orchestrator {
 
         // tell workers to stop processing, 
         // they will clean up and close
-        this.#log.debug('[Orchestrator] Shutdown workers');
-        this.broadcast({data: { type: Constants.MTYPE.ORCHESTRATOR.SHUTDOWN }});
+        log.debug('TERMINATE WORKERS');
+        this.broadcast({data: { type: protocol.MTYPE.ORCHESTRATOR.SHUTDOWN }});
         
+        // going down
         postMessage({ 
-            re4: Constants.MSG.ORCHESTRATOR, 
-            type: Constants.MTYPE.ORCHESTRATOR.TERMINATED 
+            re4: protocol.MSG.ORCHESTRATOR, 
+            type: protocol.MTYPE.ORCHESTRATOR.TERMINATED 
         });
+
+        // terminate the orchestrator
+        self.terminate();
     }
 }
 
@@ -384,8 +391,9 @@ class Orchestrator {
  * particles. It distributes tasks to worker threads based on their load and handles responses from workers.
  */
 messageHandler = addEventListener('message', (event) => {
-    if (event.data.re4 && event.data.re4 === Constants.MSG.MANAGER) {
-        if (event.data.type === Constants.MTYPE.MANAGER.INIT) {
+    if (!log) log = new Logger(Orchestrator, null, true);
+    if (event.data.re4 && event.data.re4 === protocol.MSG.MANAGER) {
+        if (event.data.type === protocol.MTYPE.MANAGER.INIT) {
             const assembler = event.data.assembler;
             const viewPort = [event.data.width, event.data.height];
             const particlesConfig = event.data.config;

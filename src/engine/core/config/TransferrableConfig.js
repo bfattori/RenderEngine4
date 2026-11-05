@@ -1,6 +1,6 @@
 import Config from './Config.js';
-import Context from '../Context.js';
-import RenderEngineError from '../core/RenderEngineError.js';
+import Context from '../../Context.js';
+import RenderEngineError from '../RenderEngineError.js';
 
 const ctx = Context.getInstance();
 

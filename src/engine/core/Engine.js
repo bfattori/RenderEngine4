@@ -5,10 +5,11 @@
  */
 import Constants from '../Constants.js';
 import Context from '../Context.js';
-import { initializeConsole } from './Console.js';
+import { initializeConsole } from './lang/Console.js';
 import RenderEngineError from './RenderEngineError.js';
 
-import { EngineConfig } from './Config.js';
+import { initializeSystemMM } from './memory/FastMemoryPool.js';
+import { EngineConfig } from './config/Config.js';
 import GameWorld from './GameWorld.js'
 import EventEngine from './EventEngine.js'
 import RenderContext from '../rendering/context/RenderContext.js';
@@ -18,7 +19,6 @@ import Camera from '../rendering/cameras/Camera.js';
 import GridBroadphase from '../collisionModels/broadphase/GridBroadphase.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
-import Core from './Core.js';
 
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.
@@ -87,7 +87,6 @@ export default class Engine {
 
     // store the engine initialization options
     this.#ENGINE_OPTIONS.merge(options);
-
     ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
     ctx.debugOpts = this.#ENGINE_OPTIONS.flags.debugOpts;
 
@@ -101,9 +100,9 @@ export default class Engine {
     this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;
     this.#lastTime = 0;
     this.#deltaTime = 0;
-    
+
     // initialize memory management
-    Core.initialize();
+    initializeSystemMM();
 
     // render context (initialized later)
     const renderContext = this.#ENGINE_OPTIONS.world.renderContext || new RenderContext(new Renderer());
@@ -325,28 +324,6 @@ export default class Engine {
   }
 
   //--------------------------------
-
-  /**
-   * 
-   * @param {number} deltaTime - 
-   * @param {*} updateTime 
-   * @param {*} renderTime 
-   * @param {*} frameTime 
-   * @returns 
-   */
-  snapshotStats(deltaTime, updateTime, renderTime, frameTime) {
-    let stats = {
-      ...this.world.snapshotStats(), 
-      ...this.eventEngine.snapshotStats()
-    };
-    if (this.particleEngine) {
-      stats = {
-        ...stats,
-        ...this.particleEngine.snapshotStats()
-      };
-    }
-    return stats;
-  }
 
   get state() {
     return this.isRunning ? (this.isStepping ? 'stepping' : 'running') : 'paused';
@@ -685,6 +662,28 @@ export default class Engine {
           delete serialize[key];
       });
       return serialize;
+  }
+
+  //--------------------------
+  // DevTools
+
+  /**
+   * Returns a set of stats compiled from the engine and major systems
+   * to display in the state bar at the top of the DevTools debugger.
+   * @returns {Object<String, *>} Snapshot stats for the DevTools debugger   * 
+   */
+  snapshotStats() {
+    let stats = {
+      ...this.world.snapshotStats(), 
+      ...this.eventEngine.snapshotStats()
+    };
+    if (this.particleEngine) {
+      stats = {
+        ...stats,
+        ...this.particleEngine.snapshotStats()
+      };
+    }
+    return stats;
   }
 }
 

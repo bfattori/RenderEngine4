@@ -1,7 +1,8 @@
 import Constants from '../../Constants.js';
+import Context from '../../Context.js';
+
 import IL from '../../rendering/assemblers/IntermediateLanguages.js';
 import CHARACTER_MAP from './vector_character_set.js';
-import Context from '../../Context.js';
 import TextParser from './TextParser.js';
 
 const ctx = Context.getInstance();

@@ -1,5 +1,6 @@
+
+import $Math from '../../core/lang/Math.js';
 import RenderPart from './RenderPart.js';
-import $Math from '../../core/Math.js';
 
 export default class SpritePart extends RenderPart {
     #currentSprite = null;

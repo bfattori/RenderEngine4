@@ -1,12 +1,17 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
-import CanvasPIP from '../../ui/debug/CanvasPIP.js';
-import LoadCounter from '../../ui/debug/LoadCounter.js';
 
+import { Logger } from '../../core/lang/Console.js';
 import OrchestratorError from './OrchestratorError.js';
-import { Logger } from '../../core/Console.js';
+import protocol from './Protocol.js';
+
+import LoadCounter from '../../ui/debug/LoadCounter.js';
+import CanvasPIP from '../../ui/debug/CanvasPIP.js';
+
 
 const ctx = Context.getInstance();
+
+let log;
 
 /**
  * @class ParticleManager
@@ -38,9 +43,9 @@ export default class ParticleManager {
 
     #opaqueId = 0;
     #liveParticles = 0;
-    #log;
 
     constructor(renderContext, width, height, config, threading, opts, paths) {
+        log = new Logger(ParticleManager, null, true);
         this.#initProps = {
             width: width,
             height: height,
@@ -50,7 +55,6 @@ export default class ParticleManager {
             paths: paths
         };
         this.#assembler = renderContext.renderer.assembler;
-        this.#log = new Logger(this, null, true);
     }
 
     /**
@@ -113,11 +117,11 @@ export default class ParticleManager {
             const waitFn = () => {
                 if ($this.isStarted) {
                     this.#send({ 
-                        type: Constants.MTYPE.ORCHESTRATOR.GENESIS
+                        type: protocol.MTYPE.ORCHESTRATOR.GENESIS
                     });
 
                     this.initialized = true;
-                    this.#log.debug(`Orchestrator reports ${this.#initProps.threading.workers} workers ready`);
+                    log.debug(`all workers ready, initialized`);
                     resolve(true);
                 } else {
                     // wait for the orchestrator to be ready
@@ -167,15 +171,15 @@ export default class ParticleManager {
             this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
         });
 
-        this.#log.debug('Loading orchestrator');
+        log.debug('starting particle orchestrator');
         
         // load the particle engine orchestrator thread
         this.#createOrchestrator();       
 
         // initialize the orchestator and wait for it to be ready
         this.#thread.postMessage({ 
-            re4: Constants.MSG.MANAGER, 
-            type: Constants.MTYPE.MANAGER.INIT,
+            re4: protocol.MSG.MANAGER, 
+            type: protocol.MTYPE.MANAGER.INIT,
             assembler: this.#assembler.constructor.name,
             width: this.#initProps.width, 
             height: this.#initProps.height, 
@@ -187,14 +191,14 @@ export default class ParticleManager {
     }
 
     reset() {
-        this.#thread.postMessage({ re4: Constants.MSG.MANAGER, type: Constants.MTYPE.MANAGER.RESET })
+        this.#thread.postMessage({ re4: protocol.MSG.MANAGER, type: protocol.MTYPE.MANAGER.RESET })
     }
 
     /**
      * Terminate the thread. This will stop the particle engine and free up resources.
      */
     shutdown() {
-        this.#thread.postMessage({ re4: Constants.MSG.PARTICLE_MANAGER, type: Constants.MSG.MANAGER.SHUTDOWN });
+        this.#thread.postMessage({ re4: protocol.MSG.PARTICLE_MANAGER, type: protocol.MSG.MANAGER.SHUTDOWN });
     }
 
     #createOrchestrator() {
@@ -214,12 +218,12 @@ export default class ParticleManager {
     }
 
     #orchestratorInbound(event) {
-        if (event.data.re4 === Constants.MSG.ORCHESTRATOR) {
+        if (event.data.re4 === protocol.MSG.ORCHESTRATOR) {
             switch(event.data.type) {
-                case Constants.MTYPE.ORCHESTRATOR.READY:
+                case protocol.MTYPE.ORCHESTRATOR.READY:
                     this.#readyToProcess = true;
                     break;
-                case Constants.MTYPE.ORCHESTRATOR.RENDERED:
+                case protocol.MTYPE.ORCHESTRATOR.RENDERED:
                     this.bitmap = event.data.image;
                     this.#ready = true;
 
@@ -252,24 +256,24 @@ export default class ParticleManager {
                     });
 
                     break;
-                case Constants.MTYPE.ORCHESTRATOR.WORKER_RENDERED:
+                case protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED:
                     PRAGMA('showParticleWorkersPiP:workerRender', () => {
                         this.#workerViews[event.data.workerId].update(event.data.image);
                     })
                     break;
-                case Constants.MTYPE.ORCHESTRATOR.TERMINATED:
+                case protocol.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();
                     this.#thread = null;
-                    this.#log.debug('Orchestrator thread terminated');
+                    log.debug('Orchestrator reports terminated');
                     break;
                 default:
-                    this.#log.error('Unknown message type from orchestrator:', event.data.type);
+                    log.error('Unknown message type from orchestrator:', event.data);
             }
         }
     }
 
     #orchestratorError(event) {
-        this.#log.error(event.message, event);
+        log.error(event.message, event);
         throw new OrchestratorError(this.#thread, event.message, event);
     }
 
@@ -280,7 +284,7 @@ export default class ParticleManager {
      */
     #send(data, transfer) {
         this.#thread.postMessage({ 
-            re4: Constants.MSG.MANAGER, 
+            re4: protocol.MSG.MANAGER, 
             ... data }, transfer);
     }
 
@@ -317,7 +321,7 @@ export default class ParticleManager {
         particle.opaqueId = this.#nextOpaque;
 
         this.#send({ 
-            type: Constants.MTYPE.MANAGER.ADD_TYPE, 
+            type: protocol.MTYPE.MANAGER.ADD_TYPE, 
             particle: particle.transferrable 
         });
     }
@@ -340,27 +344,27 @@ export default class ParticleManager {
         particleEffect.opaqueId = this.#nextOpaque;
 
         this.#send({ 
-            type: Constants.MTYPE.MANAGER.ADD_EFFECT, 
+            type: protocol.MTYPE.MANAGER.ADD_EFFECT, 
             effect: particleEffect.transferrable 
         });
     }
 
     /**
-     * Convience method to add several `ParticleAffectors` at once to the engine.
-     * @param  {ParticleAffector} affectors - A list of particle affectors
+     * Convience method to add several `ParticleRepulsor`s at once to the engine.
+     * @param  {ParticleRepulsor} repulsors - A list of particle repulsors
      */
-    addAffectors(... affectors) {
-        affectors.forEach(affector => this.addAffector(affector));
+    addRepulsors(... repulsors) {
+        repulsors.forEach(repulsor => this.addRepulsor(repulsor));
     }
 
     /**
-     * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
-     * @param {ParticleAffector} affector - The particle affector 
+     * Add a `ParticleRepulsor` to the engine to influence `PhysicalParticles`
+     * @param {ParticleRepulsor} repulsor - The particle repulsor 
      */
-    addAffector(affector) {
+    addRepulsor(repulsor) {
         this.#send({ 
-            type: Constants.MTYPE.MANAGER.ADD_AFFECTOR, 
-            affector: affector.transferrable 
+            type: protocol.MTYPE.MANAGER.ADD_REPULSOR, 
+            affector: repulsor.transferrable 
         });
     }
 
@@ -370,7 +374,7 @@ export default class ParticleManager {
      */
     addParticles(particles) {
         this.#send({ 
-            type: Constants.MTYPE.MANAGER.ADD_PARTICLES, 
+            type: protocol.MTYPE.MANAGER.ADD_PARTICLES, 
             particles: particles
         });
     }
@@ -381,7 +385,7 @@ export default class ParticleManager {
      */
     addParticle(particle) {
         this.#send({ 
-            type: Constants.MTYPE.MANAGER.ADD_PARTICLES, 
+            type: protocol.MTYPE.MANAGER.ADD_PARTICLES, 
             particles: [particle]
         });
     }
@@ -397,7 +401,7 @@ export default class ParticleManager {
      */
     runEffect([x, y], opaqueId, isReset, time, deltaTime) {
         this.#send({ 
-            type: Constants.MTYPE.MANAGER.RUN_EFFECT, 
+            type: protocol.MTYPE.MANAGER.RUN_EFFECT, 
             pos: [x, y],
             opaqueId: opaqueId, 
             time: time, 
@@ -407,13 +411,13 @@ export default class ParticleManager {
     }
 
     /**
-     * Updates a `ParticleAffector` in the engine.
-     * @param {ParticleAffector} affector - The particle affector to update. The affector must have been added to the engine previously. 
+     * Updates a `ParticleRepulsor` in the engine.
+     * @param {ParticleAffector} repulsor - The particle repulsor to update. The repulsor must have been added to the engine previously. 
      */
-    updateAffector(affector) {
+    updateRepulsor(repulsor) {
         this.#send({
-            type: Constants.MTYPE.MANAGER.UPDATE_AFFECTOR,
-            affector: affector.transferrable
+            type: protocol.MTYPE.MANAGER.UPDATE_REPULSOR,
+            affector: repulsor.transferrable
         });
     }
 
@@ -425,7 +429,7 @@ export default class ParticleManager {
      */
     spawnParticle(worldPos, particleType) {
         this.#send({
-            type: Constants.MTYPE.MANAGER.SPAWN, 
+            type: protocol.MTYPE.MANAGER.SPAWN, 
             pos: worldPos, 
             particle: particleType 
         });
@@ -449,6 +453,11 @@ export default class ParticleManager {
     renderParticles(time, deltaTime, occlusionMask = null) { // no-op 
     }
 
+    /**
+     * Returns a set of stats for the "Particle Engine" to display in the
+     * state bar at the top of the DevTools debugger.
+     * @returns {Object<String, *>} Snapshot stats for the DevTools debugger
+     */
     snapshotStats() {
         return {
             "Live Particles": this.#liveParticles

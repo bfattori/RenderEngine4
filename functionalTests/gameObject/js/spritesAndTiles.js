@@ -6,8 +6,6 @@ import PlatformerMap from '../../../src/engine/resources/loaders/PlatformerMap.j
 import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
 import SpritePart from '../../../src/engine/parts/render/SpritePart.js';
 import AABBCollider from '../../../src/engine/parts/collision/AABBCollider.js';
-import { Matrix2d } from '../../../src/engine/core/Matrix.js';
-
 import GameObject from '../../../src/engine/gameobject/GameObject.js';
 
 // create a double-buffered canvas renderer

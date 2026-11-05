@@ -1,4 +1,4 @@
-import Enum from '../../core/Enum.js';
+import Enum from '../../core/lang/Enum.js';
 import ResourceLoader, { ResourceError } from './ResourceLoader.js';
 import TileSheet from './TileSheet.js';
 

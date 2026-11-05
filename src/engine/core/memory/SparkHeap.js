@@ -1,10 +1,11 @@
-import { Logger } from './Console.js';
-import { SparkHeapConfig } from './Config.js';
-import Context from '../Context.js';
-import RenderEngineError from './RenderEngineError.js';
+import { Logger } from '../lang/Console.js';
+import { SparkHeapConfig } from '../config/Config.js';
+import Context from '../../Context.js';
+import RenderEngineError from '../RenderEngineError.js';
 import Spark from './Spark.js';
 
 const ctx = Context.getInstance();
+let log;
 
 class SparkError extends RenderEngineError {
     #memInfo = null;
@@ -68,8 +69,8 @@ export default class SparkHeap {
     #log;
     
     constructor(config = null) {
-        this.#log = new Logger(this, null, true);
         this.#config = config || new SparkHeapConfig();
+        log = new Logger(SparkHeap, config ? `:${config.name}:` : ':System:', false, self.console);
         this.#allocateHeap();
     }
 
@@ -83,8 +84,10 @@ export default class SparkHeap {
         // set up allocation segments
         const pctReserve = this.#config.reserveSize,
             reservedSegSize = Math.floor(this.#config.heapSize * pctReserve);
-
-        this.#log.debug(`alloc ${this.#config.heapSize}B (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}%${reservedSegSize !== 0 ? ' (res: ' + (reservedSegSize / 1024).toFixed(1) + 'KB)' : ''}`);
+            
+        let heapAlloc = this.#config.heapSize;
+        heapAlloc = heapAlloc >= 1048576 ? `${heapAlloc/1048576}MB` : heapAlloc >= 1024 ? `${heapAlloc/1024}KB` : `${heapAlloc}B`;
+        log.debug(`alloc ${heapAlloc} (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}%${reservedSegSize !== 0 ? ' (res: ' + (reservedSegSize / 1024).toFixed(1) + 'KB)' : ''}`);
 
         switch (this.#config.baseUnit) {
             case SparkHeap.BYTE_8:
@@ -166,8 +169,8 @@ export default class SparkHeap {
         // ensure the boundaries byte-align
         this.#adjustBoundaries();
         
-        if (ctx.debug)
-            this.dumpTable();
+        // if (ctx.debug)
+        //     this.dumpTable();
     }
 
     /**
@@ -234,7 +237,7 @@ export default class SparkHeap {
 
         if (t8 !== 0) 
             table.push(`8: ${h8}-${t8} [${t8-h8}] ${((t8 - h8) / 1024).toFixed(1)}KB`);
-        this.#log.debug('[' + table.join('|') + ']');
+        log.debug('[' + table.join('|') + ']');
     }
 
     /**

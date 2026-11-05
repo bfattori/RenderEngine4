@@ -1,5 +1,6 @@
-import PhysicalParticle from './PhysicalParticle.js';
 import Util from '../../core/Util.js';
+
+import PhysicalParticle from './PhysicalParticle.js';
 import Particle from './Particle.js';
 import BasicParticle from './BasicParticle.js';
 import DiffuseParticle from './DiffuseParticle.js';

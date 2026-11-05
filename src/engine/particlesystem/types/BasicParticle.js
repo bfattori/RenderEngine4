@@ -1,6 +1,6 @@
 import Constants from '../../Constants.js';
 import Particle from './Particle.js';
-import $Math from '../../core/Math.js';
+import $Math from '../../core/lang/Math.js';
 import Util from '../../core/Util.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';

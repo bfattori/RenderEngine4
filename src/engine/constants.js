@@ -1,33 +1,18 @@
-function NOP() {};
-function ENGINE_ERRORS(error, ...args) { console.error(error, ...args) }
+function NOP() { return null; } 
+function ENGINE_ERRORS(error, ...args) { console.error(error, ...args); }
 
 /**
- * Constants used throughout the RenderEngine4 engine
+ * Configuratrion constants for the RenderEngine4
  */
 const Constants = {
     // Cap frame rate at 120 (~8ms per frame)
     FRAME_RATE_CAP: 120,
-    
-    // Component priorities (higher priority executes last)
-    defaultPriority: 0.5,
-    
-    // InputComponent priority - highest priority for immediate response
-    INPUT_PRIORITY: 0.0,
-    
-    // TransformComponent priority - updated each frame before rendering
-    TRANSFORM_PRIORITY: 0.5,
-    
-    // ColliderComponent priority - runs at mid-cycle
-    COLLIDER_PRIORITY: 0.8,
-    
-    // RenderComponent priority - renders after updates complete
-    RENDER_PRIORITY: 1.0,
-    
-    // SoundComponent priority - handles audio playback independently
-    SOUND_PRIORITY: 0.92,
 
-    // Particle emitter priority
-    PARTICLE_RENDER_PRIORITY: 0.98,
+    DEFAULT_FAST_POOL_SIZE: 4096,   // 4k
+
+    // System memory pools
+    SYSTEM_POOL_SIZE: 32768,        // 32k
+    MATH_FAST_POOL_SIZE: 8192,      // 8k
 
     /* No operation: () => {} */
     NOOP: NOP,
@@ -113,57 +98,23 @@ const Constants = {
     },
     DEFAULT_FILTER_STRENGTH: 10,
 
-    // thread message origins
-    MSG: {
-        ORCHESTRATOR: 'mOrch',
-        MANAGER: 'mPMgr',
-        WORKER: 'mPWkr',
-    },
-
-    // thread message types
-    MTYPE: {
-        // from worker
-        WORKER: {
-            ACK: 'ack',
-            READY: 'rdy',
-            RENDERED: 'rndr',
-            ACK_TYPE: 'ackType',
-            ACK_EFFECT: 'ackFx',
-            ACK_AFFECTOR: 'ackAff'
-        },
-        // from orchestrator
-        ORCHESTRATOR: {
-            GENESIS: 'gen',
-            INIT: 'init',
-            READY: 'rdy',
-            ADD_TYPE: '+type',
-            ADD_EFFECT: '+fx',
-            ADD_AFFECTOR: '+aff',
-            ADD_PARTICLES: '+ptls',
-            RUN_EFFECT: 'runFx',
-            UPDATE_AFFECTOR: 'updAff',
-            RENDERED: 'rndr',
-            WORKER_RENDERED: 'wRndr',
-            SPAWN: 'spawn',
-            PAUSE: 'pause',
-            RUN: 'run',
-            SHUTDOWN: 'down',
-            TERMINATED: 'term'
-        },
-        // from manager
-        MANAGER: {
-            INIT: 'init',
-            RESET: 'reset',
-            SHUTDOWN: 'down',
-            ADD_TYPE: '+type',
-            ADD_EFFECT: '+fx',
-            ADD_AFFECTOR: '+aff',
-            ADD_PARTICLES: '+ptls',
-            RUN_EFFECT: 'runFx',
-            UPDATE_AFFECTOR: 'updAff',
-            SPAWN: 'spawn'
-        }
-    }
+    // Component priorities (higher priority executes last)
+    defaultPriority: 0.5,
+    
+    // InputComponent priority - highest priority for immediate response
+    INPUT_PRIORITY: 0.0,
+    
+    // TransformComponent priority - updated each frame before rendering
+    TRANSFORM_PRIORITY: 0.5,
+    
+    // ColliderComponent priority - runs at mid-cycle
+    COLLIDER_PRIORITY: 0.8,
+    
+    // RenderComponent priority - renders after updates complete
+    RENDER_PRIORITY: 1.0,
+    
+    // SoundComponent priority - handles audio playback independently
+    SOUND_PRIORITY: 0.92    
 };
 
 export default Constants;

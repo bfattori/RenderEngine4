@@ -1,6 +1,6 @@
 import { Paths } from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import TransferrableConfig from '../../core/TransferrableConfig.js';
+import TransferrableConfig from '../../core/config/TransferrableConfig.js';
 
 class ResourceError extends RenderEngineError {
     #resource = null;

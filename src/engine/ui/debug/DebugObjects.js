@@ -1,4 +1,4 @@
-import $Math from '../../core/Math.js';
+import $Math from '../../core/lang/Math.js';
 import { sysText } from '../text/RasterTextParser.js';
 
 const DebugObjects = {

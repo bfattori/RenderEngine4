@@ -1,6 +1,7 @@
-import RenderEngineError from '../core/RenderEngineError.js';
-import Enum from '../core/Enum.js';
 import Engine from '../core/Engine.js';
+import RenderEngineError from '../core/RenderEngineError.js';
+import Enum from '../core/lang/Enum.js';
+
 import { TransformEvent } from '../parts/transform/Transform2dPart.js';
 
 /**

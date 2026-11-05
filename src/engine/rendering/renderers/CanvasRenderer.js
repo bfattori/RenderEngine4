@@ -1,12 +1,12 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
-import { RendererError } from './Renderer.js';
-import Renderer from './Renderer.js';
+
 import Engine from '../../core/Engine.js';
-import { RendererConfig } from './Renderer.js';
+
+import Renderer, { RendererError, RendererConfig } from './Renderer.js';
+
 import CanvasAssembler from '../assemblers/CanvasAssembler.js';
 import IL from '../assemblers/IntermediateLanguages.js';
-
 import { sysText } from '../../ui/text/RasterTextParser.js'; 
 
 const ctx = Context.getInstance();

@@ -1,6 +1,6 @@
 import { GameObjectError } from '../gameobject/GameObject.js';
-import { Matrix2d, IdentityMatrix, NullMatrix } from './Matrix.js';
-import RenderEngineError from '../core/RenderEngineError.js';
+import { Matrix2d, IdentityMatrix, NullMatrix } from './lang/Matrix.js';
+import RenderEngineError from './RenderEngineError.js';
 
 /**
  * GameWorld - Static class to contain game objects and manage their interactions
@@ -381,6 +381,11 @@ class GameWorld {
   // Properties
   //-------------------------------
 
+  /**
+   * Returns a set of stats for the Game World to display in the
+   * state bar at the top of the DevTools debugger.
+   * @returns {Object<String, *>} Snapshot stats for the DevTools debugger
+   */
   snapshotStats() {
     return {
       "Game Objects": this.allObjects.length,

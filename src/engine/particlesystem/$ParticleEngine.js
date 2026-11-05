@@ -1,16 +1,17 @@
 import Constants from '../Constants.js';
-import RenderEngineError from '../core/RenderEngineError.js';
 import Context from '../Context.js';
-import LoadCounter from '../ui/debug/LoadCounter.js';
+
+import RenderEngineError from '../core/RenderEngineError.js';
+import Spark from '../core/memory/Spark.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
-import PhysicalParticle from '../particlesystem/types/PhysicalParticle.js';
-import ParticleAffector from '../particlesystem/physics/ParticleAffector.js';
 import Particle from './types/Particle.js';
+import PhysicalParticle from './types/PhysicalParticle.js';
+import ParticleRepulsor from './physics/ParticleRepulsor.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
+import LoadCounter from '../ui/debug/LoadCounter.js';
 
-import Spark from '../core/Spark.js';
 
 const ctx = Context.getInstance();
 
@@ -31,8 +32,8 @@ export default class $ParticleEngine {
     // particle effects the engine is configured to run
     #particleEffects = new Map();
 
-    // particle affectors that impact PhysicalParticles
-    #particleAffectors = [];
+    // particle repulsors that impact PhysicalParticles
+    #particleRepulsors = [];
 
     // when new particles are added, this goes true
     #newParticles = false;
@@ -240,11 +241,11 @@ export default class $ParticleEngine {
     }
 
     /**
-     * The collection of particle affectors in the engine
-     * @returns {Map<String, Array<ParticleAffector>>} A map of particle affectors by type.
+     * The collection of particle repulsors in the engine
+     * @returns {Map<String, Array<ParticleRepulsor>>} A map of particle repulsors
      */
-    get affectors() {
-        return this.#particleAffectors;
+    get repulsors() {
+        return this.#particleRepulsors;
     }
 
     /**
@@ -275,20 +276,6 @@ export default class $ParticleEngine {
         const memoryHeap = new ArrayBuffer(count * (Constants.PH_BYTES + this.#particleByteSize));
         this.#memories = new Spark(memoryHeap);
         return Promise.resolve(true);
-    }
-
-    /**
-     * Snapshot of the current state of the live particles in the engine.
-     * @returns {Object} The state of particles: `pos`(itions), `vel`(ocities), `mem`(ories), and `life`-spans remaining.
-     */
-    get state() {
-        const p = [], l = [], v = [], m = [];
-        return {
-            pos: p,
-            vel: v,
-            mem: m,
-            life: l
-        };
     }
 
     /**
@@ -400,27 +387,27 @@ export default class $ParticleEngine {
 
     /**
      * Convience method to add several `ParticleAffectors` at once to the engine.
-     * @param  {ParticleAffector} affectors - A list of particle affectors
+     * @param  {ParticleRepulsor} repulsors - A list of particle affectors
      */
-    addAffectors(... affectors) {
-        affectors.forEach(affector => this.addAffector(affector));
+    addRepulsors(... repulsors) {
+        repulsors.forEach(repulsor => this.addRepulsor(repulsor));
     }
 
     /**
      * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
-     * @param {ParticleAffector} affector - The particle affector 
+     * @param {ParticleRepulsor} repulsor - The particle affector 
      */
-    addAffector(affector) {
-        this.#particleAffectors.push(affector);
+    addRepulsor(repulsor) {
+        this.#particleRepulsors.push(repulsor);
     }
 
     /**
      * Locates an affector by its name and returns it. 
-     * @param {String} affectorName - The name of the affector to find
-     * @return {ParticleAffector} The affector or null if it does not exist.
+     * @param {String} repulsorName - The name of the affector to find
+     * @return {ParticleRepulsor} The affector or null if it does not exist.
      */
-    getAffector(affectorName) {
-        return this.#particleAffectors.find(affector => affector.name === affectorName);
+    getRepulsor(repulsorName) {
+        return this.#particleRepulsors.find(repulsor => repulsor.name === repulsorName);
     }
 
     //-------------------------------------
@@ -463,12 +450,12 @@ export default class $ParticleEngine {
 
     /**
      * Update an affector in the particle engine. Primarily used when threading.
-     * @param {Object} affector - The `TransferrableConfig` representation of an affector 
+     * @param {Object} repulsor - The `TransferrableConfig` representation of an affector 
      */
-    updateAffector(affector) {
-        const instance = this.getAffector(affector.$name);
-        if (instance != null && affector.props) {
-            instance.pos = affector.props.pos;
+    updateRepulsor(repulsor) {
+        const instance = this.getRepulsor(repulsor.$name);
+        if (instance != null && repulsor.props) {
+            instance.pos = repulsor.props.pos;
         }
     }
 
@@ -599,12 +586,12 @@ export default class $ParticleEngine {
     }
 
     /**
-     * Adds impulse to physical particles based on particle affectors.
+     * Adds impulse to physical particles based on particle repulsors.
      * @param {*} time - Current world time
      * @param {*} deltaTime - Time since last frame
      */
     #addImpulse(memSegment, time, deltaTime) {
-        this.affectors.forEach(affector => {
+        this.repulsors.forEach(affector => {
             affector.affect(memSegment, time, deltaTime);
         });
     }
@@ -650,7 +637,7 @@ export default class $ParticleEngine {
             }
         });
 
-        PRAGMA('showParticleAffectors', () => {
+        PRAGMA('showParticleRepulsors', () => {
             const affectors = this.affectors;
             affectors.forEach(affector => {
                 canvasDebugObjects.BoundingCircle(surf, affector.pos[0], affector.pos[1], affector.radius);
@@ -681,20 +668,7 @@ export default class $ParticleEngine {
         this.reset();
         this.#particleEffects.clear();
         this.#particleTypes.clear();
-    }
-
-    /**
-     * Get the properties object for the particle engine
-     * @return {Object}
-     */
-    get properties() {
-        return {
-            liveParticles: this.liveParticles,
-            ParticleEffects: this.particleEffects,
-
-            _pointer: this.#particleIdx,
-            _particleMemories: this.#memories
-        }
+        this.#particleRepulsors.clear();
     }
 
     #cleanMemory() {
@@ -708,6 +682,11 @@ export default class $ParticleEngine {
         }
     }
 
+    /**
+     * Returns a set of stats for the Particle Engine to display in the
+     * state bar at the top of the DevTools debugger.
+     * @returns {Object<String, *>} Snapshot stats for the DevTools debugger
+     */
     snapshotStats() {
         return {
             "Live Particles": this.#liveParticles

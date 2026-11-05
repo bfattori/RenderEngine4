@@ -1,22 +1,21 @@
-import { Logger, installDirectives } from '../../core/Console.js';
-
-import Core from '../../core/Core.js';
 import Context from '../../Context.js';
-import Constants from '../../Constants.js';
+
+import { Paths } from '../../core/Engine.js';
+import { Logger, installDirectives } from '../../core/lang/Console.js';
+import TransferrableConfig from '../../core/config/TransferrableConfig.js';
+
+import $Math from '../../core/lang/Math.js';
+import { Matrix2d } from '../../core/lang/Matrix.js';
+import { initializeSystemMM } from '../../core/memory/FastMemoryPool.js';
 
 import ParticleWorkerError from './ParticleWorkerError.js';
-
 import $ParticleEngine from '../$ParticleEngine.js';
 import ParticleEffect from '../effects/ParticleEffect.js';
 import Particle from '../types/Particle.js';
 
-import TransferrableConfig from '../../core/TransferrableConfig.js';
-import $Math from '../../core/Math.js';
-import { Matrix2d } from '../../core/Matrix.js';
+import protocol from './Protocol.js';
 
 import CanvasAssembler from '../../rendering/assemblers/CanvasAssembler.js';
-
-import { Paths } from '../../core/Engine.js';
 
 self.$Math = $Math;
 self.Matrix2d = Matrix2d;
@@ -26,6 +25,8 @@ self.CanvasAssembler = CanvasAssembler;
 // this will reference ourselves in the worker thread so we can access the worker instance from the message handler
 self.$$worker = null;
 const ctx = Context.getInstance();
+
+let log;
 
 installDirectives(self);
 
@@ -45,17 +46,15 @@ export default class ParticleWorker {
     #startTime = 0;
     #assembler = null;
     #latched = true;
-    #log;
 
     constructor(workerId, assembler, width, height, config, threading, systemOpts) {
         this.#workerId = workerId;
 
         // override the console
-        this.#log = new Logger(this, `${workerId}`, true);
-        this.#log.debug('initializing ...');
+        log.debug('initializing ...');
 
-        // setup memory management
-        Core.initialize();
+        // setup memory management for the worker
+        initializeSystemMM();
 
         this.#engineInstance = $ParticleEngine.getWorkerInstance(width, height, config, threading);
 
@@ -110,15 +109,15 @@ export default class ParticleWorker {
      */
     readyUp() {
         postMessage({ 
-            re4: Constants.MSG.WORKER, 
-            type: Constants.MTYPE.WORKER.READY, 
+            re4: protocol.MSG.WORKER, 
+            type: protocol.MTYPE.WORKER.READY, 
             workerId: this.workerId 
         });
-        this.#log.debug('prepared');
+        log.debug('prepared');
     }
 
     /**
-     * Inform the orchestrator that we received a particle or effect. The orchestrator
+     * Inform the orchestrator that we received a particle, effect, or repulsor. The orchestrator
      * will wait for workers to acknowledge all required assets before acknowledging readiness
      * itself.
      * 
@@ -129,12 +128,13 @@ export default class ParticleWorker {
         // let the orchestrator know that a 
         // particle or effect was received
         postMessage({ 
-            re4: Constants.MSG.WORKER, 
-            type: Constants.MTYPE.WORKER.ACK, 
+            re4: protocol.MSG.WORKER, 
+            type: protocol.MTYPE.WORKER.ACK, 
             workerId: this.#workerId,
             ack: type,
             name: obj.$name 
         });
+        //log.debug(`acknowledge ${type}`, obj);
     }
 
     /**
@@ -143,51 +143,51 @@ export default class ParticleWorker {
      */
     async process(data) {
         switch(data.type) {
-            case Constants.MTYPE.ORCHESTRATOR.GENESIS:
+            case protocol.MTYPE.ORCHESTRATOR.GENESIS:
                 this.instance.initialize();     // creates the memory buffers
                 this.#run();
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.ADD_TYPE:
+            case protocol.MTYPE.ORCHESTRATOR.ADD_TYPE:
                 const particle = await TransferrableConfig.reconstruct(data.particle, (obj) => {obj.engine = this.instance;});
                 this.instance.addParticleType(particle);
-                this.#acknowledge(particle, Constants.MTYPE.WORKER.ACK_TYPE);
+                this.#acknowledge(particle, protocol.MTYPE.WORKER.ACK_TYPE);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.ADD_EFFECT:
+            case protocol.MTYPE.ORCHESTRATOR.ADD_EFFECT:
                 const effect = await TransferrableConfig.reconstruct(data.effect, (obj) => {obj.engine = this.instance;});
                 this.instance.addEffect(effect);
-                this.#acknowledge(effect, Constants.MTYPE.WORKER.ACK_EFFECT);
+                this.#acknowledge(effect, protocol.MTYPE.WORKER.ACK_EFFECT);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.ADD_AFFECTOR:
-                const affector = await TransferrableConfig.reconstruct(data.affector, (obj) => {obj.engine = this.instance;});
-                this.instance.addAffector(affector);
-                this.#acknowledge(affector, Constants.MTYPE.WORKER.ACK_AFFECTOR);
+            case protocol.MTYPE.ORCHESTRATOR.ADD_REPULSOR:
+                const repulsor = await TransferrableConfig.reconstruct(data.affector, (obj) => {obj.engine = this.instance;});
+                this.instance.addRepulsor(repulsor);
+                this.#acknowledge(repulsor, protocol.MTYPE.WORKER.ACK_REPULSOR);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.UPDATE_AFFECTOR:
-                this.instance.updateAffector(data.affector);
+            case protocol.MTYPE.ORCHESTRATOR.UPDATE_REPULSOR:
+                this.instance.updateRepulsor(data.affector);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.ADD_PARTICLES:
+            case protocol.MTYPE.ORCHESTRATOR.ADD_PARTICLES:
                 this.instance.addParticles(data.particles);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.RUN_EFFECT:
+            case protocol.MTYPE.ORCHESTRATOR.RUN_EFFECT:
                 this.instance.runEffect(data.pos, data.opaqueId, data.isReset, data.time, data.deltaTime);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.SPAWN:
+            case protocol.MTYPE.ORCHESTRATOR.SPAWN:
                 this.instance.spawnParticle(data.pos, data.particle);
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.PAUSE:
+            case protocol.MTYPE.ORCHESTRATOR.PAUSE:
                 this.#running = false;
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.RUN:
+            case protocol.MTYPE.ORCHESTRATOR.RUN:
                 this.#run();
                 break;
-            case Constants.MTYPE.ORCHESTRATOR.SHUTDOWN:
+            case protocol.MTYPE.ORCHESTRATOR.SHUTDOWN:
                 this.#running = false;
                 this.instance.shutdown();
-                this.#log.debug(`terminated`);
-                self.close();
+                log.debug(`TERMINATED`);
+                self.terminate();
                 break;
             default:
-                this.#log.error('Unknown message type from orchestrator:', data.type);
+                log.error('Unknown message type from orchestrator:', data);
         }
     }
 
@@ -198,13 +198,13 @@ export default class ParticleWorker {
             this.startTime = performance.now();
             this.updateParticles();
         }, 100);
-        this.#log.debug('Started update/render loop');
+        log.debug('starting update/render loop');
     }
 
     /**
      * The main processing loop updates, renders, then draws the particles
-     * to a bitmap and informs the orchestrator when done, then pauses before the next
-     * frame.
+     * to a bitmap and informs the orchestrator when done. Runs at the fps
+     * configured for the particle system.
      * @param {number} timeOrigin - The time at which the worker started
      */
     async updateParticles() {
@@ -220,8 +220,8 @@ export default class ParticleWorker {
                     this.#latched = true;               
                     const image = this.instance.bitmap;
                     postMessage({ 
-                        re4: Constants.MSG.WORKER, 
-                        type: Constants.MTYPE.WORKER.RENDERED, 
+                        re4: protocol.MSG.WORKER, 
+                        type: protocol.MTYPE.WORKER.RENDERED, 
                         workerId: this.#workerId,
                         time: time,
                         deltaTime: deltaTime, 
@@ -232,13 +232,14 @@ export default class ParticleWorker {
                             live: this.instance.liveParticles
                         }
                     }, [image]);
-                } else
+                } else  // rendertime of -1 indicates "no particles"
                     this.#cleanUp();
+                
                 // free up to allow message handling and such
                 await new Promise(resolve => setTimeout(resolve, this.#fps));
             }
         } catch (ex) {
-            this.#log.error(ex);
+            log.error(ex);
             throw new ParticleWorkerError(this, ex.message, ex);        
         }
     }
@@ -254,8 +255,8 @@ export default class ParticleWorker {
             this.instance.surface.clearRect(0, 0, this.instance.offscreen.width, this.instance.offscreen.height);       
             const image = this.instance.bitmap;
             postMessage({ 
-                re4: Constants.MSG.WORKER, 
-                type: Constants.MTYPE.WORKER.RENDERED, 
+                re4: protocol.MSG.WORKER, 
+                type: protocol.MTYPE.WORKER.RENDERED, 
                 workerId: this.#workerId,
                 time: 0,
                 deltaTime: 0, 
@@ -277,11 +278,14 @@ export default class ParticleWorker {
  * Listen for events from the orchestrator
  */
 addEventListener('message', (event) => {
-    if (event.data.re4 && event.data.re4 === Constants.MSG.ORCHESTRATOR) {
-        if (event.data.type === Constants.MTYPE.ORCHESTRATOR.INIT) {
+    if (event.data.re4 && event.data.re4 === protocol.MSG.ORCHESTRATOR) {
+        if (event.data.type === protocol.MTYPE.ORCHESTRATOR.INIT) {
             Paths.engine = event.data.paths.engine;
             Paths.startup = event.data.paths.startup;
             Paths.game = event.data.paths.game;
+
+            self.console = new Logger(ParticleWorker, `${event.data.workerId}`, true);
+            log = self.console;
 
             self.$$worker = new ParticleWorker(
                 event.data.workerId, 
@@ -296,7 +300,7 @@ addEventListener('message', (event) => {
             // fixme: prolly also losing shit here...
             self.$$worker.process(event.data);
         } else {
-            console.log("Missed message in Worker", event);
+            log.debug("Missed message in Worker", event);
         }
     }
 });

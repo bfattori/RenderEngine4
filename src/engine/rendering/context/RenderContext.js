@@ -5,9 +5,11 @@
  * @extends RenderContext
  */
 import Constants from '../../Constants.js';
+
 import ContextBase from './ContextBase.js';
-import IL from '../assemblers/IntermediateLanguages.js';
+
 import getAPI from '../api/RenderingAPI.js';
+import IL from '../assemblers/IntermediateLanguages.js';
 
 /**
  * @class RenderContext

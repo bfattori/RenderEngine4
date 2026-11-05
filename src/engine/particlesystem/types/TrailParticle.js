@@ -1,8 +1,8 @@
+import $Math from '../../core/lang/Math.js';
+
 import Particle from './Particle.js';
 import BasicParticle from './BasicParticle.js';
 import DiffuseParticle from './DiffuseParticle.js';
-import $Math from '../../core/Math.js';
-import Constants from '../../Constants.js';
 
 /**
  * @class TrailParticle

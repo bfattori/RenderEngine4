@@ -10,7 +10,7 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import SmokeParticle from '../../../../src/engine/particlesystem/types/SmokeParticle.js';
 import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffect.js';
 
-import ParticleAffector from '../../../../src/engine/particlesystem/physics/ParticleAffector.js';
+import ParticleRepulsor from '../../../../src/engine/particlesystem/physics/ParticleRepulsor.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -68,26 +68,26 @@ const sEffect2 = new SmokeEffect({
 sEffect2.name = 'points';
 
 // particle repulsor affectors
-const repulsor = new ParticleAffector({
+const repulsor = new ParticleRepulsor({
     radius: 100,
     pos: [200, 300],
     restitution: 0.1
 });
 
-const repulsor2 = new ParticleAffector({
+const repulsor2 = new ParticleRepulsor({
     radius: 200,
     pos: [500, 80],
     restitution: 0.1
 });
 
-const repulsor3 = new ParticleAffector({
+const repulsor3 = new ParticleRepulsor({
      radius: 80,
      pos: [380, 270],
      restitution: 0.087
 });
 
 
-RenderEngine.particleEngine.addAffectors(repulsor, repulsor2, repulsor3);
+RenderEngine.particleEngine.addRepulsors(repulsor, repulsor2, repulsor3);
 RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 

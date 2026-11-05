@@ -1,5 +1,5 @@
-import $Math from '../../core/Math.js';
-import TransferrableConfig from '../../core/TransferrableConfig.js';
+import $Math from '../../core/lang/Math.js';
+import TransferrableConfig from '../../core/config/TransferrableConfig.js';
 import BasicParticle from '../types/BasicParticle.js';
 
 /**

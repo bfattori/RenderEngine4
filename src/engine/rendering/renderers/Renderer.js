@@ -1,7 +1,7 @@
-import CompiledShape from '../shapes/CompiledShape.js';
 import Constants from '../../Constants.js';
+
 import RenderEngineError from '../../core/RenderEngineError.js';
-import Config from '../../core/Config.js';
+import Config from '../../core/config/Config.js';
 
 class RendererConfig extends Config {
     constructor(defaults = {}) {

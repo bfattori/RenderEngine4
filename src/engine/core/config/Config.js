@@ -1,5 +1,5 @@
-import { NOP, ENGINE_ERRORS } from '../Constants.js';
-import Util from './Util.js';
+import { NOP, ENGINE_ERRORS } from '../../Constants.js';
+import Util from '../Util.js';
 
 /**
  * Options Configuation
@@ -288,6 +288,7 @@ class EngineConfig extends Config {
 class SparkHeapConfig extends Config {
     constructor(overrides = {}) {
         super({
+          name: 'SystemMemory',
           /**
            * This is the maximum sized value that will be
            * stored in the heap for all data types.

@@ -3,13 +3,13 @@
 Provides a way for game objects to render to the context 
 */
 import Constants from '../../Constants.js';
-import ComponentPart from '../ComponentPart.js';
-import { ComponentPartEvent } from '../ComponentPart.js';
-import Engine from '../../core/Engine.js';
-
-import { CommitTransformEvent, TransformEvent } from '../../parts/transform/Transform2dPart.js';
-import { Matrix2d } from '../../core/Matrix.js';
 import Context from '../../Context.js';
+
+import Engine from '../../core/Engine.js';
+import { Matrix2d } from '../../core/lang/Matrix.js';
+
+import ComponentPart, { ComponentPartEvent } from '../ComponentPart.js';
+import { CommitTransformEvent, TransformEvent } from '../../parts/transform/Transform2dPart.js';
 
 const ctx = Context.getInstance();
 

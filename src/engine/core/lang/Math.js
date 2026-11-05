@@ -1,5 +1,5 @@
-import Constants from '../Constants.js';
-import { MemoryPool } from './Core.js';
+import Constants from '../../Constants.js';
+import FastMemoryPool from '../memory/FastMemoryPool.js';
 
 /**
  * RenderEngine4 math functions
@@ -9,12 +9,13 @@ export default class $Math {
 
     static get fmPool() {
         if (!$Math.#pool)
-            $Math.#pool = new MemoryPool({
-            baseUnit: 4,        // 32-bit
-            heapSize: 8192,     // 8k
-            reserveSize: 1.0,   // full reserve
-            boundaryElementOffset: 0
-        }, 'FastMathPool');
+            $Math.#pool = new FastMemoryPool({
+                name: 'FastMath',
+                baseUnit: 4,                                // 32-bit (8 for 64-bit)
+                heapSize: Constants.MATH_FAST_POOL_SIZE,    // 8k
+                reserveSize: 1.0,                           // full reserve
+                boundaryElementOffset: 0                    // use the full allocation
+            });
 
         return $Math.#pool;
     }

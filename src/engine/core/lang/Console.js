@@ -3,7 +3,7 @@
  * Console - Simple logging utility for RenderEngine4
  * Provides warn and error logging functionality
  */
-import Context from '../Context.js';
+import Context from '../../Context.js';
 
 const ctx = Context.getInstance();
 
@@ -78,13 +78,13 @@ class Logger extends Console {
   /**
    * Create a console where the class constructor name is displayed
    * in the log output. Optionally attached to the browser console, bypassing the game console.
-   * @param {*} instance - Object to reference in the console
+   * @param {Class} clazz - The class to reference in the console
    * @param {String} label - Optional label to append to the constructor class
    * @param {boolean} root - If `true`, the console will attach to the browser console
    */
-  constructor(instance, label = null, root = false) {
-    super(`[${instance.constructor.name}${label !== null ? ' ' + label : ''}]`, 
-      root ? re4Console.referenceConsole : re4Console);
+  constructor(clazz, label = null, root = false, override = null) {
+    super(`[${clazz.name}${label !== null ? ' ' + label : ''}]`, 
+      root ? re4Console.referenceConsole : override !== null ? override : re4Console);
   }
 }
 

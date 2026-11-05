@@ -7,7 +7,7 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
 
-import $Math from '../../../../src/engine/core/Math.js';
+import $Math from '../../../../src/engine/core/lang/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
 import SwitchPanel from '../../../../src/engine/ui/SwitchPanel.js';

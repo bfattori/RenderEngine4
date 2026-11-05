@@ -9,7 +9,7 @@ import BurstParticle from '../../../../src/engine/particlesystem/types/BurstPart
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
 import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRenderPart.js';
 
-import $Math from '../../../../src/engine/core/Math.js';
+import $Math from '../../../../src/engine/core/lang/Math.js';
 import Util from '../../../../src/engine/core/Util.js';
 
 // number of objects to create

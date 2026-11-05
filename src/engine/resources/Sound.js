@@ -1,4 +1,4 @@
-import Config from '../core/Config.js';
+import Config from '../core/config/Config.js';
 
 export default class Sound extends Config {
     static TYPE = new Enum({

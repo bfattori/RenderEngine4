@@ -1,5 +1,5 @@
 import BasicParticle from './BasicParticle.js';
-import $Math from '../../core/Math.js';
+import $Math from '../../core/lang/Math.js';
 
 export default class FireworksParticle extends BasicParticle {
     constructor(overrides = {}, url = import.meta.url) {

@@ -5,8 +5,7 @@
  */
 import Constants from '../../Constants.js';
 import EventEngine, { Event } from '../../core/EventEngine.js';
-import ComponentPart from '../ComponentPart.js';
-import { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
+import ComponentPart, { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
 import { TransformEvent } from '../transform/Transform2dPart.js';
 
 /**

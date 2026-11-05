@@ -1,21 +1,46 @@
-import { Logger } from './Console.js';
-import { SparkHeapConfig } from './Config.js';
+import Constants from '../../Constants.js';
+import { Logger } from '../lang/Console.js';
+import { SparkHeapConfig } from '../config/Config.js';
 import SparkHeap from './SparkHeap.js';
 
-class MemoryPool {
+export default class FastMemoryPool {
     #log;
     #name;
     #heap = null;
     
+    static #instance = null;
+
+    /**
+     * Get the system memory pool for fast allocations.
+     * @returns {FastMemoryPool}
+     */
+    static getInstance() {
+        if (!FastMemoryPool.#instance) {
+            FastMemoryPool.#instance = new FastMemoryPool({
+                name: 'PoolAllocator',
+                baseUnit: SparkHeap.BYTE_32,
+                heapSize: Constants.SYSTEM_POOL_SIZE,
+                reserveSize: 0.95     // prioritize for 32-bit values
+            });
+        }
+
+        return FastMemoryPool.#instance;
+    }
+
     constructor(config = {
-        baseUnit: SparkHeap.BYTE_64, // 64-bit values or lower
-        heapSize: 4096               // 32k
-    }, name = 'MemoryPool') {
-        this.#log = new Logger(this, `(${name})`);
+        name: 'FastMemoryPool',
+        baseUnit: SparkHeap.BYTE_64,
+        heapSize: Constants.DEFAULT_FAST_POOL_SIZE              
+    }) {
+        this.#log = new Logger(this, `(${config.name})`);
 
         // allocate a pool of memory for memory allocation operations
         this.#heap = new SparkHeap(new SparkHeapConfig(config));
         this.#name = name;
+    }
+
+    get name() {
+      return this.#name;
     }
 
     // general allocator
@@ -129,22 +154,12 @@ class MemoryPool {
     }
 };
 
-const Core = {
-  initialize: () => {
-    // initialize the primary memory manager
+const initializeSystemMM = () => {
+    // initialize memory management
     self.SPARK_MM = new SparkHeap();
-
-    // intialize the main memory pool for the game
-    self.SPARK_POOL = new MemoryPool({
-        baseUnit: SparkHeap.BYTE_32,
-        heapSize: 32768,
-        reserveSize: 0.95
-    }, 'GamePool');
-  }
-};
-
-export default Core;
+    self.SPARK_POOL = FastMemoryPool.getInstance();
+}
 
 export {
-  MemoryPool
+    initializeSystemMM
 };

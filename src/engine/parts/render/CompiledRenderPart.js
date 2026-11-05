@@ -1,7 +1,10 @@
 import Constants from '../../Constants.js';
+
+import { Matrix2d } from '../../core/lang/Matrix.js';
+
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
-import { Matrix2d } from '../../core/Matrix.js';
+
 import IL from '../../rendering/assemblers/IntermediateLanguages.js';
 import getAPI from '../../rendering/api/RenderingAPI.js';
 

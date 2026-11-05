@@ -1,5 +1,5 @@
 import ParticleEffect from './ParticleEffect.js';
-import Config from '../../core/Config.js';
+import Config from '../../core/config/Config.js';
 
 class FireworksConfig extends Config {
     constructor() {

@@ -1,10 +1,9 @@
-import { ResourceError } from './loaders/ResourceLoader.js';
-import Assembler from '../rendering/assemblers/Assembler.js';
-import Engine from '../core/Engine.js';
-import Enum from '../core/Enum.js';
-import $Math from '../core/Math.js';
+import Config from '../core/config/Config.js';
+import Enum from '../core/lang/Enum.js';
+import $Math from '../core/lang/Math.js';
 import Util from '../core/Util.js';
-import Config from '../core/Config.js';
+
+import { ResourceError } from './loaders/ResourceLoader.js';
 import Tile from './Tile.js';
 
 class SpriteState extends Config {

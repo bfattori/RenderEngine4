@@ -8,8 +8,7 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import ExplosionParticle from '../../../src/engine/particlesystem/types/ExplosionParticle.js';
 import ParticleEffect from '../../../../src/engine/particlesystem/effects/ParticleEffect.js';
 
-import { Matrix2d } from '../../../../src/engine/core/Matrix.js';
-import $Math from '../../../../src/engine/core/Math.js';
+import $Math from '../../../../src/engine/core/lang/Math.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {

@@ -1,5 +1,5 @@
-import TransferrableConfig from '../../core/TransferrableConfig.js';
-import $Math from '../../core/Math.js';
+import TransferrableConfig from '../../core/config/TransferrableConfig.js';
+import $Math from '../../core/lang/Math.js';
 
 export default class Particle extends TransferrableConfig {
   /**

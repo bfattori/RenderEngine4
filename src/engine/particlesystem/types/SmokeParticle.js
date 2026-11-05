@@ -1,8 +1,9 @@
+import $Math from '../../core/lang/Math.js';
+import Util from '../../core/Util.js';
+
 import Particle from './Particle.js';
 import BasicParticle from './BasicParticle.js';
 import PhysicalParticle from './PhysicalParticle.js';
-import $Math from '../../core/Math.js';
-import Util from '../../core/Util.js';
 import DiffuseParticle from './DiffuseParticle.js';
 
 /**

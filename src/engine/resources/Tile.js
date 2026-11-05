@@ -1,7 +1,8 @@
+import Config from '../core/config/Config.js';
+import Util from '../core/Util.js';
+
 import { ResourceError } from './loaders/ResourceLoader.js';
 import Assembler from '../rendering/assemblers/Assembler.js';
-import Config from '../core/Config.js';
-import Util from '../core/Util.js';
 
 class TileDef extends Config {
     constructor(tileConfig) {

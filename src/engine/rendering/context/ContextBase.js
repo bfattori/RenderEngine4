@@ -4,9 +4,8 @@
  */
 import Engine from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import Config from '../../core/Config.js';
+import Config from '../../core/config/Config.js';
 import Renderer from '../renderers/Renderer.js';
-import RenderPart from '../../parts/render/RenderPart.js';
 
 class RenderContextConfig extends Config {
   constructor(defaults = {}) {

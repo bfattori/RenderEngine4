@@ -8,7 +8,7 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
 
-import $Math from '../../../../src/engine/core/Math.js';
+import $Math from '../../../../src/engine/core/lang/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 20000,

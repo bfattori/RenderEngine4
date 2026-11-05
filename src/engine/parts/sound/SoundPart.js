@@ -3,9 +3,11 @@
 Provides a way for game objects to playback sound effects with simple methods 
 */
 import Constants from '../../Constants.js';
+
+import SoundSystemError from '../../sound/SoundSystem.js';
+
 import ComponentPart from '../ComponentPart.js';
 import { ComponentPartEvent } from '../ComponentPart.js';
-import SoundSystemError from '../../sound/SoundSystem.js';
 
 class SoundEvent extends ComponentPartEvent {
     #source = null;

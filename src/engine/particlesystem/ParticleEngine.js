@@ -1,8 +1,8 @@
 import Constants from '../Constants.js';
-import Config from '../core/Config.js';
 import Context from '../Context.js';
 
 import Engine, { Paths } from '../core/Engine.js';
+import Config from '../core/config/Config.js';
 
 const ctx = Context.getInstance();
 

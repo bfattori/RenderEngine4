@@ -1,5 +1,5 @@
-import RenderEngineError from './RenderEngineError.js';
-import Util from './Util.js';
+import RenderEngineError from '../RenderEngineError.js';
+import Util from '../Util.js';
 
 /**
  * `Enum` is a Java-like enumeration class that can be used to define constants. It is similar to Java's Enum class,

@@ -1,6 +1,6 @@
-import { Matrix2d } from '../../core/Matrix.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
-import Config from '../../core/Config.js';
+import Config from '../../core/config/Config.js';
+import { Matrix2d } from '../../core/lang/Matrix.js';
 
 class CameraConfig extends Config {
     constructor() {
