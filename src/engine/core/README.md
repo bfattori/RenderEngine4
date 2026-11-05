@@ -20,8 +20,8 @@ Several useful utility functions for color manipulation, hashing,npm and an `org
 ### `/config/Config`
 These are standardized containers to hold configuration data. The common pattern can be universally shared across different parts of the engine. `Config` objects utilize `Util.lombok` to instrument the fields defined in the configuration with setters and getters automatically, reducing the need to create them yourself.
 
-> #### `/config/TransferrableConfig` Sub-class
-> WebWorker- and Network-safe configuration objects can dehydrate for transmission, then rehydrate for use in another location. This is useful for passing complex configuration objects, with non-primitive types, between different parts of the engine, across different processes, or across network boundaries.
+### `/config/TransferrableConfig`
+Sub-class of `Config`, these are WebWorker- and Network-safe configuration objects can dehydrate for transmission, then rehydrate for use in another location. This is useful for passing complex configuration objects, with non-primitive types, between different parts of the engine, across different processes, or across network boundaries.
 
 ### `/lang/Console`
 The **RenderEngine4** console decorates the built-in console, plus adds `PRAGMA` for debugging operations, and `PERF` for setting performance marks with `MEASURE` to record performance metrics in the browser's performance monitor for those marks. `PRAGMA`, `PERF`, and `MEASURE` are stripped from production builds.
