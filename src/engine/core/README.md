@@ -82,7 +82,7 @@ An example of writing and reading memory is shown below. Particle lifecycle meth
   }
 ```
 
-During update, a particle may need to read and write values in the memory segment. Updating a value pulled from the memory segment _will not change the value in memory_. If you update a value in the function scope, you **must explicitly write-back** any values you want to retain into the particle's instantaneous memory.
+During update, a particle may need to read and write values in the memory segment. Updating a value pulled from the memory segment will _change the value in memory_. If you update a value in the function scope, there is no need to perform a write-back of the updated values. **Reading and writing the values _manipulates memory directly._**
 
 ```javascript
   update(time, deltaTime, memSegment, life) {
