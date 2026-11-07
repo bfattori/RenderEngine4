@@ -7,7 +7,7 @@
  * @module Collisions/models/AABB
  */
 
-import CollisionModel from '../CollisionModel.js';
+import NarrowbandModel from './NarrowbandModel.js';
 import CollisionShape from '../CollisionShape.js';
 
 /**
@@ -38,11 +38,11 @@ class AABBShape extends CollisionShape {
  * detection. It is the fastest and most commonly used model for simple games.
  * 
  * @class AABBCollisionModel
- * @extends CollisionModel
+ * @extends NarrowbandModel
  */
-export default class AABBCollisionModel extends CollisionModel {
+export default class AABBModel extends NarrowbandModel {
   /**
-   * Creates a new AABBCollisionModel instance
+   * Creates a new AABBModel instance
    * @param {Engine|null} engine - Engine instance for raycaster access
    */
   constructor(engine = null) {
@@ -52,7 +52,7 @@ export default class AABBCollisionModel extends CollisionModel {
      * Type identifier for this collision model
      * @type {'AABB'}
      */
-    this.type = 'AABB';
+    this.type = NarrowbandModel.TYPE.AABB;
     
     /**
      * Whether to use simple overlap testing (faster but less precise)

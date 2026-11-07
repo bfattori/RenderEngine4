@@ -1,8 +1,8 @@
-import Engine from '../core/Engine.js';
-import RenderEngineError from '../core/RenderEngineError.js';
-import Enum from '../core/lang/Enum.js';
+import Engine from '../../core/Engine.js';
+import RenderEngineError from '../../core/RenderEngineError.js';
+import Enum from '../../core/lang/Enum.js';
 
-import { TransformEvent } from '../parts/transform/Transform2dPart.js';
+import { TransformEvent } from '../../parts/transform/Transform2dPart.js';
 
 /**
  * A list of {@link GameObject}s that are potentially in collision, determined
@@ -71,7 +71,11 @@ export default class BroadphaseModel {
    * the most amount of time to compute, but returns the most inclusive list of possible results.
    * @type {Enum}
    */
-  static ACCURACY = new Enum('LOW', 'MEDIUM', 'HIGH');
+  static ACCURACY = new Enum(
+    'LOW', 
+    'MEDIUM', 
+    'HIGH'
+  );
 
   constructor(name = 'broadphase', accuracy = BroadphaseModel.ACCURACY.LOW) {
     this.#name = name;

@@ -170,6 +170,26 @@ class EngineConfig extends Config {
          */
         renderContext: null,
         /**
+         * The engine uses two models to determine collisions. The broad phase model uses
+         * fast calculations to determine what objects _could_ collide, which the narrow band
+         * model checks per-object collisions.
+         * @type {Object}
+         */
+        collisions: {
+          /**
+           * Used to determine when objects could potentially be colliding, returns a
+           * `PotentialCollisionList` (PCL) with objects near each other.
+           * @type {BroadphaseModel} The broad phase collisions model
+           */
+          broadPhase: null,
+          /**
+           * Used to determine collisions between two objects directly. Returns a
+           * `CollisionData` object describing the collision.
+           * @type {}
+           */
+          narrowBand: null
+        },
+        /**
          * The collision model for the engine. Default is {@link AABBCollisionModel}
          * @type {CollisionModel}
          */

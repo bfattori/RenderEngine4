@@ -1,5 +1,5 @@
 import RenderEngineError from '../../core/RenderEngineError.js';
-import BroadphaseModel, { PotentialCollisionList } from '../BroadphaseModel.js';
+import BroadphaseModel, { PotentialCollisionList } from './BroadphaseModel.js';
 
 export default class GridBroadphase extends BroadphaseModel {
   #width;

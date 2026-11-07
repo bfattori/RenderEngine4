@@ -1,6 +1,13 @@
 import TransferrableConfig from '../../core/config/TransferrableConfig.js';
 import $Math from '../../core/lang/Math.js';
 
+/**
+ * @class Particle
+ * @classdesc `Particle` is the base class for all particles in the system. It contains the lifespan remaining, original lifespan for calculations,
+ * the opaque Id that references the particle type in the system, the world time when spawned, position, velocity, and a 16-bit bitfield for flags.
+ * The class defines the lifecycle methods of a particle: spawn, update, render, and clean up when dead, allowing for customization of particle 
+ * behavior and appearance. `Particle` can be extended or configured to create various particle effects within the particle system.
+ */
 export default class Particle extends TransferrableConfig {
   /**
    * The size of the particle header in bytes
@@ -29,6 +36,12 @@ export default class Particle extends TransferrableConfig {
     FLAGS: 29           // Uint16
   };
 
+  /**
+   * The bit that indicates that the particle interacts with repulsors
+   * @type {number}
+   */
+  static MASK_INTERACTION = 1 << 15;
+
   constructor(overrides = {}, url = import.meta.url) {
     super({
       /**
@@ -41,11 +54,22 @@ export default class Particle extends TransferrableConfig {
        * particles feel unique
        * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
        */
-      lifeVariance: 80
+      lifeVariance: 80,
+      /**
+       * The particle will interact with `ParticleRepulsors` in the particle system when this
+       * is `true`. Such physical particles incur additional overhead to determine when collisions
+       * occur.
+       * @type {boolean} `true` to enable interactions. default: `false`
+       */
+      interact: false
     }, url);
     this.merge(overrides);
   }
 
+  /**
+   * The memory size (in bytes) to store the particle's instantaneous memory
+   * @returns {Number} The size in bytes
+   */
   get memoryRequirement() {
     return Particle.sizeOf;
   }
@@ -114,6 +138,9 @@ export default class Particle extends TransferrableConfig {
 
     // position
     memSegment.setVecF32(Particle.OFFSETS.POSITION, worldPos);
+
+    // physical interaction flag
+    memSegment.setMaskedBitField16(Particle.OFFSETS.FLAGS, this.interact ? Particle.MASK_INTERACTION : 0);
   }
 
   /**

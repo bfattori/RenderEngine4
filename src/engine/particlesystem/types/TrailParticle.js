@@ -1,7 +1,6 @@
 import $Math from '../../core/lang/Math.js';
 
 import Particle from './Particle.js';
-import BasicParticle from './BasicParticle.js';
 import DiffuseParticle from './DiffuseParticle.js';
 
 /**
@@ -48,8 +47,12 @@ export default class TrailParticle extends DiffuseParticle {
     this.merge(overrides);
   }
   
+  /**
+   * The memory size (in bytes) to store the particle's instantaneous memory
+   * @returns {Number} The size in bytes
+   */
   get memoryRequirement() {
-    return Particle.sizeOf + BasicParticle.sizeOf + DiffuseParticle.sizeOf + TrailParticle.sizeOf;
+    return super.memoryRequirement + TrailParticle.sizeOf;
   }
   
   /**

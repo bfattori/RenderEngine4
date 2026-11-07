@@ -549,7 +549,7 @@ export default class Spark extends DataView {
      * @returns {Uint16} The 16-bit masked value
      */
     getMaskedBitField16(offset, mask16bit) {
-      return this.getUint8(offset) & mask16bit;
+      return this.getUint16(offset) & mask16bit;
     }
 
     /**

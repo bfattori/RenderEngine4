@@ -11,7 +11,7 @@
  */
 import Constants from '../../Constants.js';
 import ColliderPart from './Collider.js';
-import AABBShape from '../../collisionModels/CollisionModel.js'
+import { AABBShape } from '../../collisionSystems/narrowband/AABBModel.js'
 
 /**
  * Creates a new AABBCollider instance

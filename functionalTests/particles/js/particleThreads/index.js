@@ -5,8 +5,10 @@ import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRen
 import GameObject from '../../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
-import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
+import BasicParticle from '../../../../src/engine/particlesystem/types/BasicParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
+
+import burstConfig from '../../../assets/particleConfig/burst.json' with { type: 'json' };
 
 import $Math from '../../../../src/engine/core/lang/Math.js';
 
@@ -55,30 +57,42 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-const eParticle2 = new BurstParticle({
-    colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
-    lifeSpan: [800, 1000],
-    drag: [0.8, 1.8],
-    dragRate: 0.011,
-    velocity: [1.6, 3.0]
-});
+const purpleBurst = {
+    ...burstConfig,
+    ...{
+        colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
+        lifeSpan: [800, 1000],
+        drag: [0.8, 1.8],
+        dragRate: 0.011,
+        velocity: [1.6, 3.0]
+    }
+};
+const eParticle2 = new BasicParticle(purpleBurst);
 eParticle2.name = 'purples';
 
-const eParticle3 = new BurstParticle({
-    colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
-    drag: [1.8, 2.3],
-    dragRate: 0.1,
-    lifeSpan: [1000, 2000],
-    velocity: [0.8, 1.7]
-});
+const blueBurst = {
+    ...burstConfig,
+    ...{
+        colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
+        drag: [1.8, 2.3],
+        dragRate: 0.1,
+        lifeSpan: [1000, 2000],
+        velocity: [0.8, 1.7]
+    }
+};
+const eParticle3 = new BasicParticle(blueBurst);
 eParticle3.name = 'blues';
 
-const eParticle4 = new BurstParticle({
-    colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
-    lifeSpan: [1000, 2500],
-    drag: [0.65, 1.8],
-    velocity: [2.6, 4.0]
-});
+const redBurst = {
+    ...burstConfig,
+    ...{
+        colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
+        lifeSpan: [1000, 2500],
+        drag: [0.65, 1.8],
+        velocity: [2.6, 4.0]
+    }
+};
+const eParticle4 = new BasicParticle(redBurst);
 eParticle4.name = 'reds';
 
 RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4);

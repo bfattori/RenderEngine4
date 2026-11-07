@@ -1,0 +1,9 @@
+{
+  "colors": ["rgb(4, 0, 255)", "rgb(185, 180, 255)", "#4d4fdb", "#160e5f", "rgb(118, 172, 216)", "rgb(24, 208, 214)"],
+  "lifeSpan": [1000, 2000],
+  "drag": 1,
+  "dragRate": 0,
+  "particleSize": [4, 10],
+  "gravity": [0.0, 0.08],
+  "sizeDecay": 0.45
+}

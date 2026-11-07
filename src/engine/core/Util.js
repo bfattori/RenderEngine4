@@ -41,12 +41,12 @@ export default class Util {
                 }
             } else if (color.charAt(0) === 'r') {
                 color = color.split(',');
-                r = parseInt(color[0].substring(5));
+                r = parseInt(color[0].includes('a(') ? color[0].substring(5) : color[0].substring(4));
                 g = parseInt(color[1]);
                 b = parseInt(color[2]);
-                a = parseInt(color[3].substring(0, color[3].length - 1));
+                a = parseInt(color[0].includes('a(') ? color[3].substring(0, color[3].length - 1) : "255");
             } else {
-                throw new RenderEngineError(`Invalid color format ${color} (${r},${g},${b},${a})  - must be #rrggbb[aa] or rgba(r,g,b,a)`);
+                throw new RenderEngineError(`Invalid color format ${color} (${r},${g},${b},${a})  - must be #rrggbb[aa] or rgb[a](r,g,b[,a])`);
             }
         }
         return [r,g,b,a];

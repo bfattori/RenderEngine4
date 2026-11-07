@@ -6,7 +6,7 @@ Theorem (SAT). It provides the most precise collision detection for irregularly-
 objects but at a higher computational cost than AABB or CABC models.
 @module Collisions/models/ConvexHull 
 */
-import CollisionModel from '../CollisionModel.js';
+import NarrowbandModel from '../NarrowbandModel.js';
 import CollisionShape from '../CollisionShape.js';
 
 /**
@@ -29,11 +29,11 @@ This model uses convex hull algorithms combined with the Separating Axis Theorem
 for precise collision detection. It's ideal for games requiring high accuracy
 and irregularly-shaped objects. Supports raycasting against convex polygons.
 @class ConvexHullCollisionModel
-@extends CollisionModel 
+@extends NarrowbandModel 
 */ 
-export default class ConvexHullCollisionModel extends CollisionModel { 
+export default class ConvexHullModel extends NarrowbandModel { 
     /*
-    Creates a new ConvexHullCollisionModel instance
+    Creates a new ConvexHullModel instance
     @param {GameObject} gameObject - Parent game object (optional)
     @param {Engine|null} engine - Engine instance for raycaster access */ 
     constructor(engine = null) { 
@@ -42,7 +42,7 @@ export default class ConvexHullCollisionModel extends CollisionModel {
         Type identifier for this collision model
         @type {'ConvexHull'} 
         */ 
-        this.type = 'ConvexHull';
+        this.type = NarrowbandModel.TYPE.CONVEX_HULL;
         /**
         Convex hull shape cache for performance optimization
         @type {ConvexHullShape|null} 

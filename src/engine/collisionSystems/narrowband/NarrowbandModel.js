@@ -10,29 +10,42 @@
  * @module Collisions/CollisionModel
  */
 
-import RenderEngineError from '../core/RenderEngineError.js';
+import RenderEngineError from '../../core/RenderEngineError.js';
+import Enum from '../../core/lang/Enum.js';
 
 /**
- * Collision model error class for collision-related errors.
- * @param {CollisionModel} collisionModel - The collision model used for the test
+ * Narrowband model error class for collision-related errors.
+ * @param {NarrowbandModel} collisionModel - The model used for the test
  * @param {String} message - The error message
  * @param {Error} rootCause - Optional root cause Error instance
  * @extends RenderEngineError
  */
-class CollisionModelError extends RenderEngineError {
-  constructor(collisionModel, message, rootCause) {
+class NarrowbandModelError extends RenderEngineError {
+  #model;
+
+  constructor(narrowbandModel, message, rootCause) {
     super(message, rootCause);
-    this.collisionModel = collisionModel;
+    this.#model = narrowbandModel;
+  }
+
+  get model() {
+    return this.#model;
   }
 };
 
 /**
- * Creates a new CollisionModel instance
+ * This is the base class for all `NarrowbandModel` instances
  * @abstract - Must be implemented by subclasses
  * @param {Object} gameObject - The game object this model is attached to
  * @param {Engine|null} engine - Optional Engine reference for raycaster access
  */
-export default class CollisionModel {
+export default class NarrowbandModel {
+  static TYPE = new Enum( 
+    'AABB', 
+    'CABC', 
+    'CONVEX_HULL'
+  );
+
   constructor(engine) {
     this.engine = engine;
     
@@ -40,9 +53,9 @@ export default class CollisionModel {
     
     /**
      * Collision model type identifier
-     * @type {'AABB'|'CABC'|'ConvexHull'}
+     * @type {NarrowbandModel#TYPE}
      */
-    this.type = 'AABB'; // Default, will be overridden by subclasses
+    this.type = NarrowbandModel.TYPE.AABB; // Default, will be overridden by subclasses
     
     /**
      * Whether raycasting is enabled for precise collision testing
@@ -53,10 +66,11 @@ export default class CollisionModel {
 
   /**
    * Gets all collidable objects in the world for broad-phase culling
-   * @returns {GameObject[]} Array of GameObjects that can participate in collisions
+   * @returns {Array<GameObject>} Array of GameObjects that can participate in collisions
    */
   getCollidableObjects() {
     const objects = [];
+
     // Implement broad-phase culling based on model type
     return objects;
   }
@@ -69,7 +83,7 @@ export default class CollisionModel {
    */
   testCollision(shape1, shape2) {
     // Abstract method - must be implemented by subclasses
-    throw new CollisionModelError(this, `${this.constructor.name}: testCollision() must be implemented by subclass`);
+    throw new NarrowbandModelError(this, `${this.constructor.name}: testCollision() must be implemented by subclass`);
   }
 
   /**
@@ -115,7 +129,7 @@ export default class CollisionModel {
       normal: hit.normal || { x: 0, y: 1 },
       depth: hit.distance || 0,
       gameObject: hit.gameObject || null,
-      collisionModel: this.type
+      modelType: this.type
     }));
   }
 
@@ -344,6 +358,6 @@ class Raycaster {
 }
 
 export {
-  CollisionModelError,
+  NarrowbandModelError,
   Raycaster
 };

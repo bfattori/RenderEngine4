@@ -16,7 +16,8 @@ import RenderContext from '../rendering/context/RenderContext.js';
 import Renderer from '../rendering/renderers/Renderer.js';
 import ParticleEngine, { ParticleEngineConfig, ParticleEngineThreadingConfig } from './../particlesystem/ParticleEngine.js';
 import Camera from '../rendering/cameras/Camera.js';
-import GridBroadphase from '../collisionModels/broadphase/GridBroadphase.js';
+import GridBroadphase from '../collisionSystems/broadphase/GridBroadphase.js';
+import AABBModel from '../collisionSystems/narrowband/AABBModel.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
 
@@ -87,6 +88,8 @@ export default class Engine {
 
     // store the engine initialization options
     this.#ENGINE_OPTIONS.merge(options);
+    
+    // configure the context
     ctx.debug = this.#ENGINE_OPTIONS.flags.debugMode;
     ctx.debugOpts = this.#ENGINE_OPTIONS.flags.debugOpts;
 
@@ -104,6 +107,9 @@ export default class Engine {
     // initialize memory management
     initializeSystemMM();
 
+    // the game event engine
+    this.#EVENT_ENGINE = new EventEngine(this);
+
     // render context (initialized later)
     const renderContext = this.#ENGINE_OPTIONS.world.renderContext || new RenderContext(new Renderer());
     renderContext.viewport = this.#ENGINE_OPTIONS.world.viewport;
@@ -114,14 +120,19 @@ export default class Engine {
     camera.viewport = this.#ENGINE_OPTIONS.world.viewport;
 
     // setup the game world
-    this.#EVENT_ENGINE = new EventEngine(this);
     this.#WORLD = new GameWorld(this, camera, renderContext);
     this.#WORLD.width = renderContext.worldDimensions.width;
     this.#WORLD.height = renderContext.worldDimensions.height;
 
-    // Collision model storage
-    const collisionModel = this.#ENGINE_OPTIONS.world.collisionModel || new GridBroadphase('defaultGrid', this.#WORLD.width, this.#WORLD.height);
-    this.#ENGINE_OPTIONS.world.collisionModel = collisionModel;
+    // broad phase collisions model
+    const broadphaseModel = this.#ENGINE_OPTIONS.world.collisions.broadPhase || new GridBroadphase('defaultGrid', this.#WORLD.width, this.#WORLD.height);
+    this.#ENGINE_OPTIONS.world.collisions.broadPhase = broadphaseModel;
+    this.#WORLD.broadphaseModel = broadphaseModel;
+
+    // narrow band collisions model
+    const narrowbandModel = this.#ENGINE_OPTIONS.world.collisions.narrowBand || new AABBModel(this);
+    this.#ENGINE_OPTIONS.world.collisions.narrowBand = narrowbandModel;
+    this.#WORLD.narrowbandNodel = narrowbandModel;
 
     if (this.#ENGINE_OPTIONS.flags.showFps) {
       this.#fpsCounter = new FPSCounter();
@@ -155,6 +166,10 @@ export default class Engine {
   // Primary engine components
   //---------------------------
 
+  /**
+   * Static method to return the engine instance
+   * @return {Engine}
+   */
   static get engine() {
     return primary.ENGINE;
   }
@@ -167,6 +182,10 @@ export default class Engine {
     return primary.ENGINE;
   }
 
+  /**
+   * Static method to get the world instance
+   * @returns {GameWorld}
+   */
   static get world() {
     return primary.ENGINE.world;
   }
@@ -179,6 +198,10 @@ export default class Engine {
     return this.#WORLD;
   }
 
+  /**
+   * Static method to get the event engine instance
+   * @returns {EventEngine}
+   */
   static get eventEngine() {
     return primary.ENGINE.eventEngine;
   }
@@ -191,23 +214,35 @@ export default class Engine {
     return this.#EVENT_ENGINE;
   }
 
+  /**
+   * Set the particle engine used by the engine
+   * @param {$ParticleEngine}
+   */
   set particleEngine(engine) {
     this.#PARTICLE_ENGINE = engine;
     primary.PARTICLE_ENGINE = engine;
   }
 
+  /**
+   * Static method to get the particle engine instance
+   * @returns {$ParticleEngine}
+   */
   static get particleEngine() {
     return primary.ENGINE.particleEngine;
   }
 
   /**
    * Get the ParticleEngine instance
-   * @returns {ParticleEngine|null}
+   * @returns {$ParticleEngine|null}
    */
   get particleEngine() {
     return this.#PARTICLE_ENGINE;
   }
   
+  /**
+   * Static method to get the engine's render context
+   * @return {RenderContext}
+   */
   static get renderContext() {
     return primary.ENGINE.renderContext;
   }
@@ -221,7 +256,7 @@ export default class Engine {
   }
 
   /**
-   * Returns the hooks configuration of the engine.
+   * Returns the callback hook configuration of the engine.
    * @returns {Object}
    */
   get hooks() {
@@ -296,14 +331,25 @@ export default class Engine {
     this.#lastTime = time;
   }
 
+  /**
+   * Get the update/render loop calculated FPS
+   * @number
+   */
   get realFPS() {
     return this.#fpsRealtime;
   }
 
+  /**
+   * Update the update/render calculated FPS
+   */
   set realFPS(value) {
     this.#fpsRealtime = value;
   }
 
+  /**
+   * Returns the instance to the FPS counter instance
+   * @return {FPSCounter}
+   */
   get fpsCounter() {
     return this.#fpsCounter;
   }
@@ -311,34 +357,57 @@ export default class Engine {
   //--------------------------------
   // Threading
 
+  /**
+   * Returns `true` if threading is enabled for rendering.
+   * @returns {boolean}
+   */
   get renderThreading() {
     return this.options.threading.render.enabled;
   }
 
+  /**
+   * Returns `true` if threading is enabled for collisions.
+   * @returns {boolean}
+   */
   get collisionThreading() {
     return this.options.threading.collision.enabled;
   }
 
+  /**
+   * Returns `true` if threading is enabled for the particle engine.
+   * @returns {boolean}
+   */
   get particleThreading() {
     return this.options.threading.particleEngine.enabled;
   }
 
   //--------------------------------
 
+  /**
+   * Returns the current engine state: 'running', 'paused', or 'stepping'
+   * @returns {String}
+   */
   get state() {
     return this.isRunning ? (this.isStepping ? 'stepping' : 'running') : 'paused';
   }
 
+  /**
+   * The current frame number of the simulation. This is incremented every frame.
+   * @returns {Number}
+   */
   get frameNumber() {
     return this.#frameNumber;
   }
 
+  /**
+   * Calling this increments the frame number
+   */
   nextFrame() {
     this.#frameNumber++;
   }
 
   /**
-   * Check if the engine is running
+   * `true` if the engine is running
    * @returns {boolean}
    */
   get isRunning() {
@@ -354,48 +423,85 @@ export default class Engine {
   }
 
   /**
-   * Set's the engine to stepping mode where it will advance one
-   * frame when `engine.step()` is called
+   * `true` if the engine is stepping
+   * @returns {boolean}
    */
   get isStepping() {
     return this.#stepping;
   }
 
+  /**
+   * Set's the engine to stepping mode where it will advance one
+   * frame when `engine.step()` is called.
+   * @param {boolean} state - the new stepping state
+   */
   set isStepping(state) {
     this.#stepping = state;
     this.#stepTime = this.#currentTime;
   }
 
+  /**
+   * The amount of time to step per call to `step()`
+   * @param {Number} time - The amount of time to step each invocation
+   */
   set stepTime(time) {
     this.#stepTime = time;
   }
 
+  /**
+   * Returns the amount of time that will be stepped at each `step()` invocation
+   * @returns {Number}
+   */
   get stepTime() {
     return this.#stepTime;
   }
 
+  /**
+   * Set the amount of time (milliseconds) alloted to generating a frame.
+   * @param {Number} allot - Time alloted to frame generation
+   */
   set frameTime(allot) {
     this.#frameTime = allot;
   }
 
+  /**
+   * Get the amount of time (milliseconds) alloted to generating a frame.
+   * @returns {Number}
+   */
   get frameTime() {
     return this.#frameTime;
   }
 
+  /**
+   * Stores the frame request Id pointer from `requestAnimationFrame()`
+   * @param {Number} frameId - The pointer
+   */
   set frameController(frameId) {
     this.#animationFrameId = frameId;
   }
 
+  /**
+   * Returns the pointer to the frame animation request.
+   * @return {Number} The pointer
+   */
   get frameController() {
     return this.#animationFrameId;
   }
 
   /**
-   * Get the world's collision model
-   * @returns {CollisionModel|null}
+   * Get the world's broad phase collision model
+   * @returns {BroadphaseModel|null}
    */
-  get collisionModel() {
-    return this.#WORLD.collisionModel;
+  get broadphaseModel() {
+    return this.#WORLD.broadphaseModel;
+  }
+
+  /**
+   * Get the world's narrow band collision model
+   * @returns {NarrowbandModel|null}
+   */
+  get narrowbandModel() {
+    return this.#WORLD.narrowbandModel;
   }
 
   /**
@@ -414,11 +520,18 @@ export default class Engine {
     return primary.ENGINE.options;
   }
 
-
+  /**
+   * The function the Engine uses to generate a frame
+   * @param {Function} fn - defaults to `animationLoop()`
+   */
   set runOneFrame(fn) {
     this.#runOneFrame = fn;
   }
 
+  /**
+   * Returns the function used to generate a frame for the Engine.
+   * @returns {Function}
+   */
   get runOneFrame() {
     return this.#runOneFrame;
   }
@@ -426,6 +539,15 @@ export default class Engine {
   //-------------------------------
   // Lifecycle Control
   //-------------------------------
+
+  /**
+   * Static reset method to null the engine, allowing for re-initializaion.
+   * DANGER!! This is untested
+   */
+  static reset() {
+    primary.ENGINE.reset();
+    primary.ENGINE = null;
+  }
 
   /**
    * Initialize the Engine.
@@ -463,14 +585,6 @@ export default class Engine {
     return e;
   }
 
-  /**
-   * Reset the current engine instance and set it to null, allowing for re-initializaion.
-   */
-  static reset() {
-    primary.ENGINE.reset();
-    primary.ENGINE = null;
-  }
-  
   /**
    * Update the scene with current time and delta
    * @param {number} currentTime - Current game time
@@ -524,7 +638,7 @@ export default class Engine {
   }
   
   /**
-   * Start the game loop
+   * Starts the game loop
    */
   async start() {
     if (this.isRunning) return;
@@ -540,7 +654,7 @@ export default class Engine {
   }
 
   /**
-   * Stop the game loop
+   * Stops (pauses) the game loop
    */
   stop() {
     this.isRunning = false;
@@ -569,7 +683,8 @@ export default class Engine {
   }
 
   /**
-   * Reset the engine state
+   * Stop, then reset the engine state, zeroing out the world, 
+   * particle engine, memory contexts, render context, and event engine.
    */
   reset() {
     this.stop();
@@ -602,7 +717,8 @@ export default class Engine {
   }
 
   /**
-   * Called to shutdown and clean up resources.
+   * Called to shutdown and clean up resources. Removes the Engine from
+   * the global context
    */
   destroy() {
     // clean up before exiting
@@ -687,6 +803,9 @@ export default class Engine {
   }
 }
 
+/**
+ * Engine and game paths
+ */
 export class Paths {
   static #engineLocation = null;
   static #startupLocation = null;
@@ -730,6 +849,9 @@ export class Paths {
 };
 
 
+/**
+ * The default Engine update/render loop
+ */
 function animationLoop() {
   const e = Engine.engine;
   if (!(e.isRunning || e.isStepping)) return;

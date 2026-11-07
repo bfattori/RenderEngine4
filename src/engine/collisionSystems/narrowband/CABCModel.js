@@ -8,7 +8,7 @@
  * @module Collisions/models/CABC
  */
 
-import CollisionModel from '../CollisionModel.js';
+import NarrowbandModel from './NarrowbandModel.js';
 import CollisionShape from '../CollisionShape.js';
 
 /**
@@ -45,12 +45,12 @@ class CABCShape extends CollisionShape {
  * Ideal for games with circular or oval-shaped objects, or when combined with AABB
  * for hybrid collision systems.
  * 
- * @class CABCCollisionModel
- * @extends CollisionModel
+ * @class CABCModel
+ * @extends NarrowbandModel
  */
-class CABCCollisionModel extends CollisionModel {
+class CABCModel extends NarrowbandModel {
   /**
-   * Creates a new CABCCollisionModel instance
+   * Creates a new CABCModel instance
    * @param {Engine|null} engine - Engine instance for raycaster access
    */
   constructor(engine = null) {
@@ -60,7 +60,7 @@ class CABCCollisionModel extends CollisionModel {
      * Type identifier for this collision model
      * @type {'CABC'}
      */
-    this.type = 'CABC';
+    this.type = NarrowbandModel.TYPE.CABC;
     
     /**
      * Whether to use uniform circular shape (single radius) or axis-aligned
@@ -368,7 +368,7 @@ class CABCCollisionModel extends CollisionModel {
   }
 }
 
-export default CABCCollisionModel;
+export default CABCModel;
 
 export {
   CABCShape

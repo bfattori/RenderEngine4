@@ -5,13 +5,11 @@ import Util from '../../core/Util.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';
 
-
 /**
  * @class BasicParticle
- * @classdesc The BasicParticle class is a fundamental particle type used in the particle system. It defines the properties 
- * and behaviors of individual particles, including their color, size, velocity, drag, lifespan, and rendering methods. The 
- * class provides methods for spawning, updating, rendering, and cleaning up particles, allowing for customization of particle 
- * behavior and appearance. BasicParticle can be extended or configured to create various particle effects within the particle system.
+ * @classdesc The `BasicParticle` class is a fundamental particle type used in the particle system. It defines the properties 
+ * and behaviors of individual particles, including their color, size, size decay, drag, and method of drawing as points or using
+ * a set of tiles. Basic particles also introduce `gravity` as a constant vector applied to a particle's motion.
  * @extends Particle
  */
 export default class BasicParticle extends Particle {
@@ -94,13 +92,19 @@ export default class BasicParticle extends Particle {
 
     initializeParticleType() {
         super.initializeParticleType();
+
+        // recompute the colors as rgba() values
         for (let i = 0; i < this.colors.length; i++) {
             this.colors[i] = Util.getRGBA(this.colors[i]);
         }
     }
 
+    /**
+     * The memory size (in bytes) to store the particle's instantaneous memory
+     * @returns {Number} The size in bytes
+     */
     get memoryRequirement() {
-        return Particle.sizeOf + BasicParticle.sizeOf;
+        return super.memoryRequirement + BasicParticle.sizeOf;
     }
 
     /**
@@ -132,14 +136,13 @@ export default class BasicParticle extends Particle {
     spawn(worldPos, time, memSegment) {
         super.spawn(worldPos, time, memSegment);
 
-        // color: index to the computed color array
+        // color: index into the color look up table
         const color = $Math.randomRangeInt(0, this.colors.length - 1);
         memSegment.setUint8(BasicParticle.OFFSETS.COLOR, color);
 
-        // initial size of the particle
         const initSize = $Math.getRangeValue(this.particleSize);
-        memSegment.setFloat32(BasicParticle.OFFSETS.ORIG_SIZE, initSize);
-        memSegment.setFloat32(BasicParticle.OFFSETS.CUR_SIZE, initSize)
+        memSegment.setFloat32(BasicParticle.OFFSETS.ORIG_SIZE, initSize);   // initial size of the particle (doesn't change)
+        memSegment.setFloat32(BasicParticle.OFFSETS.CUR_SIZE, initSize)     // instantaneous size of the particle (may change)
 
         // rate of size decay
         memSegment.setFloat32(BasicParticle.OFFSETS.SIZE_DECAY, this.sizeDecay);

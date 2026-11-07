@@ -6,7 +6,6 @@ import Spark from '../core/memory/Spark.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
 import Particle from './types/Particle.js';
-import PhysicalParticle from './types/PhysicalParticle.js';
 import ParticleRepulsor from './physics/ParticleRepulsor.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
@@ -574,19 +573,24 @@ export default class $ParticleEngine {
         // update the particle
         particleType.update(time, deltaTime, memSegment, life);
         
-        // only physical particles are affected by repulsors and colliders
-        if (particleType instanceof PhysicalParticle) {
+        // particles with the interaction mask enabled are affected by repulsors
+        if (memSegment.getMaskedBitField16(Particle.OFFSETS.FLAGS, Particle.MASK_INTERACTION) === Particle.MASK_INTERACTION) {
             this.#addImpulse(memSegment, time, deltaTime);
         }
     }
 
+    /**
+     * Determines if a particle falls outside the viewport of the particle engine.
+     * @param {Array<number>} pos - The [x, y] coordinate of the particle
+     * @returns {boolean} `true` if the particle is within the viewport of the particle engine
+     */
     #inBounds(pos) {
         const limit = this.config.boundaryExpansion; 
         return pos[0] >= 0 - limit && pos[0] <= this.#width + limit && pos[1] >= 0 - limit && pos[1] <= this.#height + limit;
     }
 
     /**
-     * Adds impulse to physical particles based on particle repulsors.
+     * Adds impulse to particles with the interaction flag, calculated from particle repulsors.
      * @param {*} time - Current world time
      * @param {*} deltaTime - Time since last frame
      */

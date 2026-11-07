@@ -13,8 +13,8 @@ import Util from '../../../../src/engine/core/Util.js';
 import SwitchPanel from '../../../../src/engine/ui/SwitchPanel.js';
 
 // effect and particle types
-import { pEffect, pEffect2, wEffect1, wEffect2, sparkEffect } from './effects.js';
-import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff } from './particles.js';
+import { pEffect, pEffect2, wEffect1, wEffect2, sparkEffect, smokeEffect } from './effects.js';
+import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff, smokeParticle } from './particles.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 30000
@@ -69,7 +69,8 @@ const p = new SwitchPanel(document.body, {
                 'Burst (off)': () => { return toggleBurstEffect(); },
                 'Fountain (off)': () => { return toggleFountainEffect(); },
                 'Trails (off)': () => { return toggleTrailEffect(); },
-                'Sparks (off)': () => { return toggleSparkEffect(); }
+                'Sparks (off)': () => { return toggleSparkEffect(); },
+                'Smoke (off)': () => { return toggleSmokeEffect(); }
             }
         }
     ]
@@ -79,8 +80,8 @@ const p = new SwitchPanel(document.body, {
 // configure the particle engine
 
 // add the particle types and effects
-RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff);
-RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, sparkEffect);
+RenderEngine.particleEngine.addParticleTypes(eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff, smokeParticle);
+RenderEngine.particleEngine.addEffects(pEffect, pEffect2, wEffect1, wEffect2, sparkEffect, smokeEffect);
 
 // initialize the particle engine
 await RenderEngine.particleEngine.initialize();
@@ -118,24 +119,36 @@ sparkObject
         new Transform2dPart("transform"), 
         new ParticleEmitterPart("emitter"));
 
+//---------------------------------
+// smoke effect
+const smoker = new GameObject();
+smoker
+    .addComponentParts(
+        new Transform2dPart("transform"), 
+        new ParticleEmitterPart("emitter"));
+
 //----------------------------------       
 // add the objects to the render engine world
-RenderEngine.world.addObjects(explosionObject, fountain1, fountain2, sparkObject);
+RenderEngine.world.addObjects(explosionObject, fountain1, fountain2, sparkObject, smoker);
 
 // set the positions of the various static objects in the world
 fountain1.PARTS.transform.position = [5, 580];
 fountain2.PARTS.transform.position = [795, 580];
 sparkObject.PARTS.transform.position = [0, 5];
+smoker.PARTS.transform.position = [400, 600];
 
-// configure fountain emitters and enable them to continuously emit particles
+// configure fountain and smoke emitters and enable them to continuously emit particles
 const emitter1 = fountain1.PARTS.emitter;
 const emitter2 = fountain2.PARTS.emitter;
+const smokeEmitter = smoker.PARTS.emitter;
 
 emitter1.effect = wEffect1;
 emitter2.effect = wEffect2;
+smokeEmitter.effect = smokeEffect;
 
 // emitter1.enable();
 // emitter2.enable();
+// smokeEmitter.enable();
 
 // configure spark emitters and enable them to continuously emit particles
 const sparkEmitter = sparkObject.PARTS.emitter;
@@ -194,6 +207,16 @@ function toggleSparkEffect() {
     } else {
         sparkEmitter.enable();
         return 'Sparks';
+    }
+}
+
+function toggleSmokeEffect() {
+    if (smokeEmitter.enabled) {
+        smokeEmitter.disable();
+        return 'Smoke (off)';
+    } else {
+        smokeEmitter.enable();
+        return 'Smoke';
     }
 }
 

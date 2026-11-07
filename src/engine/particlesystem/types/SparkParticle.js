@@ -1,11 +1,10 @@
 import Util from '../../core/Util.js';
 
-import PhysicalParticle from './PhysicalParticle.js';
 import Particle from './Particle.js';
 import BasicParticle from './BasicParticle.js';
 import DiffuseParticle from './DiffuseParticle.js';
 
-export default class SparkParticle extends PhysicalParticle {
+export default class SparkParticle extends DiffuseParticle {
   static MAX_TRAIL_LENGTH = 10;
 
   /**
@@ -43,7 +42,8 @@ export default class SparkParticle extends PhysicalParticle {
       softness: 0.75,
       velocity: [15, 35],
       gravity: [0, 0.2],
-      lifeSpan: [80, 250]
+      lifeSpan: [80, 250],
+      interact: true
     }, url);
     this.merge(overrides);
     this.name = 'sparkParticle';
@@ -53,8 +53,12 @@ export default class SparkParticle extends PhysicalParticle {
       return new SparkParticle();
   }
 
+  /**
+   * The memory size (in bytes) to store the particle's instantaneous memory
+   * @returns {Number} The size in bytes
+   */
   get memoryRequirement() {
-    return Particle.sizeOf + BasicParticle.sizeOf + DiffuseParticle.sizeOf + SparkParticle.sizeOf;
+    return super.memoryRequirement + SparkParticle.sizeOf;
   }
 
   /**

@@ -2,18 +2,16 @@ import $Math from '../../core/lang/Math.js';
 import Util from '../../core/Util.js';
 
 import Particle from './Particle.js';
-import BasicParticle from './BasicParticle.js';
-import PhysicalParticle from './PhysicalParticle.js';
 import DiffuseParticle from './DiffuseParticle.js';
 
 /**
  * @class SmokeParticle
- * @classdesc The SmokeParticle class is a specialized particle type that extends the PhysicalParticle class. It defines specific properties 
- * for particles that simulate smoke, including color options, lifespan, drag, size, velocity, growth, gravity, and curl. The class provides 
- * methods to initialize the particle, update its state over time, and apply curling effects to simulate the behavior of smoke in a realistic manner.
- * @extends PhysicalParticle
+ * @classdesc The `SmokeParticle` class is a specialized particle type that extends the `DiffuseParticle` class. It defines a new property
+ * for particles that simulate smoke called "curl." Curl is a motion derived from sin() cos() to simulate a swirling effect. Smoke particles
+ * have the 
+ * @extends DiffuseParticle
  */
-export default class SmokeParticle extends PhysicalParticle {
+export default class SmokeParticle extends DiffuseParticle {
     static sizeOf = 12;
     static byteOffset = 66;
 
@@ -33,6 +31,7 @@ export default class SmokeParticle extends PhysicalParticle {
             sizeDecay: 0.001,
             gravity: [0.0, -0.004],
             softness: 0.9,
+            interact: true,
 
             /**
              * The amount of curl applied to each particle throughout its life
@@ -60,8 +59,12 @@ export default class SmokeParticle extends PhysicalParticle {
         return new SmokeParticle();
     }
 
+  /**
+   * The memory size (in bytes) to store the particle's instantaneous memory
+   * @returns {Number} The size in bytes
+   */
     get memoryRequirement() {
-        return Particle.sizeOf + BasicParticle.sizeOf + DiffuseParticle.sizeOf + SmokeParticle.sizeOf;
+        return super.memoryRequirement + SmokeParticle.sizeOf;
     }
 
     /**

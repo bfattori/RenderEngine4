@@ -5,8 +5,10 @@ import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRen
 import GameObject from '../../../../src/engine/gameobject/GameObject.js';
 import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
 import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
-import BurstParticle from '../../../../src/engine/particlesystem/types/BurstParticle.js';
+import BasicParticle from '../../../../src/engine/particlesystem/types/BasicParticle.js';
 import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
+
+import burstConfig from '../../../assets/particleConfig/burst.json' with { type: 'json' };
 
 import $Math from '../../../../src/engine/core/lang/Math.js';
 
@@ -48,7 +50,7 @@ div.innerHTML = 'Press Spacebar, Go Boom...';
 document.body.appendChild(div)
 
 
-const exParticle = new BurstParticle();
+const exParticle = new BasicParticle(burstConfig);
 RenderEngine.particleEngine.addParticleType(exParticle);
 
 // set up the particles and effects we'll use

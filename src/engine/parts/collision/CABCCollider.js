@@ -11,7 +11,7 @@
  */
 import Constants from '../../Constants.js';
 import ColliderPart from './Collider.js';
-import CABCShape from '../../collisionModels/models/CABC.js';
+import { CABCShape } from '../../collisionSystems/narrowband/CABCModel.js'
 
 /**
  * Creates a new CABBCollider instance

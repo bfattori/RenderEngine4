@@ -11,7 +11,7 @@
  */
 import Constants from '../../Constants.js';
 import ColliderPart from './Collider.js';
-import ConvexHullCollisionModel from '../../collisionModels/models/ConvexHull.js';
+import { ConvexHullShape } from '../../collisionSystems/narrowband/ConvexHullModel.js';
 
 /**
  * Creates a new ConvexHullCollider instance
@@ -106,10 +106,8 @@ class ConvexHullCollider extends ColliderPart {
       this.hullPoints = this._calculateHullFromContextType(position);
     }
     
-    return {
-      type: 'ConvexHull',
-      points: this.hullPoints
-    };
+    const hullShape = new ConvexHullShape(this.hullPoints);
+    return hullShape;
   }
 
   /**

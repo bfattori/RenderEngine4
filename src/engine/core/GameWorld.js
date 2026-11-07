@@ -10,7 +10,8 @@ class GameWorld {
   #width = 0;
   #height = 0;
   #transformStack = [];
-  #worldCollisionModel = null;
+  #broadphaseModel = null;
+  #narrowbandModel = null;
   #collisionEvents = [];
   #engine = null;
   #camera = null;
@@ -88,21 +89,37 @@ class GameWorld {
   }
   
   /**
-   * Set collision model for the world
-   * @param {Object} model - The collision model to use
+   * Set the broad phase collision model for the world
+   * @param {BroadphaseModel} model - The collision model to use
    */
-  set collisionModel(model) {
-    this.#worldCollisionModel = model;
+  set broadphaseModel(model) {
+    this.#broadphaseModel = model;
   }
   
   /**
    * Get collision model for the world
    * @returns {Object|null}
    */
-  get collisionModel() {
-    return this.#worldCollisionModel;
+  get broadphaseModel() {
+    return this.#broadphaseModel;
+  }
+
+  /**
+   * Set narrow band collision model for the world
+   * @param {NarrowbandModel} model - The collision model to use
+   */
+  set narrowbandModel(model) {
+    this.#narrowbandModel = model;
   }
   
+  /**
+   * Get the narrow band collision model for the world
+   * @returns {NarrowbandModel}
+   */
+  get narrowbandModel() {
+    return this.#narrowbandModel;
+  }
+
   /**
    * Get world dimensions
    * @returns {Array} An array with two elements (width and height)

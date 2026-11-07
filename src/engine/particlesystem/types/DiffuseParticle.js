@@ -5,9 +5,8 @@ import Util from '../../core/Util.js';
 
 /**
  * @class DiffuseParticle
- * @classdesc The DiffuseParticle class is a specialized particle type that extends the BasicParticle class. It defines specific properties 
- * for particles that have a diffuse appearance, including softness, which controls the blurring effect of the particle. The class provides 
- * methods to initialize the particle, render its shape with a radial gradient, and update its state over time.
+ * @classdesc The `DiffuseParticle` class extends the `BasicParticle` class and defines additional properties 
+ * for a diffuse appearance, including softness, which controls the blurring effect of the particle.
  * @extends BasicParticle
  */
 export default class DiffuseParticle extends BasicParticle {
@@ -55,8 +54,12 @@ export default class DiffuseParticle extends BasicParticle {
     // generate a set of images representing the largest size, in each color
   }
 
+  /**
+   * The memory size (in bytes) to store the particle's instantaneous memory
+   * @returns {Number} The size in bytes
+   */
   get memoryRequirement() {
-    return Particle.sizeOf + BasicParticle.sizeOf + DiffuseParticle.sizeOf;
+    return super.memoryRequirement + DiffuseParticle.sizeOf;
   }
   
   /**

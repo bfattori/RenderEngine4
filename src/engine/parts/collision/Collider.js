@@ -7,42 +7,7 @@ import Constants from '../../Constants.js';
 import EventEngine, { Event } from '../../core/EventEngine.js';
 import ComponentPart, { ComponentPartEvent, ComponentPartError } from '../ComponentPart.js';
 import { TransformEvent } from '../transform/Transform2dPart.js';
-
-/**
- * @class CollisionData
- * The event information for a collision.
- * 
- * @param {GameObject} initiator - The GameObject that initiated the collision.
- * @param {GameObject} target - The GameObject that was collided with.
- * @param {number} separatingDistance - The distance between the two GameObjects at which they are separating.
- * @param {Array} backoffVector - The vector that needs to be applied to the initiator to move them closer together. (x, y)
- * @param {number} backoffDistance - The distance that needs to be moved by the initiator to resolve the collision.
- * @param {string} collisionType - The type of collision model used (e.g., AxisAlignedBoundingBox).
- * @param {Object} colliderModel - An object containing the shape data for both GameObjects involved in the collision. 
- * @param {String} colliderModel.type - The collision model type
- * @param {CollisionShape} colliderModel.thisShape - The initiator collision shape (e.g. {@link })
- * @param {CollisionShape} colliderModel.otherShape - The shape of the object collided with
- * @returns {CollisionData} An object containing the collision data.
- */
-class CollisionData {
-  constructor({ initiator, target, 
-                separatingDistance, backoffVector, backoffDistance, 
-                collisionType, colliderModel, position, rotation, 
-                scale, axis, side }) {
-    this.initiator = initiator;
-    this.target = target;
-    this.separatingDistance = separatingDistance;  // Calculated by SAT in real implementation
-    this.backoffVector = backoffVector; // Calculated by collision model
-    this.backoffDistance = backoffDistance;    // Penetration depth
-    this.collisionType =  collisionType;
-    this.colliderModel = colliderModel;
-    this.position = position;
-    this.rotation = rotation;
-    this.scale = scale;
-    this.axis = axis;
-    this.side = side;
-  }
-};
+import CollisionData from '../../collisionSystems/CollisionData.js';
 
 /**
  * This event is emitted globally to inform listeners of
