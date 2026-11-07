@@ -1,4 +1,4 @@
-import { NOP, ENGINE_ERRORS } from '../../Constants.js';
+import Constants, { NOP, ENGINE_ERRORS } from '../../Constants.js';
 import Util from '../Util.js';
 
 /**
@@ -305,6 +305,12 @@ class EngineConfig extends Config {
   }
 }
 
+// memory size LUT
+const BYTES_64 = 8,
+      BYTES_32 = 4,
+      BYTES_16 = 2,
+      BYTES_8  = 1;
+
 class SparkHeapConfig extends Config {
     constructor(overrides = {}) {
         super({
@@ -314,13 +320,13 @@ class SparkHeapConfig extends Config {
            * stored in the heap for all data types.
            * @type {number}
            */
-          baseUnit: 4,  // SparkHeap.BYTE_32
+          baseUnit: BYTES_32,  
 
           /**
            * The total amount of memory to reserve in bytes.
            * @type {number} The number of bytes to allocate
            */
-          heapSize: 524288, // 512KB
+          heapSize: Constants.SYSTEM_HEAP_SIZE,
 
           /**
            * Balance the amount of memory to favor the

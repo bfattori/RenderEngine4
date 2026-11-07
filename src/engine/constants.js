@@ -8,9 +8,10 @@ const Constants = {
     // Cap frame rate at 120 (~8ms per frame)
     FRAME_RATE_CAP: 120,
 
-    DEFAULT_FAST_POOL_SIZE: 4096,   // 4k
+    DEFAULT_POOL_SIZE: 4096,   // 4k
 
     // System memory pools
+    SYSTEM_HEAP_SIZE: 524288,       // 512k
     SYSTEM_POOL_SIZE: 32768,        // 32k
     MATH_FAST_POOL_SIZE: 8192,      // 8k
 

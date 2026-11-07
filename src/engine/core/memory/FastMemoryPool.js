@@ -15,6 +15,7 @@ export default class FastMemoryPool {
      * @returns {FastMemoryPool}
      */
     static getInstance() {
+        // configures the system fast memory pool
         if (!FastMemoryPool.#instance) {
             FastMemoryPool.#instance = new FastMemoryPool({
                 name: 'PoolAllocator',
@@ -30,7 +31,7 @@ export default class FastMemoryPool {
     constructor(config = {
         name: 'FastMemoryPool',
         baseUnit: SparkHeap.BYTE_64,
-        heapSize: Constants.DEFAULT_FAST_POOL_SIZE              
+        heapSize: Constants.DEFAULT_POOL_SIZE              
     }) {
         this.#log = new Logger(this, `(${config.name})`);
 
