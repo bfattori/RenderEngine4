@@ -1,12 +1,12 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
 
-import $Math from '../../../src/engine/core/lang/Math.js';
-import Util from '../../../src/engine/core/Util.js';
+import $Math from '../../../../src/engine/core/lang/Math.js';
+import Util from '../../../../src/engine/core/Util.js';
 
-import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
-import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
-import TileSheet from '../../../src/engine/resources/loaders/TileSheet.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
+import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import SpriteSheet from '../../../../src/engine/resources/loaders/SpriteSheet.js';
+import TileSheet from '../../../../src/engine/resources/loaders/TileSheet.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -45,10 +45,10 @@ const context = RE4.world.renderContext;
 const api = context.getAPI();
 
 // load a couple sprite sheets
-const marioSprites = new SpriteSheet("SMBTiles", "../../assets/smb_sprites.json");
+const marioSprites = new SpriteSheet("SMBTiles", "../../../assets/smb_sprites.json");
 await marioSprites.loading();
 
-const floorTiles = new TileSheet("Floor", "../../assets/floor_tiles.json");
+const floorTiles = new TileSheet("Floor", "../../../assets/floor_tiles.json");
 await floorTiles.loading();
 
 // draw some lines

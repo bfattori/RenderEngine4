@@ -34,6 +34,16 @@
     <body>
         <h1>Render Contexts - Static Tests</h1>
         <ul class="tests">
+            <li><a href="runner.html?js=intermediate">The Intermediate Language</a>
+                <div class="test-description">
+                    <p>Your game will program against the high-level API of the <b><code>RenderContext</code></b> to generate visual output. The <code>RenderContext</code>
+                    abstracts away the complexities of generating output to a surface (canvas, webgl, etc.) by producing an Intermediate Language (IL). The IL is
+                    passed to the renderers to generate the actual rendered output.</p>
+                    <p>The <code>IL</code> has a syntax that is similar to Assembly Language, comprised of an operator like <code>LINE</code>, <code>POINT</code>, <code>COLOR</code>,
+                    and <code>SHAPE</code> followed by zero or more operands. The renderers interpret these commands to produce output using the renderer's API. Addressing Canvas2D or WebGl 
+                    directly can be eliminated entirely.</p>
+                </div>
+            </li>
             <li><a href="runner.html?js=vectorCanvas">Vector Rendering w/Canvas</a>
                 <div class="test-description">
                     A simple example showing the <b><code>RenderContext</code></b> and <b><code>CanvasRenderer</code></b> used for vector drawing. 

@@ -1,12 +1,12 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
-import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
-import SpriteSheet from '../../../src/engine/resources/loaders/SpriteSheet.js';
-import PlatformerMap from '../../../src/engine/resources/loaders/PlatformerMap.js';
-import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import SpritePart from '../../../src/engine/parts/render/SpritePart.js';
-import AABBCollider from '../../../src/engine/parts/collision/AABBCollider.js';
-import GameObject from '../../../src/engine/gameobject/GameObject.js';
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
+import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import SpriteSheet from '../../../../src/engine/resources/loaders/SpriteSheet.js';
+import PlatformerMap from '../../../../src/engine/resources/loaders/PlatformerMap.js';
+import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
+import SpritePart from '../../../../src/engine/parts/render/SpritePart.js';
+import AABBCollider from '../../../../src/engine/parts/collision/AABBCollider.js';
+import GameObject from '../../../../src/engine/gameobject/GameObject.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -44,8 +44,8 @@ await RenderEngine.init(import.meta.url, {
 document.getElementById("context").classList.add("sprites-and-tiles");
 
 // load a couple asset sheets
-const marioSprites = new SpriteSheet('SMBTiles', '../../assets/smb_sprites.json');
-const map = new PlatformerMap('TileMap', '../../assets/platformer.json');
+const marioSprites = new SpriteSheet('SMBTiles', '../../../assets/smb_sprites.json');
+const map = new PlatformerMap('TileMap', '../../../assets/platformer.json');
 
 // wait until they are loaded to continue
 await marioSprites.loading();

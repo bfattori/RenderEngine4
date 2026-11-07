@@ -1,13 +1,13 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
-import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
+import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
-import GameObject from '../../../src/engine/gameobject/GameObject.js';
-import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import CompiledRenderPart from '../../../src/engine/parts/render/CompiledRenderPart.js';
+import GameObject from '../../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
+import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRenderPart.js';
 
-import $Math from '../../../src/engine/core/lang/Math.js';
-import Util from '../../../src/engine/core/Util.js';
+import $Math from '../../../../src/engine/core/lang/Math.js';
+import Util from '../../../../src/engine/core/Util.js';
 
 // number of objects to create
 const numObjects = 200;

@@ -64,7 +64,7 @@ const p = new SwitchPanel(document.body, {
     label: 'Particle Control',
     groups: [
         {
-            label: 'Toggle Particle Types',
+            label: 'Toggle Particle Effects',
             buttons: {
                 'Burst (off)': () => { return toggleBurstEffect(); },
                 'Fountain (off)': () => { return toggleFountainEffect(); },

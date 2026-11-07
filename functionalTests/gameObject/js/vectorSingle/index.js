@@ -1,10 +1,10 @@
-import RenderEngine from '../../../src/engine/renderEngine4.js';
-import RenderContext from '../../../src/engine/rendering/context/RenderContext.js';
-import CanvasRenderer from '../../../src/engine/rendering/renderers/CanvasRenderer.js';
-import Transform2dPart from '../../../src/engine/parts/transform/Transform2dPart.js';
-import CompiledRenderPart from '../../../src/engine/parts/render/CompiledRenderPart.js';
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
+import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
+import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
+import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRenderPart.js';
 
-import GameObject from '../../../src/engine/gameobject/GameObject.js';
+import GameObject from '../../../../src/engine/gameobject/GameObject.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {

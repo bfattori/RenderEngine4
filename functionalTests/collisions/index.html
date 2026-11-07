@@ -85,23 +85,25 @@
             </li>
             <li><a href="runner.html?js=aabb">Axis-aligned Bounding Box (AABB) Model </a>
                 <div class="test-description">
-                    <p>Axis-aligned Bounding Boxes (AABB) align themselves to the world axis and provide a bounding box that encompasses the entirety of
-                    the <b><code>GameObject</code></b>s <b><code>BoundingBox</code></b>. As the <code>BoundingBox</code> moves, scales, or is rotated, the 
-                    AABB will scale to contain the entire bounding box.</p>
+                    <p>Axis-aligned Bounding Boxes (AABB) align themselves to the world axes and provide a bounding box that encompasses the entirety of
+                    the <b><code>GameObject</code></b>'s <b><code>BoundingBox</code></b>. As the <code>BoundingBox</code> moves, scales, or is rotated, the 
+                    AABB will scale to contain the entire bounding box. This is the least precise method of collision detection, but it is the fastest.</p>
                 </div>
             </li>
             <li><a href="runner.html?js=cabc">Centroid-aligned Bounding Circle (CABC) Model</a>
                 <div class="test-description">
                     <p>Centroid-aligned Bounding Circles (CABC) are centered on the <b><code>GameObject</code></b> with a radius that encompasses the 
                     <b><code>BoundingBox</code></b> of the <code>GameObject</code>. Bounding circles don't change in size, unless the <code>GameObject</code>
-                    is scaled up or down. Rotating the object will not change the radius of the bounding circle.</p>
+                    is scaled up or down. Rotating the object will not change the radius of the bounding circle. This provides a good compromise between
+                    speed and improved accuracy over the AABB model.</p>
                 </div>
             </li>
             <li><a href="runner.html?js=convexhull">Convex Hull Model</a>
                 <div class="test-description">
-                    <p>A Convex Hull is the set of points that minimally contain the <b><code>GameObject</code></b> within. The hull allows for more
-                    precise collision detection over AABB and CABC because it follows the contour of the object directly. Bits that protrude from an
-                    object will only be found in collision when the hulls overlap.</p>
+                    <p>A Convex Hull is the set of points that minimally contain the <b><code>GameObject</code></b> within them. The convex hull model allows for more
+                    accurate collisions over AABB and CABC models because it follows the contour of the object directly. Sections that protrude from an
+                    object will only be found to have collided when the hull overlaps another collision shape. The is the most precise collision model 
+                    in the engine.</p>
                 </div>
             </li>
         </ul>        
