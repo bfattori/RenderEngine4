@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Sound System Testing</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <style>
+            div.test-description {
+                font-size: 9pt;
+                border: 1px solid gray;
+                box-shadow: 2px 5px 8px rgba(39, 1, 1, 0.4);
+                margin: 5px 0 15px 0;
+                padding: 8px;
+                width: 700px;
+            }
+
+            ul.tests {
+                list-style-type: none;    
+            }
+
+            li a {
+                font-weight: bold;
+            }
+
+            div.notice {
+                border: 1px solid black;
+                margin: 5px;
+                padding: 8px;
+                position: fixed;
+                bottom: 5px;
+                background-color: white;
+            }
+
+            code {
+                font-weight: bold;
+            }
+
+            table {
+                border: 1px solid;
+            }
+
+            th {
+                background-color: silver;
+            }
+
+            td {
+                padding-left: 8px; 
+                padding-right: 5px;  
+            }
+
+            td.state {
+                background-color: #ddf;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Sound Systems</h1>
+        <ul class="tests">
+            <li><a href="runner.html?js=soundsystem">The SoundSystem class</a>
+                <div class="test-description">
+                    <p>The base class for all sound systems in the engine, <code>SoundSystem</code> provides the basic interface
+                    for all other sound systems, such as playback, pausing, looping, and more.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=browseraudio">Browser Audio System</a>
+                <div class="test-description">
+                    <p>The <b><code>BrowserAudio</code></b> system is the simplest is the most broadly supported sound playback
+                    across devices. This has several limitations, but can be used widely when the type of destination platforms
+                    are unknown.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=webaudio">Web Audio System</a>
+                <div class="test-description">
+                    <p>More flexibility is available with the <b><code>WebAudioSystem</code></b> which uses the Web Audio API for enhanced
+                    processing and playback. The Web Audio API may not be supported on all platforms.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=spatialaudio">Spatial Audio System</a>
+                <div class="test-description">
+                    <p>The <b><code>SpatialAudioSystem</code></b> extends the <code>WebAudioSystem</code> and is intended to provide the most 
+                    flexibility and features for a game. It supports sound posititioning, doppler shift, and other sound processes. This play back 
+                    system may not be supported on all platforms.</p>
+                </div>
+            </li>
+        </ul>        
+
+        <div style="height: 50px;">&nbsp;</div>
+        <div class="notice">&copy;2026 - Brett Fattori, All rights reserved. Licensed with the <a href="https://www.gnu.org/licenses/gpl-3.0.html"><code>GNU General Public License v3.0 or Later (GPL-3.0)</code></a></div>       
+    </body>
+</html>

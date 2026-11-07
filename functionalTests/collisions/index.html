@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Collision System Testing</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <style>
+            div.test-description {
+                font-size: 9pt;
+                border: 1px solid gray;
+                box-shadow: 2px 5px 8px rgba(39, 1, 1, 0.4);
+                margin: 5px 0 15px 0;
+                padding: 8px;
+                width: 700px;
+            }
+
+            ul.tests {
+                list-style-type: none;    
+            }
+
+            li a {
+                font-weight: bold;
+            }
+
+            div.notice {
+                border: 1px solid black;
+                margin: 5px;
+                padding: 8px;
+                position: fixed;
+                bottom: 5px;
+                background-color: white;
+            }
+
+            code {
+                font-weight: bold;
+            }
+
+            table {
+                border: 1px solid;
+            }
+
+            th {
+                background-color: silver;
+            }
+
+            td {
+                padding-left: 8px; 
+                padding-right: 5px;  
+            }
+
+            td.state {
+                background-color: #ddf;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Collision Systems</h1>
+        <ul class="tests">
+            <li><a href="runner.html?js=broadphase">Broadphase Collisions</a>
+                <div class="test-description">
+                    <p>The Broadphase collision system breaks the <b><code>GameWorld</code></b> viewport into manageable segments, allowing for quick
+                    determination if two objects are close enough to collide. This is a simple example of broadphase collision detection using a simple
+                    algorithm.</p>
+                    <p>Included in the engine is the <b><code>GridBroadphase</code></b> model that segments the world into developer-defined cells. As
+                    <b><code>GameObject</code></b>s in the world move, they generate events that the model is listening for. Objects are put into cells
+                    that represent an approximation of their location. <b><code>GameObject</code></b>s that have the potential for collision are emitted
+                    from the broadphase system in a <b><code>PotentialCollisionList</code></b> that can be passed to the narrowband model for more precise
+                    collision detections.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=narrowband">Narrowband Collisions</a>
+                <div class="test-description">
+                    <p>The Narrowband collision system uses <b><code>CollisionShape</code></b> objects from a <b><code>PotentialCollisionList</code></b> to 
+                    determine if two objects colliding. When a collision occurs, an event is emitted containing the <b><code>CollisionData</code></b>. This
+                    collision information contains back-off vectors and other information to determine the amount of overlap.</p>
+                    <p>As the collision events are fired, it is up to the game to determine what happens with the collision information provided. This gives
+                    the game developer the flexibility to determinine how to respond.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=raycasting">Raycasting</a>
+                <div class="test-description">
+                    <p>The Narrowband collision models provide for ray-casting to determine when fast moving objects would have collided with another object
+                    updated its position and never directly overlapped the other object. Ray-casting can be used to examine the direction of travel to determine
+                    if the object passed through another.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=aabb">Axis-aligned Bounding Box (AABB) Model </a>
+                <div class="test-description">
+                    <p>Axis-aligned Bounding Boxes (AABB) align themselves to the world axis and provide a bounding box that encompasses the entirety of
+                    the <b><code>GameObject</code></b>s <b><code>BoundingBox</code></b>. As the <code>BoundingBox</code> moves, scales, or is rotated, the 
+                    AABB will scale to contain the entire bounding box.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=cabc">Centroid-aligned Bounding Circle (CABC) Model</a>
+                <div class="test-description">
+                    <p>Centroid-aligned Bounding Circles (CABC) are centered on the <b><code>GameObject</code></b> with a radius that encompasses the 
+                    <b><code>BoundingBox</code></b> of the <code>GameObject</code>. Bounding circles don't change in size, unless the <code>GameObject</code>
+                    is scaled up or down. Rotating the object will not change the radius of the bounding circle.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=convexhull">Convex Hull Model</a>
+                <div class="test-description">
+                    <p>A Convex Hull is the set of points that minimally contain the <b><code>GameObject</code></b> within. The hull allows for more
+                    precise collision detection over AABB and CABC because it follows the contour of the object directly. Bits that protrude from an
+                    object will only be found in collision when the hulls overlap.</p>
+                </div>
+            </li>
+        </ul>        
+
+        <h1>Stress Testing</h1>
+        <ul class="tests">
+            <li><a href="#">Stress 1 - </a>
+                <div class="test-description">
+                    Stress testing description.
+                </div>
+            </li>
+        </ul>
+        <div style="height: 50px;">&nbsp;</div>
+        <div class="notice">&copy;2026 - Brett Fattori, All rights reserved. Licensed with the <a href="https://www.gnu.org/licenses/gpl-3.0.html"><code>GNU General Public License v3.0 or Later (GPL-3.0)</code></a></div>       
+    </body>
+</html>

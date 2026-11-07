@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Resource Testing</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <style>
+            div.test-description {
+                font-size: 9pt;
+                border: 1px solid gray;
+                box-shadow: 2px 5px 8px rgba(39, 1, 1, 0.4);
+                margin: 5px 0 15px 0;
+                padding: 8px;
+                width: 700px;
+            }
+
+            ul.tests {
+                list-style-type: none;    
+            }
+
+            li a {
+                font-weight: bold;
+            }
+
+            div.notice {
+                border: 1px solid black;
+                margin: 5px;
+                padding: 8px;
+                position: fixed;
+                bottom: 5px;
+                background-color: white;
+            }
+
+            code {
+                font-weight: bold;
+            }
+
+            table {
+                border: 1px solid;
+            }
+
+            th {
+                background-color: silver;
+            }
+
+            td {
+                padding-left: 8px; 
+                padding-right: 5px;  
+            }
+
+            td.state {
+                background-color: #ddf;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Resource Management</h1>
+        <ul class="tests">
+            <li><a href="runner.html?js=resourceloader">The ResourceLoader class</a>
+                <div class="test-description">
+                    <p><b><code>ResourceLoader</code></b> is the base class for all resource loaders in the engine. It handles various data types including text, JSON, and Blob 
+                    to provide the flexibility to load many types of resources for your game. <code>ResourceLoader</code>, by itself, is just the foundation. The sub-classes 
+                    provide the actual functionality your game needs.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=imageresource">Image Resources</a>
+                <div class="test-description">
+                    <p>Loads images of various web formats. This class is used by the <code>TileMap</code>, <code>TileSheet</code>, and <code>SpriteSheet</code>
+                    which are for loading pixel graphics (bitmaps) into the game.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=spritesheet">Sprite Sheets & Sprites</a>
+                <div class="test-description">
+                    <p>A <b><code>SpriteSheet</code></b> loads sprite definition files (JSON) that describe the bitmap containing the sprites, and the individual sprite
+                    definitions. <b><code>Sprite</code></b> resources can be static (like a <code>Tile</code>) or they can be animated. A few animation types, such as
+                    loop and bounce, are provided.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=tilesheet">Tile Sheets & Tiles</a>
+                <div class="test-description">
+                    <p><b><code>TileSheet</code></b>s are similar to the <code>SpriteSheet</code> except the tile definitions are all static. No animations
+                    are possible with tiles. <code>Tile</code> resources are simply defined by the position in the backing bitmap, and their dimensions.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=soundsheet">Sound Sheets & Sounds</a>
+                <div class="test-description">
+                    <p>What is a game without sound? Managing sounds is done with <b><code>SoundSheet</code></b>s that define the sounds the engine can
+                    play back, and various configuration properties such as volume, pitch, and looping. <b><code>Sound</code></b> resources are used by
+                    your game, with a <code>SoundSystem</code>, to play back sounds in different styles.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=tilemaps">Tile Maps</a>
+                <div class="test-description">
+                    <p><b><code>TileMap</code></b> is the base class for the different type of game world maps. A <code>TileMap</code> defines the
+                    type of map, properties for the placement of tiles, and other mechanisms that are foundational to game world development.</p>
+                    <p>Three types of <code>TileMap</code> are provided with the RenderEngine4:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="state"><code>GridMap</code></td>
+                                <td>The grid map is a simple layout. Divided along the X and Y axis at equal sizes, the grid map places tiles
+                                    along any of the map divisions. This type of map is good for puzzles and other rigid layouts. The <code>GridMap</code>
+                                    is limited to the <code>GameWorld</code> viewport.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="state"><code>PlatformerMap</code></td>
+                                <td>This style of map is similar to the <code>GridMap</code> but provides the flexibility to create tile
+                                    layouts with spans and blocks of tiles, triggers, moving tiles, and more. <code>PlatformerMap</code> can be
+                                    larger than the world viewport.</td>
+                            </tr>
+                            <tr>
+                                <td class="state"><code>IsometricMap</code></td>
+                                <td>This map uses an isometric projection to create a 3D effect. This type of map is good for creating
+                                    large worlds and employs procedural or rules-base tile generation and placement. The <code>IsometricMap</code>
+                                    is intended to be larger than the world viewport and provides for streaming map parts in as needed and discarded
+                                    when not.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </li>
+        </ul>        
+
+        <div style="height: 50px;">&nbsp;</div>
+        <div class="notice">&copy;2026 - Brett Fattori, All rights reserved. Licensed with the <a href="https://www.gnu.org/licenses/gpl-3.0.html"><code>GNU General Public License v3.0 or Later (GPL-3.0)</code></a></div>       
+    </body>
+</html>

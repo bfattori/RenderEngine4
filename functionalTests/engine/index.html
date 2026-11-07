@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Render Engine 4 - Engine Testing</title>
+        <link rel="stylesheet" href="../../src/re4.css">
+        <style>
+            div.test-description {
+                font-size: 9pt;
+                border: 1px solid gray;
+                box-shadow: 2px 5px 8px rgba(39, 1, 1, 0.4);
+                margin: 5px 0 15px 0;
+                padding: 8px;
+                width: 700px;
+            }
+
+            ul.tests {
+                list-style-type: none;    
+            }
+
+            li a {
+                font-weight: bold;
+            }
+
+            div.notice {
+                border: 1px solid black;
+                margin: 5px;
+                padding: 8px;
+                position: fixed;
+                bottom: 5px;
+                background-color: white;
+            }
+
+            code {
+                font-weight: bold;
+            }
+
+            table {
+                border: 1px solid;
+            }
+
+            th {
+                background-color: silver;
+            }
+
+            td {
+                padding-left: 8px; 
+                padding-right: 5px;  
+            }
+
+            td.state {
+                background-color: #ddf;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Engine Basics</h1>
+        <ul class="tests">
+            <li><a href="runner.html?js=configuration">Configs &amp; Configuring the RenderEngine4</a>
+                <div class="test-description">
+                    <p>The engine is extremely flexible and extensible. While it can be the solution you use, it is much more valuable when
+                    you extend the engine for your own needs. This example shows how to configure the engine for a basic game setup.</p>
+                    <p><b><code>Config</code></b> and <b><code>TransferrableConfig</code></b> objects are the backbone to the engine's
+                    flexible configuration style. The <code>TransferrableConfig</code> is primarily used when serializing and deserializing
+                    an object is necessary for transmission to a <code>Worker</code> thread, or over network boundaries. Objects can be
+                    created in one place, dehydrated, then sent to another location where the object is rehydrated as an exact copy of
+                    the original.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=gameworld">The GameWorld</a>
+                <div class="test-description">
+                    <p>Almost everything that happens in the game, happens in the <b><code>GameWorld</code></b>. This is where <b><code>GameObject</code></b>
+                    instances exist, a reference to the game world's camera, the world transformation stack, and is where frame generation is performed.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=eventengine">The Event Engine</a>
+                <div class="test-description">
+                    <p>A simple pub/sub style event engine is provided to coordinate messaging within the game. The event engine is also a factory that
+                    provides a private context to each <b><code>GameObject</code></b> for internal coordination.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=memory">Memory Management</a>
+                <div class="test-description">
+                    <p>The RenderEngine4 provides memory management for game objects and frequently used value types. Allocations are provided by
+                    the <b><code>SparkHeap</code></b> and accessible through <b><code>Spark</code></b> data views. The <code>Spark</code> data view
+                    extends the system's <code>DataView</code> to provide additional methods for reading and writing game-specific data types
+                    such as vectors, 32-bit hex color values, and bit fields.</p>
+                    <p>Built on top of <code>SparkHeap</code> the <b><code>FastMemoryPool</code></b> and <b><code>SlowMemoryPool</code></b> provide
+                    functionality that avoids garbage collection as much as possible. The <code>FastMemoryPool</code> is used by math operations when
+                    manipulating vectors or arrays of values. The <code>FastMemoryPool</code> <i>is destructive,</i> in that values written to it may be 
+                    quickly allocated to another process that needs the memory shape. Thus, allocations from the <code>FastMemoryPool</code> are intended 
+                    to be used quickly and discarded.</p>
+                    <p>The <code>SlowMemoryPool</code>, on the other hand, uses indexing and memory coalescing to provide a location where values can be stored
+                    more long-term. Data is provided as a pointer to the actual value and the pointers are indexed to prevent re-use until the memory
+                    is freed. The flexibility of the fast and slow pools gives the developer options for enhanced performance.</p>
+                </div>
+            </li>
+        </ul>        
+
+        <div style="height: 50px;">&nbsp;</div>
+        <div class="notice">&copy;2026 - Brett Fattori, All rights reserved. Licensed with the <a href="https://www.gnu.org/licenses/gpl-3.0.html"><code>GNU General Public License v3.0 or Later (GPL-3.0)</code></a></div>       
+    </body>
+</html>
