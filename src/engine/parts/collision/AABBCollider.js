@@ -11,7 +11,8 @@
  */
 import Constants from '../../Constants.js';
 import ColliderPart from './Collider.js';
-import { AABBShape } from '../../collisionSystems/narrowband/AABBModel.js'
+import { AABBShape } from '../../collisionSystems/narrowband/AABBModel.js';
+import Transform2dPart from '../transform/Transform2dPart.js';
 
 /**
  * Creates a new AABBCollider instance
@@ -52,44 +53,6 @@ class AABBCollider extends ColliderPart {
     const halfHeight = scale.y / 2;
     
     return new AABBShape(position, scale);
-  }
-
-  /**
-   * Gets or creates the AABB shape for collision testing with the world model
-   * 
-   * @returns {Object|null} AABB data or null if no transform component exists
-   */
-  getAABB() {
-    const transform = this.getHost().getComponent('Transform2dComponent');
-    
-    if (!transform) {
-      return null;
-    }
-    
-    // Get position and scale from transform
-    const x = transform.x || 0;
-    const y = transform.y || 0;
-    let width, height;
-
-    if (transform.scaleX && transform.scaleY) {
-      // Use individual scales if available
-      width = (transform.width !== undefined ? transform.width : 
-               (transform.height * (transform.scaleX || 1))) || 50;
-      height = (transform.height !== undefined ? transform.height :
-                (transform.width * (transform.scaleY || 1))) || 50;
-    } else if (transform.scale) {
-      // Use single scale factor
-      const defaultDim = transform.width !== undefined ? transform.width : 
-                         (transform.height || 50);
-      width = defaultDim * transform.scale;
-      height = defaultDim * transform.scale;
-    } else {
-      // Default to 1x1 unit box
-      width = 1;
-      height = 1;
-    }
-
-    return createAABB({ x, y }, { width, height });
   }
 
   /**

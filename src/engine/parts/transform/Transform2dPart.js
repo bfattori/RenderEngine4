@@ -262,7 +262,7 @@ class Transform2dPart extends ComponentPart {
     
         // todo: would there be a reason *not* to emit the event when the host has
         //       a collider component itself??
-        const hostCollider = this.host.getComponentsByType(ColliderPart).find(c => c.isHost);
+        const hostCollider = this.host.hostComponents.get(ColliderPart);
         if (hostCollider) {
             Engine.eventEngine.emit(txfmEvent);
         }
@@ -400,6 +400,12 @@ class Transform2dPart extends ComponentPart {
 
     destroy() {
         this.#localTransform = null;
+        this.#initOpts = null;
+    
+        // unsubscribe from events
+        this.off(InputEvent);
+        this.off(ColliderEvent);
+        
         super.destroy();
     }
 }

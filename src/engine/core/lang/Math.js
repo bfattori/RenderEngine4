@@ -702,39 +702,29 @@ export default class $Math {
     static boundingBox(points, scalar = 0) {
         if (points.length === 0) return [0,0,1,1];
 
-        let x1 = points[0].x, x2 = points[0].x, y1 = points[0].y, y2 = points[0].y;
+        let x1 = points[0][0], x2 = points[0][0], y1 = points[0][1], y2 = points[0][1];
         const rect = [0,0,1,1];
 
         for (let p = 1; p < points.length; p++) {
             const pt = points[p];
 
-            if (pt.x < x1) {
-                x1 = pt.x;
+            if (pt[0] < x1) {
+                x1 = pt[0];
             }
-            if (pt.x > x2) {
-                x2 = pt.x;
+            if (pt[0] > x2) {
+                x2 = pt[0];
             }
-            if (pt.y < y1) {
-                y1 = pt.y;
+            if (pt[1] < y1) {
+                y1 = pt[1];
             }
-            if (pt.y > y2) {
-                y2 = pt.y;
+            if (pt[1] > y2) {
+                y2 = pt[1];
             }
         }
 
         rect[2] = (x2 - x1) + (scalar * 2);
         rect[3] = (y2 - y1) + (scalar * 2);
 
-        // var w, h;
-        // if (x1 < 0 && x2 >= 0) { w = x2 - x1; }
-        // else if (x1 < 0 && x2 < 0) { w = x1 + x2; }
-        // else { w = x2 - x1; }
-
-        // if (y1 < 0 && y2 >= 0) { h = y2 - y1; }
-        // else if (y1 < 0 && y2 < 0) { h = y1 + y2; }
-        // else { h = y2 - y1; }
-
-        // rect.set(transformed * x1, transformed * y1, w, h);
         return rect;
     }
 

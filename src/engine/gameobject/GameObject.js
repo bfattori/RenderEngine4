@@ -11,7 +11,6 @@ const ctx = Context.getInstance();
 
 import DebugObjects from '../ui/debug/DebugObjects.js';
 
-
 /**
  * GameObjectError contains the {@link GameObject} related to the error.
  * @param {GameObject} gameObject - The GameObject this error relates to.
@@ -146,13 +145,63 @@ export default class GameObject {
     this.#worldTransform = transform;
   }
 
+  //-----------------------------------------
+  // bounding box & origin
+
+  /**
+   * Set the width and height of the bounding box for the {@link GameObject}.
+   * @param {number} width - The width of the bounding box
+   * @param {number} height - The height of the bounding box
+   */
+  setBoundingBox(width, height) {
+    this.#boundingBox = [0, 0, width, height];
+  }
+
+  /**
+   * Returns an array representing the bounding box of the {@link GameObject} [x, y, width, height]
+   * @returns {Array<number>} The bounding box
+   */
   get boundingBox() {
     return this.#boundingBox;
   }
 
-  set boundingBox(box) {
-    this.#boundingBox = box;
+  /**
+   * Get the width of the bounding box for the {@link GameObject}.
+   * @returns {number} The bounding box width
+   */
+  get width() {
+    return this.#boundingBox[2];
   }
+
+  /**
+   * Get the height of the bounding box for the {@link GameObject}.
+   * @returns {number} The bounding box height
+   */
+  get height() {
+    return this.#boundingBox[3];
+  }
+
+  /**
+   * Returns the origin of this {@link GameObject}. This is a point within the bounding
+   * box of the `GameObject`. This is the origin of the object's transform. Rotation, scaling, 
+   * and translation are applied relative to this origin.
+   * @returns {Array<number>} - The origin point of the `GameObject`
+   */
+  get origin() {
+      return this.#localOrigin;
+  }
+
+  /**
+   * Set the origin for this {@link GameObject}. This is a point that represents the 
+   * origin coordinates of all transforms.
+   * @param {Array<number>} [x, y] - The new origin point for the `GameObject`
+   */
+  set origin([x, y]) {
+      this.#localOrigin = [x, y];
+  }
+
+  //----------------------------------------------
+  // component parts
 
   /**
    * Gets the parts that are assigned to this host object, in no specific order.
@@ -179,26 +228,17 @@ export default class GameObject {
   }
 
   /**
-   * Returns the origin of this {@link GameObject}. This is a vector that 
-   * represents the offset of the `GameObject` relative to its world coordinates.
-   * @returns {Array<number>} - The origin point of the `GameObject`
+   * Returns a `Map` of components that are the primary component of each type.
+   * @returns {Map<Class, ComponentPart>} The component parts by type
    */
-  get origin() {
-      return this.#localOrigin;
+  get hostComponents() {
+    const components = new Map();
+    const parts = this.#components.filter(c => c.isHost);
+    parts.forEach(component => {
+      components.set(ComponentPart.getBaseClassFor(component), component);
+    });
+    return components;
   }
-
-  /**
-   * Set the origin for this {@link GameObject}. This is a vector that represents the 
-   * position offset of the `GameObject` relative to its world coordinates.
-   * @param {Array<number>} [x, y] - The new origin point for the `GameObject`
-   */
-  set origin([x, y]) {
-      this.#localOrigin = [x, y];
-  }
-
-  //------------------------------------------
-  // Utility Methods
-  //------------------------------------------
 
   /**
    * Gets all component parts of a specific type
@@ -225,52 +265,9 @@ export default class GameObject {
   }
 
   //------------------------------
-  // Lifecycle Hooks
+  // Component part management
   //------------------------------
 
-  set onBeforeUpdate(hook) {
-    this.#hooks.onBeforeUpdate = hook;
-  }
-
-  set onAfterUpdate(hook) {
-    this.#hooks.onAfterUpdate = hook;
-  }
-
-  set onBeforeUpdatePart(hook) {
-    this.#hooks.onBeforeUpdatePart = hook;
-  }
-
-  set onAfterUpdatePart(hook) {
-    this.#hooks.onAfterUpdatePart = hook;
-  }
-
-  set onBeforeRender(hook) {
-    this.#hooks.onBeforeRender = hook;
-  }
-
-  set onAfterRender(hook) {
-    this.#hooks.onAfterRender = hook;
-  }
-
-  set onBeforeRenderPart(hook) {
-    this.#hooks.onBeforeRenderPart = hook;
-  }
-
-  set onAfterRenderPart(hook) {
-    this.#hooks.onAfterRenderPart = hook;
-  }
-
-  set onPartAdded(hook) {
-    this.#hooks.onPartAdded = hook;
-  }
-
-  set onPartRemoved(hook) {
-    this.#hooks.onPartRemoved = hook;
-  }
-
-  //-------------------------------
-  // Lifecycle Methods
-  //-------------------------------
 
   /**
    * Add multiple component parts to the game object at once.
@@ -349,9 +346,58 @@ export default class GameObject {
     }
 
     component.host = null;
+    component.destroy();
     this.#hooks.onPartRemoved(component);
     return true;
   }
+
+  //------------------------------
+  // Lifecycle Hooks
+  //------------------------------
+
+  set onBeforeUpdate(hook) {
+    this.#hooks.onBeforeUpdate = hook;
+  }
+
+  set onAfterUpdate(hook) {
+    this.#hooks.onAfterUpdate = hook;
+  }
+
+  set onBeforeUpdatePart(hook) {
+    this.#hooks.onBeforeUpdatePart = hook;
+  }
+
+  set onAfterUpdatePart(hook) {
+    this.#hooks.onAfterUpdatePart = hook;
+  }
+
+  set onBeforeRender(hook) {
+    this.#hooks.onBeforeRender = hook;
+  }
+
+  set onAfterRender(hook) {
+    this.#hooks.onAfterRender = hook;
+  }
+
+  set onBeforeRenderPart(hook) {
+    this.#hooks.onBeforeRenderPart = hook;
+  }
+
+  set onAfterRenderPart(hook) {
+    this.#hooks.onAfterRenderPart = hook;
+  }
+
+  set onPartAdded(hook) {
+    this.#hooks.onPartAdded = hook;
+  }
+
+  set onPartRemoved(hook) {
+    this.#hooks.onPartRemoved = hook;
+  }
+
+  //-------------------------------
+  // Lifecycle Methods
+  //-------------------------------
 
   /**
    * Updates the state of this game object based on time and delta time
@@ -454,37 +500,7 @@ export default class GameObject {
   }
 
   //-------------------------------
-  // Properties
-  //-------------------------------
-
-  /**
-   * Get the set of properties associated with this GameObject.
-   * @returns {Object} - An object containing the name of the GameObject and an array of objects representing 
-   * each parts's properties.
-   */
-  get properties() {
-    return {
-      name: this.name,
-      eventContext: this.eventContext,
-      parts: this.sortedComponentParts,
-
-      // transform
-      localTransform: this.localTransform,
-      worldTransform: this.worldTransform,
-      origin: this.origin,
-
-      // events
-      onBeforeUpdate: this.#hooks.onBeforeUpdate,
-      onAfterUpdate: this.#hooks.onAfterUpdate,
-      onBeforeUpdatePart: this.#hooks.onBeforeUpdatePart,
-      onAfterUpdatePart: this.#hooks.onAfterUpdatePart,
-      onPartAdded: this.#hooks.onPartAdded,
-      onPartRemoved: this.#hooks.onPartRemoved
-    }
-  }
-
-  //-------------------------------
-  // Serialization Methods
+  // Serialization/deserialization
   //-------------------------------
 
   /**

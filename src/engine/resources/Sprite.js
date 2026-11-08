@@ -23,8 +23,7 @@ class SpriteState extends Config {
             left: 0,
             width: 0,
             height: 0,
-            frameRect: [0,0,1,1],
-            boundingBox: [0,0,1,1]
+            frameRect: [0,0,1,1]
         });
         this.merge(stateConfig);
     }
@@ -136,9 +135,13 @@ export default class Sprite extends Tile {
         this.initialize = spriteDef;
     }
 
-    set state(stateName) {
-        if (!this.states.get(stateName))
+    set state(stateName = Sprite.DEFAULT_STATE) {
+        if (stateName === Sprite.DEFAULT_STATE && this.states.size > 1) {
+            // assume the first state for multi-state sprites
+            stateName = this.states.keys().next().value;
+        } else if (!this.states.get(stateName))
             throw new ResourceError(this, `State ${stateName} does not exist for sprite ${this.name}`);
+
 
         this.currentState = stateName;
     }
@@ -247,8 +250,22 @@ export default class Sprite extends Tile {
         state.frameNum = $Math.clamp(frameNum, 0, state.frameCount - 1);
     }
 
+    /**
+     * Returns the current rectangle that frames the state of the sprite
+     * within the bitmap.
+     * @returns {Array<number>}
+     */
     get frameRect() {
         return this.states.get(this.currentState).frameRect;
+    }
+
+    /**
+     * Returns the bounding box of the current sprite
+     * @returns {Array<number>}
+     */
+    get boundingBox() {
+        const frame = this.states.get(this.currentState).frameRect;
+        return [0, 0, frame[2], frame[3]];
     }
 
     /**

@@ -1,10 +1,9 @@
 
-import $Math from '../../core/lang/Math.js';
+import Sprite from '../../resources/Sprite.js';
 import RenderPart from './RenderPart.js';
 
 export default class SpritePart extends RenderPart {
     #currentSprite = null;
-    #opaqueId = null;
 
     /**
      * @private
@@ -15,20 +14,19 @@ export default class SpritePart extends RenderPart {
     }
 
     /**
-     * Releases the component back into the object pool. See {@link R.engine.PooledObject#release} for
-     * more information.
+     * Set the name of the active state of the sprite. This can be used to change the appearance of the sprite at runtime. 
+     * For sprites with only one state, no value or `Sprite.DEFAULT_STATE` are both acceptable.
      */
-    destroy() {
-        this.#currentSprite = null;
-    }
-
     set stateName(stateName) {
-        this.sprite.currentState = stateName;
-        this.#calculateBoundingBox();
+        this.sprite.state = stateName;
     }
 
+    /**
+     * Returns the current state the sprite is in.
+     * @return {String} The state name of the sprite or `Sprite.DEFAULT_STATE`
+     */
     get stateName() {
-        return this.this.sprite.currentState;
+        return this.sprite.currentState;
     }
 
     /**
@@ -50,6 +48,10 @@ export default class SpritePart extends RenderPart {
         return this.#currentSprite;
     }
 
+    /**
+     * Get the current state of the sprite
+     * @returns {SpriteState}
+     */
     get currentState() {
         return this.sprite.states.get(this.sprite.currentState);
     }
@@ -60,7 +62,8 @@ export default class SpritePart extends RenderPart {
      * @private
      */
     #calculateBoundingBox() {
-        return this.currentState.boundingBox = $Math.boundingBox([0,0],[this.currentState.width,this.currentState.height]);
+        this.host.setBoundingBox(this.currentState.width, this.currentState.height);
+        this.currentState.boundingBox = this.host.boundingBox;
     }
 
     // flipX(force) {
@@ -81,5 +84,12 @@ export default class SpritePart extends RenderPart {
             this.context.renderSprite(this.sprite.opaqueId, 0, -this.sprite.states.get(this.sprite.currentState).height, time, deltaTime);
     }
 
+    /**
+     * Releases the component back into the object pool. See {@link R.engine.PooledObject#release} for
+     * more information.
+     */
+    destroy() {
+        this.#currentSprite = null;
+    }
 }
 

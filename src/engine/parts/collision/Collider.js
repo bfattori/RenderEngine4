@@ -287,6 +287,9 @@ export default class ColliderPart extends ComponentPart {
       this.#collisions = null;
       this.worldCollisionModel = null;
       this.#cachedTransform = null;
+
+      // unsubscribe from events
+      this.off(TransformEvent);
       super.destroy();
   }
 }

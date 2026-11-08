@@ -1,7 +1,5 @@
 import Constants from '../../Constants.js';
 
-import { Matrix2d } from '../../core/lang/Matrix.js';
-
 import GameComponentError from '../ComponentPart.js';
 import RenderPart from './RenderPart.js';
 
@@ -18,7 +16,6 @@ export default class CompiledRenderPart extends RenderPart {
       italics: false,
       underline: false
     };
-    #localTransform = Matrix2d.identity();
     
     constructor(priority = Constants.RENDER_PRIORITY, name = 'VectorRenderer') {
         super(priority, name);
@@ -35,7 +32,7 @@ export default class CompiledRenderPart extends RenderPart {
         return this.#formatting;
     }
 
-/**
+    /**
      * The line height used for text drawing
      * @returns {number}
      */
@@ -53,6 +50,10 @@ export default class CompiledRenderPart extends RenderPart {
 
     get renderer() {
         return this.host.world.renderContext;
+    }
+
+    get compiledShape() {
+        return this.#compiledShape;
     }
 
     /**
@@ -109,6 +110,10 @@ export default class CompiledRenderPart extends RenderPart {
         if (this.#compiledShape !== null) {
             this.context.destroyCompiledShape(this.#compiledShape);
         }
+        this.#compiledShape = null
+        this.#api = null;
+        this.#instructions = null;
+        this.#formatting = null;
         super.destroy();
     }
 }

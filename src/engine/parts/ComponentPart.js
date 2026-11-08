@@ -72,6 +72,26 @@ export default class ComponentPart {
     this.#type = this.constructor.name;
   }
 
+  /**
+   * Determines the base class for the type of component
+   * @param {Class} clazz - The component class
+   * @returns 
+   */
+  static getBaseClassFor(clazz) {
+    let current = clazz;
+    let previous = null;
+    while (current !== null) {
+        const proto = Object.getPrototypeOf(current);
+        if (proto === ComponentPart.prototype || proto === null) {
+          // 'current' is the class right before Object.prototype or the end of the chain
+          return previous;
+        }
+        previous = current;
+        current = proto;
+      }
+      return null;  
+    }
+
   //--------------------------------
   // Getters and Setters
   //--------------------------------
@@ -248,28 +268,6 @@ export default class ComponentPart {
   }
 
   //-------------------------------
-  // Properties
-  //-------------------------------
-
-  /**
-   * Gets the properties of this component as an object. Subclasses should override this to include specific properties.
-   * @returns {Object} An object containing the component's properties
-   */
-  get properties() {
-    return {
-      name: this.name,
-      type: this.type,
-      priority: this.priority,
-      
-      World: this.world,
-      GameObject: this.host,
-      hostEventContext: this.eventContext,
-
-      _cachedStartupEvents: this.#cachedEvents
-    };
-  }
-
-  //-------------------------------
   // Lifecycle Methods
   //-------------------------------
 
@@ -326,9 +324,6 @@ export default class ComponentPart {
   }
 
   destroy() {
-    if (this.host) {
-      this.host.removeComponent(this);
-    }
     this.#type = null;
     this.#localEventContext = null;
   }

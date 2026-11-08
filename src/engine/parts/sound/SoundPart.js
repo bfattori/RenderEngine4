@@ -437,6 +437,14 @@ class SoundPart extends ComponentPart {
         this.#pan = data.pan || 0;
         this.#looping = data.looping || false;
     }
+
+    destroy() {
+        this.#audioSystem = null;
+        this.#sourcePath = null;
+        this.#hooks = null;
+        this.#source = null;
+        super.destroy();
+    }
 }
 
 export default SoundPart;

@@ -111,21 +111,6 @@ export default class RenderPart extends ComponentPart {
         this.context.cursorX += delta;
     }
 
-    //-------------------------------
-    // Properties
-    //-------------------------------
-
-    get properties() {
-        return {...super.properties, ...{
-            RenderContext: this.context,
-            Renderer: this.renderer,
-
-            _localTransformStack: this.#localTransformStack,
-            _committed: this.#committed,
-            _lineHeight: this.#lineHeight
-        }};
-    }
-
     //------------------------------
     // Local Transforms
     //------------------------------
@@ -243,6 +228,11 @@ export default class RenderPart extends ComponentPart {
     draw(time, deltaTime) {}
 
     destroy() {
+        this.#context = null;
+        this.#localTransformStack = null;
+        this.#renderTransform = null;
+
+        // unsubscribe from events
         this.off(TransformEvent);
         this.off(CommitTransformEvent);
         super.destroy();
