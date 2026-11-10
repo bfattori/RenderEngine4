@@ -32,7 +32,17 @@ class ParticleEngineConfig extends Config {
              * The distance from the boundaries at which particles are automatically killed.
              * @type {number}
              */
-            boundaryExpansion: 50
+            boundaryExpansion: 50,
+
+            /**
+             * The number of divisions along the X and Y coordinates for the collision model
+             * used to determine when a particle is near a repulsors.
+             * @type {Object}
+             */
+            modelSize: {
+                x: 20,
+                y: 15 
+            }
         });
     }
 

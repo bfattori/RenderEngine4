@@ -50,7 +50,23 @@ class PotentialCollisionList {
   }
 }
 
-export { PotentialCollisionList };
+class BroadphaseModelError extends RenderEngineError {
+  #model = null;
+  constructor(model, message, exception) {
+    super(message, exception);
+    this.#model = model;
+  }
+
+  get model() {
+    return this.#model;
+  }
+}
+
+export { 
+  PotentialCollisionList,
+  BroadphaseModelError
+};
+
 
 /**
  * Broadphase collision models are intended to rapidly assemble a list of objects
@@ -82,7 +98,8 @@ export default class BroadphaseModel {
     this.#accuracy = accuracy;
 
     // listen for objects moving within the world
-    Engine.eventEngine.on(TransformEvent, event => { this.#onTransformEvent(event); });
+    if (Engine.engine) 
+      Engine.eventEngine.on(TransformEvent, event => { this.#onTransformEvent(event); });
   }
 
   /**
@@ -148,11 +165,16 @@ export default class BroadphaseModel {
   }
 
   /**
-   * Update an object in the broadphase model
-   * @param {GameObject} gameObject - The game object being updated
-   * @param {Matrix2d} matrix - A matrix representing the object's world transformation.
+   * Update the broadphase model
+   * @param {Object} object - The game object being updated
+   * @param {Matrix2d|number} matrix - A matrix representing the object's world transformation, or the X coordinate
+   * @param {number} y - If `matrix` is the X coordinate, this is the Y coordinate
    */
-  updateModel(gameObject, matrix) {
-    throw new RenderEngineError("BroadphaseModel does not implement updateModel() directly");
+  updateModel(object, matrix, y) {
+    throw new BroadphaseModelError(this, "BroadphaseModel does not implement updateModel() directly! Use a subclass instead.");
+  }
+
+  removeObjectFromModel(object) {
+    throw new BroadphaseModelError(this, "BroadphaseModel does not implement removeObjectFromModel() directly! Use a subclass instead.");
   }
 }

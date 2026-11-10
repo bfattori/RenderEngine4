@@ -122,13 +122,25 @@ export default class ParticleRepulsor extends TransferrableConfig {
   }
 
   /**
+   * Returns a box that encompasses the particle repulsor
+   * @returns {Array<number>} An array with [x, y, z, w] representing the bounding box of the repulsor
+   */
+  get boundingBox() {
+    if (this.shape === ParticleRepulsor.SHAPE.CIRCLE) {
+      return [this.pos[0] - this.radius, this.pos[1] - this.radius, this.pos[0] + this.radius, this.pos[1] + this.radius];
+    } else {
+      return [this.surface[0], this.surface[1], this.surface[2], this.surface[3]];
+    }
+  }
+
+  /**
    * This method will be called on config objects that update their properties
    * since there doesn't appear to be an easy way to override setters.
    * @param {String} property - The property that was changed 
    * @param {*} newValue - The new value being assigned to the property
    */
   $propUpdated(property, newValue, oldValue) {
-    if (property === 'pos' && this.engine !== null) {
+    if (property === 'pos' || property === 'radius' || property === 'surface' && this.engine !== null) {
       this.engine.updateRepulsor(this);
     }
   }

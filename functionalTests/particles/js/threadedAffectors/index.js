@@ -87,7 +87,7 @@ sEffect2.name = 'points';
 const repulsor = new ParticleRepulsor({
     radius: 100,
     pos: [200, 300],
-    restitution: 0.09
+    restitution: 0.03
 });
 
 const repulsor2 = new ParticleRepulsor({

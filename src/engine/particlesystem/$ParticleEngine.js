@@ -11,12 +11,16 @@ import ParticleRepulsor from './physics/ParticleRepulsor.js';
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 import LoadCounter from '../ui/debug/LoadCounter.js';
 
+import BroadphaseModel from '../collisionSystems/broadphase/BroadphaseModel.js';
+import GridBroadphase from '../collisionSystems/broadphase/GridBroadphase.js';
 
 const ctx = Context.getInstance();
 
 export default class $ParticleEngine {
     static #instance = null;
     static #useBuilder = true;
+
+    #collisionModel = null;
     
     #config = null;
     #threading = null;
@@ -144,6 +148,10 @@ export default class $ParticleEngine {
 
         this.#width = width;
         this.#height = height;
+
+        // the model used by repulsors to determine collisions
+        this.#collisionModel = new GridBroadphase('ParticleEngineCollisions', this.#width, this.#height, this.#config.modelSize.x, this.#config.modelSize.y, BroadphaseModel.ACCURACY.HIGH);
+        this.#collisionModel.supportMulti = true;
 
         if (renderContext !== null) {
             // the workers will assign their cache
@@ -398,6 +406,16 @@ export default class $ParticleEngine {
      */
     addRepulsor(repulsor) {
         this.#particleRepulsors.push(repulsor);
+        this.#updateCollisionModel(repulsor);
+    }
+
+    /**
+     * Remove a particle repulsor from the system.
+     * @param {ParticleRepulsor} repulsor - The particle repulsor
+     */
+    removeRepulsor(repulsor) {
+        this.#particleRepulsors.splice(this.#particleRepulsors.indexOf(repulsor), 1);
+        this.#collisionModel.removeObjectFromModel(repulsor);
     }
 
     /**
@@ -454,7 +472,37 @@ export default class $ParticleEngine {
     updateRepulsor(repulsor) {
         const instance = this.getRepulsor(repulsor.$name);
         if (instance != null && repulsor.props) {
-            instance.pos = repulsor.props.pos;
+            if (repulsor.props.pos[0] !== instance.pos[0] || repulsor.props.pos[1] !== instance.pos[1])
+                instance.pos = repulsor.props.pos;
+
+            if (repulsor.props.radius !== instance.radius)
+                instance.radius = repulsor.props.radius;
+
+            if (repulsor.props.surface[0] !== instance.surface[0] || repulsor.props.surface[1] !== instance.surface[1] ||
+                repulsor.props.surface[2] !== instance.surface[2] || repulsor.props.surface[3] !== instance.surface[3])
+                instance.surface = repulsor.props.surface;
+
+            // update the collision model
+            this.#updateCollisionModel(instance);
+        }
+    }
+
+    /**
+     * Add the repulsor to the collision model
+     * @param {ParticleRepulsor} repulsor - The particle repulsor to add
+     */
+    #updateCollisionModel(repulsor) {
+        // add the repulsor to the collision model in the cell where its centroid is
+        this.#collisionModel.updateModel(repulsor, repulsor.pos[0], repulsor.pos[1], true);
+
+        // fill the cells that the repulsor occupies
+        const box = repulsor.boundingBox;
+        for (let x = box[0]; x < box[2]; x += this.#collisionModel.cellSize[0]) {
+            for (let y = box[1]; y < box[3]; y += this.#collisionModel.cellSize[1]) {
+                const objs = this.#collisionModel.getObjectsAt(x, y);
+                if (objs !== null && !objs.includes(repulsor))
+                    this.#collisionModel.updateModel(repulsor, x, y);
+            }
         }
     }
 
@@ -595,9 +643,12 @@ export default class $ParticleEngine {
      * @param {*} deltaTime - Time since last frame
      */
     #addImpulse(memSegment, time, deltaTime) {
-        this.repulsors.forEach(affector => {
-            affector.affect(memSegment, time, deltaTime);
-        });
+        const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
+        const repulsors = this.#collisionModel.getObjectsAt(pos[0], pos[1]);
+        if (repulsors !== null)
+            repulsors.forEach(affector => {
+                affector.affect(memSegment, time, deltaTime);
+            });
     }
 
     /**
