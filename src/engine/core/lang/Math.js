@@ -406,6 +406,67 @@ export default class $Math {
         return degrees;
     }
 
+    static newVecI8(x = 0, y = 0) {
+        const v = $Math.fmPool.VecI8;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecU8(x = 0, y = 0) {
+        const v = $Math.fmPool.VecU8;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecI16(x = 0, y = 0) {
+        const v = $Math.fmPool.VecI16;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecU16(x = 0, y = 0) {
+        const v = $Math.fmPool.VecU16;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecI32(x = 0, y = 0) {
+        const v = $Math.fmPool.VecI32;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecU32(x = 0, y = 0) {
+        const v = $Math.fmPool.VecU32;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecI64(x = 0, y = 0) {
+        const v = $Math.fmPool.VecI64;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecU64(x = 0, y = 0) {
+        const v = $Math.fmPool.VecU64;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecF32(x = 0, y = 0) {
+        const v = $Math.fmPool.VecF32;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+    static newVecF64(x = 0, y = 0) {
+        const v = $Math.fmPool.VecF64;
+        v[0] = x; v[1] = y;
+        return v;
+    }
+
+
     //-----------------------------------
     // Vector arithmetic
 

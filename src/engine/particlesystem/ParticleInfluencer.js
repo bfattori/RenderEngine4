@@ -202,7 +202,7 @@ export default class ParticleInfluencer extends TransferrableConfig {
     const dist = $Math.distance(pos, this.pos);
     if (dist < this.radius && dist > 0) {
       
-      // the particle is affected
+      // the particle is being impacted
       if (this.affect === ParticleInfluencer.AFFECTOR.KILL) {
         this.#engine.freeParticle(memSegment);
         return;
@@ -212,7 +212,13 @@ export default class ParticleInfluencer extends TransferrableConfig {
       const normY = (pos[1] - this.pos[1]) / dist;
 
       const fallOff = this.#getFallOff(pos[0], pos[1], dist);
-      const impulseVec = $Math.vecMulScalar($Math.vecMulScalar([normX, normY], fallOff), this.restitution);
+      let impulseVec = $Math.vecMulScalar($Math.vecMulScalar([normX, normY], fallOff), this.restitution);
+
+      if (this.affect === ParticleInfluencer.AFFECTOR.ABSORB) {
+        let iPos = $Math.newVecF32(this.pos[0], this.pos[1]);
+        iPos = $Math.vecMulScalar($Math.normalize($Math.vecSubtract(iPos, pos)), this.absorbtionRate);
+        impulseVec = $Math.vecAdd(impulseVec, iPos);
+      }
 
       // nudge away from the repulsor
       let v = $Math.vecAdd(vel, impulseVec);

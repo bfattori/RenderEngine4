@@ -87,7 +87,9 @@ sEffect2.name = 'points';
 const repulsor = new ParticleInfluencer({
     radius: 100,
     pos: [200, 300],
-    restitution: 0.03
+    restitution: 0.03,
+    affect: ParticleInfluencer.AFFECTOR.ABSORB,
+    absorbtionRate: 0.01
 });
 
 const repulsor2 = new ParticleInfluencer({
