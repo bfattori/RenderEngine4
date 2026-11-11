@@ -43,7 +43,8 @@ export default class SparkParticle extends DiffuseParticle {
       velocity: [15, 35],
       gravity: [0, 0.2],
       lifeSpan: [80, 250],
-      interact: true
+      interact: true,
+      proportionalSize: false
     }, url);
     this.merge(overrides);
     this.name = 'sparkParticle';

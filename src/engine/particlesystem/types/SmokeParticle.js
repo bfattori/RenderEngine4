@@ -28,7 +28,7 @@ export default class SmokeParticle extends DiffuseParticle {
             dragRate: 0,
             particleSize: [18, 36],
             velocity: 0.008,
-            sizeDecay: 0.001,
+//            sizeDecay: 0.001,
             gravity: [0.0, -0.004],
             softness: 0.9,
             interact: true,

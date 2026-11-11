@@ -621,8 +621,8 @@ export default class $ParticleEngine {
         // update the particle
         particleType.update(time, deltaTime, memSegment, life);
         
-        // particles with the interaction mask enabled are affected by repulsors
-        if (memSegment.getMaskedBitField16(Particle.OFFSETS.FLAGS, Particle.MASK_INTERACTION) === Particle.MASK_INTERACTION) {
+        // particles with the interaction mask enabled are affected by zones of influence
+        if (this.#particleInfluencers.length > 0 && memSegment.getMaskedBitField16(Particle.OFFSETS.FLAGS, Particle.MASK_INTERACTION) === Particle.MASK_INTERACTION) {
             this.#addImpulse(memSegment, time, deltaTime);
         }
     }
