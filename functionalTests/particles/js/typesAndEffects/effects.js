@@ -50,10 +50,12 @@ const sparkEffect = new SparkEffect({
 sparkEffect.name = 'sparks1';
 
 const smokeEffect = new SmokeEffect({
-  count: 4,
+  count: 6,
   particleTypes: [smokeParticle],
   angle: 0,
-  spread: 30
+  spread: 30,
+  emissionWidth: 50,
+  emissionHeight: 1
 });
 smokeEffect.name = 'smokey';
 

@@ -53,7 +53,25 @@ export default class ParticleEffect extends TransferrableConfig {
              * when it spawns a new particle.
              * @type {Array<Particle>}
              */
-            particleTypes: []
+            particleTypes: [],
+
+            /**
+             * The radius of the emission circle for the emitter.
+             * @type {number} The radius of the emission circle
+             */
+            emissionRadius: 0,
+
+            /**
+             * The width of the emission rectangle for the emitter. Ignored if `emissionRadius` is != 0
+             * @type {number} The width of the emission rectangle
+             */
+            emissionWidth: 0,
+
+            /**
+             * The height of the emission rectangle for the emitter. Ignored if `emissionRadius` is != 0
+             * @type {number} The height of the emission rectangle
+             */
+            emissionHeight: 0
         }, url);
         this.merge(overrides);
         this.name = 'particleEffect';
@@ -177,7 +195,22 @@ export default class ParticleEffect extends TransferrableConfig {
                 const typeIdx = $Math.randomRangeInt(0, this.particleTypes.length - 1);
                 const pType = this.particleTypes.at(typeIdx);
                 if (pType) {
-                    const memSegment = this.engine.spawnParticle(worldPos, time, pType);
+                    // the world position of the emitter's host
+                    let emitPosition = $Math.newVecF32(worldPos[0], worldPos[1]);
+
+                    // calculate emission position
+                    if (this.emissionRadius > 0) {
+                        // radius around the point
+                        let dir = $Math.getDirectionVector([0,0], $Math.randomRangeInt(0, 360));
+                        emitPosition = $Math.vecMulScalar(dir, this.emissionRadius);
+                    } else if (this.emissionWidth > 0 || this.emissionHeight > 0) {
+                        // rectangle around the point
+                        const halfWidth = this.emissionWidth * 0.5;
+                        const halfHeight = this.emissionHeight * 0.5;
+                        emitPosition = $Math.randomPoint(emitPosition[0] - halfWidth, emitPosition[1] - halfHeight, this.emissionWidth, this.emissionHeight);
+                    }
+
+                    const memSegment = this.engine.spawnParticle(emitPosition, time, pType);
                     if (memSegment !== null) {
                         this.initParticle(pType, memSegment);
                     }

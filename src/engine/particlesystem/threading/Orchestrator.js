@@ -57,6 +57,8 @@ class Orchestrator {
         this.#systemOpts = systemOpts;
         ctx.debugOpts = systemOpts.debugOpts;
         ctx.engineOpts = systemOpts.engineOpts;
+        ctx.pragmas = systemOpts.pragmas;
+        ctx.trackPerformance = systemOpts.trackPerformance;
         this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
 
         this.#spawnWorkers(assembler);

@@ -23,7 +23,9 @@ export default class SmokeEffect extends ParticleEffect {
       count: 10,
       emissionFrequency: 100,
       frequencyVariance: 250,
-      spread: 15
+      spread: 15,
+      emissionWidth: 50,
+      emissionHeight: 1
     }, url);
     this.merge(overrides);
     this.$name = 'smokeEffect';

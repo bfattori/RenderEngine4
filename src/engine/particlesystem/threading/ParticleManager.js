@@ -394,18 +394,16 @@ export default class ParticleManager {
      * 
      * @param {Array<number>} worldPos - The [x,y] world coordinates where the effect should emit particles
      * @param {number} opaqueId - The effect to run, effects contain the functionality to generate and modify particles emitted to the engine
-     * @param {boolean} isReset - A flag indicating the effect needs to be reset before it is run (used in ParticleWorkers)
      * @param {number} time - Current world time in milliseconds 
      * @param {number} deltaTime - The time in milliseconds since the last frame
      */
-    runEffect([x, y], opaqueId, isReset, time, deltaTime) {
+    runEffect([x, y], opaqueId, time, deltaTime) {
         this.#send({ 
             type: protocol.MTYPE.MANAGER.RUN_EFFECT, 
             pos: [x, y],
             opaqueId: opaqueId, 
             time: time, 
-            deltaTime: deltaTime,
-            isReset: isReset
+            deltaTime: deltaTime
         });
     }
 

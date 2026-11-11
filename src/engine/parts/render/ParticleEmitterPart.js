@@ -1,4 +1,5 @@
 import Engine from '../../core/Engine.js';
+import $Math from '../../core/lang/Math.js';
 import RenderPart from './RenderPart.js';
 import ParticleEffect from '../../particlesystem/ParticleEffect.js';
 
@@ -40,6 +41,10 @@ export default class ParticleEmitterPart extends RenderPart {
         return this.#effect;
     }
 
+    /**
+     * Set the particle effect this emitter will use
+     * @param {ParticleEffect} particleEffect
+     */
     set effect(particleEffect) {
         this.#effect = particleEffect;
     }
@@ -91,8 +96,8 @@ export default class ParticleEmitterPart extends RenderPart {
      */
     render(time, deltaTime) {
         if (this.#doEmit) {
-            // convert to world coordinates
-            Engine.particleEngine.runEffect([this.host.worldTransform.e, this.host.worldTransform.f], this.#effect.opaqueId, this.#effect.isReset, time, deltaTime, this.#effect);
+            // emit particles
+            Engine.particleEngine.runEffect([this.host.worldTransform.e, this.host.worldTransform.f], this.#effect.opaqueId, time, deltaTime, this.#effect);
             if (this.#disableAfter) {
                 this.#doEmit = false;
                 this.#disableAfter = false;

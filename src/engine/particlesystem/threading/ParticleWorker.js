@@ -61,6 +61,8 @@ export default class ParticleWorker {
         // initialize the context with the system options
         ctx.debugOpts = systemOpts.debugOpts;
         ctx.engineOpts = systemOpts.engineOpts;
+        ctx.pragmas = systemOpts.pragmas;
+        ctx.trackPerformance = systemOpts.trackPerformance;
 
         // add the root particle type
         this.#classMap.set('Particle', Particle);
@@ -172,7 +174,7 @@ export default class ParticleWorker {
                 this.instance.addParticles(data.particles);
                 break;
             case protocol.MTYPE.ORCHESTRATOR.RUN_EFFECT:
-                this.instance.runEffect(data.pos, data.opaqueId, data.isReset, data.time, data.deltaTime);
+                this.instance.runEffect(data.pos, data.opaqueId, data.time, data.deltaTime);
                 break;
             case protocol.MTYPE.ORCHESTRATOR.SPAWN:
                 this.instance.spawnParticle(data.pos, data.particle);

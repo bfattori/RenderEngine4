@@ -273,13 +273,16 @@ export default class $Math {
     /**
      * Given a rectangle dimensions, generate a random point within it.
      *
-     * @param {Object} rect The rectangle defined by `x, y, width, and height`
+     * @param {number} x - Left position
+     * @param {number} y - Top position
+     * @param {number} width - Width of rectangle
+     * @param {number} height - Height of rectangle
      * @return {Float32Array} A random point [x, y] within the rectangle
      */
-    static randomPoint({x, y, width, height}) {
+    static randomPoint(x, y, width, height) {
         const point = $Math.fmPool.VecF32;
-        point[0] = Math.floor(x + Math.random() * width);
-        point[1] = Math.floor(y + Math.random() * height);
+        point[0] = $Math.randomRange(x, x + width);
+        point[1] = $Math.randomRange(y, y + height);
         return point;
     }
 

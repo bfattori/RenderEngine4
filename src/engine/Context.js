@@ -82,4 +82,13 @@ export default class Context {
     get Spark() {
         return this.#sparkMM;
     }
+
+    getOpts() {
+        return {
+            debugOpts: this.debugOpts,
+            engineOpts: this.engineOpts,
+            trackPerformance: this.trackPerformance,
+            pragmas: this.pragmas
+        };
+    }
 }
