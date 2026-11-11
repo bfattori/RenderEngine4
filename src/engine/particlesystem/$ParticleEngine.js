@@ -150,7 +150,7 @@ export default class $ParticleEngine {
         this.#height = height;
 
         // the model used by repulsors to determine collisions
-        this.#collisionModel = new GridBroadphase('ParticleEngineCollisions', this.#width, this.#height, this.#config.modelSize.x, this.#config.modelSize.y, BroadphaseModel.ACCURACY.HIGH);
+        this.#collisionModel = new GridBroadphase('ParticleEngineCollisions', this.#width, this.#height, this.#config.modelSize.x, this.#config.modelSize.y, BroadphaseModel.ACCURACY.LOW);
         this.#collisionModel.supportMulti = true;
 
         if (renderContext !== null) {
