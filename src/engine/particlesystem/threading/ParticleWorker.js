@@ -10,8 +10,8 @@ import { initializeSystemMM } from '../../core/memory/FastMemoryPool.js';
 
 import ParticleWorkerError from './ParticleWorkerError.js';
 import $ParticleEngine from '../$ParticleEngine.js';
-import ParticleEffect from '../effects/ParticleEffect.js';
-import Particle from '../types/Particle.js';
+import ParticleEffect from '../ParticleEffect.js';
+import Particle from '../Particle.js';
 
 import protocol from './Protocol.js';
 
@@ -157,13 +157,16 @@ export default class ParticleWorker {
                 this.instance.addEffect(effect);
                 this.#acknowledge(effect, protocol.MTYPE.WORKER.ACK_EFFECT);
                 break;
-            case protocol.MTYPE.ORCHESTRATOR.ADD_REPULSOR:
-                const repulsor = await TransferrableConfig.reconstruct(data.affector, (obj) => {obj.engine = this.instance;});
-                this.instance.addRepulsor(repulsor);
-                this.#acknowledge(repulsor, protocol.MTYPE.WORKER.ACK_REPULSOR);
+            case protocol.MTYPE.ORCHESTRATOR.ADD_ZONE:
+                const influencer = await TransferrableConfig.reconstruct(data.affector, (obj) => {obj.engine = this.instance;});
+                this.instance.addInfluencer(influencer);
+                this.#acknowledge(influencer, protocol.MTYPE.WORKER.ACK_ZONE);
                 break;
-            case protocol.MTYPE.ORCHESTRATOR.UPDATE_REPULSOR:
-                this.instance.updateRepulsor(data.affector);
+            case protocol.MTYPE.ORCHESTRATOR.UPDATE_ZONE:
+                this.instance.updateInfluencer(data.affector);
+                break;
+            case protocol.MTYPE.ORCHESTRATOR.REMOVE_ZONE:
+                this.instance.removeInfluencer(data.affector);
                 break;
             case protocol.MTYPE.ORCHESTRATOR.ADD_PARTICLES:
                 this.instance.addParticles(data.particles);

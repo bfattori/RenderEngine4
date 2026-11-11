@@ -1,5 +1,5 @@
 import Constants from '../../Constants.js';
-import Particle from './Particle.js';
+import Particle from '../Particle.js';
 import $Math from '../../core/lang/Math.js';
 import Util from '../../core/Util.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
@@ -31,6 +31,12 @@ export default class BasicParticle extends Particle {
     }
 
     /**
+     * The bit that indicates that the particle size is proportional to its lifespan.
+     * @type {number}
+     */
+    static MASK_LINK_TO_LIFE = 1 << 14;
+
+    /**
      * Create a `BasicParticle` with options for colors, sizes, velocity range,
      * drag, and other properties. Particles are the atomic unit represented in the `ParticleSystem`
      * and have position, velocity, and run-time options. The run-time options allow a particle to
@@ -57,7 +63,12 @@ export default class BasicParticle extends Particle {
              */
             particleSize: [0.5, 2.0],
             /**
-             * Amount to decay the particle size over its lifetime
+             * If `true` the particle's size will be proportional to its lifespan
+             * @type {boolean}
+             */
+            proportionalSize: true,
+            /**
+             * Amount to decay the particle size at each update
              * @type {Array<number>|number} [...mean], [minimum, maximum], or limit
              */
             sizeDecay: 0,
@@ -161,6 +172,11 @@ export default class BasicParticle extends Particle {
         }
 
         memSegment.setUint16(BasicParticle.OFFSETS.TILE_OPAQUE_ID, tile);
+
+        // flags
+        let flags = 0;
+        flags |= this.proportionalSize ? BasicParticle.MASK_LINK_TO_LIFE : 0;
+        memSegment.setMaskedBitField16(Particle.OFFSETS.FLAGS, flags);
     }
 
     /**
@@ -177,38 +193,49 @@ export default class BasicParticle extends Particle {
         const initSize = memSegment.getFloat32(BasicParticle.OFFSETS.ORIG_SIZE);
         const sizeDecay = memSegment.getFloat32(BasicParticle.OFFSETS.SIZE_DECAY);
 
-        // shrink over the lifespan
+        // size adjustment
         let curSize = memSegment.getFloat32(BasicParticle.OFFSETS.CUR_SIZE);
-        if (sizeDecay !== 0) {
-            curSize = ((life / originalLifeSpan) * initSize) - sizeDecay;
-            memSegment.setFloat32(BasicParticle.OFFSETS.CUR_SIZE, curSize);
+        const linked = memSegment.getMaskedBitField16(Particle.OFFSETS.FLAGS, BasicParticle.MASK_LINK_TO_LIFE) === BasicParticle.MASK_LINK_TO_LIFE;
+        if (linked) {
+            // shrink proportionally to the lifespan of the particle
+            curSize = ((life / originalLifeSpan) * initSize);
         }
+
+        // fixed size decay
+        curSize -= sizeDecay;
 
         if (curSize <= Constants.PARTICLE_SIZE_THRESHOLD) {
             // kill the particle
             this.cleanUp(memSegment);
-        } else {
+            return;
+        }
 
-            // get the drag and drag rate
-            const curDrag = memSegment.getFloat32(BasicParticle.OFFSETS.DRAG);
-            const dragDelta = memSegment.getFloat32(BasicParticle.OFFSETS.DRAG_DELTA);
+        if (linked || sizeDecay > 0) {
+            // write back new size if it can change
+            memSegment.setFloat32(BasicParticle.OFFSETS.CUR_SIZE, curSize);
+        }
 
-            // calculate instaneous drag
-            const drag = curDrag === 0 ? 1 : (1 / curDrag);
+        // get the drag and drag rate
+        const curDrag = memSegment.getFloat32(BasicParticle.OFFSETS.DRAG);
+        const dragDelta = memSegment.getFloat32(BasicParticle.OFFSETS.DRAG_DELTA);
 
+        // calculate instaneous drag
+        const drag = curDrag === 0 ? 1 : (1 / curDrag);
+
+        if ((drag + dragDelta) !== 0) {
             // write back the updated drag
             memSegment.setFloat32(BasicParticle.OFFSETS.DRAG, drag + dragDelta);
-
-            // add drag and gravity to velocity
-            const vel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);
-            //const cV = [vel[0], vel[1]];
-            const v = $Math.vecMulScalar(vel, drag);
-            v[0] += this.gravity[0];
-            v[1] += this.gravity[1];
-
-            // store back velocity
-            memSegment.setVecF32(Particle.OFFSETS.VELOCITY, v);
         }
+
+        // add drag and gravity to velocity
+        const vel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);
+        //const cV = [vel[0], vel[1]];
+        const v = $Math.vecMulScalar(vel, drag);
+        v[0] += this.gravity[0];
+        v[1] += this.gravity[1];
+
+        // store back velocity
+        memSegment.setVecF32(Particle.OFFSETS.VELOCITY, v);
     }
 
 

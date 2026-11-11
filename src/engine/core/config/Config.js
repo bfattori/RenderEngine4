@@ -92,7 +92,7 @@ class EngineConfig extends Config {
             charOrigin: false,
             showParticleWorkersPiP: false,
             showParticleEngineLoad: false,
-            showParticleAffectors: false
+            showParticleInfluenceZones: false
         },
         /**
          * Enable performance logging for rendering and collision events. Default is false.

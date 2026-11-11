@@ -1,6 +1,6 @@
 import $Math from '../../core/lang/Math.js';
 
-import Particle from './Particle.js';
+import Particle from '../Particle.js';
 import DiffuseParticle from './DiffuseParticle.js';
 
 /**

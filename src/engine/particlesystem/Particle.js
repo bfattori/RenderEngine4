@@ -1,5 +1,5 @@
-import TransferrableConfig from '../../core/config/TransferrableConfig.js';
-import $Math from '../../core/lang/Math.js';
+import TransferrableConfig from '../core/config/TransferrableConfig.js';
+import $Math from '../core/lang/Math.js';
 
 /**
  * @class Particle
@@ -139,8 +139,10 @@ export default class Particle extends TransferrableConfig {
     // position
     memSegment.setVecF32(Particle.OFFSETS.POSITION, worldPos);
 
-    // physical interaction flag
-    memSegment.setMaskedBitField16(Particle.OFFSETS.FLAGS, this.interact ? Particle.MASK_INTERACTION : 0);
+    // flags
+    let flags = 0;
+    flags |= this.interact ? Particle.MASK_INTERACTION : 0;
+    memSegment.setMaskedBitField16(Particle.OFFSETS.FLAGS, flags);
   }
 
   /**

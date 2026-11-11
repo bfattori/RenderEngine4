@@ -5,8 +5,8 @@ import RenderEngineError from '../core/RenderEngineError.js';
 import Spark from '../core/memory/Spark.js';
 
 import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleEngine.js';
-import Particle from './types/Particle.js';
-import ParticleRepulsor from './physics/ParticleRepulsor.js';
+import Particle from './Particle.js';
+import ParticleInfluencer from './ParticleInfluencer.js';
 
 import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
 import LoadCounter from '../ui/debug/LoadCounter.js';
@@ -35,8 +35,8 @@ export default class $ParticleEngine {
     // particle effects the engine is configured to run
     #particleEffects = new Map();
 
-    // particle repulsors that impact PhysicalParticles
-    #particleRepulsors = [];
+    // particle influence zones
+    #particleInfluencers = [];
 
     // when new particles are added, this goes true
     #newParticles = false;
@@ -249,10 +249,10 @@ export default class $ParticleEngine {
 
     /**
      * The collection of particle repulsors in the engine
-     * @returns {Map<String, Array<ParticleRepulsor>>} A map of particle repulsors
+     * @returns {Map<String, Array<ParticleInfluencer>>} A map of particle repulsors
      */
-    get repulsors() {
-        return this.#particleRepulsors;
+    get influencers() {
+        return this.#particleInfluencers;
     }
 
     /**
@@ -394,37 +394,37 @@ export default class $ParticleEngine {
 
     /**
      * Convience method to add several `ParticleAffectors` at once to the engine.
-     * @param  {ParticleRepulsor} repulsors - A list of particle affectors
+     * @param  {ParticleInfluencer} influencer - A list of particle affectors
      */
-    addRepulsors(... repulsors) {
-        repulsors.forEach(repulsor => this.addRepulsor(repulsor));
+    addInfluencers(... influencers) {
+        influencers.forEach(influencer => this.addInfluencer(influencer));
     }
 
     /**
-     * Add a `ParticleAffector` to the engine to influence `PhysicalParticles`
-     * @param {ParticleRepulsor} repulsor - The particle affector 
+     * Add a `ParticleInfluencer` to the engine
+     * @param {ParticleInfluencer} influencer - The particle influencer 
      */
-    addRepulsor(repulsor) {
-        this.#particleRepulsors.push(repulsor);
-        this.#updateCollisionModel(repulsor);
+    addInfluencer(influencer) {
+        this.#particleInfluencers.push(influencer);
+        this.#updateCollisionModel(influencer);
     }
 
     /**
-     * Remove a particle repulsor from the system.
-     * @param {ParticleRepulsor} repulsor - The particle repulsor
+     * Remove a particle influencer from the system.
+     * @param {ParticleInfluencer} influencer - The particle influencer
      */
-    removeRepulsor(repulsor) {
-        this.#particleRepulsors.splice(this.#particleRepulsors.indexOf(repulsor), 1);
-        this.#collisionModel.removeObjectFromModel(repulsor);
+    removeInfluencer(influencer) {
+        this.#particleInfluencers.splice(this.#particleInfluencers.indexOf(influencer), 1);
+        this.#collisionModel.removeObjectFromModel(influencer);
     }
 
     /**
-     * Locates an affector by its name and returns it. 
-     * @param {String} repulsorName - The name of the affector to find
-     * @return {ParticleRepulsor} The affector or null if it does not exist.
+     * Locates an influencer by its name and returns it. 
+     * @param {String} influencerName - The name of the influencer to find
+     * @return {ParticleInfluencer} The affector or null if it does not exist.
      */
-    getRepulsor(repulsorName) {
-        return this.#particleRepulsors.find(repulsor => repulsor.name === repulsorName);
+    getInfluencer(influencerName) {
+        return this.#particleInfluencers.find(repulsor => repulsor.name === influencerName);
     }
 
     //-------------------------------------
@@ -467,20 +467,20 @@ export default class $ParticleEngine {
 
     /**
      * Update an affector in the particle engine. Primarily used when threading.
-     * @param {Object} repulsor - The `TransferrableConfig` representation of an affector 
+     * @param {Object} influencer - The `TransferrableConfig` representation of an affector 
      */
-    updateRepulsor(repulsor) {
-        const instance = this.getRepulsor(repulsor.$name);
-        if (instance != null && repulsor.props) {
-            if (repulsor.props.pos[0] !== instance.pos[0] || repulsor.props.pos[1] !== instance.pos[1])
-                instance.pos = repulsor.props.pos;
+    updateInfluencer(influencer) {
+        const instance = this.getInfluencer(influencer.$name);
+        if (instance != null && influencer.props) {
+            if (influencer.props.pos[0] !== instance.pos[0] || influencer.props.pos[1] !== instance.pos[1])
+                instance.pos = influencer.props.pos;
 
-            if (repulsor.props.radius !== instance.radius)
-                instance.radius = repulsor.props.radius;
+            if (influencer.props.radius !== instance.radius)
+                instance.radius = influencer.props.radius;
 
-            if (repulsor.props.surface[0] !== instance.surface[0] || repulsor.props.surface[1] !== instance.surface[1] ||
-                repulsor.props.surface[2] !== instance.surface[2] || repulsor.props.surface[3] !== instance.surface[3])
-                instance.surface = repulsor.props.surface;
+            if (influencer.props.surface[0] !== instance.surface[0] || influencer.props.surface[1] !== instance.surface[1] ||
+                influencer.props.surface[2] !== instance.surface[2] || influencer.props.surface[3] !== instance.surface[3])
+                instance.surface = influencer.props.surface;
 
             // update the collision model
             this.#updateCollisionModel(instance);
@@ -488,26 +488,26 @@ export default class $ParticleEngine {
     }
 
     /**
-     * Add the repulsor to the collision model
-     * @param {ParticleRepulsor} repulsor - The particle repulsor to add
+     * Add the influencer to the collision model
+     * @param {ParticleInfluencer} influencer - The particle influencer to update
      */
-    #updateCollisionModel(repulsor) {
+    #updateCollisionModel(influencer) {
         // add the repulsor to the collision model in the cell where its centroid is
-        this.#collisionModel.updateModel(repulsor, repulsor.pos[0], repulsor.pos[1], true);
+        this.#collisionModel.updateModel(influencer, influencer.pos[0], influencer.pos[1], true);
 
         // fill the cells that the repulsor occupies
-        const box = repulsor.boundingBox;
+        const box = influencer.boundingBox;
         for (let x = box[0]; x < box[2]; x += this.#collisionModel.cellSize[0]) {
             for (let y = box[1]; y < box[3]; y += this.#collisionModel.cellSize[1]) {
                 const objs = this.#collisionModel.getObjectsAt(x, y);
-                if (objs !== null && !objs.includes(repulsor))
-                    this.#collisionModel.updateModel(repulsor, x, y);
+                if (objs !== null && !objs.includes(influencer))
+                    this.#collisionModel.updateModel(influencer, x, y);
             }
         }
     }
 
     //------------------------------------
-    // Lifecycle methods
+    // Particle lifecycle methods
 
     /**
      * Spawn a particle in the engine. Particles are spawned from particles added
@@ -644,10 +644,10 @@ export default class $ParticleEngine {
      */
     #addImpulse(memSegment, time, deltaTime) {
         const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
-        const repulsors = this.#collisionModel.getObjectsAt(pos[0], pos[1]);
-        if (repulsors !== null)
-            repulsors.forEach(affector => {
-                affector.affect(memSegment, time, deltaTime);
+        const influenceZones = this.#collisionModel.getObjectsAt(pos[0], pos[1]);
+        if (influenceZones !== null)
+            influenceZones.forEach(affector => {
+                affector.applyImpulse(memSegment, time, deltaTime);
             });
     }
 
@@ -692,8 +692,8 @@ export default class $ParticleEngine {
             }
         });
 
-        PRAGMA('showParticleRepulsors', () => {
-            const affectors = this.affectors;
+        PRAGMA('showParticleInfluenceZones', () => {
+            const affectors = this.influencers;
             affectors.forEach(affector => {
                 canvasDebugObjects.BoundingCircle(surf, affector.pos[0], affector.pos[1], affector.radius);
                 canvasDebugObjects.Origin(surf, affector.pos[0], affector.pos[1], `${affector.pos[0]}, ${affector.pos[1]} (r${affector.radius})\nf ${affector.friction}\nr ${affector.restitution}`);
@@ -713,6 +713,9 @@ export default class $ParticleEngine {
         }
     }
 
+    //-----------------------------------------
+    // Engine control
+
     reset() {
         //this.#memories.fill(null);
         this.#liveParticles = 0;
@@ -723,7 +726,7 @@ export default class $ParticleEngine {
         this.reset();
         this.#particleEffects.clear();
         this.#particleTypes.clear();
-        this.#particleRepulsors.clear();
+        this.#particleInfluencers.clear();
     }
 
     #cleanMemory() {

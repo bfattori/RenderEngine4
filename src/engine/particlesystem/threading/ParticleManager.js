@@ -1,4 +1,3 @@
-import Constants from '../../Constants.js';
 import Context from '../../Context.js';
 
 import { Logger } from '../../core/lang/Console.js';
@@ -350,21 +349,21 @@ export default class ParticleManager {
     }
 
     /**
-     * Convience method to add several `ParticleRepulsor`s at once to the engine.
-     * @param  {ParticleRepulsor} repulsors - A list of particle repulsors
+     * Convience method to add several `ParticleInfluencer`s at once to the engine.
+     * @param  {ParticleInfluencer} influencers - A list of particle influencer
      */
-    addRepulsors(... repulsors) {
-        repulsors.forEach(repulsor => this.addRepulsor(repulsor));
+    addInfluencers(... influencers) {
+        influencers.forEach(influencer => this.addInfluencer(influencer));
     }
 
     /**
-     * Add a `ParticleRepulsor` to the engine to influence `PhysicalParticles`
-     * @param {ParticleRepulsor} repulsor - The particle repulsor 
+     * Add a `ParticleInfluencer` to the engine
+     * @param {ParticleInfluencer} influencer - The particle influencer 
      */
-    addRepulsor(repulsor) {
+    addInfluencer(influencer) {
         this.#send({ 
-            type: protocol.MTYPE.MANAGER.ADD_REPULSOR, 
-            affector: repulsor.transferrable 
+            type: protocol.MTYPE.MANAGER.ADD_ZONE, 
+            affector: influencer.transferrable 
         });
     }
 
@@ -412,13 +411,24 @@ export default class ParticleManager {
 
     /**
      * Updates a `ParticleRepulsor` in the engine.
-     * @param {ParticleAffector} repulsor - The particle repulsor to update. The repulsor must have been added to the engine previously. 
+     * @param {ParticleInfluencer} influencer - The particle influencer to update. It must have been added to the engine previously. 
      */
-    updateRepulsor(repulsor) {
+    updateInfluencer(influencer) {
         this.#send({
-            type: protocol.MTYPE.MANAGER.UPDATE_REPULSOR,
-            affector: repulsor.transferrable
+            type: protocol.MTYPE.MANAGER.UPDATE_ZONE,
+            affector: influencer.transferrable
         });
+    }
+
+    /**
+     * Removes a `ParticleInfluencer` from the engine.
+     * @param {ParticleInfluencer} influencer - The particle influencer to remove.
+     */
+    removeInfluencer(influencer) {
+        this.#send({
+            type: protocol.MTYPE.MANAGER.REMOVE_ZONE,
+            affector: influencer.transferrable
+        })
     }
 
     /**

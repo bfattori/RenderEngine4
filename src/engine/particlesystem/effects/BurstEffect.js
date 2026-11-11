@@ -1,6 +1,6 @@
 import $Math from '../../core/lang/Math.js';
-import ParticleEffect from './ParticleEffect.js';
-import Particle from '../types/Particle.js';
+import ParticleEffect from '../ParticleEffect.js';
+import Particle from '../Particle.js';
 
 /**
  * @class BurstEffect

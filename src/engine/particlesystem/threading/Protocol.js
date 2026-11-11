@@ -16,7 +16,7 @@ const protocol = {
       RENDERED: 'rndr',
       ACK_TYPE: 'ackType',
       ACK_EFFECT: 'ackFx',
-      ACK_REPULSOR: 'ackPhys'
+      ACK_ZONE: 'ackPhys'
     },
 
     // from orchestrator
@@ -26,10 +26,11 @@ const protocol = {
       READY: 'rdy',
       ADD_TYPE: '+type',
       ADD_EFFECT: '+fx',
-      ADD_REPULSOR: '+phys',
+      ADD_ZONE: '+phys',
       ADD_PARTICLES: '+ptls',
       RUN_EFFECT: 'runFx',
-      UPDATE_REPULSOR: 'updPhys',
+      UPDATE_ZONE: 'updPhys',
+      REMOVE_ZONE: '-phys',
       RENDERED: 'rndr',
       WORKER_RENDERED: 'wRndr',
       SPAWN: 'spawn',
@@ -46,10 +47,11 @@ const protocol = {
       SHUTDOWN: 'down',
       ADD_TYPE: '+type',
       ADD_EFFECT: '+fx',
-      ADD_REPULSOR: '+phys',
+      ADD_ZONE: '+phys',
       ADD_PARTICLES: '+ptls',
       RUN_EFFECT: 'runFx',
-      UPDATE_REPULSOR: 'updPhys',
+      UPDATE_ZONE: 'updPhys',
+      REMOVE_ZONE: '-phys',
       SPAWN: 'spawn'
     }
   }

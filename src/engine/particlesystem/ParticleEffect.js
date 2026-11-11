@@ -1,6 +1,6 @@
-import $Math from '../../core/lang/Math.js';
-import TransferrableConfig from '../../core/config/TransferrableConfig.js';
-import BasicParticle from '../types/BasicParticle.js';
+import $Math from '../core/lang/Math.js';
+import TransferrableConfig from '../core/config/TransferrableConfig.js';
+import Particle from './Particle.js';
 
 /**
  * @class ParticleEffect
@@ -51,7 +51,7 @@ export default class ParticleEffect extends TransferrableConfig {
              * The types of particles this effect uses to generate particles.
              * The effect will randomly select from the available particles
              * when it spawns a new particle.
-             * @type {Array<BasicParticle>}
+             * @type {Array<Particle>}
              */
             particleTypes: []
         }, url);

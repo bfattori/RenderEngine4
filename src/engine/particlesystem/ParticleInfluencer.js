@@ -1,17 +1,18 @@
-import Engine from '../../core/Engine.js';
-import TransferrableConfig from '../../core/config/TransferrableConfig.js';
-import Enum from '../../core/lang/Enum.js';
-import $Math from '../../core/lang/Math.js';
-import { Matrix2d } from '../../core/lang/Matrix.js';
-import Particle from '../types/Particle.js';
+import Engine from '../core/Engine.js';
+import TransferrableConfig from '../core/config/TransferrableConfig.js';
+import Enum from '../core/lang/Enum.js';
+import $Math from '../core/lang/Math.js';
+import { Matrix2d } from '../core/lang/Matrix.js';
+
+import Particle from './Particle.js';
 
 /**
- * @class ParticleRepulsor
- * @classdesc The ParticleRepulsor class is responsible for applying forces to particles within a particle system. It defines the shape, position, and falloff of the affector, 
- * and calculates the resulting impulse on particles based on their position relative to the affector. The affector can be circular or linear in shape, and can have different 
- * types of falloff (linear, squared, attenuate, or custom). The affector also has properties for friction and restitution that affect how particles respond to its influence.
+ * @class ParticleInfluencer
+ * @classdesc The `ParticleInfluencer` class is responsible for applying forces to particles within a particle system. It defines the shape, position, and falloff of the influence, 
+ * and calculates the resulting impulse on particles based on their position relative to the zone of influence. The shape can be circular or linear, and can be configured for different 
+ * types of falloff (linear, squared, attenuated, or custom). The zone of influence has configurable friction, restitution, and absorbtion so as to impart a physical force on particles.
  */
-export default class ParticleRepulsor extends TransferrableConfig {
+export default class ParticleInfluencer extends TransferrableConfig {
   #engine = null;
 
   static FALLOFF_TYPE = new Enum(
@@ -26,60 +27,91 @@ export default class ParticleRepulsor extends TransferrableConfig {
     'SURFACE'
   );
 
+  static AFFECTOR = new Enum(
+    'REFLECT',
+    'ABSORB',
+    'KILL'
+  );
+
   constructor(overrides = {}, url = import.meta.url) {
     super({
       /**
-       * The world position of the affector.
-       * @type {Array<number>} The position of the affector in world space (x, y)
+       * The world position of the zone of influence.
+       * @type {Array<number>} The position of the zone of influence in world space (x, y)
        */
       pos: [0, 0],
 
       /**
-       * The shape of the affector: CIRCLE or SURFACE. The shape determines how the affector influences particles within its area of effect.
-       * @type {ParticleRepulsor#SHAPE}
+       * The shape of the zone: `CIRCLE` or `SURFACE`. The shape determines how the influence is imparted on
+       * particles within its area of effect. Circular shapes impart influence around a centroid, while 
+       * a surface imparts influence along a line, affected by its normal. The default is `CIRCLE`
+       * @type {ParticleInfluencer#SHAPE}
        */
-      shape: ParticleRepulsor.SHAPE.CIRCLE,
+      shape: ParticleInfluencer.SHAPE.CIRCLE,
 
       /**
-       * The radius for the affector's influence when the shape is `CIRCLE`.
-       * @type {number} The distance from the center of the affector
+       * The radius for a circular zone of influence when the shape is `CIRCLE`.
+       * @type {number} The distance from the center
        */
       radius: 50,
 
       /**
-       * The shape when the affector is type `SURFACE`. The surface origin is 
-       * the position of the affector
+       * The shape when the affector is type `SURFACE`. A surface is defined by a 5-element array
+       * made up of the starting coordinates of the surface, the ending coordinates, and the surface
+       * normal vector.
+       * @example [150, 200, 10, 250, [0.707, 0.706]]
        * @type {Array<number>} The surface shape in [x, y, x1, y1, normal] format
        */
       surface: [0, 0, 1, 1, [0, 1]],
 
       /**
-       * The type of falloff applied
-       * @type {ParticleRepulsor#FALLOFF_TYPE} 
+       * The type of falloff applied in the zone of influence. `LINEAR` applies a linear, increasing
+       * force as the particle approaches the zone. `SQUARED` applies an exponentially increasing force,
+       * while `ATTENUATE` uses `rolloffFactor` to determine how influence rolls off as a factor of
+       * distance from the zone. Finally `CUSTOM` allows new `ParticleInfluencers` to calulate their
+       * own influence based on entirely different parameters.
+       * @type {ParticleInfluencer#FALLOFF_TYPE} 
        */
-      falloffType: ParticleRepulsor.FALLOFF_TYPE.LINEAR,
+      falloffType: ParticleInfluencer.FALLOFF_TYPE.LINEAR,
 
       /**
-       * The rolloff factor for the `ATTENUATE` style falloff.
+       * The rolloff factor for the `ATTENUATE` style of falloff.
        * @type {number} The rolloff factor
        */
       rolloffFactor: 0.0,
 
       /**
-       * The amount of friction the affector imparts.
+       * The affect the zone of influence has on a particle that interacts with it. The default
+       * is to `REFLECT`. Other options are `KILL` which immediately frees the particle,
+       * and `ABSORB` which acts like a gravitational force pulling toward the zone.
+       * @type {ParticleInfluencer#AFFECTOR}
+       */
+      affect: ParticleInfluencer.AFFECTOR.REFLECT,
+
+      /**
+       * The amount of friction the influence zone imparts, causing particles to "stick".
        * @type {number} 0.0 - dead stop, 1.0 - no friction, 0.96 - about average
        */
       friction: 0.986,
 
       /**
-       * The restitution of the affector. This is a value between 0.0 and 1.0, where 
-       * 0.0 means no bounce and 1.0 means perfect bounce.
+       * The restitution, or bounce, of the zone of influence. This is a value between 0.0 
+       * and 1.0, where 0.0 means no bounce and 1.0 means perfect bounce.
        * @type {number} 0.0 - no bounce, 1.0 - perfect bounce
        */
-      restitution: 0.0
+      restitution: 0.0,
+
+      /**
+       * When `affect` is configured for `ABSORB` this is the rate at which the repulsor pulls a particle 
+       * toward it. Think of it like gravity pulling in the particle. Even with `restitution` and `friction`
+       * values set, this will apply a constant pull on the particle as long as it's within range.
+       * @type {number} The rate at which the repulsor affects a particle
+       */
+      absorbtionRate: 0.0
+
     }, url);
     this.merge(overrides);
-    this.name = 'particleRepulsor';
+    this.name = 'zoneOfInfluence';
     try {
       this.#engine = Engine.particleEngine;
     } catch (ex) {
@@ -126,7 +158,7 @@ export default class ParticleRepulsor extends TransferrableConfig {
    * @returns {Array<number>} An array with [x, y, z, w] representing the bounding box of the repulsor
    */
   get boundingBox() {
-    if (this.shape === ParticleRepulsor.SHAPE.CIRCLE) {
+    if (this.shape === ParticleInfluencer.SHAPE.CIRCLE) {
       return [this.pos[0] - this.radius, this.pos[1] - this.radius, this.pos[0] + this.radius, this.pos[1] + this.radius];
     } else {
       return [this.surface[0], this.surface[1], this.surface[2], this.surface[3]];
@@ -141,7 +173,7 @@ export default class ParticleRepulsor extends TransferrableConfig {
    */
   $propUpdated(property, newValue, oldValue) {
     if (property === 'pos' || property === 'radius' || property === 'surface' && this.engine !== null) {
-      this.engine.updateRepulsor(this);
+      this.engine.updateInfluencer(this);
     }
   }
 
@@ -154,8 +186,8 @@ export default class ParticleRepulsor extends TransferrableConfig {
    * @param {number} time - The current world time
    * @param {number} deltaTime - The time since the last frame 
    */
-  affect(memSegment, time, deltaTime) {
-    if (this.shape === ParticleRepulsor.SHAPE.CIRCLE) {
+  applyImpulse(memSegment, time, deltaTime) {
+    if (this.shape === ParticleInfluencer.SHAPE.CIRCLE) {
       this.#circleImpulse(memSegment);
     } else {
       this.#rectangleImpulse(memSegment);
@@ -169,6 +201,13 @@ export default class ParticleRepulsor extends TransferrableConfig {
     // early out
     const dist = $Math.distance(pos, this.pos);
     if (dist < this.radius && dist > 0) {
+      
+      // the particle is affected
+      if (this.affect === ParticleInfluencer.AFFECTOR.KILL) {
+        this.#engine.freeParticle(memSegment);
+        return;
+      }
+
       const normX = (pos[0] - this.pos[0]) / dist;
       const normY = (pos[1] - this.pos[1]) / dist;
 
@@ -199,6 +238,12 @@ export default class ParticleRepulsor extends TransferrableConfig {
 
     // if the particle is inside the shape, exit
     if ($Math.pointInPoly(pos, sh)) return;
+
+    // the particle is affected
+    if (this.affect === ParticleInfluencer.AFFECTOR.KILL) {
+      this.#engine.freeParticle(memSegment);
+      return;
+    }
 
     // get the distance from the nearest line to determine impulse
     const lDist = this.#lineDist(sh[0], sh[3], pos);
@@ -256,13 +301,13 @@ export default class ParticleRepulsor extends TransferrableConfig {
    */
   #getFallOff(x, y, dist) {
     switch (+this.falloffType) {
-      case +ParticleRepulsor.FALLOFF_TYPE.LINEAR:
+      case +ParticleInfluencer.FALLOFF_TYPE.LINEAR:
         return $Math.clamp(1.0 - (dist / this.radius), 0.0, 1.0);  
-      case +ParticleRepulsor.FALLOFF_TYPE.SQUARED:
+      case +ParticleInfluencer.FALLOFF_TYPE.SQUARED:
         return $Math.clamp(1.0 / (dist * dist), 0.0, 1.0);
-      case +ParticleRepulsor.FALLOFF_TYPE.ATTENUATE:
+      case +ParticleInfluencer.FALLOFF_TYPE.ATTENUATE:
         return 1.0 / ((1.0 + this.rolloffFactor) * (dist - this.radius));
-      case +ParticleRepulsor.FALLOFF_TYPE.CUSTOM:
+      case +ParticleInfluencer.FALLOFF_TYPE.CUSTOM:
         return this.customFalloff(x, y, dist);
     }
   }
@@ -288,6 +333,7 @@ export default class ParticleRepulsor extends TransferrableConfig {
       const props = super.dehydrate();
       props.falloffType = `${props.falloffType}`;
       props.shape = `${props.shape}`;
+      props.affect = `${props.affect}`
       return props;
   }
 
@@ -296,8 +342,9 @@ export default class ParticleRepulsor extends TransferrableConfig {
    * @returns 
    */
   async rehydrate(obj) {
-      obj.falloffType = ParticleRepulsor.FALLOFF_TYPE[obj.falloffType];
-      obj.shape = ParticleRepulsor.SHAPE[obj.shape];
+      obj.falloffType = ParticleInfluencer.FALLOFF_TYPE[obj.falloffType];
+      obj.shape = ParticleInfluencer.SHAPE[obj.shape];
+      obj.affect = ParticleInfluencer.AFFECTOR[obj.affect];
       await super.rehydrate(obj);
       return obj;
   }

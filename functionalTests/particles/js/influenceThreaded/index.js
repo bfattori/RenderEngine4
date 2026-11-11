@@ -10,7 +10,7 @@ import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmi
 import SmokeParticle from '../../../../src/engine/particlesystem/types/SmokeParticle.js';
 import SmokeEffect from '../../../../src/engine/particlesystem/effects/SmokeEffect.js';
 
-import ParticleRepulsor from '../../../../src/engine/particlesystem/physics/ParticleRepulsor.js';
+import ParticleInfluencer from '../../../../src/engine/particlesystem/ParticleInfluencer.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 5000
@@ -84,19 +84,19 @@ const sEffect2 = new SmokeEffect({
 sEffect2.name = 'points';
 
 // particle repulsor affectors
-const repulsor = new ParticleRepulsor({
+const repulsor = new ParticleInfluencer({
     radius: 100,
     pos: [200, 300],
     restitution: 0.03
 });
 
-const repulsor2 = new ParticleRepulsor({
+const repulsor2 = new ParticleInfluencer({
     radius: 200,
     pos: [500, 80],
     restitution: 0.1
 });
 
-const repulsor3 = new ParticleRepulsor({
+const repulsor3 = new ParticleInfluencer({
      radius: 80,
      pos: [380, 200],
      restitution: 0.3
@@ -104,7 +104,7 @@ const repulsor3 = new ParticleRepulsor({
 repulsor3.name = "r3";
 
 
-RenderEngine.particleEngine.addRepulsors(repulsor, repulsor2, repulsor3);
+RenderEngine.particleEngine.addInfluencers(repulsor, repulsor2, repulsor3);
 RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 

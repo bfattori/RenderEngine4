@@ -113,7 +113,7 @@ class Orchestrator {
                 live: 0,
                 ackEffects: [],
                 ackParticles: [],
-                ackRepulsors: []
+                ackZones: []
             });
 
             // initialize the worker thread
@@ -164,16 +164,16 @@ class Orchestrator {
             } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_EFFECT) {
                 name = event.data.effect.$name;
                 worker.ackEffects.push(name);
-            } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_AFFECTOR) {
+            } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_INFLUENCER) {
                 name = event.data.affector.$name;
-                worker.ackRepulsors.push(name);
+                worker.ackZones.push(name);
             }
         });
     }
 
     #testReady(workerId) {
         const worker = this.#workers.get(workerId);
-        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0 && worker.ackRepulsors.length === 0) {
+        if (worker.ackEffects.length === 0 && worker.ackParticles.length === 0 && worker.ackZones.length === 0) {
             this.#workersInitialized++;
         }
         
@@ -200,12 +200,13 @@ class Orchestrator {
                 break;
             case protocol.MTYPE.MANAGER.ADD_TYPE:
             case protocol.MTYPE.MANAGER.ADD_EFFECT:
-            case protocol.MTYPE.MANAGER.ADD_REPULSOR:
+            case protocol.MTYPE.MANAGER.ADD_ZONE:
                 // particle types, effect, and affectors need to be
                 // acknowledged before workers are ready
                 this.#waitAcknowledge(event);
             case protocol.MTYPE.ORCHESTRATOR.GENESIS:
-            case protocol.MTYPE.MANAGER.UPDATE_REPULSOR:
+            case protocol.MTYPE.MANAGER.UPDATE_ZONE:
+            case protocol.MTYPE.MANAGER.REMOVE_ZONE:
                 // broadcast to all workers
                 this.broadcast(event);
                 break;
@@ -236,7 +237,7 @@ class Orchestrator {
                     switch (event.data.ack) {
                         case protocol.MTYPE.WORKER.ACK_TYPE: worker.ackParticles.splice(worker.ackParticles.indexOf(event.data.name), 1); break;
                         case protocol.MTYPE.WORKER.ACK_EFFECT: worker.ackEffects.splice(worker.ackEffects.indexOf(event.data.name), 1); break;
-                        case protocol.MTYPE.WORKER.ACK_REPULSOR: worker.ackRepulsors.splice(worker.ackRepulsors.indexOf(event.data.name), 1); break;
+                        case protocol.MTYPE.WORKER.ACK_ZONE: worker.ackZones.splice(worker.ackZones.indexOf(event.data.name), 1); break;
                     }
                     this.#testReady(event.data.workerId);
                     break;

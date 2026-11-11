@@ -1,6 +1,6 @@
 import Engine from '../../core/Engine.js';
 import RenderPart from './RenderPart.js';
-import ParticleEffect from '../../particlesystem/effects/ParticleEffect.js';
+import ParticleEffect from '../../particlesystem/ParticleEffect.js';
 
 export default class ParticleEmitterPart extends RenderPart {
     #doEmit = false;
