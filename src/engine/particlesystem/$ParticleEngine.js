@@ -8,9 +8,6 @@ import { ParticleEngineConfig, ParticleEngineThreadingConfig } from './ParticleE
 import Particle from './Particle.js';
 import ParticleInfluencer from './ParticleInfluencer.js';
 
-import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
-import LoadCounter from '../ui/debug/LoadCounter.js';
-
 import BroadphaseModel from '../collisionSystems/broadphase/BroadphaseModel.js';
 import GridBroadphase from '../collisionSystems/broadphase/GridBroadphase.js';
 
@@ -122,22 +119,7 @@ export default class $ParticleEngine {
         // enforce singleton pattern
         $ParticleEngine.#useBuilder = true;
 
-        PRAGMA('showParticleEngineLoad', () => {
-            if (!threading) {
-                const config = {
-                    left: 5,
-                    counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'Particles'],
-                    options: {
-                        'Update:Time': { suffix: ' ms' },
-                        'Render:Time': { suffix: ' ms' },
-                        'Update:Load': { bar: true, suffix: '%', clamp: 100.0 },
-                        'Render:Load': { bar: true, suffix: '%', clamp: 100.0 },
-                        'Particles': {}
-                    }
-                }
-                this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
-            }
-        });
+        this.#engineLoadView = PRAGMA($ParticleEngine, 'showParticleEngineLoad', {init: !threading});
 
         this.#config = new ParticleEngineConfig();
         this.#config.merge(config);
@@ -594,12 +576,13 @@ export default class $ParticleEngine {
         PERF('particlesUpdateEnd');
         MEASURE('Update Particles', 'particlesUpdateStart', 'particlesUpdateEnd');
 
+        // debug - update load view
         const overall = performance.now() - this.#start;
-        PRAGMA('showParticleEngineLoad', () => {
-            if (!this.thread) {
-                this.#engineLoadView.update('Update:Load', (overall / deltaTime) * 100);
-                this.#engineLoadView.update('Update:Time', overall);
-            }
+        PRAGMA($ParticleEngine, 'showParticleEngineLoad:update', { 
+            visible: !this.thread, 
+            loadView: this.#engineLoadView,
+            overall: overall,
+            load: (overall / deltaTime) * 100
         });
 
         return overall;
@@ -681,22 +664,20 @@ export default class $ParticleEngine {
         const renderTime = performance.now() - render;
         PERF('particlesRenderEnd');
         MEASURE('Render Particles', 'particlesRenderStart', 'particlesRenderEnd');
-        PRAGMA('showParticleEngineLoad', () => {
-            if (!this.thread) {
-                // using the last frame time, what
-                // is the overall load of the PE on the CPU?
-                this.#engineLoadView.update('Render:Load', (renderTime / deltaTime) * 100);
-                this.#engineLoadView.update('Render:Time', renderTime);
-                this.#engineLoadView.update('Particles', this.liveParticles);
-            }
+        
+        // debug - update load
+        PRAGMA($ParticleEngine, 'showParticleEngineLoad:render', { 
+            visible: !this.thread, 
+            loadView: this.#engineLoadView,
+            renderTime: renderTime, 
+            deltaTime: deltaTime, 
+            liveParticles: this.liveParticles
         });
 
-        PRAGMA('showParticleInfluenceZones', () => {
-            const affectors = this.influencers;
-            affectors.forEach(affector => {
-                canvasDebugObjects.BoundingCircle(surf, affector.pos[0], affector.pos[1], affector.radius);
-                canvasDebugObjects.Origin(surf, affector.pos[0], affector.pos[1], `${affector.pos[0]}, ${affector.pos[1]} (r${affector.radius})\nf ${affector.friction}\nr ${affector.restitution}`);
-            });
+        // debug - render zones of influence
+        PRAGMA($ParticleEngine, 'showParticleInfluenceZones', {
+            influencers: this.influencers,
+            surface: surf
         });
 
         return renderTime;
@@ -750,3 +731,5 @@ export default class $ParticleEngine {
         }
     }
 }
+
+await PRAGMA_INIT($ParticleEngine); // required for pragma debugging

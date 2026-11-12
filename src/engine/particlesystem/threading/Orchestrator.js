@@ -5,9 +5,6 @@ import ParticleWorkerError from './ParticleWorkerError.js';
 
 import protocol from './Protocol.js';
 
-import CanvasPIP from '../../ui/debug/CanvasPIP.js';
-
-
 let orchestratorInstance = null;
 let messageHandler = null;
 const ctx = Context.getInstance();
@@ -60,8 +57,6 @@ class Orchestrator {
         ctx.pragmas = systemOpts.pragmas;
         ctx.trackPerformance = systemOpts.trackPerformance;
         this.#workerBurden = Math.round(particlesConfig.maxParticles / threadingConfig.workers);
-
-        this.#spawnWorkers(assembler);
     }
 
     get expected() {
@@ -80,7 +75,7 @@ class Orchestrator {
         return this.#timers;
     }
 
-    #spawnWorkers(assembler) {
+    spawnWorkers(assembler) {
         const pConfig = this.#particlesConfig;
         const tConfig = this.#threadingConfig;
         const vPort = this.#viewPort;
@@ -91,6 +86,7 @@ class Orchestrator {
         log.debug(`spawning ${tConfig.workers} particle workers ...`);
 
         // spawn the worker threads for the particle engine
+        const workerInit = [];
         for (let i = 0; i < tConfig.workers; i++) {
             const worker = new Worker(new URL(`./ParticleWorker.js${ctx.preventThreadCache}`, import.meta.url), {
                 type: 'module',
@@ -120,7 +116,7 @@ class Orchestrator {
 
             // initialize the worker thread
             const workerConfig = { ...pConfig, maxParticles: Math.floor(pConfig.maxParticles / tConfig.workers) };
-            worker.postMessage({ 
+            workerInit[i] = { 
                 re4: protocol.MSG.ORCHESTRATOR, 
                 type: protocol.MTYPE.ORCHESTRATOR.INIT, 
                 workerId: i,
@@ -131,8 +127,16 @@ class Orchestrator {
                 threading: tConfig, 
                 systemOpts: this.#systemOpts,
                 paths: this.#paths 
-            });
+            };
         }
+
+        // delay to allow workers to load fully before sending messages
+        const $this = this;
+        setTimeout(() => {
+            $this.workers.forEach(v => {
+                v.worker.postMessage(workerInit[v.id]);
+            });
+        }, 2000);
     }
 
     /**
@@ -166,7 +170,7 @@ class Orchestrator {
             } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_EFFECT) {
                 name = event.data.effect.$name;
                 worker.ackEffects.push(name);
-            } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_INFLUENCER) {
+            } else if (event.data.type === protocol.MTYPE.ORCHESTRATOR.ADD_ZONE) {
                 name = event.data.affector.$name;
                 worker.ackZones.push(name);
             }
@@ -233,6 +237,12 @@ class Orchestrator {
             switch(event.data.type) {
                 case protocol.MTYPE.WORKER.READY:
                     this.#waitingWorkers[event.data.workerId] = false;
+                    if (this.#waitingWorkers.every(waiting => !waiting)) {
+                        postMessage({
+                            re4: protocol.MSG.ORCHESTRATOR,
+                            type: protocol.MTYPE.ORCHESTRATOR.WORKERS_READY
+                        });
+                    }
                     break;
                 case protocol.MTYPE.WORKER.ACK:
                     const worker = this.#workers.get(event.data.workerId);
@@ -248,15 +258,7 @@ class Orchestrator {
                     this.#workerBitmaps[event.data.workerId] = event.data.image;
                     this.#workerState[event.data.workerId] = event.data.metrics;
 
-                    PRAGMA('showParticleWorkersPiP:rendered', () => {
-                        const image = CanvasPIP.copyImage(event.data.image);
-                        postMessage({ 
-                            re4: protocol.MSG.ORCHESTRATOR, 
-                            workerId: event.data.workerId, 
-                            type: protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED, 
-                            image: image 
-                        }, [ image ]);
-                    });
+                    PRAGMA(Orchestrator, 'showParticleWorkersPiP:rendered', {event: event});
 
                     // merge worker bitmaps
                     const combinedBitmap = this.#compositeWorkers();
@@ -361,7 +363,6 @@ class Orchestrator {
     reset() {
         // terminate and spawn new workers
         this.#terminateWorkers();
-        this.#spawnWorkers();
     }
 
     /**
@@ -387,7 +388,6 @@ class Orchestrator {
     }
 }
 
-
 /**
  * Handler for messages received from the main thread. This function processes messages related to 
  * particle engine operations, such as initialization, adding particle types, effects, and updating/rendering 
@@ -403,7 +403,10 @@ messageHandler = addEventListener('message', (event) => {
             const threadingConfig = event.data.threading;
             const systemOpts = event.data.systemOpts;
             const paths = event.data.paths;
+            
             orchestratorInstance = new Orchestrator(assembler, viewPort, particlesConfig, threadingConfig, systemOpts, paths);
+            orchestratorInstance.spawnWorkers(assembler);
+
         } else if (orchestratorInstance) {
             // fixme: This is probably why effect and shit don't make it to the workers
             orchestratorInstance.process(event);
@@ -412,3 +415,5 @@ messageHandler = addEventListener('message', (event) => {
         }
     }
 });
+
+await PRAGMA_INIT(Orchestrator); // required for PRAGMA debugging                                 

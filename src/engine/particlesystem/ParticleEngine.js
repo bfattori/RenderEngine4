@@ -125,7 +125,7 @@ export default class ParticleEngine {
                 console.debug('Loading particle thread manager');
                 const pManager = await import(new URL(`./threading/ParticleManager.js${ctx.preventScriptCache}`, import.meta.url));
                 const manager = new pManager.default(renderContext, width, height, config, threading, ctx.getOpts(), {engine: Paths.engine, startup: Paths.startup, game: Paths.game});
-                manager.start();
+                await manager.start();
                 ParticleEngine.#particleEngine = manager;
             } else {
                 // load the particle engine interface into the main thread

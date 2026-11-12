@@ -33,6 +33,7 @@ const protocol = {
       REMOVE_ZONE: '-phys',
       RENDERED: 'rndr',
       WORKER_RENDERED: 'wRndr',
+      WORKERS_READY: 'wRdy',
       SPAWN: 'spawn',
       PAUSE: 'pause',
       RUN: 'run',

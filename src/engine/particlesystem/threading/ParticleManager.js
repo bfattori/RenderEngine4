@@ -4,10 +4,6 @@ import { Logger } from '../../core/lang/Console.js';
 import OrchestratorError from './OrchestratorError.js';
 import protocol from './Protocol.js';
 
-import LoadCounter from '../../ui/debug/LoadCounter.js';
-import CanvasPIP from '../../ui/debug/CanvasPIP.js';
-
-
 const ctx = Context.getInstance();
 
 let log;
@@ -43,6 +39,8 @@ export default class ParticleManager {
     #opaqueId = 0;
     #liveParticles = 0;
 
+    #vroom = null;
+
     constructor(renderContext, width, height, config, threading, opts, paths) {
         log = new Logger(ParticleManager, null, true);
         this.#initProps = {
@@ -56,12 +54,20 @@ export default class ParticleManager {
         this.#assembler = renderContext.renderer.assembler;
     }
 
+    get props() {
+        return this.#initProps;
+    }
+
     /**
      * Get the {@link Orchestrator} thread
      * @returns {Worker}
      */
     get thread() {
         return this.#thread;
+    }
+
+    get assembler() {
+        return this.#assembler;
     }
 
     get isInitialized() {
@@ -77,6 +83,10 @@ export default class ParticleManager {
      */
     get isStarted() {
         return this.#readyToProcess;
+    }
+
+    set callWhenReady(cb) {
+        this.#vroom = cb;
     }
 
     /**
@@ -134,59 +144,21 @@ export default class ParticleManager {
     /**
      * Set up the message handler for receiving messages from the orchestrator.
      */
-    start() {
-        PRAGMA('showParticleWorkersPiP', () => {
-            let top = 10;
-            if (this.#initProps.opts.debugOpts.showParticleEngineLoad)
-                top = 120;
-
-            for (let i = 0; i < this.#initProps.threading.workers; i++)
-                this.#workerViews[i] = new CanvasPIP(`Worker ${i}`, top + (i * 160));
+    async start() {
+        this.#workerViews = PRAGMA(ParticleManager, 'showParticleWorkersPiP', {
+            showLoad: this.#initProps.opts.debugOpts.showParticleEngineLoad,
+            workerCount: this.#initProps.threading.workers
         });
 
-        PRAGMA('showParticleEngineLoad', () => {
-            const config = {
-                left: 5,
-                width: 150,
-                counters: ['Update:Load', 'Update:Time', 'Render:Load', 'Render:Time', 'Render:Particles'],
-                options: {
-                    'Update:Time': { suffix: ' ms' },
-                    'Render:Time': { suffix: ' ms' },
-                    'Update:Load': { bar: true, suffix: '%', clamp: 100.0 },
-                    'Render:Load': { bar: true, suffix: '%', clamp: 100.0 },
-                    'Render:Particles': { color: '#aaf', bar: true, 
-                        barCalc: (value) => `${(value / this.#initProps.config.maxParticles) * 100}%`,
-                        barContent: (value) => `${value}/${this.#initProps.config.maxParticles}` }
-                }
-            };
-
-            for (let i = 0; i < this.#initProps.threading.workers; i++) {
-                config.counters.push(`Workers:Thread ${i}`);
-                config.options[`Workers:Thread ${i}`] = { bar: true, suffix: '%' }
-                config.counters.push(`Particles:Thread ${i}`);
-                config.options[`Particles:Thread ${i}`] = { bar: false }
-            }
-
-            this.#engineLoadView = new LoadCounter("Particle Engine Load", config);
+        this.#engineLoadView = PRAGMA(ParticleManager, 'showParticleEngineLoad', { 
+            workerCount: this.#initProps.threading.workers, 
+            maxParticles: this.#initProps.config.maxParticles 
         });
 
         log.debug('starting particle orchestrator');
         
         // load the particle engine orchestrator thread
-        this.#createOrchestrator();       
-
-        // initialize the orchestator and wait for it to be ready
-        this.#thread.postMessage({ 
-            re4: protocol.MSG.MANAGER, 
-            type: protocol.MTYPE.MANAGER.INIT,
-            assembler: this.#assembler.constructor.name,
-            width: this.#initProps.width, 
-            height: this.#initProps.height, 
-            config: this.#initProps.config, 
-            threading: this.#initProps.threading, 
-            systemOpts: this.#initProps.opts,
-            paths: this.#initProps.paths  
-        });
+        await this.#createOrchestrator();       
     }
 
     reset() {
@@ -200,7 +172,7 @@ export default class ParticleManager {
         this.#thread.postMessage({ re4: protocol.MSG.PARTICLE_MANAGER, type: protocol.MSG.MANAGER.SHUTDOWN });
     }
 
-    #createOrchestrator() {
+    async #createOrchestrator() {
         this.#thread = new Worker(new URL(`./Orchestrator.js${ctx.preventThreadCache}`, import.meta.url), {
             name: `${this.#initProps.threading.name}_orchestrator`,
             type: 'module'
@@ -214,6 +186,26 @@ export default class ParticleManager {
         this.#thread.onerror = (event) => {
             this.#orchestratorError(event);
         }
+
+        const $this = this;
+        return new Promise(resolve => {
+            console.log('Waiting for orchestrator to be ready...')
+            setTimeout(() => {
+                // initialize the orchestator and wait for it to be ready
+                $this.thread.postMessage({ 
+                    re4: protocol.MSG.MANAGER, 
+                    type: protocol.MTYPE.MANAGER.INIT,
+                    assembler: $this.assembler.constructor.name,
+                    width: $this.props.width, 
+                    height: $this.props.height, 
+                    config: $this.props.config, 
+                    threading: $this.props.threading, 
+                    systemOpts: $this.props.opts,
+                    paths: $this.props.paths  
+                });
+                $this.callWhenReady = resolve;
+            }, 1000);
+        });
     }
 
     #orchestratorInbound(event) {
@@ -221,6 +213,9 @@ export default class ParticleManager {
             switch(event.data.type) {
                 case protocol.MTYPE.ORCHESTRATOR.READY:
                     this.#readyToProcess = true;
+                    break;
+                case protocol.MTYPE.ORCHESTRATOR.WORKERS_READY:
+                    this.#vroom();
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.RENDERED:
                     this.bitmap = event.data.image;
@@ -230,35 +225,20 @@ export default class ParticleManager {
                     let total = 0;
                     this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
 
-                    PRAGMA('showParticleEngineLoad', () => {
-                        let update = 0, render = 0;
-                        const burden = (this.#initProps.config.maxParticles / this.#initProps.threading.workers);
-                        for (let i = 0; i < event.data.metrics.length; i++) {
-                            if (event.data.metrics[i]) {
-                                update += event.data.metrics[i].updateTime || 0;
-                                render += event.data.metrics[i].renderTime || 0;
-
-                                const live = event.data.metrics[i].live;
-                                this.#engineLoadView.update(`Workers:Thread ${i}`, (live !== 0 ? live / burden : 0) * 100);
-                                this.#engineLoadView.update(`Particles:Thread ${i}`, live);
-                            }
-                        }
-
-                        const updateLoad = (update / this.#initProps.threading.workers) / event.data.deltaTime;
-                        const renderLoad = (render / this.#initProps.threading.workers) / event.data.deltaTime;
-
-                        this.#engineLoadView.update('Update:Time', update);
-                        this.#engineLoadView.update('Render:Time', render);
-                        this.#engineLoadView.update('Update:Load', isNaN(updateLoad) ? 0 : updateLoad * 100);
-                        this.#engineLoadView.update('Render:Load', isNaN(renderLoad) ? 0 : renderLoad * 100);
-                        this.#engineLoadView.update('Render:Particles', this.#liveParticles);
+                    PRAGMA(ParticleManager, 'showParticleEngineLoad:update', {
+                        burden: (this.#initProps.config.maxParticles / this.#initProps.threading.workers),
+                        event: event,
+                        loadView: this.#engineLoadView,
+                        workerCount: this.#initProps.threading.workers,
+                        liveParticles: this.#liveParticles
                     });
 
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED:
-                    PRAGMA('showParticleWorkersPiP:workerRender', () => {
-                        this.#workerViews[event.data.workerId].update(event.data.image);
-                    })
+                    PRAGMA(ParticleManager, 'showParticleWorkersPiP:workerRender', {
+                        workerView: this.#workerViews[event.data.workerId], 
+                        image: event.data.image
+                    });
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();
@@ -472,3 +452,5 @@ export default class ParticleManager {
         }
     }
 }
+
+await PRAGMA_INIT(ParticleManager); // required for PRAGMA debugging

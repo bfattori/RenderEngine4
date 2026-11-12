@@ -9,8 +9,6 @@ import RenderPart from '../parts/render/RenderPart.js';
 
 const ctx = Context.getInstance();
 
-import DebugObjects from '../ui/debug/DebugObjects.js';
-
 /**
  * GameObjectError contains the {@link GameObject} related to the error.
  * @param {GameObject} gameObject - The GameObject this error relates to.
@@ -446,7 +444,7 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   render(time, deltaTime, cameraMatrix) {
-    const renderStart = PERF('gameObjectRenderStart');
+    PERF('gameObjectRenderStart');
 
     const rcAPI = this.world.renderContext.API;
     this.#hooks.onBeforeRender(time, deltaTime, cameraMatrix);
@@ -475,27 +473,24 @@ export default class GameObject {
 
     rcAPI.popTransform();
 
-    PRAGMA('objectOrigins', () => {
-        const mtx = Matrix2d.from(this.worldTransform);
-        mtx.clearFlips();
-        rcAPI.pushTransform(mtx);
-        DebugObjects.Origin(this.world.renderContext, mtx.e, mtx.f, 
-          [this.worldTransform.e, this.worldTransform.f], 
-          this.worldTransform.rotation);
-        rcAPI.popTransform();
+    // debug - object origin marker
+    PRAGMA(GameObject, 'objectOrigins', {
+      api: rcAPI,
+      txfm: this.worldTransform,
+      renderContext: this.world.renderContext
     });
 
-    PRAGMA('boundingBoxes', () => {
-        const mtx = Matrix2d.from(this.worldTransform);
-        // mtx.clearFlips();
-        rcAPI.pushTransform(mtx);
-        DebugObjects.BoundingBox(this.boundingBox, this.world.renderContext);
-        rcAPI.popTransform();
+    // debug - object bounding box
+    PRAGMA(GameObject, 'boundingBoxes', {
+      api: rcAPI,
+      txfm: this.#worldTransform,
+      boundingBox: this.boundingBox,
+      renderContext: this.world.renderContext
     });
 
     this.#hooks.onAfterRender.call(time, deltaTime);
 
-    const updateEnd = PERF('gameObjectRenderEnd');
+    PERF('gameObjectRenderEnd');
     MEASURE('Render Game Object', 'gameObjectRenderStart', 'gameObjectRenderEnd');
   }
 
@@ -533,6 +528,8 @@ export default class GameObject {
     if (data.name !== undefined) this.name = data.name;  
   }
 }
+
+await PRAGMA_INIT(GameObject);  // required for debugging
 
 export {
   GameObjectError

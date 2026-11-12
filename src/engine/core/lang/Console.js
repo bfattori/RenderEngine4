@@ -61,9 +61,9 @@ export default class Console {
   }
 
   shutdown() {
-    if (typeof global !== 'undefined') {
-      global.console = this.#ref;
-      delete global.PRAGMA;
+    if (typeof globalThis !== 'undefined') {
+      globalThis.console = this.#ref;
+      delete globalThis.PRAGMA;
     } else {
       self.console = this.#ref;
       delete self.PRAGMA;
@@ -88,10 +88,17 @@ class Logger extends Console {
   }
 }
 
+// required to initialize debugging for a class
+async function pragma_init(clazz) {
+  const className = clazz.name;
+  const DEBUG = await import(new URL(`../../_debug/${className}.js${ctx.preventScriptCache}`, import.meta.url));
+  clazz.__DEBUG__ = DEBUG.default;
+}
+
 // Debug insert points
-function pragma(name, fn) {
+function pragma(clazz, name, data) {
   if (ctx.pragmas && ctx.debug && ctx.debugOpts[name.split(':')[0]] === true)
-    fn();
+    return clazz["__DEBUG__"][name](data);
 }
 
 /**
@@ -127,13 +134,16 @@ const initializeConsole = () => {
 }
 
 const installDirectives = (owner = self) => {
-  if (!owner.PRAGMA) {
+  if (!owner.PRAGMA_INIT) {
     // assign only once
+    owner.PRAGMA_INIT = pragma_init;
     owner.PRAGMA = pragma;
     owner.PERF = perf;
     owner.MEASURE = measure;
   }
 }
+
+initializeConsole();
 
 export {
   Logger,

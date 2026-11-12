@@ -3,9 +3,9 @@
  * Engine - Main render loop engine class
  * Implements simple rendering loop and game object management system
  */
+import Console from './lang/Console.js';
 import Constants from '../Constants.js';
 import Context from '../Context.js';
-import { initializeConsole } from './lang/Console.js';
 import RenderEngineError from './RenderEngineError.js';
 
 import { initializeSystemMM } from './memory/FastMemoryPool.js';
@@ -38,8 +38,6 @@ const _paths = {
 
 const ctx = Context.getInstance();
 let waitInit = false;
-
-initializeConsole();
 
 self.RE4_Context = ctx;
 

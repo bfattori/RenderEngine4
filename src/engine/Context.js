@@ -3,12 +3,12 @@
  */
 export default class Context {
     static #instance = null;
-    #debug = true;
     #debugOpts = {};
     #engineOpts = {};
     #sparkMM = null;
-    #performanceTrack = false;
-    #allPragma = false;
+    #debug = true;
+    #trackPerf = false;
+    #allPragmas = false;
     
     constructor() {}
 
@@ -60,19 +60,19 @@ export default class Context {
     }
 
     get trackPerformance() {
-        return this.#performanceTrack;
+        return this.#trackPerf;
     }
 
-    set trackPerformance(value) {
-        this.#performanceTrack = value;
+    set trackPerformance(state) {
+        this.#trackPerf = state;
     }
 
     get pragmas() {
-        return this.#allPragma;
+        return this.#allPragmas;
     }
 
-    set pragmas(val) {
-        this.#allPragma = val;
+    set pragmas(state) {
+        this.#allPragmas = state;
     }
 
     set Spark(sparkMM) {
