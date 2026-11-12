@@ -54,7 +54,7 @@ await RenderEngine.init(import.meta.url, {
     },
     hooks: {
         onLoad: () => { RenderEngine.loading("Please wait..."); },
-        onInit: () => { RenderEngine.doneLoading(); }
+        onStart: () => { RenderEngine.doneLoading(); }
     }
 });
 

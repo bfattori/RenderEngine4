@@ -136,7 +136,7 @@ class Orchestrator {
             $this.workers.forEach(v => {
                 v.worker.postMessage(workerInit[v.id]);
             });
-        }, 2000);
+        }, 250);
     }
 
     /**

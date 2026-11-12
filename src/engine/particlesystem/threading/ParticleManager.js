@@ -204,7 +204,7 @@ export default class ParticleManager {
                     paths: $this.props.paths  
                 });
                 $this.callWhenReady = resolve;
-            }, 1000);
+            }, 250);
         });
     }
 
