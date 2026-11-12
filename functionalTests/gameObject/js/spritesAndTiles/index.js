@@ -36,7 +36,8 @@ await RenderEngine.init(import.meta.url, {
         viewport: {left: 0, top: 0, width: 800, height: 600}
     },
     hooks: {
-        onInit: () => { console.log("Starting raster renderer example"); }
+        onLoad: () => { RenderEngine.loading("Loading assets..."); },
+        onStart: () => { RenderEngine.doneLoading(); }
     }
 });
 
