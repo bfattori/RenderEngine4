@@ -393,30 +393,6 @@ export default class ContextBase {
      return Engine.options.flags.threading.particles;
   }
 
-  //-------------------------------
-  // Properties
-  //-------------------------------
-
-  get properties() {
-      return {
-        World: this.world,
-        Renderer: this.renderer,
-
-        renderingInstructions: this.renderingInstructions,
-        lastFrameInstructions: this.lastFrameInstructions,
-        
-        config: this.config,
-        immediateMode: this.immediateMode,
-        culling: this.culling,
-        renderArea: this.renderArea,
-        worldArea: this.worldArea,
-
-        planeCount: this.planeCount,
-        planeNames: this.planeNames
-
-      };
-  }
-
   //-----------------------------
   // viewport and world
   //------------------------------

@@ -10,6 +10,32 @@ img.image-resource {
     display: none;
 }
 
+div#loading {
+    position: fixed;
+    display: flex;
+    justify-content: center; /* Horizontal center */
+    align-items: center;     /* Vertical center */
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    z-index: 1000;
+    background-color: rgba(80,80,80,0.65);
+}
+
+div#loading.hide {
+    display: none;
+}
+
+div#loading div.text {
+    border: 1px solid black;
+    background-color: white;
+    box-shadow:25px 25px 25px rgba(39, 1, 1, 0.6);
+    font-size: 24px;
+    font-weight: bold;
+    border-radius:15px;
+    padding: 20px;
+}
+
 div#context {
     position: relative;
     border: 1px solid black;

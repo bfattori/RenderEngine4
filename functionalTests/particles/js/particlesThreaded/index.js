@@ -22,7 +22,6 @@ self.PARTICLE_THREADING_OPTIONS = {
     framesPerSecond: 120
 };
 
-
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
     flags: {
@@ -54,6 +53,10 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
+    },
+    hooks: {
+        onLoad: () => { RenderEngine.loading("Please wait..."); },
+        onInit: () => { RenderEngine.doneLoading(); }
     }
 });
 

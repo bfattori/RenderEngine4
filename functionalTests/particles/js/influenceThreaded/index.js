@@ -30,7 +30,7 @@ await RenderEngine.init(import.meta.url, {
             objectOrigins: false,
             showParticleWorkersPiP: true,
             showParticleEngineLoad: true,
-            showParticleAffectors: true
+            showParticleInfluenceZones: true
         },
         threading: {
             particles: true
@@ -51,6 +51,10 @@ await RenderEngine.init(import.meta.url, {
         ),
         dimensions: {width: 800, height: 600},
         viewport: {left: 0, top: 0, width: 800, height: 600}
+    },
+    hooks: {
+        onLoad: () => { RenderEngine.loading("Please wait..."); },
+        onInit: () => { RenderEngine.doneLoading(); }
     }
 });
 

@@ -52,6 +52,22 @@ const RenderEngine = {
     },
 
     /**
+     * Show a simple loading box over the display to prevent interaction
+     * @param {String} text - The text to display, or "LOADING..." if `null`
+     */
+    loading(text) {
+        document.querySelector('div#loading div.text').textContent = text || 'LOADING...';
+        document.getElementById('loading').classList.remove('hide');
+    },
+
+    /**
+     * Hide the loading box
+     */
+    doneLoading() {
+        document.getElementById('loading').classList.add('hide');
+    },
+
+    /**
      * Start the engine
      */
     start() {

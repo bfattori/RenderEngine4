@@ -102,6 +102,9 @@ export default class Engine {
     this.#lastTime = 0;
     this.#deltaTime = 0;
 
+    // call loading hook
+    this.#ENGINE_OPTIONS.hooks.onLoad();
+
     // initialize memory management
     initializeSystemMM();
 
@@ -135,9 +138,6 @@ export default class Engine {
     if (this.#ENGINE_OPTIONS.flags.showFps) {
       this.#fpsCounter = new FPSCounter();
     }
-
-    // call init hook
-    this.#ENGINE_OPTIONS.hooks.onInit();
   }
 
   //---------------------------
@@ -580,6 +580,10 @@ export default class Engine {
         threading = new ParticleEngineThreadingConfig();
       e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, config, threading);
     }
+
+    // call init hook
+    e.hooks.onInit();
+
     return e;
   }
 

@@ -171,21 +171,6 @@ export default class Renderer {
         super.destroy();
     }
 
-    //-------------------------------
-    // Properties
-    //-------------------------------
-
-    get properties() {
-        return {
-            RenderContext: this.renderContext,
-            Assembler: this.assembler,
-
-            surface: this.surface,
-            hasCompiler: this.hasCompiler
-        };
-    }
-
-
       //-------------------------------
       // Serialization Methods
       //-------------------------------

@@ -203,6 +203,7 @@ class EngineConfig extends Config {
           //--------------------------------------------------
           // Licecycle hooks - no arguments, no return value
 
+          onLoad: NOP,
           /** 
            * Callback function executed after initialization. Default is No-op. 
            */
