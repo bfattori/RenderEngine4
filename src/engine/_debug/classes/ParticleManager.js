@@ -1,5 +1,5 @@
-import LoadCounter from '../ui/debug/LoadCounter.js';
-import CanvasPIP from '../ui/debug/CanvasPIP.js';
+import LoadCounter from '../../ui/debug/LoadCounter.js';
+import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 
 const debug = {
   'showParticleEngineLoad': ({ workerCount, maxParticles }) => {

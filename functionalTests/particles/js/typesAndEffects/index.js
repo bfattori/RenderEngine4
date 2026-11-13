@@ -31,6 +31,8 @@ await RenderEngine.init(import.meta.url, {
         debugMode: true,
         showFps: true,
         debugOpts: {
+            trackPerformance: false,
+            pragmaDebugging: true,
             objectOrigins: false,
             showParticleWorkersPiP: true,
             showParticleEngineLoad: true

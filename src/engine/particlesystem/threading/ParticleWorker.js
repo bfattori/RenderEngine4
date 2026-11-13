@@ -1,9 +1,9 @@
+import '../../_debug/DebugHarness.js';
+
 import Context from '../../Context.js';
-
 import { Paths } from '../../core/Engine.js';
-import { Logger, installDirectives } from '../../core/lang/Console.js';
+import { Logger } from '../../core/lang/Console.js';
 import TransferrableConfig from '../../core/config/TransferrableConfig.js';
-
 import $Math from '../../core/lang/Math.js';
 import { Matrix2d } from '../../core/lang/Matrix.js';
 import { initializeSystemMM } from '../../core/memory/FastMemoryPool.js';
@@ -27,8 +27,6 @@ self.$$worker = null;
 const ctx = Context.getInstance();
 
 let log;
-
-installDirectives(self);
 
 /**
  * @class ParticleWorker

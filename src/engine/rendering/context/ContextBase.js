@@ -484,106 +484,109 @@ export default class ContextBase {
     // Clear active objects for this frame
     this.clearActiveObjects();
 
-    if (this.renderer && this.renderer.constructor !== Renderer) {
-      // pre-frame generation
-      this.renderer.preFrame();
+    // pre-frame generation
+    this.preFrame(time, deltaTime);
 
-      const activeObjects = [];
+    const activeObjects = [];
 
-      // Add all objects to active list
-      for (const obj of objects) {
-        if (!activeObjects.includes(obj)) {
-          activeObjects.push(obj);
-        }
+    // Add all objects to active list
+    for (const obj of objects) {
+      if (!activeObjects.includes(obj)) {
+        activeObjects.push(obj);
       }
-      
-      // If culling is enabled, check visibility before rendering
-      if (this.config.enableCulling) {
-        const visibleObjects = activeObjects.filter((obj) => this.isObjectVisible(obj));
-        
-        // Assign objects to render planes based on their world positions
-        // or use auto-sorting if no explicit assignment
-        for (const obj of visibleObjects) {
-          let plane = null;
-          
-          // Check for explicit plane assignment
-          const assignment = this.#objectPlaneAssignments.get(obj);
-          if (assignment) {
-            plane = assignment;
-          } else {
-            // Auto-assign based on object's world position (for parallax effects)
-            // Objects at larger world distances go to background planes
-            // Objects closer to camera go to foreground planes
-            plane = this.autoAssignToPlane(obj);
-            this.assignObjectToPlane(obj, plane);
-          }
-          
-          if (!this.#activeObjects.find((o) => o.object === obj)) {
-            const assignedObj = {object: obj, assignedPlane: plane};
-            this.#activeObjects.push(assignedObj);
-          }
-        }
-      } else {
-        // No culling, use all active objects with plane assignments
-        for (const obj of activeObjects) {
-          const assignment = this.#objectPlaneAssignments.get(obj);
-          if (!obj.assignedPlane && !assignment) {
-            obj.assignedPlane = this.autoAssignToPlane(obj);
-          } else if (assignment && !obj.assignedPlane) {
-            obj.assignedPlane = assignment;
-          }
-          this.assignObjectToPlane(obj, obj.assignedPlane);
-
-          if (!this.#activeObjects.find((o) => o.object === obj)) {
-            const assignedObj = {object: obj, assignedPlane: obj.assignedPlane};
-            this.#activeObjects.push(assignedObj);
-          }
-        }
-      }
-
-      // render a tilemap if provided
-      if (tileMap) {
-        this.renderer.surface.drawImage(tileMap.generated, 0, 0);
-      }
-
-      // Sort objects into their respective planes
-      this.sortObjectsByPlanes();
-
-      // Render objects
-      for (const object of this.#activeObjects) {
-        try {
-          if (object.object.render) {
-            object.object.render(time, deltaTime);
-          }
-        } catch (error) {
-          console.error('RenderContext: Error rendering GameObject:', object.object.name || 'unnamed', error);
-        }
-      }
-
-      // render the pending instructions
-      this.renderInstructions(time, deltaTime);
-
-      // render the particles directly to the 
-      // framebuffer if running on the main thread
-      if (!this.particleThreadingEnabled)
-        Engine.particleEngine.renderParticles(time, deltaTime, null,  this.renderer.surface);
-
-
-      // post-frame generation
-      this.#renderer.postFrame();
-
-      // clean up 
-      this.clearInstructionBuffer();
     }
+    
+    // If culling is enabled, check visibility before rendering
+    if (this.config.enableCulling) {
+      const visibleObjects = activeObjects.filter((obj) => this.isObjectVisible(obj));
+      
+      // Assign objects to render planes based on their world positions
+      // or use auto-sorting if no explicit assignment
+      for (const obj of visibleObjects) {
+        let plane = null;
+        
+        // Check for explicit plane assignment
+        const assignment = this.#objectPlaneAssignments.get(obj);
+        if (assignment) {
+          plane = assignment;
+        } else {
+          // Auto-assign based on object's world position (for parallax effects)
+          // Objects at larger world distances go to background planes
+          // Objects closer to camera go to foreground planes
+          plane = this.autoAssignToPlane(obj);
+          this.assignObjectToPlane(obj, plane);
+        }
+        
+        if (!this.#activeObjects.find((o) => o.object === obj)) {
+          const assignedObj = {object: obj, assignedPlane: plane};
+          this.#activeObjects.push(assignedObj);
+        }
+      }
+    } else {
+      // No culling, use all active objects with plane assignments
+      for (const obj of activeObjects) {
+        const assignment = this.#objectPlaneAssignments.get(obj);
+        if (!obj.assignedPlane && !assignment) {
+          obj.assignedPlane = this.autoAssignToPlane(obj);
+        } else if (assignment && !obj.assignedPlane) {
+          obj.assignedPlane = assignment;
+        }
+        this.assignObjectToPlane(obj, obj.assignedPlane);
+
+        if (!this.#activeObjects.find((o) => o.object === obj)) {
+          const assignedObj = {object: obj, assignedPlane: obj.assignedPlane};
+          this.#activeObjects.push(assignedObj);
+        }
+      }
+    }
+
+    // TODO: TileMap should be a GameObject
+    // render a tilemap if provided
+    if (tileMap) {
+      this.renderer.surface.drawImage(tileMap.generated, 0, 0);
+    }
+
+    // Sort objects into their respective planes
+    this.sortObjectsByPlanes();
+
+    // Render objects
+    for (const object of this.#activeObjects) {
+      try {
+        if (object.object.render) {
+          object.object.render(time, deltaTime);
+        }
+      } catch (error) {
+        console.error('RenderContext: Error rendering GameObject:', object.object.name || 'unnamed', error);
+      }
+    }
+
+    // render the pending instructions
+    this.renderInstructionBuffer(time, deltaTime);
+
+    // post-frame generation
+    this.postFrame();
+
+    // clean up 
+    this.clearInstructionBuffer();
+
     return true;
   }
   
-  renderInstructions(time, deltaTime) {
+  preFrame(time, deltaTime) {
+    this.renderer.preFrame(time, deltaTime);
+  }
+
+  renderInstructionBuffer(time, deltaTime) {
       // play out any pending instructions
       this.#instructionBuffer.forEach(instruction => {
         this.#renderer.render(instruction, time, deltaTime);
       });
   }
+
+  postFrame(time, deltaTime) {
+    this.renderer.postFrame(time, deltaTime);
+  }
+
 
   //-------------------------------
   // Multi-plane rendering support
@@ -823,3 +826,5 @@ export default class ContextBase {
     return {};
   }
 }
+
+await PRAGMA_INIT(ContextBase);

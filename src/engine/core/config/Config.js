@@ -67,16 +67,6 @@ class EngineConfig extends Config {
        * Feature flags
        */
       flags: {
-        /**
-         * Enable to track performance in the Browser's "Performance" tab.
-         * @type {boolean}
-         */
-        trackPerformance: false,
-        /**
-         * Process pragmas in the engine (debug blocks)
-         * @type {boolean}
-         */
-        pragmaDebugging: true,
         /** 
          * Enable engine debugging mode. Default is false.
          * @type {boolean}
@@ -86,13 +76,24 @@ class EngineConfig extends Config {
          * Enable debug mode to use these options
          */
         debugOpts: {
-            objectOrigins: true,
-            boundingBoxes: false,
-            collisionSep: false,
-            charOrigin: false,
-            showParticleWorkersPiP: false,
-            showParticleEngineLoad: false,
-            showParticleInfluenceZones: false
+          /**
+           * Enable to track performance in the Browser's "Performance" tab.
+           * @type {boolean}
+           */
+          trackPerformance: false,
+          /**
+           * Process pragmas in the engine (debug blocks)
+           * @type {boolean}
+           */
+          pragmaDebugging: true,
+
+          objectOrigins: true,
+          boundingBoxes: false,
+          collisionSep: false,
+          charOrigin: false,
+          showParticleWorkersPiP: false,
+          showParticleEngineLoad: false,
+          showParticleInfluenceZones: false
         },
         /**
          * Enable performance logging for rendering and collision events. Default is false.

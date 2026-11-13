@@ -1,5 +1,5 @@
-import DebugObjects from '../ui/debug/DebugObjects.js';
-import { Matrix2d } from '../core/lang/Matrix.js';
+import DebugObjects from '../../ui/debug/DebugObjects.js';
+import { Matrix2d } from '../../core/lang/Matrix.js';
 
 
 const debug = {
@@ -19,7 +19,14 @@ const debug = {
     api.pushTransform(mtx);
     DebugObjects.BoundingBox(boundingBox, renderContext);
     api.popTransform();
-  }    
+  },
+  
+  profiling: {
+    color: "secondary",
+    methods: [ "update", "render" ],
+    inTrack: "GameWorld",
+    asGroup: "Game Objects"
+  }
 };
 
 export default debug;

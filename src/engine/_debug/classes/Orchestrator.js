@@ -1,5 +1,5 @@
-import CanvasPIP from '../ui/debug/CanvasPIP.js';
-import protocol from '../particlesystem/threading/Protocol.js';
+import CanvasPIP from '../../ui/debug/CanvasPIP.js';
+import protocol from '../../particlesystem/threading/Protocol.js';
 
 const debug = {
   "showParticleWorkersPiP:rendered": ({event}) => {

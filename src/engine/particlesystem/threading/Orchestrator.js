@@ -1,4 +1,6 @@
-import { Logger, installDirectives } from '../../core/lang/Console.js';
+import '../../_debug/DebugHarness.js';
+
+import { Logger } from '../../core/lang/Console.js';
 import Context from '../../Context.js';
 import $Math from '../../core/lang/Math.js';
 import ParticleWorkerError from './ParticleWorkerError.js';
@@ -8,8 +10,6 @@ import protocol from './Protocol.js';
 let orchestratorInstance = null;
 let messageHandler = null;
 const ctx = Context.getInstance();
-
-installDirectives(self);
 
 let log;
 
@@ -144,15 +144,12 @@ class Orchestrator {
      * @returns {ImageBitmap}
      */
     #compositeWorkers() {
-        PERF('compositeStart');
         for (let i = 0; i < this.#workerBitmaps.length; i++) {
             if (this.#workerBitmaps[i]) {
                 this.#compositor.getContext('2d').drawImage(this.#workerBitmaps[i], 0, 0);
             }
         }
         const bitmap = this.#compositor.transferToImageBitmap();
-        PERF('compositeEnd');
-        MEASURE('Composite Bitmaps', 'compositeStart', 'compositeEnd');
         return bitmap;
     }
 

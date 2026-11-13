@@ -539,9 +539,8 @@ export default class $ParticleEngine {
             return 0;
         }
 
-        this.#start = PERF('particlesUpdateStart');
-
         // run all particles
+        this.#start = performance.now();
         let livingParticles = 0;
         for (let p = 0; p < this.maxParticles; p++) {
             const memOffset = p * this.#particleByteSize;
@@ -573,8 +572,6 @@ export default class $ParticleEngine {
 
         this.#liveParticles = livingParticles;
         this.#newParticles = false;
-        PERF('particlesUpdateEnd');
-        MEASURE('Update Particles', 'particlesUpdateStart', 'particlesUpdateEnd');
 
         // debug - update load view
         const overall = performance.now() - this.#start;
@@ -642,7 +639,7 @@ export default class $ParticleEngine {
     async renderParticles(time, deltaTime, occlusionMask = null, directSurface = null) {
         if (!this.enabled || this.liveParticles === 0) return -1;
 
-        const render = PERF('particlesRenderStart');
+        const render = performance.now();
 
         let surf = directSurface || this.#surface;
 
@@ -662,8 +659,6 @@ export default class $ParticleEngine {
         }
 
         const renderTime = performance.now() - render;
-        PERF('particlesRenderEnd');
-        MEASURE('Render Particles', 'particlesRenderStart', 'particlesRenderEnd');
         
         // debug - update load
         PRAGMA($ParticleEngine, 'showParticleEngineLoad:render', { 

@@ -117,7 +117,7 @@ export default class Renderer {
      * Set whether the renderer supports compiling. 
      * @param {Boolean} state - Whether the renderer has a compiler or not. 
      */
-    set hasCompiler(state = true) {
+    set hasCompiler(state) {
         this.#hasCompiler = state; 
     }
 

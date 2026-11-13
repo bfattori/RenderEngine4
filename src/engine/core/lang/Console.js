@@ -3,10 +3,6 @@
  * Console - Simple logging utility for RenderEngine4
  * Provides warn and error logging functionality
  */
-import Context from '../../Context.js';
-
-const ctx = Context.getInstance();
-
 export default class Console {
   #ref = null;
   #label;
@@ -60,13 +56,42 @@ export default class Console {
     this.info(...message);
   }
 
+  /**
+   * Logs an object to the console in a tree format
+   * @param {Object} object - The object
+   */
+  dir(object) {
+    this.#ref.dir(object);
+  }
+
+  /**
+   * Create a group in the console
+   * @param {String} label - Optional label
+   */
+  group(label) {
+    this.#ref.group(this.#label ? this.#label + (label ? ': ' + label : label) : label);
+  }
+
+  /**
+   * Create a collapsed group in the console
+   * @param {String} label - Optional label
+   */
+  groupCollapsed(label) {
+    this.#ref.groupCollapsed(`${this.#label}: ${label}`);
+  }
+
+  /**
+   * Close whatever group is currently receiving logging
+   */
+  groupEnd() {
+    this.#ref.groupEnd();
+  }
+
   shutdown() {
     if (typeof globalThis !== 'undefined') {
       globalThis.console = this.#ref;
-      delete globalThis.PRAGMA;
     } else {
       self.console = this.#ref;
-      delete self.PRAGMA;
     }
   }
 };
@@ -88,65 +113,16 @@ class Logger extends Console {
   }
 }
 
-// required to initialize debugging for a class
-async function pragma_init(clazz) {
-  const className = clazz.name;
-  const DEBUG = await import(new URL(`../../_debug/${className}.js${ctx.preventScriptCache}`, import.meta.url));
-  clazz.__DEBUG__ = DEBUG.default;
-}
-
-// Debug insert points
-function pragma(clazz, name, data) {
-  if (ctx.pragmas && ctx.debug && ctx.debugOpts[name.split(':')[0]] === true)
-    return clazz["__DEBUG__"][name](data);
-}
-
-/**
- * Set a performance mark in the profiler
- * @param name
- */
-function perf(name) {
-  if (ctx.trackPerformance && ctx.debug)
-    return performance.mark(name).startTime;
-  else
-    return performance.now();
-}
-
-/**
- * Add a measurement to the profiler
- * @param name
- * @param startMark
- * @param endMark
- */
-function measure(name, startMark, endMark) {
-  if (ctx.trackPerformance && ctx.debug)
-    return performance.measure(name, startMark, endMark).duration;
-  else
-    return 0;
-}
-
 const initializeConsole = () => {
   // Replace globalThis.console with our console 
   // and assign the pragma directives
   const owner = globalThis ? globalThis : self;
   owner.console = re4Console;
-  installDirectives(owner);
-}
-
-const installDirectives = (owner = self) => {
-  if (!owner.PRAGMA_INIT) {
-    // assign only once
-    owner.PRAGMA_INIT = pragma_init;
-    owner.PRAGMA = pragma;
-    owner.PERF = perf;
-    owner.MEASURE = measure;
-  }
 }
 
 initializeConsole();
 
 export {
   Logger,
-  initializeConsole,
-  installDirectives
+  initializeConsole
 };

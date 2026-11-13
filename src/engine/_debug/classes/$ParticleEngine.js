@@ -1,6 +1,6 @@
 
-import { canvasDebugObjects } from '../ui/debug/DebugObjects.js';
-import LoadCounter from '../ui/debug/LoadCounter.js';
+import { canvasDebugObjects } from '../../ui/debug/DebugObjects.js';
+import LoadCounter from '../../ui/debug/LoadCounter.js';
 
 const debug = {
   'showParticleEngineLoad': ({init}) => {
@@ -42,6 +42,13 @@ const debug = {
       canvasDebugObjects.BoundingCircle(surface, zone.pos[0], zone.pos[1], zone.radius);
       canvasDebugObjects.Origin(surface, zone.pos[0], zone.pos[1], `${zone.pos[0]}, ${zone.pos[1]} (r${zone.radius})\nf ${zone.friction}\nr ${zone.restitution}`);
     });
+  },
+
+  profiling: {
+    color: "tertiary",
+    methods: [ "update", "renderParticles" ],
+    inTrack: "GameWorld",
+    asGroup: "Particle Engine"  
   }
 };
 

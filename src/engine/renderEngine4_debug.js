@@ -3,13 +3,12 @@
 /**
  * Render Engine 4 debug bootstrapper
  */
+import './_debug/DebugHarness.js';
 import RenderEngine from './renderEngine4.js';
 
 // Debugger bridge
 const bridge = globalThis.__RE4_DEBUG__;
 const M = globalThis.RE4_MESSAGES;
-
-console.debug("Connecting to RenderEngine4 DevTools bridge...");
 
 const Debug = {
     engine: null,
@@ -52,7 +51,7 @@ const Debug = {
             Debug.overrideCallbacks();
 
             // start us off
-            console.debug("DevTools bridge connected.");
+            console.debug("=== DevTools bridge connected ===");
             Debug.publish();
         } else {
             console.error("DevTools bridge not found - uninstalling debug tooling!");
@@ -139,6 +138,10 @@ const Debug = {
     }
 };
 
+// if we detect the presence of the brige, inform the developer
+if (bridge)
+    console.debug("=== Connecting to RenderEngine4 DevTools bridge ===");
+
 // instrument the debug functions into the RenderEngine object
 RenderEngine.Debug = Debug;
 
@@ -147,5 +150,7 @@ const oldInitialize = RenderEngine.initialize;
 RenderEngine.initialize = (engineOptions) => {
     oldInitialize(engineOptions);
     Debug.initialize(engineOptions);
+
+    console.debug('=== Debug harness loaded ===');
 }
 

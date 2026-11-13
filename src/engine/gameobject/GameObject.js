@@ -403,8 +403,6 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   update(time, deltaTime, cameraMatrix) {
-    const updateStart = PERF('gameObjectStart');
-
     const rc = this.world.renderContext.API;
     this.#hooks.onBeforeUpdate(time, deltaTime, cameraMatrix);
 
@@ -433,9 +431,6 @@ export default class GameObject {
     // rc.popTransform();
 
     this.#hooks.onAfterUpdate.call(time, deltaTime);
-
-    const updateEnd = PERF('gameObjectEnd');
-    MEASURE('Update Game Object', 'gameObjectStart', 'gameObjectEnd');
   }
 
   /**
@@ -444,8 +439,6 @@ export default class GameObject {
    * @param {number} deltaTime - Time elapsed since last update
    */
   render(time, deltaTime, cameraMatrix) {
-    PERF('gameObjectRenderStart');
-
     const rcAPI = this.world.renderContext.API;
     this.#hooks.onBeforeRender(time, deltaTime, cameraMatrix);
 
@@ -489,9 +482,6 @@ export default class GameObject {
     });
 
     this.#hooks.onAfterRender.call(time, deltaTime);
-
-    PERF('gameObjectRenderEnd');
-    MEASURE('Render Game Object', 'gameObjectRenderStart', 'gameObjectRenderEnd');
   }
 
   //-------------------------------

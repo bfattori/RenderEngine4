@@ -207,7 +207,6 @@ export default class RenderPart extends ComponentPart {
      * @param {number} deltaTime - Time elapsed since last frame in milliseconds
      */
     render(time, deltaTime) {
-        PERF('renderStart');
         if (!this.isHost) {
             this.context.API.push();
             this.context.API.transform(this.renderTransform);
@@ -216,8 +215,6 @@ export default class RenderPart extends ComponentPart {
         this.emit(new RenderEvent(this, performance.now() - time, time, deltaTime));
         if (!this.isHost)
             this.context.API.pop();
-        PERF('renderEnd');
-        MEASURE('RenderPart Render', 'renderStart', 'renderEnd'); 
     }
 
     /**

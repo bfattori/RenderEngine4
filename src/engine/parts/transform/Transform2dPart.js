@@ -256,7 +256,6 @@ class Transform2dPart extends ComponentPart {
      */
     update(time, deltaTime) {
         const txfmEvent = new TransformEvent(this, this.localTransform, time, deltaTime)
-        PERF('transformPartStart');
         // Emit the computed local transform locally
         this.emit(txfmEvent);
     
@@ -267,8 +266,6 @@ class Transform2dPart extends ComponentPart {
             Engine.eventEngine.emit(txfmEvent);
         }
 
-        PERF('transformPartEnd');
-        MEASURE('Transform Part', 'transformPartStart', 'transformPartEnd');
         return this;
     }
 

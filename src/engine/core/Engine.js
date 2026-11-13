@@ -94,8 +94,8 @@ export default class Engine {
     ctx.engineOpts = this.#ENGINE_OPTIONS.engineOpts;
     ctx.engineOpts.showFps = this.#ENGINE_OPTIONS.flags.showFps;
 
-    ctx.trackPerformance = this.#ENGINE_OPTIONS.flags.trackPerformance;
-    ctx.pragmas = this.#ENGINE_OPTIONS.flags.pragmaDebugging;
+    ctx.trackPerformance = this.#ENGINE_OPTIONS.flags.debugOpts.trackPerformance;
+    ctx.pragmas = this.#ENGINE_OPTIONS.flags.debugOpts.pragmaDebugging;
     
     // Game timer maintained by the engine
     this.#currentTime = this.#ENGINE_OPTIONS.world.seedTime;
@@ -862,7 +862,7 @@ function animationLoop() {
   const lifecycleHooks = e.options.hooks;
 
   // start frame generation
-  const frameStart = PERF('frameStart');
+  const frameStart = performance.now();
   const currentTime = e.stepTime || frameStart;     // allows stepping
 
   if (currentTime >= e.lastTime + e.frameTime) {
@@ -876,17 +876,17 @@ function animationLoop() {
     e.lastTime = currentTime;
     
     // Update the scene, once per frame
-    const updateStart = PERF('updateStart');
+    const updateStart = performance.now();
     lifecycleHooks?.onBeforeUpdate(updateStart - frameStart);
     e.update(currentTime, deltaTime);
-    const updateEnd = PERF('updateEnd');
+    const updateEnd = performance.now();
     lifecycleHooks?.onUpdate(currentTime, deltaTime);
     
     // Render the world
-    const renderStart = PERF('renderStart');
+    const renderStart = performance.now();
     lifecycleHooks?.onPreRender(renderStart - frameStart);
     e.renderWorld(currentTime, deltaTime);
-    const renderEnd = PERF('renderEnd');
+    const renderEnd = performance.now();
     lifecycleHooks?.onRender(currentTime, deltaTime);
 
     // one frame generated
@@ -894,11 +894,7 @@ function animationLoop() {
     const fps = 1000 / frameTime;
     e.realFPS = (fps > 1000 / e.frameTime ? 1000 / e.frameTime : fps).toFixed(1); // 1000 / frameTime;
     lifecycleHooks.onFrame(performance.now(), e.frameNumber, e.realFPS, e.snapshotStats(deltaTime, updateEnd - updateStart, renderEnd - renderStart, frameTime));
-    const frameEnd = PERF('frameEnd');
-
-    MEASURE('Generate Frame', 'frameStart', 'frameEnd');
-    MEASURE('Update World', 'updateStart', 'updateEnd');
-    MEASURE('Render Scene', 'renderStart', 'renderEnd');
+    const frameEnd = performance.now();
 
     if (e.options.flags.showFps) {
       e.fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);

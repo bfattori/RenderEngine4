@@ -149,7 +149,7 @@ export default class CanvasRenderer extends Renderer {
     /**
      * Clear the frame buffer before beginning any rendering
      */
-    preFrame() {
+    preFrame(time, deltaTime) {
         this.surface.resetTransform();
         this.surface.clearRect(0, 0, this.renderContext.viewport.width, this.renderContext.viewport.height);
     }
@@ -165,7 +165,11 @@ export default class CanvasRenderer extends Renderer {
     /**
      * After rendering, if buffered, swap offscreen to visible context.
      */
-    postFrame() {
+    postFrame(time, deltaTime) {
+        // render the particles if running on the main thread
+        if (!Engine.options.flags.threading.particles)
+            Engine.particleEngine.renderParticles(time, deltaTime, null,  this.renderer.surface);
+
         if (this.config.doubleBuffered) {
             // draw particles to offscreen framebuffer
             this.#particles();
@@ -474,3 +478,5 @@ export default class CanvasRenderer extends Renderer {
         super.destroy();
     }
 }
+
+await PRAGMA_INIT(CanvasRenderer);
