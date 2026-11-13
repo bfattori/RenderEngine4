@@ -1,0 +1,113 @@
+#DemoHelpers {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* height: 100vh; */
+}
+
+
+#DemoHelpers .hide {
+  display: none;
+}
+
+/** Information Window **/
+#DemoHelpers div.information {
+  border: 1px solid black;
+  background-color: white;
+  box-shadow:25px 25px 25px rgba(39, 1, 1, 0.6);
+  border-radius:15px;
+  padding: 20px;
+  margin-top:  36px;
+  font-size: 80%;
+  width: 60%;
+  min-width: 570px;
+}
+
+#DemoHelpers div.information a.class-ref {
+  color: #337ab7;
+  font-family: Consolas, monospace;
+  font-weight: bold;
+  font-size: 110%;
+  text-decoration: none;
+  padding: 1px 4px;
+  border-radius: 5px;
+}
+
+#DemoHelpers div.information a.class-ref:hover {
+  background-color: #26e726;
+}
+
+/** Code Window **/
+#DemoHelpers div.code-window {
+  position: fixed;
+  top: 40%;
+  transform: translate(0, -50%);
+  box-shadow:25px 25px 25px rgba(39, 1, 1, 0.6);
+  border-radius:15px;
+  padding: 20px;
+  margin-top:  36px;
+  font-size: 80%;
+  background-color: #f8f8f8;
+  width: 75%;
+  min-width: 975px;
+}
+
+#DemoHelpers div.code-window .code {
+  font-family: Consolas, monospace;
+  font-size: 120%;
+  white-space: pre-wrap;
+  position: relative;
+  width: 100%;
+  height: 600px;
+  overflow-y: auto;
+  border: 1px solid #b1b1b1;
+  box-shadow: inset 0px 4px 8px 0px rgba(0, 0, 0, 0.25);
+  padding: 5px;
+  background-color: white;
+}
+
+#DemoHelpers div.code-window .title {
+  font-size: 120%;
+  font-weight: bold;
+  margin-bottom: 10px;
+  height: 20px;
+  background-color: #dddcdc;
+  padding: 3px 10px;
+  position: relative;
+  margin-right: 15px;
+}
+
+#DemoHelpers div.code-window div.title span.class-name {
+  color: white;
+  background-color: #0303af;
+  padding: 2px 5px;
+  border-radius: 5px;
+  font-weight: normal;
+  font-size: 60%;
+  display: inline-block;
+  position: relative;
+  top: -2px;
+}
+
+#DemoHelpers div.code-window div.title span.file-name {
+  font-weight: normal;
+  font-size: 80%;
+  position: absolute;
+  display: inline-block;
+  right: 15px;
+  top: 4px;
+}
+
+#DemoHelpers div.code-window .close {
+  position: absolute;
+  top: 19px;
+  right: 5px;
+  cursor: pointer;
+  background-color: #bf0d2c;
+  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  text-align: center;
+  border: 2px solid #ff4e4e;
+  padding-top: 2px;
+}

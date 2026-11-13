@@ -2,12 +2,22 @@
 <html>
     <head>
         <title>Render Engine 4 - GameObject & Component Parts Testing</title>
+
+        <!-- DemoHelper styles -->
+        <link rel="stylesheet" href="../assets/css/demo-helper.css">
+
         <link rel="stylesheet" href="../../src/re4.css">
         <link rel="stylesheet" href="../../src/re4_debug.css">
         <script src="../../devtools/protocol/messages.js"></script>
         <script src="../../devtools/bridge/re4-debug-bridge.js"></script>
         <script src="../../src/engine/renderEngine4_debug.js" type="module"></script>
+
         <script type="module">
+            // Load the demo helper script
+            const DemoHelper = await import(new URL('../assets/js/demo-helper.js', import.meta.url));
+            self.DemoHelper = DemoHelper.default;
+
+            // load the example script
             await (async () => {
                 const params = new URLSearchParams(window.location.search);
                 const jsFile = params.get("js"); // is the number 123
@@ -15,16 +25,6 @@
                 return module.default; 
             })();
         </script>
-        <style>
-            #context.sprites-and-tiles {
-                background-color: #c1c1ff;
-            }
-            .sprite-state-select {
-                position: absolute;
-                font-size: 8pt;
-            }   
-
-        </style>
     </head>
     <body>
         <div id="context"></div>        

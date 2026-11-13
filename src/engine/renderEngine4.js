@@ -33,6 +33,7 @@ const RenderEngine = {
 
     initialize(engineOptions) {
         console.debug("Render Engine 4 initialized", RE4.options.opts);
+        console.verbose(engineOptions);
     },
 
     /**
