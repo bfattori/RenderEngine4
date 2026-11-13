@@ -58,8 +58,8 @@ export default debug;
 ### PRAGMA(ClassName, 'debugPoint', {data})
 Use `PRAGMA` to invoke a debug point and pass data to it at any point from within your code. You pass the `ClassName` class as the first argument, identifying which object owns the debug point you want. Next is the name of the debug point.
 
-## Debugging Points
-Debugging points are called from within your code with the `PRAGMA` method. Calling the debug point from within your class will invoke the point's method. You can pass whatever you want in the data to the debug point's method. Debug points are in the format "`pointName:subPointName`", where the sub-point name is optional but allows for granularity in debugging.
+## Debug Points
+Debug points are called from within your code with the `PRAGMA` method. Calling the debug point from within your class will invoke the point's method. You can pass whatever you want in the data to the debug point's method. Debug points are in the format "`pointName:subPointName`", where the sub-point name is optional but allows for granularity in debugging.
 
 **Example:**
 ```javascript
@@ -80,9 +80,10 @@ export default class ClassName {
 await PRAGMA_INIT(ClassName);
 ```
 
-### Debugging Point Configuration
-Debugging points are defined the the `flags.debugOpts` property of the Engine's configuration. A debug point name will only be executed if a matching property exists in the engine's options under `debugOpts`, and the value is `true`. This allows you to fine tune the debug functionality during development. Adding additional properties to `debugOpts` enables new custom debug points.
+### Debug Point Configuration
+Debug points are defined the the `flags.debugOpts` property of the Engine's configuration. A debug point will only be executed if a matching property exists in the engine's options under `debugOpts`, and the value is `true`. This allows you to fine tune the debug functionality during development. Adding additional properties to `debugOpts` enables new custom debug points.
 
+You can turn off all the options for a debug point by setting the parent property to `false`. Adding an entry  `'property:subProperty'` in `debugOpts` allows you to toggle that specific sub-property.
 
 ## The Profiler Configuration
 The profiler configuration options set up what methods are profiled and to what tracks and groupings the performance measurements and marks are recorded. You need to enable `flags.debugOpts.trackPerformance` in the Engine config.
