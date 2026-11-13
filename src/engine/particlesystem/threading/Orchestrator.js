@@ -40,8 +40,6 @@ class Orchestrator {
     #workersInitialized = 0;
     #paths = null;
 
-    #log;
-
     constructor(assembler, viewPort, particlesConfig, threadingConfig, systemOpts, paths) {
         this.#compositor = new OffscreenCanvas(viewPort[0], viewPort[1]);
         this.#particlesConfig = particlesConfig;
@@ -371,7 +369,7 @@ class Orchestrator {
 
         // tell workers to stop processing, 
         // they will clean up and close
-        log.debug('TERMINATE WORKERS');
+        log.verbose('TERMINATE WORKERS');
         this.broadcast({data: { type: protocol.MTYPE.ORCHESTRATOR.SHUTDOWN }});
         
         // going down

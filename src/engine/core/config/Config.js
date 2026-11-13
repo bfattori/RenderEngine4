@@ -96,11 +96,6 @@ class EngineConfig extends Config {
           showParticleInfluenceZones: false
         },
         /**
-         * Enable performance logging for rendering and collision events. Default is false.
-         * @type {boolean}
-         */
-        performanceLogging: false,
-        /**
          * Display the current FPS, target FPS, and frame time on screen. Default is false.
          * @type {boolean}
          */
@@ -115,9 +110,9 @@ class EngineConfig extends Config {
          * Enable and disable threading systems
          */
         threading: {
+          core: false,
           particles: false,
-          collisions: false,
-          rendering: false
+          collisions: false
         }
       },
       engineOpts: {

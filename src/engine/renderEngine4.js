@@ -32,7 +32,7 @@ const RenderEngine = {
     },
 
     initialize(engineOptions) {
-        console.info("Render Engine 4 initialized", engineOptions);
+        console.debug("Render Engine 4 initialized", RE4.options.opts);
     },
 
     /**
@@ -206,5 +206,5 @@ window.addEventListener('beforeunload', (event) => {
     RenderEngine.shutdown();
 });
 
-console.debug("Bootstrapper loaded");
+console.verbose("Bootstrapper loaded");
 export default RenderEngine;

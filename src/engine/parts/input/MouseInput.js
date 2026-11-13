@@ -162,7 +162,7 @@ class MouseInput extends InputPart {
      * @method bindMouseEvents
      */
     bindMouseEvents() {
-        console.log('MouseInput: Binding mouse events');
+        console.verbose('MouseInput: Binding mouse events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:

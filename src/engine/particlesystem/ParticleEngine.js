@@ -127,11 +127,12 @@ export default class ParticleEngine {
                 const manager = new pManager.default(renderContext, width, height, config, threading, ctx.getOpts(), {engine: Paths.engine, startup: Paths.startup, game: Paths.game});
                 await manager.start();
                 ParticleEngine.#particleEngine = manager;
+                console.log('ParticleManager loaded');
             } else {
                 // load the particle engine interface into the main thread
                 const pEngine = await import(new URL(`./$ParticleEngine.js${ctx.preventScriptCache}`, import.meta.url));
                 ParticleEngine.#particleEngine = pEngine.default.getInstance(renderContext, width, height, config, null);
-                console.debug('Loaded particle engine')
+                console.log('ParticleEngine loaded')
             }
         }
 

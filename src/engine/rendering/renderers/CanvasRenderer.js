@@ -168,7 +168,7 @@ export default class CanvasRenderer extends Renderer {
     postFrame(time, deltaTime) {
         // render the particles if running on the main thread
         if (!Engine.options.flags.threading.particles)
-            Engine.particleEngine.renderParticles(time, deltaTime, null,  this.renderer.surface);
+            Engine.particleEngine.renderParticles(time, deltaTime, null,  this.surface);
 
         if (this.config.doubleBuffered) {
             // draw particles to offscreen framebuffer
@@ -205,7 +205,7 @@ export default class CanvasRenderer extends Renderer {
         if (drawShape) {
             drawShape.call(this, time, deltaTime);
         } else if (opaqueId !== "undefined") {
-            console.warn(`No compiled shape found for opaqueId: ${opaqueId}`);
+            console.debug(`No compiled shape found for opaqueId: ${opaqueId}`);
         }
     }
     
@@ -234,7 +234,7 @@ export default class CanvasRenderer extends Renderer {
             const frame = sprite.frameRect;
             this.surface.drawImage(sprite.sourceImage, frame[0], frame[1], frame[2], frame[3], x, y, frame[2], frame[3]);
         } else if (opaqueId !== "undefined") {
-            console.warn(`No compiled sprite found for opaqueId: ${opaqueId}`);
+            console.debug(`No compiled sprite found for opaqueId: ${opaqueId}`);
         }
     }
 
@@ -244,7 +244,7 @@ export default class CanvasRenderer extends Renderer {
             const frame = tile.frameRect;
             this.surface.drawImage(tile.sourceImage, frame[0], frame[1], frame[2], frame[3], x, y, frame[2], frame[3]);
         } else if (opaqueId !== "undefined") {
-            console.warn(`No compiled tile found for opaqueId: ${opaqueId}`);
+            console.debug(`No compiled tile found for opaqueId: ${opaqueId}`);
         }
     }
 

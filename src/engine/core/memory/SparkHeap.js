@@ -87,7 +87,7 @@ export default class SparkHeap {
             
         let heapAlloc = this.#config.heapSize;
         heapAlloc = heapAlloc >= 1048576 ? `${heapAlloc/1048576}MB` : heapAlloc >= 1024 ? `${heapAlloc/1024}KB` : `${heapAlloc}B`;
-        log.debug(`alloc ${heapAlloc} (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}%${reservedSegSize !== 0 ? ' (res: ' + (reservedSegSize / 1024).toFixed(1) + 'KB)' : ''}`);
+        log.verbose(`alloc ${heapAlloc} (${this.#config.baseUnit}B unit), ${this.#BOUNDARY_LAYER}B boundary, fav +${Math.floor(pctReserve * 100)}%${reservedSegSize !== 0 ? ' (res: ' + (reservedSegSize / 1024).toFixed(1) + 'KB)' : ''}`);
 
         switch (this.#config.baseUnit) {
             case SparkHeap.BYTE_8:
@@ -168,9 +168,7 @@ export default class SparkHeap {
 
         // ensure the boundaries byte-align
         this.#adjustBoundaries();
-        
-        // if (ctx.debug)
-        //     this.dumpTable();
+        this.dumpTable();
     }
 
     /**
@@ -220,7 +218,6 @@ export default class SparkHeap {
      * how the memory is being allocated and used.
      */
     dumpTable() {
-        const fav = this.#config.reserveSize;
         const table = [],
 
             h64 = this.#segmentHD[SparkHeap.IB_64], t64 = this.#segmentBB[SparkHeap.IB_64],
@@ -237,7 +234,7 @@ export default class SparkHeap {
 
         if (t8 !== 0) 
             table.push(`8: ${h8}-${t8} [${t8-h8}] ${((t8 - h8) / 1024).toFixed(1)}KB`);
-        log.debug('[' + table.join('|') + ']');
+        log.verbose('[' + table.join('|') + ']');
     }
 
     /**
@@ -342,45 +339,3 @@ export default class SparkHeap {
     }
 }
 
-class SparkArray64 extends BigUint64Array {
-    #head = null;
-    constructor(buffer, offset, lengthInBytes, pointer = -1) {
-        super(buffer, offset, lengthInBytes);
-        this.#head = pointer;
-    }
-    get pointer() { return this.#head; }
-}
-
-class SparkArray32 extends Uint32Array {
-    #head = null;
-    constructor(buffer, offset, lengthInBytes, pointer = -1) {
-        super(buffer, offset, lengthInBytes);
-        this.#head = pointer;
-    }
-    get pointer() { return this.#head; }
-}
-
-class SparkArray16 extends Spark {
-    #head = null;
-    constructor(buffer, offset, lengthInBytes, pointer = -1) {
-        super(buffer, offset, lengthInBytes);
-        this.#head = pointer;
-    }
-    get pointer() { return this.#head; }
-}
-
-class SparkArray8 extends Spark {
-    #head = null;
-    constructor(buffer, offset, lengthInBytes, pointer = -1) {
-        super(buffer, offset, lengthInBytes);
-        this.#head = pointer;
-    }
-    get pointer() { return this.#head; }
-}
-
-export {
-    SparkArray64,
-    SparkArray32,
-    SparkArray16,
-    SparkArray8
-};

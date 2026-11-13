@@ -88,7 +88,7 @@ export default class RenderContext extends ContextBase {
     super.reset();
     this.clearInstructionBuffer();
     if (this.world?.stackDepth > 1) {
-      console.warn('Stack depth is greater than 1 at frame reset.')
+      console.verbose('Stack depth is greater than 1 at frame reset.')
     }
   }
 

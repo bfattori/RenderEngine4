@@ -29,6 +29,7 @@ export default class TileSheet extends ResourceLoader {
             tileDef: null
         });
         this.$name = `TileSheet_${this.$name.split('_')[1]}`;
+        console.verbose(`Loading tile sheet "${sheetUrl}"`);
     }
 
     async postProcess(content) {

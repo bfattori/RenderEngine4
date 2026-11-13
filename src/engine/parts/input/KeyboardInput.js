@@ -107,7 +107,7 @@ class KeyboardInput extends InputPart {
      * @method bindKeyboardEvents
      */
     bindKeyboardEvents() {
-        console.debug('KeyboardInput: Binding keyboard events');
+        console.verbose('KeyboardInput: Binding keyboard events');
         
         // Note: Actual binding depends on platform/browser environment
         // In a browser environment, you would do:

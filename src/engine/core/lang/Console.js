@@ -1,5 +1,7 @@
-/**
+import Context from '../../Context.js';
+const ctx = Context.getInstance();
 
+/**
  * Console - Simple logging utility for RenderEngine4
  * Provides warn and error logging functionality
  */
@@ -15,6 +17,9 @@ export default class Console {
   get referenceConsole() {
     return this.#ref;
   }
+
+  //----------------------------------
+  // Standard console overrides
 
   /**
    * Logs a warning message to console
@@ -40,23 +45,7 @@ export default class Console {
     this.#ref.info(this.#label, ...message);
   }
 
-  /**
-   * Alias for <code>info</code>
-   * @param  {...any} message - The info message to log
-   */
-  log(...message) {
-    this.info(...message)
-  }
-
-  /**
-   * Logs a debug message to console (only in development mode)
-   * @param {string} message - The debug message to log
-   */
-  debug(...message) {
-    this.info(...message);
-  }
-
-  /**
+ /**
    * Logs an object to the console in a tree format
    * @param {Object} object - The object
    */
@@ -94,6 +83,39 @@ export default class Console {
       self.console = this.#ref;
     }
   }
+
+  //-----------------------------------------------
+  // The following methods are filtered by 
+  // the `debugVerbosity` setting
+
+  /**
+   * Filtered logging (verbosity = 1)
+   * @param  {...any} message - The info message to log
+   */
+  log(...message) {
+    if (ctx.debugVebosity >= 1)
+      this.info(...message)
+  }
+
+  /**
+   * Filtered logging (verbosity = 2)
+   * @param {string} message - The debug message to log
+   */
+  debug(...message) {
+    if (ctx.debugVerbosity >= 2)
+      this.info(...message);
+  }
+
+  /**
+   * Filtered logging (verbosity = 3)
+   * @param  {...any} message 
+   */
+  verbose(...message) {
+    if (ctx.debugVerbosity === 3)
+      this.info(...message);
+  }
+
+ 
 };
 
 // game engine console replacement

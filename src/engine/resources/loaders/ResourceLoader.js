@@ -99,6 +99,7 @@ export default class ResourceLoader extends TransferrableConfig {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
     
+            console.verbose(`Retrieve "${this.type}" from "${this.url}"`);
             let content;
             switch(this.type) {
                 case "text": 

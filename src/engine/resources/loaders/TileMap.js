@@ -38,6 +38,7 @@ export default class TileMap extends ResourceLoader {
             tileSheet: null,
             tileMap: null
         });
+        console.verbose(`Loading tile map "${tileMapUrl}"`);
     }
 
     async postProcess(content) {

@@ -113,7 +113,7 @@ export default class ParticleWorker {
             type: protocol.MTYPE.WORKER.READY, 
             workerId: this.workerId 
         });
-        log.debug('prepared');
+        log.verbose('prepared');
     }
 
     /**
@@ -134,7 +134,7 @@ export default class ParticleWorker {
             ack: type,
             name: obj.$name 
         });
-        //log.debug(`acknowledge ${type}`, obj);
+        log.verbose(`acknowledge receipt (${type})`, obj);
     }
 
     /**
@@ -186,7 +186,7 @@ export default class ParticleWorker {
             case protocol.MTYPE.ORCHESTRATOR.SHUTDOWN:
                 this.#running = false;
                 this.instance.shutdown();
-                log.debug(`TERMINATED`);
+                log.verbose(`TERMINATED`);
                 self.terminate();
                 break;
             default:
@@ -201,7 +201,7 @@ export default class ParticleWorker {
             this.startTime = performance.now();
             this.updateParticles();
         }, 100);
-        log.debug('starting update/render loop');
+        log.verbose('starting update/render loop');
     }
 
     /**

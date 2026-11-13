@@ -734,7 +734,7 @@ export default class Engine {
 
     // async cleanup of the engine
     setTimeout(() => {
-      console.debug('Engine terminated');
+      console.log('Engine terminated');
       console.shutdown();
 
       // call shutdown hook

@@ -10,6 +10,7 @@ export default class ImageResource extends ResourceLoader {
             width: width,
             height: height
         });
+        console.verbose(`Loading image "${resourceUrl}"`);
     }
 
     async postProcess(content) {

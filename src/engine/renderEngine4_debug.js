@@ -51,7 +51,7 @@ const Debug = {
             Debug.overrideCallbacks();
 
             // start us off
-            console.debug("=== DevTools bridge connected ===");
+            console.log("=== DevTools bridge connected ===");
             Debug.publish();
         } else {
             console.error("DevTools bridge not found - uninstalling debug tooling!");
@@ -140,7 +140,7 @@ const Debug = {
 
 // if we detect the presence of the brige, inform the developer
 if (bridge)
-    console.debug("=== Connecting to RenderEngine4 DevTools bridge ===");
+    console.verbose("=== Connecting to RenderEngine4 DevTools bridge ===");
 
 // instrument the debug functions into the RenderEngine object
 RenderEngine.Debug = Debug;
@@ -151,6 +151,6 @@ RenderEngine.initialize = (engineOptions) => {
     oldInitialize(engineOptions);
     Debug.initialize(engineOptions);
 
-    console.debug('=== Debug harness loaded ===');
+    console.log('=== Debug harness loaded ===');
 }
 

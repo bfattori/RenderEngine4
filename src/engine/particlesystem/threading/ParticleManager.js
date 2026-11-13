@@ -130,7 +130,7 @@ export default class ParticleManager {
                     });
 
                     this.initialized = true;
-                    log.debug(`all workers ready, initialized`);
+                    log.verbose(`all workers ready, initialized`);
                     resolve(true);
                 } else {
                     // wait for the orchestrator to be ready
@@ -155,7 +155,7 @@ export default class ParticleManager {
             maxParticles: this.#initProps.config.maxParticles 
         });
 
-        log.debug('starting particle orchestrator');
+        log.info('starting particle orchestrator');
         
         // load the particle engine orchestrator thread
         await this.#createOrchestrator();       
@@ -189,7 +189,7 @@ export default class ParticleManager {
 
         const $this = this;
         return new Promise(resolve => {
-            console.log('Waiting for orchestrator to be ready...')
+            console.debug('Waiting for orchestrator to be ready...')
             setTimeout(() => {
                 // initialize the orchestator and wait for it to be ready
                 $this.thread.postMessage({ 
@@ -243,7 +243,7 @@ export default class ParticleManager {
                 case protocol.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();
                     this.#thread = null;
-                    log.debug('Orchestrator reports terminated');
+                    log.verbose('Orchestrator reports terminated');
                     break;
                 default:
                     log.error('Unknown message type from orchestrator:', event.data);

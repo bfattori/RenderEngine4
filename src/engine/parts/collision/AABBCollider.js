@@ -64,7 +64,7 @@ class AABBCollider extends ColliderPart {
     
     // Validate that the collision model type matches the collider component type
     if (!this._validateCollisionModelCompatibility(model)) {
-      console.warn(`AABBCollider: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
+      console.log(`AABBCollider: Incompatible collision model detected. Expected AABB, got ${model.type || 'unknown'}.`);
       this.isCollided = false;
     }
   }

@@ -61,7 +61,7 @@ class CABCCollider extends ColliderPart {
     
     // Validate that the collision model type matches the collider component type
     if (collisionModel && collisionModel.type !== 'CABC') {
-      console.warn(
+      console.log(
         `CABCCollider: Incompatible collision model detected. ` +
         `Expected CABCCollisionModel, got ${collisionModel.type || 'unknown'}.` +
         `This may cause unexpected collision behavior.`

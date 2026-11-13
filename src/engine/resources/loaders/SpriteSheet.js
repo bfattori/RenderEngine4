@@ -27,6 +27,8 @@ export default class SpriteSheet extends TileSheet {
                 this.addTile(key, new Sprite(key, this, sprites[key]));
             });
         }
+
+        console.verbose(`Loaded "${this.name}" sprite sheet from "${this.url}" with ${this.sprites.size} sprites`);
         return this;
     }
 

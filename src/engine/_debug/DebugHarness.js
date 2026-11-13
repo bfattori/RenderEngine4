@@ -86,7 +86,8 @@ function instrumentProfiling(clazz, profiling) {
     const originalMethod = clazz.prototype[method];
     if (profiling.inTrack) {
       if (!clazz.__DEBUG__.profiling['$$MEASURES'].includes(classMethod)) {
-        console.debug(`PRAGMA [  + ${classMethod} :: measure(${profiling.inTrack}${profiling.asGroup ? ':' + profiling.asGroup : ''}) ]`);
+        console.verbose(`PRAGMA [  + ${classMethod} :: measure(${profiling.inTrack}${profiling.asGroup ? ':' + profiling.asGroup : ''}) ]`);
+
         clazz.prototype[method] = function(...args) {
           const start = performance.now();
           const result = originalMethod.apply(this, args);
@@ -98,7 +99,8 @@ function instrumentProfiling(clazz, profiling) {
       }
     } else {
       if (!clazz.__DEBUG__.profiling['$$MARKS'].includes(classMethod)) {
-        console.debug(`PRAGMA [  + ${clazz.name}.${method} :: mark() ]`);
+        console.verbose(`PRAGMA [  + ${clazz.name}.${method} :: mark() ]`);
+        
         clazz.prototype[method] = function(...args) {
           perf({clazz, method, args, instance: this }, profiling, 'start');
           const result = originalMethod.apply(this, args);
@@ -120,13 +122,13 @@ function instrumentProfiling(clazz, profiling) {
 async function pragma_init(clazz) {
   if (!clazz.__DEBUG__) {
     const className = clazz.name;
-    console.debug(`PRAGMA [ debug :: ${className} ]`);
+    console.verbose(`PRAGMA [ debug :: ${className} ]`);
     const DEBUG = await import(new URL(`./classes/${className}.js${ctx.preventScriptCache}`, import.meta.url));
     clazz.__DEBUG__ = DEBUG.default;
 
     if (clazz.__DEBUG__ && clazz.__DEBUG__.profiling) {
       // attach profiling hooks
-      console.debug(`PRAGMA [ profile :: ${className} ]`);
+      console.verbose(`PRAGMA [ profile :: ${className} ]`);
       clazz.__DEBUG__.profiling['$$MEASURES'] = [];
       clazz.__DEBUG__.profiling['$$MARKS'] = [];
       instrumentProfiling(clazz, clazz.__DEBUG__.profiling);

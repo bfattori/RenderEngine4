@@ -86,7 +86,7 @@ export default class Assembler {
      */
     compileShape(renderer, instructions, tag = null) {
         if (instructions.length === 0) {
-           console.warn('Compiling an empty shape?');
+           console.verbose('Compiling an empty shape?');
            return Constants.COMPILATION.FAILED;
         }
         

@@ -66,7 +66,7 @@ class ConvexHullCollider extends ColliderPart {
     
     // Validate that the collision model type matches the collider component type
     if (collisionModel && collisionModel.type !== 'ConvexHull') {
-      console.warn(
+      console.log(
         `ConvexHullCollider: Incompatible collision model detected. ` +
         `Expected ConvexHullCollisionModel, got ${collisionModel.type || 'unknown'}.` +
         `This may cause unexpected collision behavior.`

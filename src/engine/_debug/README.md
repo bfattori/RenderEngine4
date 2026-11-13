@@ -113,7 +113,7 @@ The properties of `debugOpts` are configurable in real-time from the DevTools ex
 
 For production builds, you should use the game builder to remove all of the `PRAGMA` and `PRAGMA_INIT` calls from the engine and your game code. This will result in a smaller file size, faster loading times, and faster execution. 
 
-Leaving them in is not recommended - but you can also just turn off the `flags.debug` property in the Engine's config so they don't run. The file size will be larger, especially if you include the debugging classes and debug harness.
+Leaving them in is not recommended - but you can also just turn off the `flags.debugMode` property in the Engine's config so they don't run. The file size will be larger, especially if you include the debugging classes and debug harness.
 
 ```html
   <!-- Load the game engine & game -->

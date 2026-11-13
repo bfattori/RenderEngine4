@@ -630,7 +630,7 @@ export default class ContextBase {
   assignObjectToPlane(object, planeName) {
     const validPlanes = this.planeNames.slice(0, this.config.renderPlanes.max);
     if (!validPlanes.includes(planeName)) {
-      console.warn(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.planeNames.join(', ')}`);
+      console.debug(`${this.constructor.name}: Invalid plane name "${planeName}". Valid planes: ${this.planeNames.join(', ')}`);
       return false;
     }
     

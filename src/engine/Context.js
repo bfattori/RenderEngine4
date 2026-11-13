@@ -9,6 +9,7 @@ export default class Context {
     #debug = true;
     #trackPerf = false;
     #allPragmas = false;
+    #verbosity = 2;         // log and debug
     
     constructor() {}
 
@@ -39,10 +40,18 @@ export default class Context {
         return this.#debug;
     }
 
+    /**
+     * Enable debug in the engine. This not only enables logging, but also
+     * enables the options in `debugOpts`.
+     */
     set debug(state) {
         this.#debug = state;
     }
 
+    /**
+     * Set the debug options.
+     * @param {Object} opts - The options object with properties for each option.
+     */
     set debugOpts(opts) {
         this.#debugOpts = opts;
     }
@@ -51,6 +60,25 @@ export default class Context {
         return this.#debugOpts;
     }
 
+    /**
+     * Set the level of debug output. A value of `0` disables debug
+     * output. A value of `1` outputs on `log()`. A value of `2` adds
+     * `debug()`, and a value of `3` adds `verbose()`. Use this to tune
+     * the noise.
+     * @param {number} verbosity - A number 
+     */
+    set debugVerbosity(verbosity) {
+        this.#verbosity = Math.max(0, Math.min(3, verbosity));
+    }
+
+    get debugVerbosity() {
+        return this.#verbosity;
+    }
+
+    /**
+     * Set the engine options.
+     * @param {Object} opts - The options object with properties for each option.
+     */
     set engineOpts(opts) {
         this.#engineOpts = opts;
     }
@@ -63,6 +91,10 @@ export default class Context {
         return this.#trackPerf;
     }
 
+    /**
+     * Set whether to track performance in the performance DevTool.
+     * @param {boolean} state - A boolean indicating whether to track performance. 
+     */
     set trackPerformance(state) {
         this.#trackPerf = state;
     }
@@ -71,10 +103,18 @@ export default class Context {
         return this.#allPragmas;
     }
 
+    /**
+     * Enable or disable PRAGMA debug points in the engine.
+     * @param {boolean} state - A boolean indicating whether to enable PRAGMA debug points. 
+     */
     set pragmas(state) {
         this.#allPragmas = state;
     }
 
+    /**
+     * Set the Spark memory manager for the engine.
+     * @param {SparkMemoryManager} sparkMM - The Spark memory manager to use. 
+     */
     set Spark(sparkMM) {
         this.#sparkMM = sparkMM;
     }

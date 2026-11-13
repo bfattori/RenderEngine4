@@ -517,8 +517,8 @@ export default class $ParticleEngine {
             
             this.#liveParticles++;
             return memSegment;
-        } else if (ctx.debug)
-            console.warn(`Failed to spawn particle: ${particleType.constructor.name} - no available memory`);        
+        } else 
+            console.info(`Failed to spawn particle: ${particleType.constructor.name} - no available memory`);        
 
         return null;
     }

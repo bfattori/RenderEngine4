@@ -5,6 +5,8 @@ import { IL as dIL, VECTOR_IL as dVECTOR_IL, RASTER_IL as dRASTER_IL } from './l
 
 const ctx = Context.getInstance();
 
+console.verbose(`Loading ${ctx.debug ? 'debug' : 'production'} language`);
+
 const langs = {
   IL: ctx.debug ? dIL : pIL,
   VECTOR_IL: ctx.debug ? dVECTOR_IL : pVECTOR_IL,
