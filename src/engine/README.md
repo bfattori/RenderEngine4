@@ -1,7 +1,8 @@
 # RenderEngine4
 
 ## Engine Parts
- - **`/collisionModels`** - The models used by the engine to detect and report on collisions
+ - **`/_debug`** - The debugging harness and supporting files
+ - **`/collisionSystems`** - The systems used by the engine to detect and report on collisions
  - **`/core`** - The engine proper, including the `Engine`, `Config`, `EventEngine`, `GameWorld`, `Console`, and various utilities
  - **`/gameobject`** - The foundation of all in-game objects
  - **`/particlesystem`** - The particle rendering system
