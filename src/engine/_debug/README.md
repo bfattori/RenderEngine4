@@ -1,11 +1,11 @@
 # Debugging with the RenderEngine4
 The `RenderEngine4` has a built-in debugger that can help you identify and fix issues in your code. The debugging tools are intended to be used during development, and excluded from production builds. To keep this as clean as possible, the debugging is kept separate from the engine classes.
 
-The debugging harness is loaded into the browser before your game code executes. _Loading the bridge is optional._
+The debugging harness is loaded into the browser before your game code executes. _Loading the DevTools bridge is optional._
 
 **Load the DevTools Bridge & Debugging Harness**
 ```html
-  <!-- Load the DevTools bridge -->
+  <!-- Load the DevTools bridge (must be loaded first) -->
   <script src="/RE4/devtools/protocol/messages.js"></script>
   <script src="/RE4/devtools/bridge/re4-debug-bridge.js"></script>
 
@@ -81,16 +81,38 @@ await PRAGMA_INIT(ClassName);
 ```
 
 ### Debugging Point Configuration
-Debugging points are defined the the `debugOpts` property of the Engine's `flags` configuration. A debug point name will only be executed if a matching property exists in the engine's options under `debugOpts`, and the value is `true`. This allows you to fine tune the debug functionality during development. Adding additional properties to `debugOpts` enables new custom debug points.
+Debugging points are defined the the `flags.debugOpts` property of the Engine's configuration. A debug point name will only be executed if a matching property exists in the engine's options under `debugOpts`, and the value is `true`. This allows you to fine tune the debug functionality during development. Adding additional properties to `debugOpts` enables new custom debug points.
+
+
+## The Profiler Configuration
+The profiler configuration options set up what methods are profiled and to what tracks and groupings the performance measurements and marks are recorded. You need to enable `flags.debugOpts.trackPerformance` in the Engine config.
+
+**Example:**
+```javascript
+const debug = {
+  profiling: {
+    color: "secondary",
+    methods: [ "update", "render" ],
+    inTrack: "GameWorld",
+    asGroup: "Game Objects"
+  }
+};
+
+export default debug;
+```
+
+
+
+### Notes:
 
 #### DevTools Extension
 The properties of `debugOpts` are configurable in real-time from the DevTools extension under the **Engine** tab.
 
-## Production Builds & Compiling
+#### Production Builds & Compiling
 
 For production builds, you should use the game compiler to remove all of the `PRAGMA` and `PRAGMA_INIT` calls from the engine and your game code. This will result in a smaller file size, faster loading times, and faster execution. 
 
-Leaving them in is not recommended - but you can just turn off the `debug` property in the Engine's `flags` config so they don't run. The file size will be larger, especially if you include the debugging classes and debug harness.
+Leaving them in is not recommended - but you can just turn off the `flags.debug` property in the Engine's config so they don't run. The file size will be larger, especially if you include the debugging classes and debug harness.
 
 ```html
   <!-- Load the game engine & game -->
