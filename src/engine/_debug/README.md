@@ -1,7 +1,7 @@
 # Debugging with the RenderEngine4
 The `RenderEngine4` has a built-in debugger that can help you identify and fix issues in your code. The debugging tools are intended to be used during development, and excluded from production builds. To keep this as clean as possible, the debugging is kept separate from the engine classes.
 
-The debugging harness is loaded into the browser before your game code executes. This allows for setting up the DevTools extension bridge and communication channel.
+The debugging harness is loaded into the browser before your game code executes. _Loading the bridge is optional._
 
 **Load the DevTools Bridge & Debugging Harness**
 ```html
@@ -24,7 +24,7 @@ The debugging harness is loaded into the browser before your game code executes.
 ```
 
 ## The Debug Harness
-The harness is loaded first to add several debug methods to the global context. These methods can be called directly from your code or through the console in the editor. The primary method for adding debugging to a class is done with `PRAGMA_INIT`. 
+The harness is loaded first to add a couple debug methods to the global context. These methods can be called directly from your code or through the console in the editor. The primary method for adding debugging to a class is done with `PRAGMA_INIT`. 
 
 **Example:**
 ```javascript
