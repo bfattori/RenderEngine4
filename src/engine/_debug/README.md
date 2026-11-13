@@ -88,7 +88,7 @@ You can turn off all the options for a debug point by setting the parent propert
 ## The Profiler Configuration
 The profiler configuration options set up what methods are profiled and to what tracks and groupings the performance measurements and marks are recorded. You need to enable `flags.debugOpts.trackPerformance` in the Engine config.
 
-**Example:**
+**GameWorld.js Profiles**
 ```javascript
 const debug = {
   profiling: {
@@ -104,16 +104,16 @@ export default debug;
 
 
 
-### Notes:
+## Notes:
 
-#### DevTools Extension
+### DevTools Extension
 The properties of `debugOpts` are configurable in real-time from the DevTools extension under the **Engine** tab.
 
-#### Production Builds & Compiling
+### Production Builds
 
-For production builds, you should use the game compiler to remove all of the `PRAGMA` and `PRAGMA_INIT` calls from the engine and your game code. This will result in a smaller file size, faster loading times, and faster execution. 
+For production builds, you should use the game builder to remove all of the `PRAGMA` and `PRAGMA_INIT` calls from the engine and your game code. This will result in a smaller file size, faster loading times, and faster execution. 
 
-Leaving them in is not recommended - but you can just turn off the `flags.debug` property in the Engine's config so they don't run. The file size will be larger, especially if you include the debugging classes and debug harness.
+Leaving them in is not recommended - but you can also just turn off the `flags.debug` property in the Engine's config so they don't run. The file size will be larger, especially if you include the debugging classes and debug harness.
 
 ```html
   <!-- Load the game engine & game -->
