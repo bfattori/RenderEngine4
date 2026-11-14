@@ -6,7 +6,7 @@ const DemoHelper = {
     const body = document.querySelector('body');
     const helpers = `
       <!-- Demo Information -->
-      <div class='information'></div>
+      <div class='information hide'></div>
 
       <!-- Code Window -->
       <div class="code-window hide"><div class="title"></div><div class="close">❌</div><div class="code"></div></div>

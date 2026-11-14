@@ -113,12 +113,14 @@ div.slider div.bar div.tick {
 
 /*** Switch Panel */
 div.switch-panel {
-    position: relative;
-    width: 350px;
+    position: absolute;
+    width: 280px;
     font-size: 9pt;
     border: 1px solid;
     box-shadow:0 2px 4px rgba(39, 1, 1, 0.4);
     margin-top: 10px;
+    left: 10px;
+    top: 400px;
 }
 
 div.switch-panel div.title {

@@ -2,12 +2,20 @@
 <html>
     <head>
         <title>Render Engine 4 - Particle Engine (multi-object threaded)</title>
+        
+        <!-- DemoHelper styles -->
+        <link rel="stylesheet" href="../assets/css/demo-helper.css">
+
         <link rel="stylesheet" href="../../src/re4.css">
         <link rel="stylesheet" href="../../src/re4_debug.css">
         <script src="../../devtools/protocol/messages.js"></script>
         <script src="../../devtools/bridge/re4-debug-bridge.js"></script>
         <script src="../../src/engine/renderEngine4_debug.js" type="module"></script>
         <script type="module">
+            // Load the demo helper script
+            const DemoHelper = await import(new URL('../assets/js/demo-helper.js', import.meta.url));
+            self.DemoHelper = DemoHelper.default;
+
             await (async () => {
                 const params = new URLSearchParams(window.location.search);
                 const jsFile = params.get("js"); // is the number 123

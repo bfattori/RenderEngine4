@@ -2,7 +2,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  /* height: 100vh; */
+  z-index: 1000;
+  position: absolute;
+  bottom: 90px;
 }
 
 
@@ -21,6 +23,8 @@
   font-size: 80%;
   width: 60%;
   min-width: 570px;
+  position: absolute;
+  bottom: 0;
 }
 
 #DemoHelpers div.information a.class-ref {
