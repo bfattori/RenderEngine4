@@ -173,6 +173,8 @@ export default class Util {
      * @returns {Object} A new object that is the result of merging source into target
      */
     static deepMerge(target, source) {
+        if (target === null && source) target = {};
+        
         // Create a deep copy of target to keep the function pure
         const output = Object.assign({}, target);
 

@@ -1,0 +1,292 @@
+import '../../_debug/DebugHarness.js';
+import RenderEngine from '../../renderEngine4.js';
+
+import RunLoopError from './RunLoopError.js';
+import { Logger } from '../lang/Console.js';
+import protocol from './Protocol.js';
+
+let runLoopInstance = null;
+let messageHandler = null;
+
+let log;
+
+// we can query the global context to determine if we're on the game thread
+self.isGameThread = true;
+
+export default class RunLoop {
+  #game;
+  #renderer;
+  #cbWaiting = new Map();
+  #waitId = 1;
+
+  constructor(rendererClass) {
+    log = new Logger(RunLoop, null, true);
+    this.#initialize();
+    this.#renderer = rendererClass;
+  }
+  
+  get gameClass() {
+    return this.#game;
+  }
+
+  #initialize() {
+    // tell the system there is a thread
+    RenderEngine.runLoopThread = this;
+    
+    // the thread is ready
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.READY
+    });
+  }
+
+  async process(event) {
+    if (event.data.re4 === protocol.MSG.ENGINE_MANAGER) {
+      switch(event.data.type) {
+        case protocol.MTYPE.ENGINE_MANAGER.CALLBACK:
+          const {resolve, reject} = this.#cbWaiting.get(event.data._callbackId);
+          if (!event.data._error)
+            resolve(event.data.result);
+          else
+            reject(event.data._error);
+          break;
+        case protocol.MTYPE.ENGINE_MANAGER.START:
+          const gameModule = await import(new URL(event.data.gameUrl));
+          this.#game = gameModule.default;
+
+          // run the game
+          if (this.#game && this.#game.run)
+            this.#game.run();
+          else
+            throw new RunLoopError(this, 'Game module does not have a "run" method');
+          break;
+        case protocol.MTYPE.ENGINE_MANAGER.PAUSE:
+          if (this.#game && this.#game.pause) {
+            RenderEngine.pause();
+            this.#game.stop();
+          } else
+            throw new RunLoopError(this, 'Game module does not have a "stop" method');
+          break;
+        case protocol.MTYPE.ENGINE_MANAGER.STOP:
+          if (this.#game && this.#game.stop) {
+            RenderEngine.stop();
+            this.#game.stop();
+          } else
+            throw new RunLoopError(this, 'Game module does not have a "stop" method');
+          break;
+        case protocol.MTYPE.ENGINE_MANAGER.STEP:
+          if (this.#game && this.#game.step)
+            this.#game.step();
+          else 
+            throw new RunLoopError(this, 'Game module does not have a "step" method');
+          break;
+        case protocol.MTYPE.ENGINE_MANAGER.TERMINATE:
+          // shutdown the game
+          if (this.#game && this.#game.shutdown)
+            await this.#game.shutdown();
+          else
+            throw new RunLoopError(this, 'Game module does not have a "shutdown" method');
+          
+          // terminate the run loop
+          self.terminate();
+          break;
+        default:
+          log.error('Unknown message type from EngineManager:', event.data);
+      }
+    }
+  }
+
+  /**
+   * Send a message to the orchestrator thread
+   * @param {Object} data - Data to send to the thread 
+   * @param {Array<Object>} transfer - Optional array of objects to transfer ownership of to the thread 
+   */
+  #send(data, transfer) {
+      self.postMessage({ 
+          re4: protocol.MSG.RUN_LOOP, 
+          ... data }, transfer);
+  }
+
+  /**
+   * Wait for a callback from the main thread
+   * @param {String} type - The type of operation being called
+   * @param {*} obj - The object to process
+   * @returns {Promise} A promise that will resolve with the result of the operation
+   */
+  #waitForResult(type, obj) {
+    const callId = this.#waitId++;
+    return new Promise((resolve, reject) => {
+      this.#cbWaiting.set(callId, { resolve, reject });
+      const data = {
+        _callbackId: callId,
+        type: type
+      };
+
+      if (obj && obj.tag)
+        data.object = obj;
+      else
+        data.object = obj.transferrable;
+       
+      this.#send(data);
+    });
+  }
+
+  //---------------------------------
+  // engine management
+
+  /**
+   * Send the engine configuration back to the main thread
+   * @param {Object} options - The engine configuration options
+   */
+  configEngine(options) {
+    // we can't send the hooks or the objects...
+    let engineOpts = {
+      flags: options.flags,
+      engineOpts: options.engineOpts,
+      world: {
+        fps: options.world.fps,
+        seedTime: options.world.seedTime,
+        dimensions: options.world.dimensions,
+        viewport: options.world.viewport,
+        backgroundColor: options.world.backgroundColor,
+        renderPlanes: options.world.renderPlanes,
+        renderContext: options.world.renderContext.config.opts
+      },
+      system: options.system
+    };
+
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.ENGINE_CONFIG,
+      engineConfig: engineOpts
+    });
+  }
+
+  //---------------------------------
+  // asset management
+
+  async compileTiles(tiles) {
+    let promises = [];
+    for (const tile of tiles) {
+      promises.push(this.compileTile(tile));
+    }
+    return await Promise.all(promises);
+  }
+
+  async compileTile(tile) {
+    return this.#waitForResult(protocol.MTYPE.RUN_LOOP.COMPILE_TILE, tile);
+  }
+
+  destroyTile(opaqueId) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.DESTROY_TILE,
+      opaqueId: opaqueId
+    });
+  }
+
+  async compileTileMaps(tileMaps) {
+    let promises = [];
+    for (const tileMap of tileMaps) {
+      promises.push(this.compileTileMap(tileMap));
+    }
+    return await Promise.all(promises);
+  }
+
+  async compileTileMap(tileMap) {
+    return this.#waitForResult(protocol.MTYPE.RUN_LOOP.COMPILE_TILE_MAP, tileMap);
+  }
+
+  destroyTileMap(opaqueId) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.DESTROY_TILE_MAP,
+      opaqueId: opaqueId
+    });
+  }
+
+  async compileSprites(sprites) {
+    let promises = [];
+    for (const sprite of sprites) {
+      promises.push(this.compileSprite(sprite));
+    }
+    return await Promise.all(promises);
+  }
+
+  async compileSprite(sprite) {
+    return this.#waitForResult(protocol.MTYPE.RUN_LOOP.COMPILE_SPRITE, sprite);
+  }
+  
+  destroySprite(opaqueId) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.DESTROY_SPRITE,
+      opaqueId: opaqueId
+    });
+  }
+
+  async getCompiledShapes(shapes) {
+    let promises = [];
+    for (const shape of shapes) {
+      promises.push(this.getCompiledShape(shape));
+    }
+    return await Promise.all(promises);
+  }
+
+  async getCompiledShape(instructions, tag) {
+    return this.#waitForResult(protocol.MTYPE.RUN_LOOP.COMPILE_SHAPE, { instructions, tag });
+  }
+
+  destroyCompiledShape(opaqueId) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.DESTROY_SHAPE,
+      opaqueId: opaqueId
+    });
+  }
+
+  //-----------------------------------------
+  // rendering
+
+  preFrame(time, deltaTime) {
+    // tell main thread a frame is starting
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.PRE_FRAME,
+      time: time,
+      deltaTime: deltaTime
+    });
+  }
+
+  renderInstructionBuffer(buffer, time, deltaTime) {
+    // send to the main thread for processing
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.RENDER_INSTRUCTIONS,
+      time: time,
+      deltaTime: deltaTime,
+      buffer: buffer
+    });
+  }
+
+  postFrame(time, deltaTime) {
+    // tell main thread a frame is complete
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.POST_FRAME,
+      time: time,
+      deltaTime: deltaTime
+    });
+  }
+}
+
+/**
+ * Handler for messages received from the main thread. This function 
+ * processes messages related to engine operations.
+ */
+messageHandler = addEventListener('message', (event) => {
+    if (!log) log = new Logger(RunLoop, null, true);
+    if (event.data.re4 && event.data.re4 === protocol.MSG.ENGINE_MANAGER) {
+        if (!runLoopInstance && event.data.type === protocol.MTYPE.ENGINE_MANAGER.INIT) {
+            runLoopInstance = new RunLoop(event.data.renderer);
+        } else if (runLoopInstance) {
+            // fixme: This is probably why effect and shit don't make it to the workers
+            runLoopInstance.process(event);
+        } else {
+            console.error("Missed message in RunLoop", event);
+        }
+    }
+});
+
+await PRAGMA_INIT(RunLoop); // required for PRAGMA debugging             

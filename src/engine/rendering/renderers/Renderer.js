@@ -1,3 +1,5 @@
+import RenderEngine from '../../renderEngine4.js';
+
 import Constants from '../../Constants.js';
 
 import RenderEngineError from '../../core/RenderEngineError.js';
@@ -46,17 +48,28 @@ export default class Renderer {
     #surface = null;
     #hasCompiler = false;
     #assembler = null;
+    #htmlElement = null;
 
-    constructor(options) {
+    constructor(htmlElement, options) {
         if (!Renderer.#built) {
             throw new RendererError(this, "Use Renderer.build() to construct a Renderer.");
         }
         Renderer.#built = false;
+        this.#htmlElement = htmlElement;
+
         this.#opts = options;
+    }
+
+    get htmlElement() {
+        return this.#htmlElement;
     }
 
     get config() {
         return this.#opts;
+    }
+
+    get isStub() {
+        return this.#opts.stub;
     }
 
     /**
@@ -136,6 +149,11 @@ export default class Renderer {
         Renderer.#built = true;
     }
 
+    static stub(options) {
+        Renderer.#built = true;
+        return new Renderer(null, { stub: true, opts: options });
+    }
+
     /**
      * Initialize this renderer.
      * @param {RenderContext} context 
@@ -147,7 +165,8 @@ export default class Renderer {
     /**
      * Called before a frame is rendered.
      */
-    preFrame() {}
+    preFrame(time, deltaTime) {
+    }
 
     /**
      * Method to render a single instruction to the hardware context. Must be implmented by
@@ -155,14 +174,18 @@ export default class Renderer {
      * @param {string} instruction - The intermediate language instruction to render
      * @returns {void} 
      */
-    render(instruction) {
+    render(instruction, time, deltaTime) {
         throw new RenderEngineError('render() must implemented by sub-classes!');
+    }
+
+    renderInstructionBuffer(buffer, time, deltaTime) {
     }
 
     /**
      * Called after a frame is rendered.
      */
-    postFrame() {}
+    postFrame(time, deltaTime) {
+    }
 
     destroy() {
         this.#assembler = null;

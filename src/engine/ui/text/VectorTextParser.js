@@ -104,7 +104,7 @@ export default class VectorTextParser extends TextParser {
                 if (!glyphCache.has(char)) {
                     // Compile the character shape and store in cache
                     if (char !== ' ') {
-                        const shapeId = this.renderContext.renderer.compile(ci.instructions, `CHAR '${char}'`);
+                        const shapeId = this.renderContext.renderer.compileShape(ci.instructions, `CHAR '${char}'`);
                         glyphCache.set(char, shapeId);
                         this.renderContext.addInstruction(`${IL.SHAPE} ${shapeId}`);
                     }

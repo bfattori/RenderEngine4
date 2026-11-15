@@ -5,6 +5,7 @@
  * @extends RenderContext
  */
 import Constants from '../../Constants.js';
+import RenderEngine from '../../renderEngine4.js';
 
 import ContextBase from './ContextBase.js';
 
@@ -72,15 +73,6 @@ export default class RenderContext extends ContextBase {
     this.setCursorPosition(x, y);
   }
 
-  set viewport(dims) {
-    super.viewport = dims;
-    this.renderer.init(this);
-  }
-
-  get viewport() {
-    return super.viewport;
-  }
-
   /**
    * Reset all render context state for a new frame
    */
@@ -116,73 +108,252 @@ export default class RenderContext extends ContextBase {
     return getAPI.call(this);
   }
 
-//-----------------------------
-  // tiles & sprites
+  //========================================
+  // Renderer asset management
+
+  //-----------------------------
+  // tiles 
   //-----------------------------
 
-  compileTiles(tiles) {
-    const results = {};
-    tiles.forEach(tile => {
-      results[tile.name] = this.compileTile(tile);
-    });
-    return results;
+  /**
+   * Compile a set of tiles into the renderer. The renderer returns a set of opaque
+   * ids representing the compiled tiles. The opaqueId's are used to reference
+   * the tiles in the renderer.
+   * 
+   * @param {Array<Tile>} tiles - The set of tiles to compile into the renderer
+   * @returns {Object} An object containing the tile name with opaque id
+   */
+  async compileTiles(tiles) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.compileTiles(tiles);
+    else {
+      const results = {};
+      tiles.forEach(tile => {
+        results[tile.name] = this.compileTile(tile);
+      });
+      return results;
+    }
   }
 
-  compileTile(tile) {
-    return this.renderer.compileSprite(tile);
+  /**
+   * Compile a single tile into the renderer. The renderer returns an opaque
+   * id representing the compiled tile. The opaqueId is used to reference
+   * the tile in the renderer.
+   * 
+   * @param {Tile} tile - The tile to compile
+   * @returns {number} The opaque Id assigned by the renderer
+   */ 
+  async compileTile(tile) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.compileSprite(tile);
+    else
+      return this.renderer.compileSprite(tile);
   }
 
-  renderTiles(tileIds, time, deltaTime) {
-    tileIds.forEach(opaqueId => this.renderTile(opaqueId, time, deltaTime));
+  /**
+   * Tell the renderer to discard a tile
+   * @param {number} opaqueId - The opaque id of the tile
+   */
+  destroyTile(opaqueId) {
+    if (self.isGameThread)
+      RenderEngine.pipeToMain.destroyTile(opaqueId);
+    else
+      this.renderer.destroyTile(opaqueId);
   }
 
-  renderTile(opaqueId, time, deltaTime) {
-    this.renderer.renderTile(opaqueId, time, deltaTime);
+  /**
+   * Render the tiles to the positions specified in the tiles array. The positions are
+   * relative to the top-left corner of the renderer's canvas.
+   * 
+   * @param {Array<Array<number>>} tiles - An array of 3 numbers: `[[opaqueId, x, y], ... ]`
+   * @param {number} time - Current world time
+   * @param {number} deltaTime - Time since last frame
+   */
+  renderTiles(tiles, time, deltaTime) {
+    tiles.forEach(tile => this.renderTile(tile[0], tile[1], tile[2], time, deltaTime));
   }
 
-  compileTileMaps(tileMaps) {
-    const result = {};
-    tileMaps.forEach(tileMap => {
-      results[tileMap.name] = this.compileTileMap(tileMap);
-    });
-    return results;
+  /**
+   * Render the tile at the coordinates given.
+   * 
+   * @param {number} opaqueId - The opaque id that references the tile in the renderer
+   * @param {number} time - Current world time
+   * @param {number} deltaTime - Time since last frame
+   */
+  renderTile(opaqueId, x, y, time, deltaTime) {
+    if (self.isGameThread)
+      RenderEngine.pipeToMain.renderTile(opaqueId, x, y, time, deltaTime);
+    else
+      this.addInstruction(`${IL.TILE} ${opaqueId} ${x} ${y} ${time} ${deltaTime}`);
   }
 
-  compileTileMap(tileMap) {
-    return this.renderer.compileTileMap(tileMap);
+  //-----------------------------
+  // tile maps
+  //-----------------------------
+
+  /**
+   * Compile the tile maps into the renderer
+   * @param {Array<TileMap>} tileMaps - The array of tile maps to compile
+   * @returns {Object} An object containing the tile map name with opaque id
+   */
+  async compileTileMaps(tileMaps) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.compileTileMaps(tileMaps);
+    else {
+      const results = {};
+      tileMaps.forEach(async (tileMap) => {
+        results[tileMap.name] = await this.compileTileMap(tileMap);
+      });
+      return results;
+    }
   }
 
-  renderTileMap(opaqueId, time, deltaTime) {
-    this.addInstruction(`${IL.TILEMAP} ${opaqueId}`);
+  /**
+   * Compile a single tile map into the renderer
+   * @param {TileMap} tileMap - The tile map to compile
+   * @returns {number} The opaque id that references the tile map on the renderer
+   */
+  async compileTileMap(tileMap) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.compileTileMap(tileMap);
+    else
+      return this.renderer.compileTileMap(tileMap);
   }
 
-  compileSprite(sprite, tag) {
-    return this.renderer.compileSprite(sprite, tag);
+  /**
+   * Tell the renderer to discard a tile map
+   * @param {number} opaqueId - The opaque id of the tile map
+   */
+  destroyTileMap(opaqueId) {
+    if (self.isGameThread)
+      RenderEngine.pipeToMain.destroyTileMap(opaqueId);
+    else
+      this.renderer.destroyTileMap(opaqueId);
   }
 
+  /**
+   * Render a tile map at the given coordinates (default: 0, 0)
+   * @param {number} opaqueId - The opaque id of the tile map to render
+   * @param {number} x - The x coordinate to render at
+   * @param {number} y - The y coordinate to render at
+   * @param {number} time - The current world time
+   * @param {number} deltaTime - The time since last frame
+   */
+  renderTileMap(opaqueId, x = 0, y = 0, time, deltaTime) {
+    this.addInstruction(`${IL.TILEMAP} ${opaqueId} ${x} ${y} ${time} ${deltaTime}`);
+  }
+
+  //-----------------------------
+  // sprites
+  //-----------------------------
+
+  /**
+   * Compile the sprites into the renderer
+   * @param {Array<Sprite>} sprites - The array of sprites to compile
+   * @returns {Object} An object containing the sprite name with opaque id
+   */
+  async compileSprites(sprites) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.compileSprites(sprites);
+    else {
+      const results = {};
+      sprites.forEach(async (sprite) => {
+        results[sprite.name] = await this.compileSprite(sprite);
+      });
+      return results;
+    }
+  }
+
+  /**
+   * Compile a single sprite into the renderer
+   * @param {Sprite} sprite - The sprite to compile
+   * @returns {number} The opaque id that references the sprite on the renderer
+   */
+  async compileSprite(sprite) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.compileSprite(sprite);
+    else
+      return this.renderer.compileSprite(sprite);
+  }
+
+  /**
+   * Tell the renderer to discard a sprite
+   * @param {number} opaqueId - The opaque id of the sprite
+   */
   destroySprite(opaqueId) {
-    this.renderer.destroySprite(opaqueId);
+    if (self.isGameThread)
+      RenderEngine.pipeToMain.destroySprite(opaqueId);
+    else
+      this.renderer.destroySprite(opaqueId);
   }
 
+  /**
+   * Render a sprite at the given coordinates
+   * @param {number} opaqueId - The opaque id of the sprite to render
+   * @param {number} x - The x coordinate to render at
+   * @param {number} y - The y coordinate to render at
+   * @param {number} time - The current world time
+   * @param {number} deltaTime - The time since last frame
+   */
   renderSprite(opaqueId, x, y, time, deltaTime) {
-    this.addInstruction(`${IL.SPRITE} ${opaqueId} ${x} ${y}`);
-    //this.renderer.renderSprite(opaqueId, x, y, time, deltaTime);
+    this.addInstruction(`${IL.SPRITE} ${opaqueId} ${x} ${y} ${time} ${deltaTime}`);
   }
 
-  //-----------------------------
-  // vector shapes
-  //----------------------------
+  //-------------------------------------
+  // shapes - arbitrarty instructions
+  //-------------------------------------
   
-  getCompiledShape(instructions, tag) {
-    return this.renderer.compile(instructions, tag);
+  /**
+   * Compile the shapes into the renderer. The `shape` is an array of instructions to send to the
+   * renderer. The `tag` identifies the shape in the system.
+   * @param {Array<Object>} shapes - An array of vector shapes to compile: `[{ shape: Array<string>, tag: string }, ...]`
+   * @returns {Object} An object containing the shape's tag name with opaque id
+   */
+  async getCompileShapes(shapes) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.getCompiledShapes(shapes);
+    else {
+      const results = {};
+      shapes.forEach(async ({instructions, tag}) => {
+        results[tag] = await this.getCompiledShape(instructions, tag);
+      });
+      return results;
+    }
   }
 
-  destroyCompiledShape(opaqueId) {
-    this.renderer.destroyCompiledShape(opaqueId);
+  /**
+   * Compile a single shape into the renderer
+   * @param {Array<String>} instructions - The instructions to render
+   * @param {String} tag - The name of the shape
+   * @returns {number} The opaque id that references the vector shape on the renderer
+   */
+  async getCompiledShape(instructions, tag) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.getCompiledShape(instructions, tag);
+    else
+      return this.renderer.compile(instructions, tag);
   }
 
-  renderCompiledShape(opaqueId) {
-    this.addInstruction(`${IL.SHAPE} ${opaqueId}`);
+  /**
+   * Tell the renderer to discard a compiled shape
+   * @param {number} opaqueId - The opaque id of the sprite
+   */
+  async destroyCompiledShape(opaqueId) {
+    if (self.isGameThread)
+      return await RenderEngine.pipeToMain.destroyCompiledShape(opaqueId);
+    else
+      this.renderer.destroyCompiledShape(opaqueId);
+  }
+
+  /**
+   * Render a compiled shape. A shape, unlike a sprite, is rendered at the current transform
+   * in the renderer.
+   * @param {number} opaqueId - The opaque id of the shape to render
+   * @param {number} time - The current world time
+   * @param {number} deltaTime - The time since last frame
+   */
+  renderCompiledShape(opaqueId, time, deltaTime) {
+    this.addInstruction(`${IL.SHAPE} ${opaqueId} ${time} ${deltaTime}`);
   }
 
   //--------------------------------------

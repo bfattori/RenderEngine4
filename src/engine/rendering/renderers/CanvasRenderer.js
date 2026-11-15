@@ -41,7 +41,6 @@ export { CanvasConfig };
 
 export default class CanvasRenderer extends Renderer {
     #blit = null;
-    #htmlElement = null;
     #canvas = null;
     #offscreen = null;
     #localFormat = new Map();
@@ -51,21 +50,21 @@ export default class CanvasRenderer extends Renderer {
     #path = null;
 
     constructor(htmlElement, options) {
-        super(new CanvasConfig(options));
+        super(htmlElement, new CanvasConfig(options));
         
         if (!htmlElement) {
             throw new RendererError(this, "CanvasRenderer requires an HTML element to initialize!");
         }
-
-        this.#htmlElement = htmlElement;
 
         // Let the context know the renderer can compile shapes
         this.hasCompiler = this.config.useCompiler;
         this.config.formatting.set('b', false);
         this.config.formatting.set('i', false);
         this.config.formatting.set('u', false);
+    }
 
-        this.assembler = CanvasAssembler.getInstance();
+    get assembler() {
+        return CanvasAssembler.getInstance();
     }
 
     get offscreen() {
@@ -102,7 +101,7 @@ export default class CanvasRenderer extends Renderer {
     /**
      * Build a new instance of the CanvasRenderer.
      * 
-     * @param {HTMLElement} htmlElement - The element that represents host the <code>Canvas</code> element.
+     * @param {HTMLElement} htmlElement - The element that represents the `Canvas`.
      * @param {CanvasOptions} options - Canvas cofigurations options
      * @returns {CanvasRenderer} - The initialized CanvasRenderer instance.
      */
@@ -111,7 +110,7 @@ export default class CanvasRenderer extends Renderer {
         return new CanvasRenderer(htmlElement, options);
     }
 
-     /**
+    /**
      * Initialize the <code>CanvasRenderer</code>.
      * @param {RenderContext} context - The <code>RenderContext</code> that is connected to the renderer.
      */
@@ -121,11 +120,7 @@ export default class CanvasRenderer extends Renderer {
         this.#canvas.width = context.viewport.width;
         this.#canvas.height = context.viewport.height;
 
-        this.#htmlElement.appendChild(this.#canvas);
-
-        if (ctx.debug) {
-            this.#htmlElement.classList.add('debug');
-        }
+        this.htmlElement.appendChild(this.#canvas);
 
         if (this.config.doubleBuffered) {
             // double-buffered
@@ -155,7 +150,7 @@ export default class CanvasRenderer extends Renderer {
     }
 
     #particles(target) {
-        if (!Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
+        if (Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
             // draw particles to target
             this.surface.resetTransform();
             this.surface.drawImage(Engine.particleEngine.bitmap, 0, 0);
@@ -167,7 +162,7 @@ export default class CanvasRenderer extends Renderer {
      */
     postFrame(time, deltaTime) {
         // render the particles if running on the main thread
-        if (!Engine.options.flags.threading.particles)
+        if (Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && !Engine.options.flags.threading.particles)
             Engine.particleEngine.renderParticles(time, deltaTime, null,  this.surface);
 
         if (this.config.doubleBuffered) {
@@ -189,7 +184,7 @@ export default class CanvasRenderer extends Renderer {
      * @returns {number} An opaque Id that references the compiled shape.
      * @private
      */
-    compile(instructions, tag) {
+    async compileShape(instructions, tag) {
         if (!this.hasCompiler) { return Constants.COMPILATION.NOT_SUPPORTED; }
         return this.assembler.compileShape(this, instructions, tag);
     }
@@ -220,7 +215,7 @@ export default class CanvasRenderer extends Renderer {
         this.assembler.destroyShape(opaqueId);
     }
 
-    compileSprite(sprite, tag) {
+    async compileSprite(sprite, tag) {
         return this.assembler.compileTile(sprite, tag);
     }
 
@@ -256,7 +251,7 @@ export default class CanvasRenderer extends Renderer {
      * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
      *                   the renderer does not support pre-compilation of renderable objects.
      */
-    getCompiledSprite(sprite, tag) {
+    async getCompiledSprite(sprite, tag) {
         return this.assembler.compileTile(this, sprite, tag);
     }
 
@@ -280,6 +275,10 @@ export default class CanvasRenderer extends Renderer {
      */
     render(instruction, time, deltaTime) {
         this.#immediate(instruction, time, deltaTime);
+    }
+
+    renderInstructionBuffer(buffer, time, deltaTime) {
+        buffer.forEach(instruction => this.render(instruction, time, deltaTime));
     }
        
     /**
@@ -471,7 +470,6 @@ export default class CanvasRenderer extends Renderer {
 
     destroy() {
         this.#blit = null;
-        this.#htmlElement = null;
         this.#canvas = null;
         this.#offscreen = null;
         this.#path = null;

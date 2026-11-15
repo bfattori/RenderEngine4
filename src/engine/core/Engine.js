@@ -76,6 +76,8 @@ export default class Engine {
   #frameNumber = 0;
   #fpsRealtime = 0;
 
+  #isThread = false;
+
   constructor(options) {
     if (!waitInit) {
       throw new RenderEngineError("Engine must be initialized before use. Please call 'init' first.")
@@ -83,6 +85,10 @@ export default class Engine {
     waitInit = false;
 
     primary.ENGINE = this;
+
+    if (self.isGameThread && self.isGameThread === true) {
+      this.#isThread = true;
+    }
 
     // store the engine initialization options
     this.#ENGINE_OPTIONS.merge(options);
@@ -102,20 +108,28 @@ export default class Engine {
     this.#lastTime = 0;
     this.#deltaTime = 0;
 
+    if (self.isMainThread && ctx.debug)
+      document.querySelector('body').classList.add('debug');
+
+    // the game event engine
+    this.#EVENT_ENGINE = new EventEngine(this);
+
     // call loading hook
     this.#ENGINE_OPTIONS.hooks.onLoad();
 
     // initialize memory management
     initializeSystemMM();
 
-    // the game event engine
-    this.#EVENT_ENGINE = new EventEngine(this);
-
     // render context (initialized later)
     const renderContext = this.#ENGINE_OPTIONS.world.renderContext || new RenderContext(new Renderer());
     renderContext.viewport = this.#ENGINE_OPTIONS.world.viewport;
     renderContext.worldDimensions = this.#ENGINE_OPTIONS.world.dimensions;
-    
+  
+    if (!self.isGameThread && renderContext.renderer) {
+      // initialize the renderer
+      renderContext.renderer.init(renderContext);
+    }
+
     // the world camera
     const camera = this.#ENGINE_OPTIONS.world.camera || new Camera();
     camera.viewport = this.#ENGINE_OPTIONS.world.viewport;
@@ -138,6 +152,10 @@ export default class Engine {
     if (this.#ENGINE_OPTIONS.flags.showFps) {
       this.#fpsCounter = new FPSCounter();
     }
+  }
+
+  get isThreaded() {
+    return this.#isThread;
   }
 
   //---------------------------
@@ -554,8 +572,6 @@ export default class Engine {
    * @returns {Engine} The current instance of Engine.
    */
   static async init(gameLocation, startupLocation, engineOptions) {
-    waitInit = true;
-
     let engineUrl = new URL(import.meta.url);
     let srcPath = engineUrl.pathname.split('/');
     const srcLoc = srcPath.indexOf('src');
@@ -566,9 +582,17 @@ export default class Engine {
     Paths.engine = engineUrl;
     Paths.startup = startupLocation;
     Paths.game = gameLocation;
+    
+    return await this.configEngine(engineOptions);
+  }
+
+  static async configEngine(engineOptions) {
+    waitInit = true;
 
     // validate engine options
-    // ...
+    Engine.validateConfig(engineOptions);
+
+    // assign
     const e = new Engine(engineOptions);
     e.frameTime = Math.ceil(1000 / (e.options.world.fps > 0 ? Math.min(Constants.FRAME_RATE_CAP, e.options.world.fps) : 1000));
 
@@ -578,13 +602,25 @@ export default class Engine {
       let threading = null;
       if (e.options.flags.threading.particles)
         threading = new ParticleEngineThreadingConfig();
+      
       e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, config, threading);
     }
 
-    // call init hook
-    e.hooks.onInit();
+    if (!self.isMainThread)
+      // call init hook
+      e.hooks.onInit();
 
     return e;
+  }
+
+  static validateConfig(options) {
+    let validated = true;
+
+    // check critical engine options here ...
+
+    if (!validated) {
+      throw new RenderEngineError("Invalid engine options provided. Please check your configuration.");
+    }
   }
 
   /**

@@ -15,6 +15,7 @@ import ComponentPart, { ComponentPartEvent } from '../ComponentPart.js';
 import ColliderPart from '../collision/Collider.js';
 
 import { ColliderEvent, CollisionData } from '../../parts/collision/Collider.js';
+import { InputEvent } from '../../parts/input/InputPart.js';
 
 class TransformEvent extends ComponentPartEvent {
     #matrix = null;

@@ -2,6 +2,8 @@
  * RenderContext - Base class for all rendering contexts
  * Defines the common interface and capabilities for vector and raster rendering
  */
+import RenderEngine from '../../renderEngine4.js';
+
 import Engine from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
 import Config from '../../core/config/Config.js';
@@ -300,6 +302,10 @@ export default class ContextBase {
     return this.#renderer;
   }
 
+  set renderer(renderer) {
+    this.#renderer = renderer;
+  }
+
   /**
    * Returns the instructions for rendering.
    */
@@ -542,9 +548,9 @@ export default class ContextBase {
 
     // TODO: TileMap should be a GameObject
     // render a tilemap if provided
-    if (tileMap) {
-      this.renderer.surface.drawImage(tileMap.generated, 0, 0);
-    }
+    // if (tileMap) {
+    //   this.renderer.surface.drawImage(tileMap.generated, 0, 0);
+    // }
 
     // Sort objects into their respective planes
     this.sortObjectsByPlanes();
@@ -573,10 +579,16 @@ export default class ContextBase {
   }
   
   preFrame(time, deltaTime) {
-    this.renderer.preFrame(time, deltaTime);
+    if (RenderEngine.isGameThread)
+      RenderEngine.pipeToMain.preFrame(time, deltaTime);
+    else
+      this.renderer.preFrame(time, deltaTime);
   }
 
   renderInstructionBuffer(time, deltaTime) {
+    if (RenderEngine.isGameThread)
+      RenderEngine.pipeToMain.renderInstructionBuffer(this.#instructionBuffer, time, deltaTime);
+    else
       // play out any pending instructions
       this.#instructionBuffer.forEach(instruction => {
         this.#renderer.render(instruction, time, deltaTime);
@@ -584,7 +596,10 @@ export default class ContextBase {
   }
 
   postFrame(time, deltaTime) {
-    this.renderer.postFrame(time, deltaTime);
+    if (RenderEngine.isGameThread)
+      RenderEngine.pipeToMain.postFrame(time, deltaTime);
+    else
+      this.renderer.postFrame(time, deltaTime);
   }
 
 

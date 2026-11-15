@@ -1,6 +1,8 @@
 import Constants from '../Constants.js';
 import Context from '../Context.js';
 
+import RenderEngine from '../renderEngine4.js';
+
 import RenderEngineError from '../core/RenderEngineError.js';
 import Spark from '../core/memory/Spark.js';
 
@@ -135,11 +137,9 @@ export default class $ParticleEngine {
         this.#collisionModel = new GridBroadphase('ParticleEngineCollisions', this.#width, this.#height, this.#config.modelSize.x, this.#config.modelSize.y, BroadphaseModel.ACCURACY.LOW);
         this.#collisionModel.supportMulti = true;
 
-        if (renderContext !== null) {
-            // the workers will assign their cache
-            this.#assembler = renderContext.renderer.assembler;
-        }
-
+        // the workers will assign their cache
+        this.#assembler = !renderContext.renderer.isStub ? renderContext.renderer.assembler : null;
+        
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);
         this.#surface = this.#offscreen.getContext('2d');

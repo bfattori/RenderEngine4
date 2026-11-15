@@ -64,6 +64,11 @@ class EngineConfig extends Config {
   constructor() {
     super({
       /**
+       * Enable threading for the main run-loop. Default is `false`
+       * @type {boolean} 
+       */
+      threading: false,
+      /**
        * Feature flags
        */
       flags: {
@@ -107,10 +112,9 @@ class EngineConfig extends Config {
         particleEngineDisabled: false,
         
         /**
-         * Enable and disable threading systems
+         * Threaded sub-system control
          */
         threading: {
-          core: false,
           particles: false,
           collisions: false
         }

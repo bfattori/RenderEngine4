@@ -79,9 +79,9 @@ export default class CompiledRenderPart extends RenderPart {
     /**
      * Prepare the component, compiling it if the renderer supports it.
      */
-    compile() {
+    async compile() {
         if (!this.#compiledShape) {
-            this.#compiledShape = this.context.getCompiledShape(this.instructions, this.name);
+            this.#compiledShape = await this.context.getCompiledShape(this.instructions, this.name);
             if (this.#compiledShape === Constants.COMPILATION.NOT_SUPPORTED) {
                 this.#compiledShape = null;
             }

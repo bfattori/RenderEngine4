@@ -93,7 +93,7 @@ export default class Console {
    * @param  {...any} message - The info message to log
    */
   log(...message) {
-    if (ctx.debugVebosity >= 1)
+    if (ctx.debugVerbosity >= 1)
       this.info(...message)
   }
 
