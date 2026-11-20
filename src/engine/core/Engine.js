@@ -596,7 +596,7 @@ export default class Engine {
     const e = new Engine(engineOptions);
     e.frameTime = Math.ceil(1000 / (e.options.world.fps > 0 ? Math.min(Constants.FRAME_RATE_CAP, e.options.world.fps) : 1000));
 
-    if (!e.options.flags.particleEngineDisabled) {
+    if (!(e.options.flags.particleEngineDisabled && self.threadedEngine)) {
       // start the particle engine
       const config = new ParticleEngineConfig();
       let threading = null;
@@ -636,7 +636,8 @@ export default class Engine {
 
     try {
       // update the particles
-      this.particleEngine.update(currentTime, deltaTime);
+      if (this.particleEngine)
+        this.particleEngine.update(currentTime, deltaTime);
 
       // Update the world state
       this.world.update(currentTime, deltaTime);

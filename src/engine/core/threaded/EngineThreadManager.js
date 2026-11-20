@@ -23,6 +23,9 @@ export default class EngineThreadManager {
   #gameUrl;
   #renderer = null;
 
+  #callbackList = [];
+  #callbackResults = [];
+
   static #instance;
 
   static async start(gameUrl, renderer) {
@@ -36,6 +39,10 @@ export default class EngineThreadManager {
     log = new Logger(EngineThreadManager, null, true);
     this.#gameUrl = gameUrl;
     this.#renderer = renderer;
+  }
+
+  static get instance() {
+    return EngineThreadManager.#instance;
   }
 
   get renderer() {
@@ -62,6 +69,14 @@ export default class EngineThreadManager {
     return this.#ready;
   }
 
+  get callbacks() {
+    return this.#callbackList;
+  }
+
+  get callbackResults() {
+    return this.#callbackResults;
+  }
+
   async loadThread() {
     this.#thread = new Worker(new URL(`./RunLoop.js${ctx.preventThreadCache}`, import.meta.url), {
       name: `RE4_gameLoop`,
@@ -69,53 +84,80 @@ export default class EngineThreadManager {
     });
 
     // setup event handlers
-    this.#thread.onmessage = async (event) => {
-      this.#runLoopInbound(event);     
-    }
+    this.#thread.addEventListener("message", (event) => {
+      this.runLoopInbound(event);     
+    });
 
-    this.#thread.onerror = (event) => {
-      this.#runLoopError(event);
-    }
+    this.#thread.addEventListener("error", (event) => {
+      this.runLoopError(event);
+    });
+
+    this.#thread.addEventListener("messageerror", (event) => {
+      console.error("Serialization/cloning failed:", event);
+    });
 
     const $this = this;
-    return new Promise(resolve => {
+    const p = new Promise(resolve => {
       log.debug('waiting for run-loop')
       $this.callWhenReady = resolve;
-
-      setTimeout(() => {
-        // initialize the run loop and wait for it to start
-        $this.thread.postMessage({ 
-          re4: protocol.MSG.ENGINE_MANAGER, 
-          type: protocol.MTYPE.ENGINE_MANAGER.INIT,
-          renderer: this.#renderer.constructor.name
-        });
-      }, 250);
     });
+    setTimeout(() => {
+      // initialize the run loop and wait for it to start
+      $this.send({ 
+        type: protocol.MTYPE.ENGINE_MANAGER.INIT,
+        renderer: this.#renderer.constructor.name
+      });
+    }, 250);
+    return p;
   }
 
-  #send(data, transfer) {
-    self.postMessage({
+  send(data, transfer) {
+    data = {
       re4: protocol.MSG.ENGINE_MANAGER,
-      ... data }, transfer);
+      ... data };
+    this.thread.postMessage(data, transfer);
+
+    log.verbose('ETM::runLoopOutbound', data);
   }
 
-  #callback(promise, transfer) {
-    promise.then((data) => {
-      data = {
+  #callback(obj, model) {
+    this.#callbackList.push({ obj: obj, fn: model});
+    const fn = () => { this.processCallbacks() };
+    setTimeout(fn, 0);
+  }
+
+  async processCallbacks() {
+    while (this.callbacks.length > 0) {
+      const cb = this.callbacks.shift();
+      const obj = cb.obj;
+      const model = await cb.fn(obj);
+      this.#callbackResults.push([model._callbackid, model.result]);
+    }
+    const fn = () => { this.returnCallbacks() };
+    setTimeout(fn, 0);
+  }
+
+  returnCallbacks() {
+    while (this.callbackResults.length > 0) {
+      const cbResult = this.callbackResults.shift();
+      const result = {
+        _callbackid: cbResult[0],
         type: protocol.MTYPE.ENGINE_MANAGER.CALLBACK,
-        ... data
+        result: cbResult[1]
       };
-      this.#send(data, transfer);
-    });
+      this.send(result);
+    }
   }
 
-  async #runLoopInbound(event) {
+  async runLoopInbound(event) {
+    log.verbose('ETM::runLoopInbound', event.data);
+    const { type, object } = event.data;
     let callbackId, procObj = null, callResult;
     if (event.data.re4 === protocol.MSG.RUN_LOOP) {
       
       // expecting a return value
-      if (event.data._callbackId) {
-        callbackId = event.data._callbackId;
+      if (event.data._callbackid) {
+        callbackId = event.data._callbackid;
         
         // a dehydrated transferrable, or a set of instructions and a label
         procObj = event.data.object && !event.data.object.tag ? 
@@ -153,33 +195,36 @@ export default class EngineThreadManager {
         // asset management
 
         case protocol.MTYPE.RUN_LOOP.COMPILE_TILE:
-          const tileId = await this.#renderer.compileTile(procObj);
-          this.#callback({
+          this.#callback(structuredClone(procObj), async (obj) => { return {
             _callbackid: callbackId, 
-            result: tileId 
-          });
+            result: await this.#renderer.compileTile(obj) 
+          }});
           break;
 
         case protocol.MTYPE.RUN_LOOP.COMPILE_TILE_MAP:
-          const mapId = await this.#renderer.compileTileMap(procObj);
-          this.#callback({
-            _callbackid: callbackId, 
-            result: mapId
+          this.#callback(structuredClone(procObj), async (obj) => { 
+            return {
+              _callbackid: callbackId,
+              result: await this.#renderer.compileTileMap(obj)
+            }
           });
           break;
 
         case protocol.MTYPE.RUN_LOOP.COMPILE_SPRITE:
-          const spriteId = await this.#renderer.compileSprite(procObj);
-          this.#callback({
-            _callbackid: callbackId, 
-            result: spriteId
+          this.#callback(structuredClone(procObj), async (obj) => { 
+            return {
+              _callbackid: callbackId, 
+              result: await this.#renderer.compileSprite(obj)
+            }
           });
           break;
 
         case protocol.MTYPE.RUN_LOOP.COMPILE_SHAPE:
-          const shapeId = this.#renderer.compileShape(procObj.instructions, procObj.tag);
-          this.#callback(shapeId, {
-            _callbackid: callbackId
+          this.#callback(structuredClone(procObj), async (obj) => { 
+            return {
+              _callbackid: callbackId,
+              result: await this.#renderer.compileShape(obj.instructions, obj.tag)
+            }
           });
           break;
 
@@ -216,9 +261,39 @@ export default class EngineThreadManager {
     }
   }
 
-  #runLoopError(event) {
+  runLoopError(event) {
       log.error(event.message, event);
       throw new RunLoopError(this.#thread, event.message, event);
-  }  
+  }
+  
+  resume() {
+    this.send({
+      type: protocol.MTYPE.ENGINE_MANAGER.RESUME
+    });
+  }
+
+  pause() {
+    this.send({
+      type: protocol.MTYPE.ENGINE_MANAGER.PAUSE
+    });
+  }
+
+  stop() {
+    this.send({
+      type: protocol.MTYPE.ENGINE_MANAGER.STOP
+    });
+  }
+
+  step() {
+    this.send({
+      type: protocol.MTYPE.ENGINE_MANAGER.STEP
+    });
+  }
+
+  shutdown() {
+    this.send({
+      type: protocol.MTYPE.ENGINE_MANAGER.SHUTDOWN
+    });
+  }
 
 }

@@ -40,15 +40,22 @@ export default class RunLoop {
   }
 
   async process(event) {
+    log.verbose("RL::EngineThreadInbound", event.data);
     if (event.data.re4 === protocol.MSG.ENGINE_MANAGER) {
       switch(event.data.type) {
+        // callback return
         case protocol.MTYPE.ENGINE_MANAGER.CALLBACK:
-          const {resolve, reject} = this.#cbWaiting.get(event.data._callbackId);
+          const data = this.#cbWaiting.get(event.data._callbackid);
+          const {res, rej} = data;
           if (!event.data._error)
-            resolve(event.data.result);
+            res(event.data.result);
           else
-            reject(event.data._error);
+            rej(event.data._error);
           break;
+
+        //------------------------------
+        // engine control
+        
         case protocol.MTYPE.ENGINE_MANAGER.START:
           const gameModule = await import(new URL(event.data.gameUrl));
           this.#game = gameModule.default;
@@ -59,25 +66,25 @@ export default class RunLoop {
           else
             throw new RunLoopError(this, 'Game module does not have a "run" method');
           break;
+        case protocol.MTYPE.ENGINE_MANAGER.RESUME:
+          RenderEngine.resume();
+          if (this.#game && this.#game.resume)
+            this.#game.resumed();
+          break;
         case protocol.MTYPE.ENGINE_MANAGER.PAUSE:
-          if (this.#game && this.#game.pause) {
-            RenderEngine.pause();
-            this.#game.stop();
-          } else
-            throw new RunLoopError(this, 'Game module does not have a "stop" method');
+          RenderEngine.pause();
+          if (this.#game && this.#game.pause)
+            this.#game.paused();
           break;
         case protocol.MTYPE.ENGINE_MANAGER.STOP:
-          if (this.#game && this.#game.stop) {
-            RenderEngine.stop();
-            this.#game.stop();
-          } else
-            throw new RunLoopError(this, 'Game module does not have a "stop" method');
+          RenderEngine.stop();
+          if (this.#game && this.#game.stop)
+            this.#game.stopped();
           break;
         case protocol.MTYPE.ENGINE_MANAGER.STEP:
+          RenderEngine.step();
           if (this.#game && this.#game.step)
-            this.#game.step();
-          else 
-            throw new RunLoopError(this, 'Game module does not have a "step" method');
+            this.#game.stepped();
           break;
         case protocol.MTYPE.ENGINE_MANAGER.TERMINATE:
           // shutdown the game
@@ -101,9 +108,11 @@ export default class RunLoop {
    * @param {Array<Object>} transfer - Optional array of objects to transfer ownership of to the thread 
    */
   #send(data, transfer) {
-      self.postMessage({ 
-          re4: protocol.MSG.RUN_LOOP, 
-          ... data }, transfer);
+    data = { 
+      re4: protocol.MSG.RUN_LOOP, 
+      ... data };
+    self.postMessage(data, transfer);
+    log.verbose("RL::EngineThreadOutbound", data);
   }
 
   /**
@@ -114,20 +123,22 @@ export default class RunLoop {
    */
   #waitForResult(type, obj) {
     const callId = this.#waitId++;
-    return new Promise((resolve, reject) => {
-      this.#cbWaiting.set(callId, { resolve, reject });
-      const data = {
-        _callbackId: callId,
-        type: type
-      };
-
-      if (obj && obj.tag)
-        data.object = obj;
-      else
-        data.object = obj.transferrable;
-       
-      this.#send(data);
+    const p = new Promise((resolve, reject) => {
+      this.#cbWaiting.set(callId, { res: resolve, rej: reject });
     });
+
+    const data = {
+      _callbackid: callId,
+      type: type
+    };
+
+    if (obj && obj.tag)
+      data.object = obj;
+    else
+      data.object = obj.transferrable;
+
+    this.#send(data);
+    return p;
   }
 
   //---------------------------------
@@ -287,6 +298,10 @@ messageHandler = addEventListener('message', (event) => {
             console.error("Missed message in RunLoop", event);
         }
     }
+});
+
+addEventListener("messageerror", (event) => {
+  console.error("Serialization/cloning failed:", event);
 });
 
 await PRAGMA_INIT(RunLoop); // required for PRAGMA debugging             

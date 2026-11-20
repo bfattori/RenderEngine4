@@ -67,24 +67,54 @@ async function runGame() {
 
 
 const gameControl = {
+    //--------------------------------------
+    // required
+
+    /**
+     * This method is called when the engine is ready to run
+     * the game. Call the method to start your game.
+     */
     run: async() => {
         await runGame();    
     },
 
-    pause: () => {
-        RenderEngine.pause();
-    },
-
-    stop: () => {
-        RenderEngine.stop();
-    },
-
-    step: () => {
-        RenderEngine.step();
-    },
-
+    /**
+     * This method is called when the engine is shutting down
+     * so your game can perform any clean up necessary.
+     */
     shutdown: () => {
-        RenderEngine.shutdown();
+        
+    },
+
+    //-----------------------------------------------------
+    // optional: called when the engine state changes
+    
+    /**
+     * Called whent the engine is paused
+     */
+    paused: () => {
+        
+    },
+
+    /**
+     * Called when the engine is resumed
+     */
+    resumed: () => {
+        
+    },
+
+    /**
+     * Called when the engine is stopped
+     */
+    stopped: () => {
+        
+    },
+
+    /**
+     * Called when the engine is stepped by one frame
+     */
+    stepped: () => {
+        
     }
 };
 

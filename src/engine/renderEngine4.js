@@ -39,8 +39,9 @@ const RenderEngine = {
             self.isMainThread = true;
             
             // load the threading engine manager and redirect there
-            RenderEngine.engineThreadManager = await import(new URL('./core/threaded/EngineThreadManager.js', import.meta.url));
-            await RenderEngine.engineThreadManager.default.start(new URL(options.gamePath, gameRoot), options.renderer);
+            const threadMgr = await import(new URL('./core/threaded/EngineThreadManager.js', import.meta.url));
+            RenderEngine.engineThreadManager = threadMgr.default;
+            await RenderEngine.engineThreadManager.start(new URL(options.gamePath, gameRoot), options.renderer);
         }
     },
 
@@ -53,8 +54,6 @@ const RenderEngine = {
     },
 
     async setEngineConfig(engineConfig) {
-        // initialize the renderer
-        engineOptions.renderer.init(engineConfig.world.renderContext);
         engineConfig.particleEngineDisabled = true;
         engineConfig.world.renderContext.renderer = engineOptions.renderer;
 
@@ -67,7 +66,7 @@ const RenderEngine = {
     },
 
     get renderer() {
-        return RenderEngine.engineThreadManager.renderer;
+        return RenderEngine.engineThreadManager.instance.renderer;
     },
 
     get isMainThread() {
@@ -79,7 +78,7 @@ const RenderEngine = {
     },
 
     get pipeToRunLoop() {
-        return RenderEngine.engineThreadManager;
+        return RenderEngine.engineThreadManager.instance;
     },
 
     get pipeToMain() {
@@ -122,30 +121,43 @@ const RenderEngine = {
         document.getElementById('loading').classList.add('hide');
     },
 
-    /**
-     * Start the engine
+/**
+     * Resume the engine after pausing
      */
     start() {
         if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.start();
+            RenderEngine.engineThreadManager.instance.start();
         else {
             RE4.start();
-            console.info(" - started", RE4.engine.options);
-            RenderEngine.paused = false;
+            console.info("Started");
         }
+        RenderEngine.paused = false;
     },
 
     /**
-     * Pause (halt) the engine without resetting it.
+     * Resume the engine after pausing
+     */
+    resume() {
+        if (RenderEngine.engineThreadManager)
+            RenderEngine.engineThreadManager.instance.resume();
+        else {
+            RE4.start();
+            console.info("Resumed");
+        }
+        RenderEngine.paused = false;
+    },
+
+    /**
+     * Pause (halt) the engine without resetting it
      */
     pause() {
         if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.pause();
+            RenderEngine.engineThreadManager.instance.pause();
         else {
-            RenderEngine.paused = true;
-            console.warn(" - paused");
+            console.info("Paused");
             RE4.stop();
         }
+        RenderEngine.paused = true;
     },
 
     /**
@@ -153,24 +165,12 @@ const RenderEngine = {
      */
     stop() {
         if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.stop();
+            RenderEngine.engineThreadManager.instance.stop();
         else {
             RE4.reset();
-            console.info(" - stopped & reset");
-            RenderEngine.reset = true;
+            console.info("Stopped & reset");
         }
-    },
-
-    /**
-     * Shutdown the engine.
-     */
-    shutdown() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.shutdown();
-        else {
-            console.info(" - shutting down");
-            RE4.destroy();
-        }
+        RenderEngine.reset = true;
     },
 
     /**
@@ -178,9 +178,21 @@ const RenderEngine = {
      */
     step() {
         if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.step();
+            RenderEngine.engineThreadManager.instance.step();
         else
             RE4.step();
+    },
+
+    /**
+     * Shutdown the engine.
+     */
+    shutdown() {
+        if (RenderEngine.engineThreadManager)
+            RenderEngine.engineThreadManager.instance.shutdown();
+        else {
+            console.info("... shutting down");
+            RE4.destroy();
+        }
     },
 
     /**
@@ -251,8 +263,7 @@ if (!(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalSc
     window.addEventListener('keyup', (event) => {
         if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F2)
             if (RenderEngine.paused) {
-                console.warn(" - resuming...");
-                RenderEngine.start();
+                RenderEngine.resume();
             } else {
                 RenderEngine.pause();
             }
@@ -264,7 +275,6 @@ if (!(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalSc
 
         if (event.keyCode === KeyboardInput.KEY_CODES.RESERVED_F4)
             if (RenderEngine.reset) {
-                console.warn(" - shutting down...");
                 RenderEngine.shutdown();
             } else {
                 RenderEngine.stop();

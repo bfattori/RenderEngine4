@@ -215,9 +215,26 @@ export default class CanvasRenderer extends Renderer {
         this.assembler.destroyShape(opaqueId);
     }
 
+    /**
+     * Compiles the set of render instructions into an assembly that will be executed by the renderer. 
+     * 
+     * @param {String[]} instructions - The render instructions.
+     * @param {String} tag - optional tag to apply to the assembly
+     * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
+     *                   the renderer does not support pre-compilation of renderable objects.
+     */
     async compileSprite(sprite, tag) {
-        return this.assembler.compileTile(sprite, tag);
+        return this.assembler.compileTile(this, sprite, tag);
     }
+
+    async compileTile(tile, tag) {
+        return this.assembler.compileTile(this, tile, tag);
+    }
+
+    async compileTileMap(tileMap) {
+        return this.assembler.compileTileMap(this, tileMap);
+    }
+
 
     destroySprite(opaqueId) {
         this.assembler.destroyTile(opaqueId);
@@ -241,18 +258,6 @@ export default class CanvasRenderer extends Renderer {
         } else if (opaqueId !== "undefined") {
             console.debug(`No compiled tile found for opaqueId: ${opaqueId}`);
         }
-    }
-
-    /**
-     * Compiles the set of render instructions into an assembly that will be executed by the renderer. 
-     * 
-     * @param {String[]} instructions - The render instructions.
-     * @param {String} tag - optional tag to apply to the assembly
-     * @returns {number|null} An opaque Id to the compiled shape. A return of <code>null</code> means
-     *                   the renderer does not support pre-compilation of renderable objects.
-     */
-    async getCompiledSprite(sprite, tag) {
-        return this.assembler.compileTile(this, sprite, tag);
     }
 
     /**

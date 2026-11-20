@@ -35,10 +35,13 @@ const protocol = {
     ENGINE_MANAGER: {
       INIT: 'init',
 
-      START: 'start',
-      PAUSE: 'pause',
-      STOP: 'stop',
-      STEP: 'step',
+      START: 'sta',
+      SHUTDOWN: 'shu',
+
+      PAUSE: 'pa',
+      RESUME: 'res',
+      STOP: 'sto',
+      STEP: 'ste',
 
       CALLBACK: 'cb',
 
