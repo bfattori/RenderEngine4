@@ -331,7 +331,7 @@ export default class RenderContext extends ContextBase {
     if (self.isGameThread)
       return await RenderEngine.pipeToMain.getCompiledShape(instructions, tag);
     else
-      return this.renderer.compileShape(instructions, tag);
+      return Promise.resolve(this.renderer.compileShape(instructions, tag));
   }
 
   /**

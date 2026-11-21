@@ -149,7 +149,7 @@ export default class Engine {
     this.#ENGINE_OPTIONS.world.collisions.narrowBand = narrowbandModel;
     this.#WORLD.narrowbandNodel = narrowbandModel;
 
-    if (this.#ENGINE_OPTIONS.flags.showFps) {
+    if (this.#ENGINE_OPTIONS.flags.showFps && !self.isGameThread) {
       this.#fpsCounter = new FPSCounter();
     }
   }
@@ -596,14 +596,16 @@ export default class Engine {
     const e = new Engine(engineOptions);
     e.frameTime = Math.ceil(1000 / (e.options.world.fps > 0 ? Math.min(Constants.FRAME_RATE_CAP, e.options.world.fps) : 1000));
 
-    if (!(e.options.flags.particleEngineDisabled && self.threadedEngine)) {
+    if (!e.options.flags.particleEngineDisabled) {
       // start the particle engine
       const config = new ParticleEngineConfig();
       let threading = null;
       if (e.options.flags.threading.particles)
         threading = new ParticleEngineThreadingConfig();
       
-      e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, config, threading);
+      if (self.isGameThread || !self.threadedEngine) {
+        e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, config, threading);
+      }
     }
 
     if (!self.isMainThread)
@@ -933,7 +935,7 @@ function animationLoop() {
     lifecycleHooks.onFrame(performance.now(), e.frameNumber, e.realFPS, e.snapshotStats(deltaTime, updateEnd - updateStart, renderEnd - renderStart, frameTime));
     const frameEnd = performance.now();
 
-    if (e.options.flags.showFps) {
+    if (e.options.flags.showFps && !self.isGameThread) {
       e.fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
     }
   }

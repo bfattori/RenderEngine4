@@ -138,7 +138,7 @@ export default class $ParticleEngine {
         this.#collisionModel.supportMulti = true;
 
         // the workers will assign their cache
-        this.#assembler = !renderContext.renderer.isStub ? renderContext.renderer.assembler : null;
+        this.#assembler = renderContext && !renderContext.renderer.isStub ? renderContext.renderer.assembler : null;
         
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);

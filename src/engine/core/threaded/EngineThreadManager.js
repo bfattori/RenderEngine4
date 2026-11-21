@@ -8,6 +8,9 @@ import protocol from './Protocol.js';
 const ctx = Context.getInstance();
 
 let log;
+
+// this will run in the main thread
+self.isMainThread = true;
 self.threadedEngine = true;
 
 /**
@@ -25,6 +28,8 @@ export default class EngineThreadManager {
 
   #callbackList = [];
   #callbackResults = [];
+
+  #particleBitmap = null;
 
   static #instance;
 
@@ -75,6 +80,14 @@ export default class EngineThreadManager {
 
   get callbackResults() {
     return this.#callbackResults;
+  }
+
+  set bitmap(image) {
+    this.#particleBitmap = image;
+  }
+
+  get bitmap() {
+    return this.#particleBitmap;
   }
 
   async loadThread() {
@@ -175,7 +188,8 @@ export default class EngineThreadManager {
           this.thread.postMessage({
             re4: protocol.MSG.ENGINE_MANAGER,
             type: protocol.MTYPE.ENGINE_MANAGER.START,
-            gameUrl: this.#gameUrl.toString()
+            gameUrl: this.#gameUrl.toString(),
+            assembler: RenderEngine.renderer.assembler.constructor.name
           });
           this.callWhenReady();
           break;
@@ -253,6 +267,25 @@ export default class EngineThreadManager {
 
         case protocol.MTYPE.RUN_LOOP.POST_FRAME:
           this.#renderer.postFrame(event.data.time, event.data.deltaTime);
+          break;
+
+        //--------------------------
+        // particles
+
+        case protocol.MTYPE.RUN_LOOP.PARTICLE_BITMAP:
+          this.bitmap = event.data.bitmap;
+          break;
+
+        //--------------------------
+        // loading
+
+        case protocol.MTYPE.RUN_LOOP.LOADING:
+          document.querySelector('div#loading div.text').textContent = event.data.text || 'LOADING...';
+          document.getElementById('loading').classList.remove('hide');
+          break;
+
+        case protocol.MTYPE.RUN_LOOP.DONE_LOADING:
+          document.getElementById('loading').classList.add('hide');
           break;
 
         default:

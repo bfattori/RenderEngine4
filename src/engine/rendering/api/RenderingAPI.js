@@ -969,7 +969,7 @@ export default function getAPI() {
          * @param {Object} [options.formatting] - Initial formatting states: {bold, italics, underline}
          * @returns {Object} Returns this for chaining
          */
-        vecText(text, options, textSize = [0, 0]) {
+        async vecText(text, options, textSize = [0, 0]) {
             // Validate input
             if (typeof text !== 'string' || text.length === 0) {
                 return context.API;
@@ -1015,7 +1015,7 @@ export default function getAPI() {
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text to generate render instructions
-            const result = textParsers.vector.parse(text);
+            const result = await textParsers.vector.parse(text);
             textSize[0] = result.width;
             textSize[1] = result.height;
 
@@ -1028,7 +1028,7 @@ export default function getAPI() {
          * @param {Object} style - Text styling options
          * @returns {Object} Returns this for chaining
          */
-        text(text, style = {}) {
+        async text(text, style = {}) {
             // Validate input
             if (typeof text !== 'string' || text.length === 0) {
                 return context.API;
@@ -1074,7 +1074,7 @@ export default function getAPI() {
             //     context.addInstruction(`${VECTOR_IL.TOGGLE} UNDERLINE\n`);
 
             // Process text to generate render instructions
-            const result = textParsers.raster.parse(text);
+            const result = await textParsers.raster.parse(text);
             textSize[0] = result.width;
             textSize[1] = result.height;
 

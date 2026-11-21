@@ -39,7 +39,7 @@ export default class TextParser {
         throw new RenderEngineError(`${this.constructor.name} must implement formatUnderline()`);
     }
 
-    getCharacter(char, text, index) {
+    async getCharacter(char, text, index) {
         throw new RenderEngineError(`${this.constructor.name} must implement getCharacter()`);
     }
 
@@ -93,7 +93,7 @@ export default class TextParser {
      * @param {string} text - Text content to process
      * @returns {Array<String>} Array of IL instructions
      */
-    parse(text) {
+    async parse(text) {
         let textWidth = 0, totalTextWidth = 0;
         let lineHeight = 0, totalTextHeight = 0;
 
@@ -147,34 +147,34 @@ export default class TextParser {
                 if (nextChar !== undefined) {
                     switch (nextChar) {
                         case '*':
-                            ci = this.getCharacter('*', text, i + 2);
+                            ci = await this.getCharacter('*', text, i + 2);
                             i += 2 + ci.trailingSpaces;
                             break;
                         case '{':
-                            ci = this.getCharacter('{', text, i + 2);
+                            ci = await this.getCharacter('{', text, i + 2);
                             i += 2 + ci.trailingSpaces;
                             break;
                         case '_':
-                            ci = this.getCharacter('_', text, i + 2);
+                            ci = await this.getCharacter('_', text, i + 2);
                             i += 2 + ci.trailingSpaces;
                             break;
                         case '~':
-                            ci = this.getCharacter('~', text, i + 2);
+                            ci = await this.getCharacter('~', text, i + 2);
                             i += 2 + ci.trailingSpaces;
                             break;
                         case '\\':
-                            ci = this.getCharacter('\\', text, i + 2);
+                            ci = await this.getCharacter('\\', text, i + 2);
                             i += 2 + ci.trailingSpaces;
                             break;
                         default:
                             // Not an escape sequence, treat as regular character
-                            ci = this.getCharacter(char, text, i + 1);
+                            ci = await this.getCharacter(char, text, i + 1);
                             i += 1 + ci.trailingSpaces;
                             break;
                     }
                 } else {
                     // Trailing backslash, treat as regular character
-                    ci = this.getCharacter('\\', text, i + 1);
+                    ci = await this.getCharacter('\\', text, i + 1);
                     i += 1 + ci.trailingSpaces;
                 }
 
@@ -273,7 +273,7 @@ export default class TextParser {
             }
 
             // Regular character - emit instruction
-            ci = this.getCharacter(char, text, i + 1);
+            ci = await this.getCharacter(char, text, i + 1);
 
             // Calculate overall width and height
             textWidth += ci.width;

@@ -2,6 +2,7 @@
  * Render Engine 4 bootstrapper
  */
 import Engine from './core/Engine.js';
+import Util from './core/Util.js';
 import KeyboardInput from './parts/input/KeyboardInput.js';
 
 // Render Engine 4 instance
@@ -16,6 +17,8 @@ const RenderEngine = {
     gameThread: null,               // set inside the game thread, null in the main thread
     renderer: null,
 
+    gameRoot: null,
+
     /**
      * Initialize the Render Engine 4.
      * 
@@ -23,9 +26,15 @@ const RenderEngine = {
      * @param {Object} options - See {@link Engine} for engine configuration options.
      */
     async init(gameRoot, options) {
-        engineOptions = options;
+        engineOptions = Util.deepMerge({}, options);
+        RenderEngine.gameRoot = gameRoot;
 
-        if (options && !options.thread) {
+        if (options && options.thread && !self.isGameThread) {
+            // load the threading engine manager and redirect there
+            const threadMgr = await import(new URL('./core/threaded/EngineThreadManager.js', import.meta.url));
+            RenderEngine.engineThreadManager = threadMgr.default;
+            await RenderEngine.engineThreadManager.start(new URL(options.gamePath, gameRoot), options.renderer);
+        } else {
             RenderEngine.RE4 = await Engine.init(gameRoot, import.meta.url, engineOptions);
 
             // assign to Global scope
@@ -34,14 +43,6 @@ const RenderEngine = {
 
             // initialize the render engine bootstrapper
             RenderEngine.initialize(engineOptions);
-        } else {
-            // we can query the global context to determine if we're on the main thread
-            self.isMainThread = true;
-            
-            // load the threading engine manager and redirect there
-            const threadMgr = await import(new URL('./core/threaded/EngineThreadManager.js', import.meta.url));
-            RenderEngine.engineThreadManager = threadMgr.default;
-            await RenderEngine.engineThreadManager.start(new URL(options.gamePath, gameRoot), options.renderer);
         }
     },
 
@@ -58,7 +59,7 @@ const RenderEngine = {
         engineConfig.world.renderContext.renderer = engineOptions.renderer;
 
         // configure the engine
-        RenderEngine.RE4 = await Engine.configEngine(engineConfig);
+        RenderEngine.RE4 = await Engine.init(RenderEngine.gameRoot, import.meta.url, engineConfig);
 
         // assign to Global scope
         globalThis.RE4 = RenderEngine.RE4;
@@ -67,6 +68,10 @@ const RenderEngine = {
 
     get renderer() {
         return RenderEngine.engineThreadManager.instance.renderer;
+    },
+
+    get assembler() {
+        return RenderEngine.engineThreadManager.instance.renderer.assembler;
     },
 
     get isMainThread() {
@@ -94,7 +99,7 @@ const RenderEngine = {
      * @returns {object} - The initial engine options. Modifying this has no effect.
      */
     get startupOptions() {
-        return structuredClone(engineOptions);
+        return engineOptions;
     },
 
     /**
@@ -102,7 +107,7 @@ const RenderEngine = {
      * @returns {object} - The current engine options. Modifying this has no effect.
      */
     get options() {
-        return structuredClone(Engine.engine.options);
+        return Engine.engine.options;
     },
 
     /**
@@ -110,15 +115,23 @@ const RenderEngine = {
      * @param {String} text - The text to display, or "LOADING..." if `null`
      */
     loading(text) {
-        document.querySelector('div#loading div.text').textContent = text || 'LOADING...';
-        document.getElementById('loading').classList.remove('hide');
+        if (!RenderEngine.engineThreadManager && !self.isGameThread) {
+            document.querySelector('div#loading div.text').textContent = text || 'LOADING...';
+            document.getElementById('loading').classList.remove('hide');
+        } else if (self.isGameThread) {
+            RenderEngine.pipeToMain.loading(text);
+        }
     },
 
     /**
      * Hide the loading box
      */
     doneLoading() {
-        document.getElementById('loading').classList.add('hide');
+        if (!RenderEngine.engineThreadManager && !self.isGameThread) {
+            document.getElementById('loading').classList.add('hide');
+        } else {
+            RenderEngine.pipeToMain.doneLoading();
+        }
     },
 
 /**
@@ -128,7 +141,7 @@ const RenderEngine = {
         if (RenderEngine.engineThreadManager)
             RenderEngine.engineThreadManager.instance.start();
         else {
-            RE4.start();
+            RenderEngine.RE4.start();
             console.info("Started");
         }
         RenderEngine.paused = false;
@@ -141,7 +154,7 @@ const RenderEngine = {
         if (RenderEngine.engineThreadManager)
             RenderEngine.engineThreadManager.instance.resume();
         else {
-            RE4.start();
+            RenderEngine.RE4.start();
             console.info("Resumed");
         }
         RenderEngine.paused = false;
@@ -155,7 +168,7 @@ const RenderEngine = {
             RenderEngine.engineThreadManager.instance.pause();
         else {
             console.info("Paused");
-            RE4.stop();
+            RenderEngine.RE4.stop();
         }
         RenderEngine.paused = true;
     },
@@ -167,7 +180,7 @@ const RenderEngine = {
         if (RenderEngine.engineThreadManager)
             RenderEngine.engineThreadManager.instance.stop();
         else {
-            RE4.reset();
+            RenderEngine.RE4.reset();
             console.info("Stopped & reset");
         }
         RenderEngine.reset = true;
@@ -180,7 +193,7 @@ const RenderEngine = {
         if (RenderEngine.engineThreadManager)
             RenderEngine.engineThreadManager.instance.step();
         else
-            RE4.step();
+            RenderEngine.RE4.step();
     },
 
     /**
@@ -191,7 +204,7 @@ const RenderEngine = {
             RenderEngine.engineThreadManager.instance.shutdown();
         else {
             console.info("... shutting down");
-            RE4.destroy();
+            RenderEngine.RE4.destroy();
         }
     },
 
@@ -200,7 +213,7 @@ const RenderEngine = {
      * @returns {GameWorld}
      */
     get world() {
-        return RE4.world;
+        return RenderEngine.RE4.world;
     },
 
     /**
@@ -208,7 +221,7 @@ const RenderEngine = {
      * @returns {EventEngine}
      */
     get eventEngine() {
-        return RE4.eventEngine;
+        return RenderEngine.RE4.eventEngine;
     },
 
     /**
@@ -232,7 +245,7 @@ const RenderEngine = {
      * @returns {ParticleEngine}
      */
     get particleEngine() {
-        return RE4.particleEngine;
+        return RenderEngine.RE4.particleEngine;
     },
 
     /**
@@ -240,7 +253,7 @@ const RenderEngine = {
      * @returns {Object}
      */
     get hooks() {
-        return RE4.hooks;
+        return RenderEngine.RE4.hooks;
     },
 
     /**

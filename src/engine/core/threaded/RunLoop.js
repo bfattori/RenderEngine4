@@ -5,17 +5,19 @@ import RunLoopError from './RunLoopError.js';
 import { Logger } from '../lang/Console.js';
 import protocol from './Protocol.js';
 
-let runLoopInstance = null;
+self.runLoopInstance = null;
 let messageHandler = null;
 
 let log;
 
-// we can query the global context to determine if we're on the game thread
+// identify this as the game thread
 self.isGameThread = true;
+self.threadedEngine = true;
 
 export default class RunLoop {
   #game;
   #renderer;
+  #assembler;
   #cbWaiting = new Map();
   #waitId = 1;
 
@@ -27,6 +29,10 @@ export default class RunLoop {
   
   get gameClass() {
     return this.#game;
+  }
+
+  get assembler() {
+    return this.#assembler;
   }
 
   #initialize() {
@@ -57,13 +63,15 @@ export default class RunLoop {
         // engine control
         
         case protocol.MTYPE.ENGINE_MANAGER.START:
+          this.#assembler = event.data.assembler;
+          
           const gameModule = await import(new URL(event.data.gameUrl));
           this.#game = gameModule.default;
 
           // run the game
-          if (this.#game && this.#game.run)
+          if (this.#game && this.#game.run) {          
             this.#game.run();
-          else
+          } else
             throw new RunLoopError(this, 'Game module does not have a "run" method');
           break;
         case protocol.MTYPE.ENGINE_MANAGER.RESUME:
@@ -169,6 +177,32 @@ export default class RunLoop {
       type: protocol.MTYPE.RUN_LOOP.ENGINE_CONFIG,
       engineConfig: engineOpts
     });
+  }
+
+  //---------------------------------
+  // loading dialog
+
+  loading(text) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.LOADING,
+      text: text
+    });
+  }
+
+  doneLoading() {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.DONE_LOADING
+    });
+  }
+
+  //---------------------------------
+  // particles
+
+  passParticleBitmap(image) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.PARTICLE_BITMAP,
+      bitmap: image
+    }, [ image ]);
   }
 
   //---------------------------------
@@ -289,11 +323,11 @@ export default class RunLoop {
 messageHandler = addEventListener('message', (event) => {
     if (!log) log = new Logger(RunLoop, null, true);
     if (event.data.re4 && event.data.re4 === protocol.MSG.ENGINE_MANAGER) {
-        if (!runLoopInstance && event.data.type === protocol.MTYPE.ENGINE_MANAGER.INIT) {
-            runLoopInstance = new RunLoop(event.data.renderer);
-        } else if (runLoopInstance) {
+        if (!self.runLoopInstance && event.data.type === protocol.MTYPE.ENGINE_MANAGER.INIT) {
+            self.runLoopInstance = new RunLoop(event.data.renderer);
+        } else if (self.runLoopInstance) {
             // fixme: This is probably why effect and shit don't make it to the workers
-            runLoopInstance.process(event);
+            self.runLoopInstance.process(event);
         } else {
             console.error("Missed message in RunLoop", event);
         }

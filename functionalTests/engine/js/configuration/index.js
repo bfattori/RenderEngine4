@@ -63,10 +63,11 @@ const api = RenderEngine.renderContext.getAPI();
 // basic vector text rendering    
 api    
     .pushTransform()
-    .translate(25, 60)
-    .vecText("Open the DevTools (Press F12)", 
-        {color: "black", lineWidth: 1})
-    .popTransform();
+    .translate(25, 60);
+await api.vecText("Open the DevTools (Press F12)", 
+        {color: "black", lineWidth: 1});
+
+api.popTransform();
 
 // run a single frame
 RE4.update(0, 0);

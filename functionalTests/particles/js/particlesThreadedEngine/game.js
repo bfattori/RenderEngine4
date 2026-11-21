@@ -1,0 +1,192 @@
+import RenderEngine from '../../../../src/engine/renderEngine4.js';
+import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
+import Renderer from '../../../../src/engine/rendering/renderers/Renderer.js';
+
+import GameObject from '../../../../src/engine/gameobject/GameObject.js';
+import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dPart.js';
+import ParticleEmitterPart from '../../../../src/engine/parts/render/ParticleEmitterPart.js';
+import BasicParticle from '../../../../src/engine/particlesystem/types/BasicParticle.js';
+import BurstEffect from '../../../../src/engine/particlesystem/effects/BurstEffect.js';
+
+import burstConfig from '../../../assets/particleConfig/burst.json' with { type: 'json' };
+
+import $Math from '../../../../src/engine/core/lang/Math.js';
+
+self.PARTICLE_ENGINE_OPTIONS = {
+    maxParticles: 20000,
+    circularBuffer: true
+};
+
+self.PARTICLE_THREADING_OPTIONS = {
+    workers: 2,
+    framesPerSecond: 120
+};
+
+// create a double-buffered canvas renderer
+await RenderEngine.init(import.meta.url, {
+    flags: {
+        debugMode: true,
+        showFps: true,
+        debugOpts: {
+            trackPerformance: true,
+            pragmaDebugging: true,
+            objectOrigins: false,
+            showParticleWorkersPiP: true,
+            showParticleEngineLoad: true
+        },
+        threading: {
+            particles: true
+        }
+    },
+    world: {
+        renderContext: new RenderContext(
+            Renderer.stub(),
+            { 
+                enableCulling: false
+             }
+        ),
+        dimensions: {width: 800, height: 600},
+        viewport: {left: 0, top: 0, width: 800, height: 600}
+    },
+    hooks: {
+        onLoad: () => { RenderEngine.loading("Please wait..."); },
+        onStart: () => { RenderEngine.doneLoading(); }
+    }
+});
+
+async function runGame() {
+
+    const purpleBurst = {
+        ...burstConfig,
+        ...{
+            colors: ['#390039','#b800b8','#fd52fd','#ffd0ff'],
+            lifeSpan: [800, 1000],
+            drag: [0.8, 1.8],
+            dragRate: 0.011,
+            velocity: [1.6, 3.0]
+        }
+    };
+    const eParticle2 = new BasicParticle(purpleBurst);
+    eParticle2.name = 'purples';
+
+    const blueBurst = {
+        ...burstConfig,
+        ...{
+            colors: ['#0000ff','#6432f8','#678cff','#afd4ff'],
+            drag: [1.8, 2.3],
+            dragRate: 0.1,
+            lifeSpan: [1000, 2000],
+            velocity: [0.8, 1.7]
+        }
+    };
+    const eParticle3 = new BasicParticle(blueBurst);
+    eParticle3.name = 'blues';
+
+    const redBurst = {
+        ...burstConfig,
+        ...{
+            colors: ['#ae1313','#ff0000','#ff5a5a','#ffc3c3'],
+            lifeSpan: [1000, 2500],
+            drag: [0.65, 1.8],
+            velocity: [2.6, 4.0]
+        }
+    };
+    const eParticle4 = new BasicParticle(redBurst);
+    eParticle4.name = 'reds';
+
+    RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4);
+
+    // set up the particles and effects we'll use
+    const pEffect = new BurstEffect({
+        count: 500,
+        particleTypes: [eParticle2, eParticle3, eParticle4]
+    });
+    RenderEngine.particleEngine.addEffect(pEffect);
+
+    // let the threaded particle engine know when
+    // the effects and particles have been sent
+    await RenderEngine.particleEngine.initialize();
+
+
+    // game object and component parts
+    // - set world position, rotation, and scale
+    const gameObject = new GameObject();
+    gameObject
+        .addComponentParts(
+            new Transform2dPart("transform"), 
+            new ParticleEmitterPart("emitter"));
+
+    // add the object to the world - before making any modifications to it
+    RenderEngine.world.addObject(gameObject);
+
+    // configure the emitter to use the explosion effect
+    const emitter = gameObject.PARTS.emitter;
+    emitter.effect = pEffect;
+
+
+    // every few seconds we'll generate an explosion
+    function explode() {
+        gameObject.PARTS.transform.position = [$Math.randomRangeInt(10, 790), $Math.randomRangeInt(5, 590)];
+        emitter.once();
+        setTimeout(explode, $Math.randomRangeInt(20, 80));
+    }
+
+    explode();
+
+    // Start the render loop   
+    RenderEngine.start();
+}
+
+const gameControl = {
+    //--------------------------------------
+    // required
+
+    /**
+     * This method is called when the engine is ready to run
+     * the game. Call the method to start your game.
+     */
+    run: async() => {
+        await runGame();    
+    },
+
+    /**
+     * This method is called when the engine is shutting down
+     * so your game can perform any clean up necessary.
+     */
+    shutdown: () => {
+        
+    },
+
+    //-----------------------------------------------------
+    // optional: called when the engine state changes
+    
+    /**
+     * Called whent the engine is paused
+     */
+    paused: () => {
+        
+    },
+
+    /**
+     * Called when the engine is resumed
+     */
+    resumed: () => {
+        
+    },
+
+    /**
+     * Called when the engine is stopped
+     */
+    stopped: () => {
+        
+    },
+
+    /**
+     * Called when the engine is stepped by one frame
+     */
+    stepped: () => {
+        
+    }
+};
+
+export default gameControl;

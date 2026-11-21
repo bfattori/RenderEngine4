@@ -16,6 +16,7 @@ const protocol = {
 
       PRE_FRAME: 'pre',
       RENDER_INSTRUCTIONS: 'rndr',
+      PARTICLE_BITMAP: 'pbm',
       POST_FRAME: 'post',
 
       COMPILE_TILE: '+tile',
@@ -27,6 +28,9 @@ const protocol = {
       DESTROY_TILE_MAP: '-map',
       DESTROY_SPRITE: '-spr',
       DESTROY_SHAPE: '-arb',
+
+      LOADING: 'ld',
+      DONE_LOADING: 'dl',
 
       TERMINATED: 'term'
     },

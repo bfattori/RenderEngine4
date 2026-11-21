@@ -98,7 +98,7 @@ export default class CompiledRenderPart extends RenderPart {
      */
     draw(time, deltaTime) {
         if (this.#compiledShape !== null) {
-            this.context.renderCompiledShape(this.#compiledShape);
+            this.context.renderCompiledShape(this.#compiledShape, time, deltaTime);
         } else {
             for (const inst of this.instructions) {
                 this.context.addInstruction(inst);

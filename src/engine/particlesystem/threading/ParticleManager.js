@@ -1,5 +1,7 @@
 import Context from '../../Context.js';
 
+import RenderEngine from '../../renderEngine4.js';
+
 import { Logger } from '../../core/lang/Console.js';
 import OrchestratorError from './OrchestratorError.js';
 import protocol from './Protocol.js';
@@ -192,10 +194,11 @@ export default class ParticleManager {
             console.debug('Waiting for orchestrator to be ready...')
             setTimeout(() => {
                 // initialize the orchestator and wait for it to be ready
+                const assembler = self.runLoopInstance ? self.runLoopInstance.assembler : $this.assembler.constructor.name;
                 $this.thread.postMessage({ 
                     re4: protocol.MSG.MANAGER, 
                     type: protocol.MTYPE.MANAGER.INIT,
-                    assembler: $this.assembler.constructor.name,
+                    assembler: assembler,
                     width: $this.props.width, 
                     height: $this.props.height, 
                     config: $this.props.config, 
@@ -218,27 +221,34 @@ export default class ParticleManager {
                     this.#vroom();
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.RENDERED:
-                    this.bitmap = event.data.image;
-                    this.#ready = true;
+                    if (self.isGameThread) {
+                        // running in the game thread - we need to pass this to the
+                        // engine thread manager
+                        RenderEngine.pipeToMain.passParticleBitmap(event.data.image);
+                    } else {
+                        this.bitmap = event.data.image;
+                        this.#ready = true;
 
-                    // sum up the live particles
-                    let total = 0;
-                    this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
+                        // sum up the live particles
+                        let total = 0;
+                        this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
 
-                    PRAGMA(ParticleManager, 'showParticleEngineLoad:update', {
-                        burden: (this.#initProps.config.maxParticles / this.#initProps.threading.workers),
-                        event: event,
-                        loadView: this.#engineLoadView,
-                        workerCount: this.#initProps.threading.workers,
-                        liveParticles: this.#liveParticles
-                    });
-
+                        PRAGMA(ParticleManager, 'showParticleEngineLoad:update', {
+                            burden: (this.#initProps.config.maxParticles / this.#initProps.threading.workers),
+                            event: event,
+                            loadView: this.#engineLoadView,
+                            workerCount: this.#initProps.threading.workers,
+                            liveParticles: this.#liveParticles
+                        });
+                    }
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED:
-                    PRAGMA(ParticleManager, 'showParticleWorkersPiP:workerRender', {
-                        workerView: this.#workerViews[event.data.workerId], 
-                        image: event.data.image
-                    });
+                    if (!self.isGameThread) {
+                        PRAGMA(ParticleManager, 'showParticleWorkersPiP:workerRender', {
+                            workerView: this.#workerViews[event.data.workerId], 
+                            image: event.data.image
+                        });
+                    }
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();

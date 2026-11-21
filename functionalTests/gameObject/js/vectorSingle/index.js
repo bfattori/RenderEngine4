@@ -52,8 +52,9 @@ RenderEngine.world.addObject(gameObject);
 let textBox = [0,0];
 const renderer = gameObject.PARTS.renderer;
 renderer.API
-    .fontSize(20)
-    .vecText("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l", {}, textBox);
+    .fontSize(20);
+
+await renderer.API.vecText("{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l", {}, textBox);
 renderer.compile();
 
 // set the origin at the center of the text

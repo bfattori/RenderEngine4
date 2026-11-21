@@ -249,12 +249,13 @@ class Orchestrator {
                     this.#testReady(event.data.workerId);
                     break;
                 case protocol.MTYPE.WORKER.RENDERED:
-                    // the worker thread has rendered the particles and returned a bitmap
-                    this.#workerBitmaps[event.data.workerId] = event.data.image;
-                    this.#workerState[event.data.workerId] = event.data.metrics;
+                    if (!self.isGameThread) {
+                        // the worker thread has rendered the particles and returned a bitmap
+                        this.#workerBitmaps[event.data.workerId] = event.data.image;
+                        this.#workerState[event.data.workerId] = event.data.metrics;
 
-                    PRAGMA(Orchestrator, 'showParticleWorkersPiP:rendered', {event: event});
-
+                        PRAGMA(Orchestrator, 'showParticleWorkersPiP:rendered', {event: event});
+                    }
                     // merge worker bitmaps
                     const combinedBitmap = this.#compositeWorkers();
                     postMessage({

@@ -2,7 +2,7 @@ import Config from '../core/config/Config.js';
 import Util from '../core/Util.js';
 
 import { ResourceError } from './loaders/ResourceLoader.js';
-import Assembler from '../rendering/assemblers/Assembler.js';
+import Engine from '../core/Engine.js';
 
 class TileDef extends Config {
     constructor(tileConfig) {
@@ -73,7 +73,13 @@ export default class Tile extends Config {
     }
 
     compile() {
-        this.#opaqueId = Assembler.assemblerInstance.compileTile(this);
+        let assembler = null
+        if (Util.isWorker())
+            assembler = self.$$worker.assembler;
+        else
+            assembler = Engine.renderContext.renderer.assembler;
+
+        this.#opaqueId = assembler.compileTile(this);
     }
 
     /**

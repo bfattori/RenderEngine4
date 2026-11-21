@@ -1,6 +1,8 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
 
+import RenderEngine from '../../renderEngine4.js';
+
 import Engine from '../../core/Engine.js';
 
 import Renderer, { RendererError, RendererConfig } from './Renderer.js';
@@ -150,30 +152,37 @@ export default class CanvasRenderer extends Renderer {
     }
 
     #particles(target) {
-        if (Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
+        let source = null;
+        if (!self.threadedEngine && Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
+            source = Engine.particleEngine.bitmap;
+        } else if (self.threadedEngine && !Engine.options.flags.particleEngineDisabled && RenderEngine.engineThreadManager.instance) {
+            source = RenderEngine.engineThreadManager.instance.bitmap;
+        }       
+
+        if (source !== null) {
             // draw particles to target
-            this.surface.resetTransform();
-            this.surface.drawImage(Engine.particleEngine.bitmap, 0, 0);
-        }        
+            target.resetTransform();
+            target.drawImage(source, 0, 0);
+        }
     }
 
     /**
      * After rendering, if buffered, swap offscreen to visible context.
      */
     postFrame(time, deltaTime) {
-        // render the particles if running on the main thread
-        if (Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && !Engine.options.flags.threading.particles)
+        // render the particles if the engine is running on the main thread
+        if (!self.threadedEngine && Engine.particleEngine)
             Engine.particleEngine.renderParticles(time, deltaTime, null,  this.surface);
 
         if (this.config.doubleBuffered) {
             // draw particles to offscreen framebuffer
-            this.#particles();
+            this.#particles(this.surface);
 
             // swap offscreen to visible context
             this.#blit.transferFromImageBitmap(this.#offscreen.transferToImageBitmap());
         } else {
             // draw particles directly to screen
-            this.#particles();
+            this.#particles(this.surface);
         }
     }
 

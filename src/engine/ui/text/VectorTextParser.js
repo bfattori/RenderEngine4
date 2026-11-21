@@ -72,7 +72,7 @@ export default class VectorTextParser extends TextParser {
      * @returns {Array} Array of IL instructions for this character
      * @private
      */
-    getCharacter(char, text, index) {
+    async getCharacter(char, text, index) {
 
         // determine if there are trailing spaces, and how many
         // to reduce the number of times we emit TRANSLATE instructions
@@ -104,7 +104,7 @@ export default class VectorTextParser extends TextParser {
                 if (!glyphCache.has(char)) {
                     // Compile the character shape and store in cache
                     if (char !== ' ') {
-                        const shapeId = this.renderContext.renderer.compileShape(ci.instructions, `CHAR '${char}'`);
+                        const shapeId = await this.renderContext.renderer.compileShape(ci.instructions, `CHAR '${char}'`);
                         glyphCache.set(char, shapeId);
                         this.renderContext.addInstruction(`${IL.SHAPE} ${shapeId}`);
                     }
