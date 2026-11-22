@@ -51,20 +51,6 @@ await marioSprites.loading();
 const floorTiles = new TileSheet("Floor", "../../../assets/floor_tiles.json");
 await floorTiles.loading();
 
-// draw some lines
-for (let i = 0; i < 20; i++) {
-    api
-        .color(Util.getRandomColor(230, 230, 230)).width($Math.randomRange(1, 5, true))
-        .line($Math.randomRange(5, 790, true), $Math.randomRange(5, 590, true), $Math.randomRange(5, 790, true), $Math.randomRange(5, 590, true));
-}
-
-// throw some confetti
-for (let i = 0; i < 100; i++) {
-    api
-        .color(Util.getRandomColor(80, 80, 80)).width($Math.randomRange(1, 5, true))
-        .point($Math.randomRange(5, 790, true), $Math.randomRange(5, 590, true));
-}
-
 // drop some sprites in the playfield
 marioSprites.sprites.forEach(sprite => {
     api

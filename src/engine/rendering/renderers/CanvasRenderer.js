@@ -151,6 +151,12 @@ export default class CanvasRenderer extends Renderer {
         this.surface.clearRect(0, 0, this.renderContext.viewport.width, this.renderContext.viewport.height);
     }
 
+    /**
+     * Render particles to the double-buffer or to the screen directly. For threaded particles, the output
+     * is contained in a bitmap from the `ParticleManager`. If particles are rendered in the main thread,
+     * this draws the particles directly to the `target`.
+     * @param {CanvasContext2d|OffscreenCanvasRenderingContext2D} target - The target of the rendering
+     */
     #particles(target) {
         let source = null;
         if (!self.threadedEngine && Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
@@ -284,13 +290,19 @@ export default class CanvasRenderer extends Renderer {
      * <b>Immediate Mode</b>
      * @param {String} instruction - The instruction to render 
      * @param {Number} time - The current time in seconds
-     * @param {Number} deltaTime - The time elapsed since the last frame in seconds
-     * @returns {void}
+     * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      */
     render(instruction, time, deltaTime) {
         this.#immediate(instruction, time, deltaTime);
     }
 
+    /**
+     * Renders an instruction buffer - an array of IL operators and operands. 
+     * <b>Immediate Mode</b>
+     * @param {Array<String>} buffer - The instruction buffer to render.
+     * @param {number} time - The current world time
+     * @param {number} deltaTime - The time elapsed since the last frame in milliseconds.
+     */
     renderInstructionBuffer(buffer, time, deltaTime) {
         buffer.forEach(instruction => this.render(instruction, time, deltaTime));
     }

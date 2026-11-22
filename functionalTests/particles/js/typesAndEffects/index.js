@@ -16,6 +16,32 @@ import SwitchPanel from '../../../../src/engine/ui/SwitchPanel.js';
 import { pEffect, pEffect2, wEffect1, wEffect2, sparkEffect, smokeEffect } from './effects.js';
 import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle, trailParticle, chaff, smokeParticle } from './particles.js';
 
+// What's going on here...
+DemoHelper.showInfo( 
+  `<p>
+  The <b>RenderEngine4</b>'s particle system is extremely flexible. Everything from
+  <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/Particle.js', {className:'Particle'})">Particle</a>
+  to <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/ParticleEffect.js', {className:'ParticleEffect'})">ParticleEffect</a>
+  is customizable. There are several existing particle types and effects to start with, or you can
+  create your own.
+  </p>
+  <p>
+  This example features:
+  <ul>
+  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/BasicParticle.js', {className:'BasicParticle'})">BasicParticle</a>
+  for the bursts using the <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/effects/BurstEffect.js', {className:'BurstEffect'})">BurstEffect</a></li>
+  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/effects/FountainEffect.js', {className:'FountainEffect'})">FountainEffect</a>
+  for both the fountain and trails.</li>
+  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/TrailParticle.js', {className:'TrailParticle'})">TrailParticle</a>
+  draws trails behind particles as they are emitted.</li>
+  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/SparkParticle.js', {className:'SparkParticle'})">SparkParticle</a>
+  makes streaks with hot spots. It uses the <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/effects/SparkEffect.js', {className:'SparkEffect'})">SparkEffect</a></li>
+  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/SmokeParticle.js', {className:'SmokeParticle'})">SmokeParticle</a>
+  creates wispy smoke and uses the <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/effects/SmokeEffect.js', {className:'SmokeEffect'})">SmokeEffect</a></li>
+  </ul>
+  </p>
+`);
+
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 30000
 };
@@ -169,7 +195,7 @@ function explode() {
     // choose a random effect
     explosionObject.PARTS.emitter.effect = Util.selectRandomOf(pEffect, pEffect2);
     explosionObject.PARTS.emitter.once();
-    explodeTimeout = setTimeout(explode, $Math.randomRangeInt(80, 200));
+    explodeTimeout = setTimeout(explode, $Math.randomRangeInt(200, 1000));
 }
 
 // // start the first explosion
@@ -229,29 +255,3 @@ function toggleSmokeEffect() {
 
 // Start the render loop   
 RenderEngine.start();
-
-// What's going on here...
-DemoHelper.showInfo( 
-  `<p>
-  The <b>RenderEngine4</b>'s particle system is extremely flexible. Everything from
-  <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/Particle.js', {className:'Particle'})">Particle</a>
-  to <a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/ParticleEffect.js', {className:'ParticleEffect'})">ParticleEffect</a>
-  is customizable. There are several existing particle types and effects to start with, or you can
-  create your own.
-  </p>
-  <p>
-  This example features:
-  <ul>
-  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/BasicParticle.js', {className:'BasicParticle'})">BasicParticle</a>
-  for the bursts</li>
-  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/effects/FountainEffect.js', {className:'FountainEffect'})">FountainEffect</a>
-  for both the fountain and trails.</li>
-  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/TrailParticle.js', {className:'TrailParticle'})">TrailParticle</a>
-  draws trails behind particles as they are emitted.</li>
-  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/SparkParticle.js', {className:'SparkParticle'})">SparkParticle</a>
-  makes streaks with hot spots.</li>
-  <li><a class='class-ref' href='#' onclick="DemoHelper.showCode('/src/engine/particlesystem/types/SmokeParticle.js', {className:'SmokeParticle'})">SmokeParticle</a>
-  creates wispy smoke that is affected by zones of influence.</li>
-  </ul>
-  </p>
-`);

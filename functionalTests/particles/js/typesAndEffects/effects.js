@@ -7,12 +7,12 @@ import { eParticle, eParticle2, eParticle3, eParticle4, wParticle, sparkParticle
 
 // configure particle effects
 const pEffect = new BurstEffect({
-    count: 1000,
+    count: 500,
     particleTypes: [eParticle]
 });
 
 const pEffect2 = new BurstEffect({
-    count: 800,
+    count: 300,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 pEffect2.name = 'glittery';
@@ -50,11 +50,11 @@ const sparkEffect = new SparkEffect({
 sparkEffect.name = 'sparks1';
 
 const smokeEffect = new SmokeEffect({
-  count: 6,
+  count: 8,
   particleTypes: [smokeParticle],
   angle: 0,
   spread: 30,
-  emissionWidth: 50,
+  emissionWidth: 100,
   emissionHeight: 1
 });
 smokeEffect.name = 'smokey';

@@ -29,33 +29,45 @@
                 bottom: 5px;
                 background-color: white;
             }
+
+            code {
+                font-weight: bold;
+            }
         </style>
     </head>
     <body>
         <h1>Render Contexts - Static Tests</h1>
         <ul class="tests">
-            <li><a href="runner.html?js=intermediate">The Intermediate Language</a>
+            <li><a href="runner.html?js=vectorCanvas">RenderContext Vector Drawing &amp; Text Formatting</a>
                 <div class="test-description">
-                    <p>Your game will program against the high-level API of the <b><code>RenderContext</code></b> to generate visual output. The <code>RenderContext</code>
-                    abstracts away the complexities of generating output to a surface (canvas, webgl, etc.) by producing an Intermediate Language (IL). The IL is
-                    passed to the renderers to generate the actual rendered output.</p>
+                    <p>This is a simple example showing the vector drawing methods of the render context. Vector drawing includes lines, points, line and curve paths, and primitive shapes 
+                    and polygons. This demonstrates using the engine to render a static layout to a <code>CanvasRenderer</code>. You can also see the built-in vector-based font 
+                    included with the engine.
+                    </p><p>
+                    Inline formatting is supported by the <code>TextParser</code>, and the <code>VectorTextParser</code> extends that to the vector-based font.
+                    The "tags" are similar to those found in RTF documents to handle text formatting from within each string. In one example provided, you can
+                    see this:</p>
+                    <blockquote><code>await api.vecText("{20}_{#00f}C{#f00}o{#080}l{#ee0}o{#808}r{#088}f{#800}u{orange}l_{!f}");</code></blockquote>
+                    <p>That string produces the text "Colorful" at font-size 20, in rainbow colors, and italicized.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=rasterCanvas">RenderContext Raster drawing</a>
+                <div class="test-description">
+                    <p>Raster operations of the <b><code>RenderContext</code></b> covers objects like
+                    <code>Sprites</code>, <code>Tiles</code>, and <code>TileMaps</code> that are common 
+                    in pixel-based games.</p>
+                    <p>Renderer-native font rendering with inline formatting is supported by the 
+                    <code>RasterTextParser</code>.</p>
+                </div>
+            </li>
+            <li><a href="runner.html?js=intermediate">The API, Intermediate Language &amp; Renderers</a>
+                <div class="test-description">
+                    <p>Your game will program against the high-level API of the <code>RenderContext</code> to generate visual output. The <code>RenderContext</code>
+                    abstracts away the complexities of generating output to a surface type (canvas, webgl, etc.) by producing an Intermediate Language (IL). The IL is
+                    consumed by the renderers to generate the actual rendered output.</p>
                     <p>The <code>IL</code> has a syntax that is similar to Assembly Language, comprised of an operator like <code>LINE</code>, <code>POINT</code>, <code>COLOR</code>,
-                    and <code>SHAPE</code> followed by zero or more operands. The renderers interpret these commands to produce output using the renderer's API. Addressing Canvas2D or WebGl 
-                    directly can be eliminated entirely.</p>
-                </div>
-            </li>
-            <li><a href="runner.html?js=vectorCanvas">Vector Rendering w/Canvas</a>
-                <div class="test-description">
-                    A simple example showing the <b><code>RenderContext</code></b> and <b><code>CanvasRenderer</code></b> used for vector drawing. 
-                    Vector rendering is comprised of lines, points, line and curve paths, and primitive shapes and polygons to generate imagery. This 
-                    demonstrates using the engine to render a static layout to a Canvas 2d context. It also demonstrates the vector-based font included
-                    with the engine.
-                </div>
-            </li>
-            <li><a href="runner.html?js=rasterCanvas">Raster Rendering w/Canvas</a>
-                <div class="test-description">
-                    This demonstrates the <b><code>RenderContext</code></b> and <b><code>CanvasRenderer</code></b> raster drawing. Raster rendering 
-                    includes <code>Sprites</code>, <code>Tiles</code>, and <code>TileMaps</code> that are common in pixel-based games.
+                    and <code>SHAPE</code> followed by zero or more operands. The renderers interpret these commands to produce output from the context's API. Addressing Canvas2D or WebGl 
+                    directly can be eliminated entirely.</p>                
                 </div>
             </li>
         </ul>        

@@ -92,7 +92,7 @@ export default class EngineThreadManager {
 
   async loadThread() {
     this.#thread = new Worker(new URL(`./RunLoop.js${ctx.preventThreadCache}`, import.meta.url), {
-      name: `RE4_gameLoop`,
+      name: `RE4GameLoop`,
       type: 'module'
     });
 

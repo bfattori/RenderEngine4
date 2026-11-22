@@ -187,6 +187,7 @@ export default class TextParser {
                 let markerType = '';
 
                 if (nextChar === '!') {
+                    // reset formatting state
                     let op = text[i + 2];
                     let reset = false;
                     if (op === '!') {

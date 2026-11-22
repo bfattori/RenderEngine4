@@ -13,7 +13,8 @@
 }
 
 /** Information Window **/
-#DemoHelpers div.information {
+#DemoHelpers div.information, 
+#DemoHelpersExtra div.information {
   border: 1px solid black;
   background-color: white;
   box-shadow:25px 25px 25px rgba(39, 1, 1, 0.6);
@@ -27,7 +28,8 @@
   bottom: 0;
 }
 
-#DemoHelpers div.information a.class-ref {
+#DemoHelpers div.information a.class-ref, 
+#DemoHelpersExtra div.information a.class-ref {
   color: #337ab7;
   font-family: Consolas, monospace;
   font-weight: bold;
@@ -37,8 +39,15 @@
   border-radius: 5px;
 }
 
-#DemoHelpers div.information a.class-ref:hover {
+#DemoHelpers div.information a.class-ref:hover, 
+#DemoHelpersExtra div.information a.class-ref:hover {
   background-color: #26e726;
+}
+
+#DemoHelpersExtra div.information {
+  box-shadow:25px 25px 25px rgba(7, 3, 68, 0.6);
+  bottom: unset;
+  min-width: unset;
 }
 
 /** Code Window **/
@@ -58,7 +67,7 @@
 
 #DemoHelpers div.code-window .code {
   font-family: Consolas, monospace;
-  font-size: 120%;
+  font-size: 108%;
   white-space: pre-wrap;
   position: relative;
   width: 100%;

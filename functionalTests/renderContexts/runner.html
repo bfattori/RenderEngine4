@@ -2,6 +2,10 @@
 <html>
     <head>
         <title>Render Engine 4 - Render Context Testing</title>
+
+        <!-- DemoHelper styles -->
+        <link rel="stylesheet" href="../assets/css/demo-helper.css">
+
         <link rel="stylesheet" href="../../src/re4.css">
         <link rel="stylesheet" href="../../src/re4_debug.css">
         <script src="../../devtools/protocol/messages.js"></script>
@@ -9,12 +13,78 @@
         <script src="../../src/engine/renderEngine4_debug.js" type="module"></script>
         <script type="module">
             await (async () => {
+                // Load the demo helper script
+                const DemoHelper = await import(new URL('../assets/js/demo-helper.js', import.meta.url));
+                self.DemoHelper = DemoHelper.default;
+
                 const params = new URLSearchParams(window.location.search);
                 const jsFile = params.get("js"); // is the number 123
                 const module = await import(new URL(`js/${jsFile}/index.js`, import.meta.url));
                 return module.default; 
             })();
         </script>
+
+        <style>
+            table {
+                border: 1px solid;
+            }
+
+            th {
+                background-color: navy;
+                color: white;   
+            }
+
+            th.api-col-1 {
+                width: 170px;
+            }
+
+            th.api-col-2 {
+                width: 390px;
+            }
+
+            td {
+                padding-left: 8px;
+                padding-right: 5px;
+                padding-bottom: 6px;
+            }
+
+            td.state {
+                background-color: #ddf;
+            }
+
+            td.state code {
+                font-weight: bold;
+            }
+
+            td.state + td {
+                background-color: #efefef;
+            }
+
+            td.header {
+                font-size: 120%;
+                background-color: #a00;
+                color: white;
+            }
+
+            div.scroll-y {
+                overflow-y: auto;
+            }
+
+            div.api-methods {
+                height: 500px;
+                border: 1px solid gray;
+            }
+
+            div.text-tags {
+                height: 430px;
+                border: 1px solid gray;
+            }
+
+            code {
+                font-size: 110%;
+            }
+
+        </style>
     </head>
     <body>
         <div id="context"></div>        
