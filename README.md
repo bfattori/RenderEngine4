@@ -1,4 +1,6 @@
 # RenderEngine4
+<img src="image.png" width="640" height="480"/>
+
 *A High-performance, modular graphics engine for the modern web.*
 
 >[!WARNING] 
