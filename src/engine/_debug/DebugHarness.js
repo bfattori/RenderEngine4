@@ -125,6 +125,9 @@ async function pragma_init(clazz) {
     console.verbose(`PRAGMA [ debug :: ${className} ]`);
     const DEBUG = await import(new URL(`./classes/${className}.js${ctx.preventScriptCache}`, import.meta.url));
     clazz.__DEBUG__ = DEBUG.default;
+    
+    // load counter views
+    clazz.__DEBUG__.views = new Map();
 
     if (clazz.__DEBUG__ && clazz.__DEBUG__.profiling) {
       // attach profiling hooks
@@ -137,15 +140,19 @@ async function pragma_init(clazz) {
 }
 
 /**
- * 
+ * Call a debug point on the class, passing the `data` object
  * @param {Class} clazz - The class that is calling the debug point
  * @param {String} name - The name of the debug point, in the format "debugPointName:subPointName"
  * @param {Object} data - The data to pass to the debug code
- * @returns {*} The return value of the debug code, if any
  */
 function pragma(clazz, name, data) {
+  let returnVal;
   if (ctx.pragmas && ctx.debug && ctx.debugOpts[name.split(':')[0]] === true)
-    return clazz["__DEBUG__"][name](data);
+    returnVal = clazz["__DEBUG__"][name](data, clazz["__DEBUG__"].views);
+
+  if (returnVal) {
+    clazz["__DEBUG__"].views.set(returnVal.name, returnVal.obj);  
+  }
 }
 
 const installDirectives = (owner = self) => {

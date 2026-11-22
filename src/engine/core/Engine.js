@@ -149,7 +149,7 @@ export default class Engine {
     this.#ENGINE_OPTIONS.world.collisions.narrowBand = narrowbandModel;
     this.#WORLD.narrowbandNodel = narrowbandModel;
 
-    if (this.#ENGINE_OPTIONS.flags.showFps && !self.isGameThread) {
+    if (this.#ENGINE_OPTIONS.flags.showFps) {
       this.#fpsCounter = new FPSCounter();
     }
   }
@@ -935,7 +935,7 @@ function animationLoop() {
     lifecycleHooks.onFrame(performance.now(), e.frameNumber, e.realFPS, e.snapshotStats(deltaTime, updateEnd - updateStart, renderEnd - renderStart, frameTime));
     const frameEnd = performance.now();
 
-    if (e.options.flags.showFps && !self.isGameThread) {
+    if (e.options.flags.showFps) {
       e.fpsCounter.frame(deltaTime, frameStart, updateStart, updateEnd, renderStart, renderEnd, frameEnd);
     }
   }

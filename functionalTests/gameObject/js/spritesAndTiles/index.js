@@ -7,6 +7,7 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 import SpritePart from '../../../../src/engine/parts/render/SpritePart.js';
 import AABBCollider from '../../../../src/engine/parts/collision/AABBCollider.js';
 import GameObject from '../../../../src/engine/gameobject/GameObject.js';
+import TileMapPart from '../../../../src/engine/parts/render/TileMapPart.js';
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {
@@ -41,9 +42,6 @@ await RenderEngine.init(import.meta.url, {
     }
 });
 
-// add blue background
-document.getElementById("context").classList.add("sprites-and-tiles");
-
 // load a couple asset sheets
 const marioSprites = new SpriteSheet('SMBTiles', '../../../assets/smb_sprites.json');
 const map = new PlatformerMap('TileMap', '../../../assets/platformer.json');
@@ -52,10 +50,23 @@ const map = new PlatformerMap('TileMap', '../../../assets/platformer.json');
 await marioSprites.loading();
 await map.loading();
 
+// add blue background
+document.getElementById("context").classList.add("sprites-and-tiles");
+
 // drop some sprites in the playfield
 let x = 100, y = 64;
 
-RenderEngine.world.tileMap = map;
+
+// add the tilemap to the game
+const level = new GameObject();
+level.addComponentParts(
+    new Transform2dPart("transform"),
+    new TileMapPart("tileMap"));
+
+level.PARTS.transform.position = [0, 0];
+level.PARTS.tileMap.map = map;
+
+RenderEngine.world.addObject(level);
 
 marioSprites.sprites.forEach(sprite => {
     const actor = new GameObject();

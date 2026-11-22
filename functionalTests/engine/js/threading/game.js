@@ -11,7 +11,7 @@ import GameObject from '../../../../src/engine/gameobject/GameObject.js';
 await RenderEngine.init(import.meta.url, {
     flags: {
         debugMode: true,
-        showFps: false,
+        showFps: true,
         debugOpts: {
             objectOrigins: true
         }

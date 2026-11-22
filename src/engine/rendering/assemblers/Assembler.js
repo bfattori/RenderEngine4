@@ -65,6 +65,10 @@ export default class Assembler {
         return this.#compiledTiles.get(opaqueId);
     }
 
+    getCompiledTileMap(opaqueId) {
+        return this.#compiledTileMaps.get(opaqueId);
+    }
+
     /**
      * Destroy the compiled shape for the given opaque Id.
      * @param {number} opaqueId - The opaque Id of the shape
@@ -75,6 +79,10 @@ export default class Assembler {
 
     destroyCompiledTile(opaqueId) {
         this.#compiledTiles.delete(opaqueId);
+    }
+
+    destroyCompiledTileMap(opaqueId) {
+        this.#compiledTileMaps.delete(opaqueId);
     }
 
     /**
@@ -144,6 +152,21 @@ export default class Assembler {
 
         // store the procedure that will run the instructions
         this.#compiledTiles.set(opaqueId, tile);
+        return opaqueId;
+    }
+
+    compileTileMap(tileMap) {
+        const opaqueId = this.#nextShapeId;
+        
+        // in the future, we might wrap this in a self-contained function
+        
+        // identify stored procedures
+        // if (tag !== null) {
+        //     storedProcedure.tag = tag;
+        // }
+
+        // store the procedure that will run the instructions
+        this.#compiledTileMaps.set(opaqueId, tileMap);
         return opaqueId;
     }
 

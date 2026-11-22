@@ -102,7 +102,7 @@ RenderEngine.particleEngine.addParticleTypes(eParticle2, eParticle3, eParticle4)
 
 // set up the particles and effects we'll use
 const pEffect = new BurstEffect({
-    count: 500,
+    count: 1000,
     particleTypes: [eParticle2, eParticle3, eParticle4]
 });
 RenderEngine.particleEngine.addEffect(pEffect);

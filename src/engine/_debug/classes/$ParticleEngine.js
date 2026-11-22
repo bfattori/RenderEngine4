@@ -16,19 +16,25 @@ const debug = {
           'Particles': {}
         }
       }
-      return new LoadCounter("Particle Engine Load", config);
+      return {
+        type: 'loadCounter',
+        name: 'Particle Engine Load',
+        obj: new LoadCounter("Particle Engine Load", config)
+      };
     }
   },
 
-  'showParticleEngineLoad:update': ({visible, loadView, overall, load}) => {
+  'showParticleEngineLoad:update': ({visible, overall, load}, views) => {
     if (visible) {
+      const loadView = views.get('Particle Engine Load');
       loadView.update('Update:Load', load);
       loadView.update('Update:Time', overall);
     }
   },
 
-  'showParticleEngineLoad:render': ({ visible, loadView, renderTime, deltaTime, liveParticles }) => {
+  'showParticleEngineLoad:render': ({ visible, renderTime, deltaTime, liveParticles }, views) => {
     if (visible) {
+      const loadView = views.get('Particle Engine Load');
       // using the last frame time, what
       // is the overall load of the PE on the CPU?
       loadView.update('Render:Load', (renderTime / deltaTime) * 100);

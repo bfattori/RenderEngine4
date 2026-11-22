@@ -5,6 +5,9 @@ import { Logger } from '../lang/Console.js';
 import RunLoopError from './RunLoopError.js';
 import protocol from './Protocol.js';
 
+import LoadCounter from '../../ui/debug/LoadCounter.js';
+import CanvasPIP from '../../ui/debug/CanvasPIP.js';
+
 const ctx = Context.getInstance();
 
 let log;
@@ -30,6 +33,9 @@ export default class EngineThreadManager {
   #callbackResults = [];
 
   #particleBitmap = null;
+
+  #loadCounters = new Map();
+  #pips = new Map();
 
   static #instance;
 
@@ -288,10 +294,46 @@ export default class EngineThreadManager {
           document.getElementById('loading').classList.add('hide');
           break;
 
+        case protocol.MTYPE.RUN_LOOP.COUNTER_CONFIG:
+          this.fixConfigFunctions(event.data.config);
+          const counterView = new LoadCounter(event.data.config.title, event.data.config);
+          this.#loadCounters.set(event.data.config.title, counterView);
+          counterView.initializeView();
+          break;
+
+        case protocol.MTYPE.RUN_LOOP.COUNTER_UPDATE:
+          const updCounter = this.#loadCounters.get(event.data.counter);
+          updCounter.update(event.data.view, event.data.value);
+          break;
+
+        case protocol.MTYPE.RUN_LOOP.PIP_CONFIG:
+          const pip = new CanvasPIP(event.data.pip, event.data.config.top, event.data.config.width, event.data.config.height);
+          this.#pips.set(event.data.pip, pip);
+          pip.initializeView();
+          break;
+
+        case protocol.MTYPE.RUN_LOOP.PIP_UPDATE:
+          const pipView = this.#pips.get(event.data.pip);
+          pipView.update(event.data.image);
+          break;
+
         default:
           log.error('Unknown message type from RunLoop:', event.data);
       }
     }
+  }
+
+  fixConfigFunctions(configObject) {
+    // convert the functions into JSON to reconstruct on the other side
+    Object.keys(configObject.options).forEach(configName => {
+      const config = configObject.options[configName];
+      Object.keys(config).forEach(optionName => {
+        if (typeof config[optionName] === 'string' && config[optionName].startsWith('{\"$T\":')) {
+          const fnDecl = JSON.parse(config[optionName]);
+          config[optionName] = new Function(`const fn=${fnDecl.fn};return fn;`)();
+        }
+      });
+    });
   }
 
   runLoopError(event) {

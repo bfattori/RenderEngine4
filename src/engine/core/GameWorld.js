@@ -190,22 +190,6 @@ class GameWorld {
     return this.#currentTransform;
   }
 
-  /**
-   * Set the tile map for the world (when using raster contexts)
-   * @param {TileMap} tileMap - The new tile map to set
-   */
-  set tileMap(tileMap) {
-    this.#tileMap = tileMap;
-  }
-
-  /**
-   * Get the tile map for the world (when using raster contexts)
-   * @returns {TileMap} - The current tile map
-   */
-  get tileMap() {
-    return this.#tileMap;
-  }
-
   //--------------------------------
   // Lifecycle Methods
   //--------------------------------

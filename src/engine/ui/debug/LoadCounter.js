@@ -1,6 +1,8 @@
 import Constants from '../../Constants.js';
 import Util from '../../core/Util.js';
 
+import RenderEngine from '../../renderEngine4.js';
+
 export default class LoadCounter {
     #config = null;
 
@@ -17,12 +19,34 @@ export default class LoadCounter {
     #filterStrength;
 
     constructor(title, config) {
-
         // generate display
         this.#config = { ...Constants.LOAD_COUNTER_DEFAULTS, ...config };
+        this.#config.title = title;
         Object.keys(config.options).forEach(k => {
             this.config.options[k] = {...Constants.DEFAULT_COUNTER_FORMAT, ...config.options[k]};    
         });
+
+        if (self.isGameThread) {
+            // pass to main thread to be created
+            RenderEngine.pipeToMain.passLoadCounter(this.#config);
+        } else {
+            this.initializeView();
+        }
+    }
+
+    get filteringStrength() {
+        return this.#filterStrength;
+    }
+
+    set filteringStrength(strength) {
+        this.#filterStrength = strength;
+    }
+
+    get config() {
+        return this.#config;
+    }
+
+    initializeView() {
         this.#filterStrength = this.config.filteringStrength;
 
         const views = this.config.counters;
@@ -36,7 +60,7 @@ export default class LoadCounter {
         });
 
         const loadTitle = document.createElement('div');
-        loadTitle.textContent = title;
+        loadTitle.textContent = this.config.title;
         loadTitle.classList.add('loadTitle');
         loadDisplay.appendChild(loadTitle);
 
@@ -84,7 +108,7 @@ export default class LoadCounter {
                 ...this.config.options[views[i]]
             };
 
-            if (format.smooth) {
+            if (format.smoothing) {
                 this.#smoothed[views[i]] = 0;
             }
 
@@ -128,41 +152,33 @@ export default class LoadCounter {
         document.body.appendChild(loadDisplay);
     }
 
-    get filteringStrength() {
-        return this.#filterStrength;
-    }
-
-    set filteringStrength(strength) {
-        this.#filterStrength = strength;
-    }
-
-    get config() {
-        return this.#config;
-    }
-
     update(view, value) {
-        const idx = this.config.counters.indexOf(view);
-        const format = this.config.options[view];
+        if (self.isGameThread) {
+            RenderEngine.pipeToMain.counterUpdate(this.config.title, view, value);
+        } else {
+            const idx = this.config.counters.indexOf(view);
+            const format = this.config.options[view];
 
-        if (format.smoothing) {
-            this.#smoothed[view] += (value - this.#smoothed[view]) / this.filteringStrength;
-        }
-        
-        const rValue = format.clamp !== null ? Math.min(value, format.clamp) : value;
-        const textContent = [format.prefix, rValue.toFixed(format.fixedDigits), format.suffix].filter(e => typeof e !== 'undefined').join('');
-        this.#loadCounter[idx].textContent = textContent;
-
-        if (format.bar) {
-            if (format.clamp !== null && value > format.clamp && !this.#loadBar[idx].classList.contains('overload')) {
-                this.#loadBar[idx].classList.add('overload');
-                setTimeout(() => {
-                    this.#loadBar[idx].classList.remove('overload');    
-                }, 1000);
+            if (format.smoothing) {
+                this.#smoothed[view] += (value - this.#smoothed[view]) / this.filteringStrength;
             }
-                
+            
+            const rValue = format.clamp !== null ? Math.min(value, format.clamp) : value;
+            const textContent = [format.prefix, rValue.toFixed(format.fixedDigits), format.suffix].filter(e => typeof e !== 'undefined').join('');
+            this.#loadCounter[idx].textContent = textContent;
 
-            this.#loadBarText[idx].textContent = format.barContent ? format.barContent(textContent) : textContent;
-            this.#loadBar[idx].style.width = format.barCalc ? format.barCalc(rValue) : textContent;
+            if (format.bar) {
+                if (format.clamp !== null && value > format.clamp && !this.#loadBar[idx].classList.contains('overload')) {
+                    this.#loadBar[idx].classList.add('overload');
+                    setTimeout(() => {
+                        this.#loadBar[idx].classList.remove('overload');    
+                    }, 1000);
+                }
+                    
+
+                this.#loadBarText[idx].textContent = format.barContent ? format.barContent(textContent, this.config.context) : textContent;
+                this.#loadBar[idx].style.width = format.barCalc ? format.barCalc(rValue, this.config.context) : textContent;
+            }
         }
     }
 }

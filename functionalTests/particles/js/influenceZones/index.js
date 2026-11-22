@@ -85,14 +85,7 @@ const repulsor2 = new ParticleInfluencer({
     restitution: 0.1
 });
 
-const repulsor3 = new ParticleInfluencer({
-     radius: 80,
-     pos: [380, 270],
-     restitution: 0.8
-});
-
-
-RenderEngine.particleEngine.addInfluencers(repulsor, repulsor2, repulsor3);
+RenderEngine.particleEngine.addInfluencers(repulsor, repulsor2);
 RenderEngine.particleEngine.addParticleTypes(sParticle, sParticle2);
 RenderEngine.particleEngine.addEffects(sEffect, sEffect2);
 
@@ -134,11 +127,6 @@ smokeEmitter2.effect = sEffect2;
 
 smokeEmitter.enable();
 smokeEmitter2.enable();
-
-RenderEngine.hooks.onUpdate = (time, deltaTime) => {
-    repulsor3.pos = [Math.floor(380 + (400 * Math.sin(time * 0.001))), 270];
-}
-
 
 // Start the render loop   
 RenderEngine.start();

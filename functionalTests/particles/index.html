@@ -39,6 +39,8 @@
                     <p>Demonstrates the particle engine, running on the main thread, bound to the engine's update/render loop.
                     Keeping particle limits low and effect sizes limited reduces overhead to an acceptable performance level. Limited
                     to 500 particles per burst and a maximum 10,000 active particles.</p>
+                    <p>The game and the particle engine are both running in the main thread. When you increase the number of particles
+                    being rendered, the engine load increases as well.</p>
                 </div>
             </li>
             <li><a href="runner.html?js=particlesThreaded">An example using WebWorkers</a>
@@ -47,13 +49,17 @@
                     to worker threads, each sharing the burden, utilizing an <b><code>Orchestrator</code></b> to manage the distribution load and the
                     coalescing and rendering of particles for the main thread.</p>
                     <p>Running with <b><code>WebWorkers</code></b> can free up load in the engine's update/render loop for more active 
-                    objects in the scene. This example uses 2 worker threads, increases the particles to 10,000 per burst, and has a maximum 
-                    of 100,000 live particles.</p>
+                    objects in the scene. This example uses 2 worker threads, increases the maximum particle count to 20,000, and uses 1,000 particles
+                    per burst.</p>
+                    <p>The game runs in the main thread, while the particle engine is in worker threads. Notice that even with thousands of
+                    particles being rendered, the engine load stays low.</p>
                 </div>
             </li>
             <li><a href="runner.html?js=particlesThreadedEngine">WebWorkers in a Threaded Engine</a>
                 <div class="test-description">
-                    <p>This is the example above, but the game is running in a thread as well.</p>
+                    <p>This is the example above with both the game and the particle engine running in threads. The example increases the maximum particles
+                    to 50,000, and uses 1,500 particles per burst.
+                    </p>
                 </div>
             </li>
             <li><a href="runner.html?js=typesAndEffects">Included particle types &amp; effects</a>

@@ -121,7 +121,7 @@ export default class $ParticleEngine {
         // enforce singleton pattern
         $ParticleEngine.#useBuilder = true;
 
-        this.#engineLoadView = PRAGMA($ParticleEngine, 'showParticleEngineLoad', {init: !threading});
+        PRAGMA($ParticleEngine, 'showParticleEngineLoad', {init: !threading});
 
         this.#config = new ParticleEngineConfig();
         this.#config.merge(config);
@@ -577,7 +577,6 @@ export default class $ParticleEngine {
         const overall = performance.now() - this.#start;
         PRAGMA($ParticleEngine, 'showParticleEngineLoad:update', { 
             visible: !this.thread, 
-            loadView: this.#engineLoadView,
             overall: overall,
             load: (overall / deltaTime) * 100
         });
@@ -663,7 +662,6 @@ export default class $ParticleEngine {
         // debug - update load
         PRAGMA($ParticleEngine, 'showParticleEngineLoad:render', { 
             visible: !this.thread, 
-            loadView: this.#engineLoadView,
             renderTime: renderTime, 
             deltaTime: deltaTime, 
             liveParticles: this.liveParticles

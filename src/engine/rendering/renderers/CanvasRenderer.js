@@ -275,6 +275,15 @@ export default class CanvasRenderer extends Renderer {
         }
     }
 
+    renderTileMap(opaqueId, x, y, time, deltaTime) {
+        const tileMap = this.assembler.getCompiledTileMap(parseInt(opaqueId));
+        if (tileMap) {
+            this.surface.drawImage(tileMap.generated, x, y);
+        } else if (opaqueId !== "undefined") {
+            console.debug(`No compiled tileMap found for opaqueId: ${opaqueId}`);
+        }
+    }
+
     /**
      * Destroy a previously compiled shape. Does not destroy a compiled shape directly
      * so it can be appropriately garbage collected.
@@ -440,9 +449,13 @@ export default class CanvasRenderer extends Renderer {
                 break;
 
             case IL.SPRITE:
-            case IL.TILE:
-            case IL.TILEMAP:
                 this.renderSprite(args[0], args[1], args[2], time, deltaTime);
+                break;
+            case IL.TILE:
+                this.renderTile(args[0], args[1], args[2], time, deltaTime);
+                break;
+            case IL.TILEMAP:
+                this.renderTileMap(args[0], args[1], args[2], time, deltaTime);
                 break;
 
             //--------------------------------------------

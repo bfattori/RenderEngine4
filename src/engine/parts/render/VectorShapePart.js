@@ -1,3 +1,4 @@
+import Constants from '../../Constants.js';
 import CompiledRenderPart from './CompiledRenderPart.js';
 import VectorShape from '../../resources/VectorShape.js';
 

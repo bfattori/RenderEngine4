@@ -93,6 +93,7 @@ div.loadContainer div.loadCounter {
     left: 55px;
     height: 15px;
     width: 60px;
+    z-index: 1000;
 }
 
 div.loadContainer div.loadBar {

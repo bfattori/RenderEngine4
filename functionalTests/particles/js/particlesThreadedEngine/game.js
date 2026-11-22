@@ -13,7 +13,7 @@ import burstConfig from '../../../assets/particleConfig/burst.json' with { type:
 import $Math from '../../../../src/engine/core/lang/Math.js';
 
 self.PARTICLE_ENGINE_OPTIONS = {
-    maxParticles: 20000,
+    maxParticles: 50000,
     circularBuffer: true
 };
 
@@ -98,7 +98,7 @@ async function runGame() {
 
     // set up the particles and effects we'll use
     const pEffect = new BurstEffect({
-        count: 500,
+        count: 1500,
         particleTypes: [eParticle2, eParticle3, eParticle4]
     });
     RenderEngine.particleEngine.addEffect(pEffect);

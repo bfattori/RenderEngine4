@@ -314,6 +314,53 @@ export default class RunLoop {
       deltaTime: deltaTime
     });
   }
+
+  passLoadCounter(counterConfig) {
+    this.fixConfigFunctions(counterConfig);
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.COUNTER_CONFIG,
+      config: counterConfig
+    });
+  }
+
+  fixConfigFunctions(configObject) {
+    // convert the functions into JSON to reconstruct on the other side
+    Object.keys(configObject.options).forEach(configName => {
+      const config = configObject.options[configName];
+      Object.keys(config).forEach(optionName => {
+        if (config[optionName] !== null && typeof config[optionName] === 'function')
+          config[optionName] = JSON.stringify({
+            $T: 'function',
+            fn: config[optionName].toString()
+          });
+      });
+    });
+  }
+
+  counterUpdate(counterName, view, value) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.COUNTER_UPDATE,
+      counter: counterName,
+      view: view,
+      value: value
+    });
+  }
+
+  passCanvasPIP(pipName, pipConfig) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.PIP_CONFIG,
+      pip: pipName,
+      config: pipConfig
+    });
+  }
+
+  pipUpdate(pipName, bitmap) {
+    this.#send({
+      type: protocol.MTYPE.RUN_LOOP.PIP_UPDATE,
+      pip: pipName,
+      image: bitmap
+    }, [ bitmap ]);
+  }
 }
 
 /**

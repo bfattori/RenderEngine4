@@ -1,5 +1,6 @@
+import Constants from '../../Constants.js';
+
 import Engine from '../../core/Engine.js';
-import $Math from '../../core/lang/Math.js';
 import RenderPart from './RenderPart.js';
 import ParticleEffect from '../../particlesystem/ParticleEffect.js';
 

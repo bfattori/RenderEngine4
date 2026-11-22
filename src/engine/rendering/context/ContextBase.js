@@ -570,7 +570,7 @@ export default class ContextBase {
     this.renderInstructionBuffer(time, deltaTime);
 
     // post-frame generation
-    this.postFrame();
+    this.postFrame(time, deltaTime);
 
     // clean up 
     this.clearInstructionBuffer();

@@ -1,5 +1,4 @@
-
-import Sprite from '../../resources/Sprite.js';
+import Constants from '../../Constants.js';
 import RenderPart from './RenderPart.js';
 
 export default class SpritePart extends RenderPart {

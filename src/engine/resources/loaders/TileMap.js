@@ -1,6 +1,8 @@
 import Enum from '../../core/lang/Enum.js';
 import ResourceLoader, { ResourceError } from './ResourceLoader.js';
 import TileSheet from './TileSheet.js';
+import Engine from '../../core/Engine.js';
+import Util from '../../core/Util.js';
 
 /**
  * TileMapFactory is a resource factory for the various types of tile maps that can be loaded into the game.
@@ -16,6 +18,7 @@ import TileSheet from './TileSheet.js';
 export default class TileMap extends ResourceLoader {
     #name;
     #generated = null;
+    #opaqueId;
 
     static TYPE = new Enum({
       PLATFORMER: 'platformer',
@@ -56,6 +59,7 @@ export default class TileMap extends ResourceLoader {
         }
         this.tileMap = content;
         await this.loadTileMap();
+        this.compile();
         return this;
     }
 
@@ -69,6 +73,24 @@ export default class TileMap extends ResourceLoader {
         this.tileMap = null;
         this.tileSheet = null;
         super.destroy();
+    }
+
+    compile() {
+        let assembler = null
+        if (Util.isWorker())
+            assembler = self.$$worker.assembler;
+        else
+            assembler = Engine.renderContext.renderer.assembler;
+
+        this.#opaqueId = assembler.compileTileMap(this);
+    }
+
+    set opaqueId(id) {
+        this.#opaqueId = id;
+    }
+
+    get opaqueId() {
+        return this.#opaqueId;
     }
 
     /**

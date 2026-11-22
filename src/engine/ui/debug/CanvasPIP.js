@@ -1,6 +1,7 @@
-
+import RenderEngine from '../../renderEngine4.js';
 export default class CanvasPIP {
     #canvasPiP = null;
+    #config;
 
     // a temporary canvas where we can perform operations
     // and extract results
@@ -14,23 +15,12 @@ export default class CanvasPIP {
      * @param {number} height - The height in pixels of the PiP (default: 120) 
      */
     constructor(title, top, width = 160, height = 120) {
-        const pictureInPicture = document.createElement('div');
-        pictureInPicture.classList.add('pip');
-        if (top) {
-            pictureInPicture.style.top = `${top}px`;
-        }
-
-        this.#canvasPiP = document.createElement('canvas');
-        this.#canvasPiP.width = width;
-        this.#canvasPiP.height = height;
-        pictureInPicture.appendChild(this.#canvasPiP);
-        document.body.appendChild(pictureInPicture);
-
-        if (title !== '') {
-            const titleEl = document.createElement('div');
-            titleEl.classList.add('title');
-            titleEl.textContent = title;
-            pictureInPicture.appendChild(titleEl);
+        this.#config = { title: title, top: top, width: width, height: height};
+        if (self.isGameThread) {
+            // pass to main thread to be created
+            RenderEngine.pipeToMain.passCanvasPIP(title, this.#config);
+        } else {
+            this.initializeView();
         }
     }
 
@@ -42,14 +32,39 @@ export default class CanvasPIP {
         return this.#canvasPiP.height;
     }
 
+    initializeView() {
+        const pictureInPicture = document.createElement('div');
+        pictureInPicture.classList.add('pip');
+        if (top) {
+            pictureInPicture.style.top = `${this.#config.top}px`;
+        }
+
+        this.#canvasPiP = document.createElement('canvas');
+        this.#canvasPiP.width = this.#config.width;
+        this.#canvasPiP.height = this.#config.height;
+        pictureInPicture.appendChild(this.#canvasPiP);
+        document.body.appendChild(pictureInPicture);
+
+        if (this.#config.title !== '') {
+            const titleEl = document.createElement('div');
+            titleEl.classList.add('title');
+            titleEl.textContent = this.#config.title;
+            pictureInPicture.appendChild(titleEl);
+        }
+    }
+
     /**
      * Update the picture-in-picture view
      * @param {ImageBitmap} image - The image to render to the view 
      */
     update(image) {
-        // scale the image down to the PiP
-        this.#canvasPiP.getContext('2d').clearRect(0, 0, this.#canvasPiP.width, this.#canvasPiP.height);
-        this.#canvasPiP.getContext('2d').drawImage(image, 0, 0, this.#canvasPiP.width, this.#canvasPiP.height);
+        if (self.isGameThread) {
+            RenderEngine.pipeToMain.pipUpdate(this.#config.title, image);
+        } else {
+            // scale the image down to the PiP
+            this.#canvasPiP.getContext('2d').clearRect(0, 0, this.#canvasPiP.width, this.#canvasPiP.height);
+            this.#canvasPiP.getContext('2d').drawImage(image, 0, 0, this.#canvasPiP.width, this.#canvasPiP.height);
+        }
     }
 
     /**

@@ -227,7 +227,7 @@ class Orchestrator {
      * A message handler for receiving messages from the worker threads.
      * @param {Event} event 
      */
-    #fromWorker(event) {
+    async #fromWorker(event) {
         if (event.data.re4 && event.data.re4 === protocol.MSG.WORKER) {
             switch(event.data.type) {
                 case protocol.MTYPE.WORKER.READY:
@@ -249,13 +249,20 @@ class Orchestrator {
                     this.#testReady(event.data.workerId);
                     break;
                 case protocol.MTYPE.WORKER.RENDERED:
-                    if (!self.isGameThread) {
-                        // the worker thread has rendered the particles and returned a bitmap
-                        this.#workerBitmaps[event.data.workerId] = event.data.image;
-                        this.#workerState[event.data.workerId] = event.data.metrics;
+                    // the worker thread has rendered the particles and returned a bitmap
+                    this.#workerBitmaps[event.data.workerId] = event.data.image;
+                    this.#workerState[event.data.workerId] = event.data.metrics;
 
-                        PRAGMA(Orchestrator, 'showParticleWorkersPiP:rendered', {event: event});
-                    }
+                    // pass along worker renders to the particle manager
+                    const workerImg = await createImageBitmap(event.data.image);
+                    postMessage({
+                        re4: protocol.MSG.ORCHESTRATOR,
+                        type: protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED,
+                        workerId: event.data.workerId,
+                        metrics: event.data.metrics,
+                        image: workerImg
+                    }, [ workerImg ]);
+
                     // merge worker bitmaps
                     const combinedBitmap = this.#compositeWorkers();
                     postMessage({

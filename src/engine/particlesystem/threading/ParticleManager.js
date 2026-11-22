@@ -147,12 +147,12 @@ export default class ParticleManager {
      * Set up the message handler for receiving messages from the orchestrator.
      */
     async start() {
-        this.#workerViews = PRAGMA(ParticleManager, 'showParticleWorkersPiP', {
+        PRAGMA(ParticleManager, 'showParticleWorkersPiP', {
             showLoad: this.#initProps.opts.debugOpts.showParticleEngineLoad,
             workerCount: this.#initProps.threading.workers
         });
 
-        this.#engineLoadView = PRAGMA(ParticleManager, 'showParticleEngineLoad', { 
+        PRAGMA(ParticleManager, 'showParticleEngineLoad', { 
             workerCount: this.#initProps.threading.workers, 
             maxParticles: this.#initProps.config.maxParticles 
         });
@@ -221,6 +221,10 @@ export default class ParticleManager {
                     this.#vroom();
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.RENDERED:
+                    // sum up the live particles
+                    let total = 0;
+                    this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
+
                     if (self.isGameThread) {
                         // running in the game thread - we need to pass this to the
                         // engine thread manager
@@ -228,27 +232,20 @@ export default class ParticleManager {
                     } else {
                         this.bitmap = event.data.image;
                         this.#ready = true;
-
-                        // sum up the live particles
-                        let total = 0;
-                        this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
-
-                        PRAGMA(ParticleManager, 'showParticleEngineLoad:update', {
-                            burden: (this.#initProps.config.maxParticles / this.#initProps.threading.workers),
-                            event: event,
-                            loadView: this.#engineLoadView,
-                            workerCount: this.#initProps.threading.workers,
-                            liveParticles: this.#liveParticles
-                        });
                     }
+
+                    PRAGMA(ParticleManager, 'showParticleEngineLoad:update', {
+                        burden: (this.#initProps.config.maxParticles / this.#initProps.threading.workers),
+                        event: event,
+                        workerCount: this.#initProps.threading.workers,
+                        liveParticles: this.#liveParticles
+                    });
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.WORKER_RENDERED:
-                    if (!self.isGameThread) {
-                        PRAGMA(ParticleManager, 'showParticleWorkersPiP:workerRender', {
-                            workerView: this.#workerViews[event.data.workerId], 
-                            image: event.data.image
-                        });
-                    }
+                    PRAGMA(ParticleManager, 'showParticleWorkersPiP:workerRender', {
+                        workerId: event.data.workerId, 
+                        image: event.data.image
+                    });
                     break;
                 case protocol.MTYPE.ORCHESTRATOR.TERMINATED:
                     this.#thread.terminate();

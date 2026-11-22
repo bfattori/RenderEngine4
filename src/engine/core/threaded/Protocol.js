@@ -32,6 +32,11 @@ const protocol = {
       LOADING: 'ld',
       DONE_LOADING: 'dl',
 
+      COUNTER_CONFIG: 'cCfg',
+      COUNTER_UPDATE: 'cUpd',
+      PIP_CONFIG: 'pCfg',
+      PIP_UPDATE: 'pUpd',
+
       TERMINATED: 'term'
     },
 
