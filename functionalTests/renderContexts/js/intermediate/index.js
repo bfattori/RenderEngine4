@@ -314,10 +314,10 @@ DemoHelper.showInfo(`
           </tr>
           <tr>
               <td class="state"><code>shape(opaqueId)</code></td>
-              <td>Renders the shape with the Id <code>opaqueId</code> at the current
+              <td>Renders the vector shape with the Id <code>opaqueId</code> at the current
               transform. Shapes are vector objects with a fixed set of rendering instructions
-              that can represent a complex shape without needing to pass the rendering
-              instructions.</td>
+              that can represent a complex shape without needing to pass the entire set of
+              rendering instructions.</td>
           </tr>
           <tr>
               <td class="state"><code>sprite(opaqueId, x, y)</code></td>
@@ -342,17 +342,17 @@ DemoHelper.showInfo(`
               <td class="header" colspan="2">Text Rendering</td>
           </tr>
           <tr>
+              <td class="state"><code>async text(text[, style])</code></td>
+              <td>Renders native text starting at the current transform, in the current stroke 
+              color, unless formatting is included. <code>style</code> provides for applying
+              default formatting.</td>
+          </tr>
+          <tr>
               <td class="state"><code>async vecText(text, options[, textMeasure])</code></td>
               <td>Renders vector text starting at the current transform, in the current stroke 
               color, unless formatting is included. <code>options</code> allows for configuring 
               the default state. If an array is provided to <code>textSize</code>, it will be 
               filled with the pixel dimensions of the text rendered.</td>
-          </tr>
-          <tr>
-              <td class="state"><code>async text(text[, style])</code></td>
-              <td>Renders native text starting at the current transform, in the current stroke 
-              color, unless formatting is included. <code>style</code> provides for applying
-              default formatting.</td>
           </tr>
           <tr>
               <td class="header" colspan="2">Low-level Calls</td>
@@ -370,8 +370,8 @@ DemoHelper.showInfo(`
               </td>
           </tr>
           <tr>
-              <td class="state">getter <code>state</code></td>
-              <td>Returns the current context state object.</td>
+              <td class="state"><code>[getter] state</code></td>
+              <td>Returns the API's context state object.</td>
           </tr>
       </tbody>
   </table>`);

@@ -25,7 +25,7 @@
   width: 60%;
   min-width: 570px;
   position: absolute;
-  bottom: 0;
+  bottom: -45px;
 }
 
 #DemoHelpers div.information a.class-ref, 
