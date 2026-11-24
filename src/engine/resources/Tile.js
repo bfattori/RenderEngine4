@@ -1,5 +1,6 @@
 import Config from '../core/config/Config.js';
 import Util from '../core/Util.js';
+import $Thread from '../core/threaded/$Thread.js'
 
 import { ResourceError } from './loaders/ResourceLoader.js';
 import Engine from '../core/Engine.js';
@@ -74,7 +75,7 @@ export default class Tile extends Config {
 
     compile() {
         let assembler = null
-        if (Util.isWorker())
+        if ($Thread.isWorker)
             assembler = self.$$worker.assembler;
         else
             assembler = Engine.renderContext.renderer.assembler;

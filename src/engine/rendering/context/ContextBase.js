@@ -2,7 +2,7 @@
  * RenderContext - Base class for all rendering contexts
  * Defines the common interface and capabilities for vector and raster rendering
  */
-import RenderEngine from '../../renderEngine4.js';
+import $Thread from '../../core/threaded/$Thread.js';
 
 import Engine from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';
@@ -579,15 +579,15 @@ export default class ContextBase {
   }
   
   preFrame(time, deltaTime) {
-    if (RenderEngine.isGameThread)
-      RenderEngine.pipeToMain.preFrame(time, deltaTime);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.preFrame(time, deltaTime);
     else
       this.renderer.preFrame(time, deltaTime);
   }
 
   renderInstructionBuffer(time, deltaTime) {
-    if (RenderEngine.isGameThread)
-      RenderEngine.pipeToMain.renderInstructionBuffer(this.#instructionBuffer, time, deltaTime);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.renderInstructionBuffer(this.#instructionBuffer, time, deltaTime);
     else
       // play out any pending instructions
       this.#instructionBuffer.forEach(instruction => {
@@ -596,8 +596,8 @@ export default class ContextBase {
   }
 
   postFrame(time, deltaTime) {
-    if (RenderEngine.isGameThread)
-      RenderEngine.pipeToMain.postFrame(time, deltaTime);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.postFrame(time, deltaTime);
     else
       this.renderer.postFrame(time, deltaTime);
   }

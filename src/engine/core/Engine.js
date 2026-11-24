@@ -20,6 +20,7 @@ import GridBroadphase from '../collisionSystems/broadphase/GridBroadphase.js';
 import AABBModel from '../collisionSystems/narrowband/AABBModel.js';
 
 import FPSCounter from '../ui/debug/FPSCounter.js';
+import $Thread from './threaded/$Thread.js';
 
 /**
  * Primary object for storing references to Engine, EventEngine, World, and RenderContext.

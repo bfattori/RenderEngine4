@@ -5,6 +5,8 @@ import Engine from './core/Engine.js';
 import Util from './core/Util.js';
 import KeyboardInput from './parts/input/KeyboardInput.js';
 
+import $Thread from './core/threaded/$Thread.js';
+
 // Render Engine 4 instance
 let engineOptions = null;
 const RenderEngine = {
@@ -13,11 +15,9 @@ const RenderEngine = {
     RE4: null,
     paused: false,
     reset: false,
-    engineThreadManager: null,      // set inside the main thread, null in the game thread
-    gameThread: null,               // set inside the game thread, null in the main thread
-    renderer: null,
 
     gameRoot: null,
+    mainThread: null,
 
     /**
      * Initialize the Render Engine 4.
@@ -29,17 +29,16 @@ const RenderEngine = {
         engineOptions = Util.deepMerge({}, options);
         RenderEngine.gameRoot = gameRoot;
 
-        if (options && options.thread && !self.isGameThread) {
-            // load the threading engine manager and redirect there
-            const threadMgr = await import(new URL('./core/threaded/EngineThreadManager.js', import.meta.url));
-            RenderEngine.engineThreadManager = threadMgr.default;
-            await RenderEngine.engineThreadManager.start(new URL(options.gamePath, gameRoot), options.renderer);
+        if (options && options.thread) {
+            // load the module into the main thread and start it
+            const mainThreadModule = await import(new URL('./core/threaded/MainThread.js', import.meta.url), { type: 'module' });
+            RenderEngine.mainThread = new mainThreadModule.default(options.gamePath, gameRoot, options.renderer);
+            RenderEngine.mainThread.start(options.gamePath, gameRoot, options.renderer);
         } else {
             RenderEngine.RE4 = await Engine.init(gameRoot, import.meta.url, engineOptions);
 
             // assign to Global scope
             globalThis.RE4 = RenderEngine.RE4;
-            globalThis.RenderEngine4 = RenderEngine.RE4;
 
             // initialize the render engine bootstrapper
             RenderEngine.initialize(engineOptions);
@@ -50,8 +49,8 @@ const RenderEngine = {
         console.debug("Render Engine 4 initialized", RE4.options.opts);
         console.verbose(engineOptions);
 
-        if (RenderEngine.isGameThread)
-            RenderEngine.pipeToMain.configEngine(RE4.options.opts);
+        if ($Thread.isGameThread)
+            $Thread.pipeToMain.configEngine(RE4.options.opts);
     },
 
     async setEngineConfig(engineConfig) {
@@ -64,34 +63,6 @@ const RenderEngine = {
         // assign to Global scope
         globalThis.RE4 = RenderEngine.RE4;
         globalThis.RenderEngine4 = RenderEngine.RE4;
-    },
-
-    get renderer() {
-        return RenderEngine.engineThreadManager.instance.renderer;
-    },
-
-    get assembler() {
-        return RenderEngine.engineThreadManager.instance.renderer.assembler;
-    },
-
-    get isMainThread() {
-        return self.isMainThread;
-    },
-
-    get isGameThread() {
-        return self.isGameThread;
-    },
-
-    get pipeToRunLoop() {
-        return RenderEngine.engineThreadManager.instance;
-    },
-
-    get pipeToMain() {
-        return RenderEngine.gameThread;
-    },
-
-    set runLoopThread(thread) {
-        RenderEngine.gameThread = thread;
     },
 
     /**
@@ -115,11 +86,11 @@ const RenderEngine = {
      * @param {String} text - The text to display, or "LOADING..." if `null`
      */
     loading(text) {
-        if (!RenderEngine.engineThreadManager && !self.isGameThread) {
+        if ($Thread.isGameThread)
+            $Thread.pipeToMain.loading(text);
+        else {
             document.querySelector('div#loading div.text').textContent = text || 'LOADING...';
             document.getElementById('loading').classList.remove('hide');
-        } else if (self.isGameThread) {
-            RenderEngine.pipeToMain.loading(text);
         }
     },
 
@@ -127,19 +98,18 @@ const RenderEngine = {
      * Hide the loading box
      */
     doneLoading() {
-        if (!RenderEngine.engineThreadManager && !self.isGameThread) {
+        if ($Thread.isGameThread)
+            $Thread.pipeToMain.doneLoading();
+        else
             document.getElementById('loading').classList.add('hide');
-        } else {
-            RenderEngine.pipeToMain.doneLoading();
-        }
     },
 
-/**
+    /**
      * Resume the engine after pausing
      */
     start() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.instance.start();
+        if ($Thread.isMainThread)
+            $Thread.pipeToGame.start();
         else {
             RenderEngine.RE4.start();
             console.info("Started");
@@ -151,8 +121,8 @@ const RenderEngine = {
      * Resume the engine after pausing
      */
     resume() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.instance.resume();
+        if ($Thread.isMainThread)
+            $Thread.pipeToGame.resume();
         else {
             RenderEngine.RE4.start();
             console.info("Resumed");
@@ -164,8 +134,8 @@ const RenderEngine = {
      * Pause (halt) the engine without resetting it
      */
     pause() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.instance.pause();
+        if ($Thread.isMainThread)
+            $Thread.pipeToGame.pause();
         else {
             console.info("Paused");
             RenderEngine.RE4.stop();
@@ -177,8 +147,8 @@ const RenderEngine = {
      * Stop and reset the engine.
      */
     stop() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.instance.stop();
+        if ($Thread.isMainThread)
+            $Thread.pipeToGame.stop();
         else {
             RenderEngine.RE4.reset();
             console.info("Stopped & reset");
@@ -190,8 +160,8 @@ const RenderEngine = {
      * Step the engine by one frame
      */
     step() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.instance.step();
+        if ($Thread.isMainThread)
+            $Thread.pipeToGame.step();
         else
             RenderEngine.RE4.step();
     },
@@ -200,8 +170,8 @@ const RenderEngine = {
      * Shutdown the engine.
      */
     shutdown() {
-        if (RenderEngine.engineThreadManager)
-            RenderEngine.engineThreadManager.instance.shutdown();
+        if ($Thread.isMainThread)
+            $Thread.pipeToGame.shutdown();
         else {
             console.info("... shutting down");
             RenderEngine.RE4.destroy();
@@ -265,7 +235,7 @@ const RenderEngine = {
     }
 }
 
-if (!(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope)) {
+if (!$Thread.isThread) {
     // ONLY LOADED IN THE MAIN THREAD
 
     /**
@@ -300,8 +270,7 @@ if (!(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalSc
     });    
 }
 
-
-// Shutdown the engine if the window is unloading
+// Shutdown the engine if the context is unloading
 // HOPEFULLY cleaning up threads so they stop 
 // hanging around after restarts!!
 self.addEventListener('beforeunload', (event) => {

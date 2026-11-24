@@ -2,19 +2,17 @@ import RenderEngine from '../../renderEngine4.js';
 import Context from '../../Context.js';
 
 import { Logger } from '../lang/Console.js';
-import RunLoopError from './RunLoopError.js';
+import GameThreadError from './GameThreadError.js';
 import protocol from './Protocol.js';
 
 import LoadCounter from '../../ui/debug/LoadCounter.js';
 import CanvasPIP from '../../ui/debug/CanvasPIP.js';
 
+import $Thread from './$Thread.js';
+import GameThread from './GameThread.js';
+
 const ctx = Context.getInstance();
-
 let log;
-
-// this will run in the main thread
-self.isMainThread = true;
-self.threadedEngine = true;
 
 /**
  * This is the go between from the main thread where the renderer will run
@@ -22,40 +20,37 @@ self.threadedEngine = true;
  * 
  *
  */
-export default class EngineThreadManager {
-  #thread;
+export default class MainThread extends $Thread {
+  static #instance = null;
+  
+  #gamePath;
+  #gameRoot;
+  #renderer = null;
+
+  #gameThread = null;
+
   #ready = false;
   #whenReady = null;
   #gameUrl;
-  #renderer = null;
-
   #callbackList = [];
   #callbackResults = [];
-
   #particleBitmap = null;
-
   #loadCounters = new Map();
   #pips = new Map();
 
-  static #instance;
-
-  static async start(gameUrl, renderer) {
-    EngineThreadManager.#instance = new EngineThreadManager(gameUrl, renderer);
-    log.log('starting engine thread');
-    await EngineThreadManager.#instance.loadThread();
-    log.log('run-loop started');
-  }
-
-  constructor(gameUrl, renderer) {
-    log = new Logger(EngineThreadManager, null, true);
-    this.#gameUrl = gameUrl;
+  constructor(gamePath, gameRoot, renderer) {
+    super($Thread.MAIN_THREAD_NAME);
+    log = new Logger(MainThread, null, true);
+    this.#gameUrl = new URL(gamePath, gameRoot);
+    this.#gamePath = gamePath;
+    this.#gameRoot = gameRoot;
     this.#renderer = renderer;
   }
 
   static get instance() {
-    return EngineThreadManager.#instance;
+    return MainThread.#instance;
   }
-
+  
   get renderer() {
     return this.#renderer;
   }
@@ -64,8 +59,8 @@ export default class EngineThreadManager {
     return this.#gameUrl;
   }
 
-  get thread() {
-    return this.#thread;
+  get gameThread() {
+    return this.#gameThread.thread;
   }
 
   set callWhenReady(fn) {
@@ -88,38 +83,49 @@ export default class EngineThreadManager {
     return this.#callbackResults;
   }
 
-  set bitmap(image) {
+  set particleBitmap(image) {
     this.#particleBitmap = image;
   }
 
-  get bitmap() {
+  get particleBitmap() {
     return this.#particleBitmap;
   }
 
-  async loadThread() {
-    this.#thread = new Worker(new URL(`./RunLoop.js${ctx.preventThreadCache}`, import.meta.url), {
-      name: `RE4GameLoop`,
+  async start() {
+    log.log('Starting game thread');
+    await this.load();
+    log.log('Game thread started');
+    return this;
+  }
+
+  async load() {
+    const gameWorker = new Worker(new URL(`./GameThread.js${ctx.preventThreadCache}`, import.meta.url), {
+      name: `RE4GameThread`,
       type: 'module'
     });
 
     // setup event handlers
-    this.#thread.addEventListener("message", (event) => {
-      this.runLoopInbound(event);     
+    gameWorker.addEventListener("message", (event) => {
+      this.gameThreadInbound(event);     
     });
 
-    this.#thread.addEventListener("error", (event) => {
+    gameWorker.addEventListener("error", (event) => {
       this.runLoopError(event);
     });
 
-    this.#thread.addEventListener("messageerror", (event) => {
+    gameWorker.addEventListener("messageerror", (event) => {
       console.error("Serialization/cloning failed:", event);
     });
 
     const $this = this;
     const p = new Promise(resolve => {
-      log.debug('waiting for run-loop')
+      log.debug('Waiting for game thread to initialize')
       $this.callWhenReady = resolve;
     });
+
+    // remeber the thread instance
+    this.#gameThread = new GameThread(gameWorker, this.renderer);
+
     setTimeout(() => {
       // initialize the run loop and wait for it to start
       $this.send({ 
@@ -134,9 +140,8 @@ export default class EngineThreadManager {
     data = {
       re4: protocol.MSG.ENGINE_MANAGER,
       ... data };
-    this.thread.postMessage(data, transfer);
-
-    log.verbose('ETM::runLoopOutbound', data);
+    log.verbose('ETM::gameThreadOutbound', data);
+    this.#gameThread.thread.postMessage(data, transfer);
   }
 
   #callback(obj, model) {
@@ -168,8 +173,8 @@ export default class EngineThreadManager {
     }
   }
 
-  async runLoopInbound(event) {
-    log.verbose('ETM::runLoopInbound', event.data);
+  async gameThreadInbound(event) {
+    log.verbose('ETM::gameThreadInbound', event.data);
     const { type, object } = event.data;
     let callbackId, procObj = null, callResult;
     if (event.data.re4 === protocol.MSG.RUN_LOOP) {
@@ -191,11 +196,11 @@ export default class EngineThreadManager {
 
         case protocol.MTYPE.RUN_LOOP.READY:
           this.#ready = true;
-          this.thread.postMessage({
+          this.gameThread.postMessage({
             re4: protocol.MSG.ENGINE_MANAGER,
             type: protocol.MTYPE.ENGINE_MANAGER.START,
             gameUrl: this.#gameUrl.toString(),
-            assembler: RenderEngine.renderer.assembler.constructor.name
+            assembler: this.renderer.assembler.constructor.name
           });
           this.callWhenReady();
           break;
@@ -206,9 +211,9 @@ export default class EngineThreadManager {
           break;
 
         case protocol.MTYPE.RUN_LOOP.TERMINATED:
-          this.#thread.terminate();
-          this.#thread = null;
           log.verbose('RunLoop reports terminated');
+          this.gameThread.terminate();
+          this.gameThread = null;
           break;
 
         //-------------------------
@@ -279,7 +284,7 @@ export default class EngineThreadManager {
         // particles
 
         case protocol.MTYPE.RUN_LOOP.PARTICLE_BITMAP:
-          this.bitmap = event.data.bitmap;
+          this.particleBitmap = event.data.bitmap;
           break;
 
         //--------------------------
@@ -338,7 +343,7 @@ export default class EngineThreadManager {
 
   runLoopError(event) {
       log.error(event.message, event);
-      throw new RunLoopError(this.#thread, event.message, event);
+      throw new GameThreadError(this.#gameThread, event.message, event);
   }
   
   resume() {

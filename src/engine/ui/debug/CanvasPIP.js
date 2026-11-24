@@ -1,4 +1,5 @@
-import RenderEngine from '../../renderEngine4.js';
+import $Thread from '../../core/threaded/$Thread.js';
+
 export default class CanvasPIP {
     #canvasPiP = null;
     #config;
@@ -16,9 +17,9 @@ export default class CanvasPIP {
      */
     constructor(title, top, width = 160, height = 120) {
         this.#config = { title: title, top: top, width: width, height: height};
-        if (self.isGameThread) {
+        if ($Thread.isGameThread) {
             // pass to main thread to be created
-            RenderEngine.pipeToMain.passCanvasPIP(title, this.#config);
+            $Thread.pipeToMain.passCanvasPIP(title, this.#config);
         } else {
             this.initializeView();
         }
@@ -58,8 +59,8 @@ export default class CanvasPIP {
      * @param {ImageBitmap} image - The image to render to the view 
      */
     update(image) {
-        if (self.isGameThread) {
-            RenderEngine.pipeToMain.pipUpdate(this.#config.title, image);
+        if ($Thread.isGameThread) {
+            $Thread.pipeToMain.pipUpdate(this.#config.title, image);
         } else {
             // scale the image down to the PiP
             this.#canvasPiP.getContext('2d').clearRect(0, 0, this.#canvasPiP.width, this.#canvasPiP.height);

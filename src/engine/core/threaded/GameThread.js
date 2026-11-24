@@ -1,30 +1,29 @@
 import '../../_debug/DebugHarness.js';
 import RenderEngine from '../../renderEngine4.js';
 
-import RunLoopError from './RunLoopError.js';
+import GameThreadError from './GameThreadError.js';
 import { Logger } from '../lang/Console.js';
 import protocol from './Protocol.js';
+
+import $Thread from './$Thread.js';
 
 self.runLoopInstance = null;
 let messageHandler = null;
 
-let log;
-
-// identify this as the game thread
-self.isGameThread = true;
-self.threadedEngine = true;
-
-export default class RunLoop {
+export default class GameThread extends $Thread {
   #game;
   #renderer;
   #assembler;
   #cbWaiting = new Map();
   #waitId = 1;
 
-  constructor(rendererClass) {
-    log = new Logger(RunLoop, null, true);
-    this.#initialize();
+  #worker;
+
+  constructor(worker, rendererClass) {
+    super($Thread.GAME_THREAD_NAME);
+    this.#worker = worker;
     this.#renderer = rendererClass;
+    this.#initialize();
   }
   
   get gameClass() {
@@ -35,10 +34,15 @@ export default class RunLoop {
     return this.#assembler;
   }
 
+  get renderer() {
+    return this.#renderer;
+  }
+
+  get thread() {
+    return this.#worker;
+  }
+
   #initialize() {
-    // tell the system there is a thread
-    RenderEngine.runLoopThread = this;
-    
     // the thread is ready
     this.#send({
       type: protocol.MTYPE.RUN_LOOP.READY
@@ -72,7 +76,7 @@ export default class RunLoop {
           if (this.#game && this.#game.run) {          
             this.#game.run();
           } else
-            throw new RunLoopError(this, 'Game module does not have a "run" method');
+            throw new GameThreadError(this, 'Game module does not have a "run" method?');
           break;
         case protocol.MTYPE.ENGINE_MANAGER.RESUME:
           RenderEngine.resume();
@@ -99,7 +103,7 @@ export default class RunLoop {
           if (this.#game && this.#game.shutdown)
             await this.#game.shutdown();
           else
-            throw new RunLoopError(this, 'Game module does not have a "shutdown" method');
+            throw new GameThreadError(this, 'Game module does not have a "shutdown" method');
           
           // terminate the run loop
           self.terminate();
@@ -363,15 +367,17 @@ export default class RunLoop {
   }
 }
 
+let log = new Logger(GameThread, null, true);
+
 /**
  * Handler for messages received from the main thread. This function 
  * processes messages related to engine operations.
  */
 messageHandler = addEventListener('message', (event) => {
-    if (!log) log = new Logger(RunLoop, null, true);
+    if (!log) log = new Logger(GameThread, null, true);
     if (event.data.re4 && event.data.re4 === protocol.MSG.ENGINE_MANAGER) {
         if (!self.runLoopInstance && event.data.type === protocol.MTYPE.ENGINE_MANAGER.INIT) {
-            self.runLoopInstance = new RunLoop(event.data.renderer);
+            self.runLoopInstance = new GameThread(event.data.renderer);
         } else if (self.runLoopInstance) {
             // fixme: This is probably why effect and shit don't make it to the workers
             self.runLoopInstance.process(event);
@@ -385,4 +391,4 @@ addEventListener("messageerror", (event) => {
   console.error("Serialization/cloning failed:", event);
 });
 
-await PRAGMA_INIT(RunLoop); // required for PRAGMA debugging             
+await PRAGMA_INIT(GameThread); // required for PRAGMA debugging             

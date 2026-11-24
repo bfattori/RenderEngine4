@@ -1,6 +1,6 @@
 import RenderEngineError from '../RenderEngineError.js';
 
-export default class RunLoopError extends RenderEngineError {
+export default class GameThreadError extends RenderEngineError {
     #thread;
     constructor(thread, message, error) {
         super(message, error);

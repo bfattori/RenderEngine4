@@ -4,6 +4,8 @@ import Context from '../Context.js';
 import Engine, { Paths } from '../core/Engine.js';
 import Config from '../core/config/Config.js';
 
+import $Thread from '../core/threaded/$Thread.js';
+
 const ctx = Context.getInstance();
 
 class ParticleEngineConfig extends Config {
@@ -121,14 +123,14 @@ export default class ParticleEngine {
      */
     static async getInstance(renderContext, width, height, config, threading) {
         if (ParticleEngine.#particleEngine === null) {
-            if (Engine.options.flags.threading.particles && self.Worker) {
+            if (Engine.options.flags.threading.particles && !($Thread.isThreaded && $Thread.isMainThread)) {
                 console.debug('Loading particle thread manager');
                 const pManager = await import(new URL(`./threading/ParticleManager.js${ctx.preventScriptCache}`, import.meta.url));
                 const manager = new pManager.default(renderContext, width, height, config, threading, ctx.getOpts(), {engine: Paths.engine, startup: Paths.startup, game: Paths.game});
                 await manager.start();
                 ParticleEngine.#particleEngine = manager;
                 console.log('ParticleManager loaded');
-            } else if (!self.isMainThread) {
+            } else if (!($Thread.isThreaded && $Thread.isMainThread)) {
                 // load the particle engine interface into the main thread
                 const pEngine = await import(new URL(`./$ParticleEngine.js${ctx.preventScriptCache}`, import.meta.url));
                 ParticleEngine.#particleEngine = pEngine.default.getInstance(renderContext, width, height, config, null);

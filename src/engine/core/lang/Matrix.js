@@ -1,5 +1,5 @@
 import RenderEngineError from '../RenderEngineError.js';
-import Util from '../Util.js';
+import $Thread from '../threaded/$Thread.js';
 
 /**
  * A 2d matrix class to simplify the several manipulations around the engine in 
@@ -10,7 +10,7 @@ export class Matrix2d extends DOMMatrix {
   #flippedY = false;
 
   constructor(...mtxArgs) {
-    if (!Util.isWorker() && mtxArgs[0] instanceof DOMMatrix) {
+    if (!$Thread.isWorker && mtxArgs[0] instanceof DOMMatrix) {
         super(mtxArgs[0]);
         if (mtxArgs[0] instanceof Matrix2d) {
             this.#flippedX = mtxArgs[0].isFlippedX;

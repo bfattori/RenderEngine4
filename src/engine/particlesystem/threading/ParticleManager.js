@@ -1,6 +1,6 @@
 import Context from '../../Context.js';
 
-import RenderEngine from '../../renderEngine4.js';
+import $Thread from '../../core/threaded/$Thread.js';
 
 import { Logger } from '../../core/lang/Console.js';
 import OrchestratorError from './OrchestratorError.js';
@@ -225,11 +225,11 @@ export default class ParticleManager {
                     let total = 0;
                     this.#liveParticles = event.data.metrics.reduce((acc, workerMetric) => acc += workerMetric.live, total);
 
-                    if (self.isGameThread) {
+                    if ($Thread.isGameThread)
                         // running in the game thread - we need to pass this to the
                         // engine thread manager
-                        RenderEngine.pipeToMain.passParticleBitmap(event.data.image);
-                    } else {
+                        $Thread.pipeToMain.passParticleBitmap(event.data.image);
+                    else {
                         this.bitmap = event.data.image;
                         this.#ready = true;
                     }

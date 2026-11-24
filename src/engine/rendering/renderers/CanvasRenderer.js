@@ -1,7 +1,7 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
 
-import RenderEngine from '../../renderEngine4.js';
+import $Thread from '../../core/threaded/$Thread.js';
 
 import Engine from '../../core/Engine.js';
 
@@ -159,13 +159,15 @@ export default class CanvasRenderer extends Renderer {
      */
     #particles(target) {
         let source = null;
-        if (!self.threadedEngine && Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
+        if (!$Thread.isThreaded && Engine.particleEngine && !Engine.options.flags.particleEngineDisabled && Engine.particleEngine.bitmap) {
             source = Engine.particleEngine.bitmap;
-        } else if (self.threadedEngine && !Engine.options.flags.particleEngineDisabled && RenderEngine.engineThreadManager.instance) {
-            source = RenderEngine.engineThreadManager.instance.bitmap;
+        } else if ($Thread.isThreaded && $Thread.isMainThread && !Engine.options.flags.particleEngineDisabled) {
+            const bitmapSource = $Thread.get($Thread.MAIN_THREAD_NAME);
+            if (bitmapSource)
+                source = bitmapSource.particleBitmap;
         }       
 
-        if (source !== null) {
+        if (source) {
             // draw particles to target
             target.resetTransform();
             target.drawImage(source, 0, 0);

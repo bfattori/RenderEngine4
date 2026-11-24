@@ -353,15 +353,6 @@ export default class Util {
     }
 
     /**
-     * Checks if the current context is a web worker.
-     * @returns {boolean} `true` if the current context is a web worker, `false` otherwise.
-     */
-    static isWorker() {
-        const isWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
-        return isWorker;
-    }
-
-    /**
      * Returns an OffscreenCanvas, if available, otherwise it returns
      * an HTMLCanvasElement.
      * @param {number} width - The width of the temporary canvas

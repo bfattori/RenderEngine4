@@ -5,7 +5,7 @@
  * @extends RenderContext
  */
 import Constants from '../../Constants.js';
-import RenderEngine from '../../renderEngine4.js';
+import $Thread from '../../core/threaded/$Thread.js';
 
 import ContextBase from './ContextBase.js';
 
@@ -124,8 +124,8 @@ export default class RenderContext extends ContextBase {
    * @returns {Object} An object containing the tile name with opaque id
    */
   async compileTiles(tiles) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.compileTiles(tiles);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.compileTiles(tiles);
     else {
       const results = {};
       tiles.forEach(tile => {
@@ -144,8 +144,8 @@ export default class RenderContext extends ContextBase {
    * @returns {number} The opaque Id assigned by the renderer
    */ 
   async compileTile(tile) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.compileSprite(tile);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.compileSprite(tile);
     else
       return this.renderer.compileSprite(tile);
   }
@@ -155,8 +155,8 @@ export default class RenderContext extends ContextBase {
    * @param {number} opaqueId - The opaque id of the tile
    */
   destroyTile(opaqueId) {
-    if (self.isGameThread)
-      RenderEngine.pipeToMain.destroyTile(opaqueId);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.destroyTile(opaqueId);
     else
       this.renderer.destroyTile(opaqueId);
   }
@@ -181,8 +181,8 @@ export default class RenderContext extends ContextBase {
    * @param {number} deltaTime - Time since last frame
    */
   renderTile(opaqueId, x, y, time, deltaTime) {
-    if (self.isGameThread)
-      RenderEngine.pipeToMain.renderTile(opaqueId, x, y, time, deltaTime);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.renderTile(opaqueId, x, y, time, deltaTime);
     else
       this.addInstruction(`${IL.TILE} ${opaqueId} ${x} ${y} ${time} ${deltaTime}`);
   }
@@ -197,8 +197,8 @@ export default class RenderContext extends ContextBase {
    * @returns {Object} An object containing the tile map name with opaque id
    */
   async compileTileMaps(tileMaps) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.compileTileMaps(tileMaps);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.compileTileMaps(tileMaps);
     else {
       const results = {};
       tileMaps.forEach(async (tileMap) => {
@@ -214,8 +214,8 @@ export default class RenderContext extends ContextBase {
    * @returns {number} The opaque id that references the tile map on the renderer
    */
   async compileTileMap(tileMap) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.compileTileMap(tileMap);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.compileTileMap(tileMap);
     else
       return this.renderer.compileTileMap(tileMap);
   }
@@ -225,8 +225,8 @@ export default class RenderContext extends ContextBase {
    * @param {number} opaqueId - The opaque id of the tile map
    */
   destroyTileMap(opaqueId) {
-    if (self.isGameThread)
-      RenderEngine.pipeToMain.destroyTileMap(opaqueId);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.destroyTileMap(opaqueId);
     else
       this.renderer.destroyTileMap(opaqueId);
   }
@@ -253,8 +253,8 @@ export default class RenderContext extends ContextBase {
    * @returns {Object} An object containing the sprite name with opaque id
    */
   async compileSprites(sprites) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.compileSprites(sprites);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.compileSprites(sprites);
     else {
       const results = {};
       sprites.forEach(async (sprite) => {
@@ -270,8 +270,8 @@ export default class RenderContext extends ContextBase {
    * @returns {number} The opaque id that references the sprite on the renderer
    */
   async compileSprite(sprite) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.compileSprite(sprite);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.compileSprite(sprite);
     else
       return this.renderer.compileSprite(sprite);
   }
@@ -281,8 +281,8 @@ export default class RenderContext extends ContextBase {
    * @param {number} opaqueId - The opaque id of the sprite
    */
   destroySprite(opaqueId) {
-    if (self.isGameThread)
-      RenderEngine.pipeToMain.destroySprite(opaqueId);
+    if ($Thread.isGameThread)
+      $Thread.pipeToMain.destroySprite(opaqueId);
     else
       this.renderer.destroySprite(opaqueId);
   }
@@ -310,8 +310,8 @@ export default class RenderContext extends ContextBase {
    * @returns {Object} An object containing the shape's tag name with opaque id
    */
   async getCompileShapes(shapes) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.getCompiledShapes(shapes);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.getCompiledShapes(shapes);
     else {
       const results = {};
       shapes.forEach(async ({instructions, tag}) => {
@@ -328,8 +328,8 @@ export default class RenderContext extends ContextBase {
    * @returns {number} The opaque id that references the vector shape on the renderer
    */
   async getCompiledShape(instructions, tag) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.getCompiledShape(instructions, tag);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.getCompiledShape(instructions, tag);
     else
       return Promise.resolve(this.renderer.compileShape(instructions, tag));
   }
@@ -339,8 +339,8 @@ export default class RenderContext extends ContextBase {
    * @param {number} opaqueId - The opaque id of the sprite
    */
   async destroyCompiledShape(opaqueId) {
-    if (self.isGameThread)
-      return await RenderEngine.pipeToMain.destroyCompiledShape(opaqueId);
+    if ($Thread.isGameThread)
+      return await $Thread.pipeToMain.destroyCompiledShape(opaqueId);
     else
       this.renderer.destroyCompiledShape(opaqueId);
   }

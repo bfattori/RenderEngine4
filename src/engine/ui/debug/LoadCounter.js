@@ -1,7 +1,7 @@
 import Constants from '../../Constants.js';
 import Util from '../../core/Util.js';
 
-import RenderEngine from '../../renderEngine4.js';
+import $Thread from '../../core/threaded/$Thread.js';
 
 export default class LoadCounter {
     #config = null;
@@ -26,9 +26,9 @@ export default class LoadCounter {
             this.config.options[k] = {...Constants.DEFAULT_COUNTER_FORMAT, ...config.options[k]};    
         });
 
-        if (self.isGameThread) {
+        if ($Thread.isGameThread) {
             // pass to main thread to be created
-            RenderEngine.pipeToMain.passLoadCounter(this.#config);
+            $Thread.pipeToMain.passLoadCounter(this.#config);
         } else {
             this.initializeView();
         }
@@ -153,8 +153,8 @@ export default class LoadCounter {
     }
 
     update(view, value) {
-        if (self.isGameThread) {
-            RenderEngine.pipeToMain.counterUpdate(this.config.title, view, value);
+        if ($Thread.isGameThread) {
+            $Thread.pipeToMain.counterUpdate(this.config.title, view, value);
         } else {
             const idx = this.config.counters.indexOf(view);
             const format = this.config.options[view];
