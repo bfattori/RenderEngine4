@@ -8,7 +8,7 @@ const protocol = {
 
   // thread message types
   MTYPE: {
-    // from run loop
+    // from game thread
     RUN_LOOP: {
       READY: 'rdy',
 
@@ -40,7 +40,7 @@ const protocol = {
       TERMINATED: 'term'
     },
 
-    // from engine manager
+    // from main thread
     ENGINE_MANAGER: {
       INIT: 'init',
 
