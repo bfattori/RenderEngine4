@@ -2,7 +2,7 @@
  * RenderContext - Base class for all rendering contexts
  * Defines the common interface and capabilities for vector and raster rendering
  */
-import $Thread from '../../core/threaded/$Thread.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 import Engine from '../../core/Engine.js';
 import RenderEngineError from '../../core/RenderEngineError.js';

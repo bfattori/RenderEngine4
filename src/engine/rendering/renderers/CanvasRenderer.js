@@ -1,7 +1,7 @@
 import Constants from '../../Constants.js';
 import Context from '../../Context.js';
 
-import $Thread from '../../core/threaded/$Thread.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 import Engine from '../../core/Engine.js';
 

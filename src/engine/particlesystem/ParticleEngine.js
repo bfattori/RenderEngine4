@@ -4,7 +4,7 @@ import Context from '../Context.js';
 import Engine, { Paths } from '../core/Engine.js';
 import Config from '../core/config/Config.js';
 
-import $Thread from '../core/threaded/$Thread.js';
+import $Thread from '../core/threading/$Thread.js';
 
 const ctx = Context.getInstance();
 

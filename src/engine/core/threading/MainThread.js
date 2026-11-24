@@ -2,7 +2,7 @@ import RenderEngine from '../../renderEngine4.js';
 import Context from '../../Context.js';
 
 import { Logger } from '../lang/Console.js';
-import GameThreadError from './GameThreadError.js';
+import ThreadError from './ThreadError.js';
 import protocol from './Protocol.js';
 
 import LoadCounter from '../../ui/debug/LoadCounter.js';
@@ -343,7 +343,7 @@ export default class MainThread extends $Thread {
 
   runLoopError(event) {
       log.error(event.message, event);
-      throw new GameThreadError(this.#gameThread, event.message, event);
+      throw new ThreadError(this.#gameThread, event.message, event);
   }
   
   resume() {

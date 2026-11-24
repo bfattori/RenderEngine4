@@ -5,7 +5,7 @@
  * @extends RenderContext
  */
 import Constants from '../../Constants.js';
-import $Thread from '../../core/threaded/$Thread.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 import ContextBase from './ContextBase.js';
 

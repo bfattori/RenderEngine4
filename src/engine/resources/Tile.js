@@ -1,6 +1,6 @@
 import Config from '../core/config/Config.js';
 import Util from '../core/Util.js';
-import $Thread from '../core/threaded/$Thread.js'
+import $Thread from '../core/threading/$Thread.js'
 
 import { ResourceError } from './loaders/ResourceLoader.js';
 import Engine from '../core/Engine.js';

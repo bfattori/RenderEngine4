@@ -1,6 +1,8 @@
 import RenderEngine from '../../../../src/engine/renderEngine4.js';
 import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';
 
+import demoInfo from './demoInfo.js';
+
 //--------------------------
 // Load the game
 //--------------------------

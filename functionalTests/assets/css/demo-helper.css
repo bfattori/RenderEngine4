@@ -28,6 +28,11 @@
   bottom: -45px;
 }
 
+#DemoHelpers div.information code, 
+#DemoHelpersExtra div.information code {
+  font-size: 125%;
+}
+
 #DemoHelpers div.information a.class-ref, 
 #DemoHelpersExtra div.information a.class-ref {
   color: #337ab7;

@@ -1,5 +1,5 @@
 import RenderEngineError from '../RenderEngineError.js';
-import $Thread from '../threaded/$Thread.js';
+import $Thread from '../threading/$Thread.js';
 
 /**
  * A 2d matrix class to simplify the several manipulations around the engine in 

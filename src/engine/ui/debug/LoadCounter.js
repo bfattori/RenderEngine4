@@ -1,7 +1,7 @@
 import Constants from '../../Constants.js';
 import Util from '../../core/Util.js';
 
-import $Thread from '../../core/threaded/$Thread.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 export default class LoadCounter {
     #config = null;

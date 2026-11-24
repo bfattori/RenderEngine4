@@ -1,6 +1,6 @@
 import Context from '../../Context.js';
 
-import $Thread from '../../core/threaded/$Thread.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 import { Logger } from '../../core/lang/Console.js';
 import OrchestratorError from './OrchestratorError.js';

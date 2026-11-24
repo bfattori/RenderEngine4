@@ -1,4 +1,4 @@
-import $Thread from '../../core/threaded/$Thread.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 export default class CanvasPIP {
     #canvasPiP = null;

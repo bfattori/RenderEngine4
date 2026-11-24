@@ -5,7 +5,7 @@ import Engine from './core/Engine.js';
 import Util from './core/Util.js';
 import KeyboardInput from './parts/input/KeyboardInput.js';
 
-import $Thread from './core/threaded/$Thread.js';
+import $Thread from './core/threading/$Thread.js';
 
 // Render Engine 4 instance
 let engineOptions = null;
@@ -31,7 +31,7 @@ const RenderEngine = {
 
         if (options && options.thread) {
             // load the module into the main thread and start it
-            const mainThreadModule = await import(new URL('./core/threaded/MainThread.js', import.meta.url), { type: 'module' });
+            const mainThreadModule = await import(new URL('./core/threading/MainThread.js', import.meta.url), { type: 'module' });
             RenderEngine.mainThread = new mainThreadModule.default(options.gamePath, gameRoot, options.renderer);
             RenderEngine.mainThread.start(options.gamePath, gameRoot, options.renderer);
         } else {

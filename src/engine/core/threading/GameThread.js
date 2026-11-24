@@ -1,7 +1,7 @@
 import '../../_debug/DebugHarness.js';
 import RenderEngine from '../../renderEngine4.js';
 
-import GameThreadError from './GameThreadError.js';
+import ThreadError from './ThreadError.js';
 import { Logger } from '../lang/Console.js';
 import protocol from './Protocol.js';
 
@@ -76,7 +76,7 @@ export default class GameThread extends $Thread {
           if (this.#game && this.#game.run) {          
             this.#game.run();
           } else
-            throw new GameThreadError(this, 'Game module does not have a "run" method?');
+            throw new ThreadError(this, 'Game module does not have a "run" method?');
           break;
         case protocol.MTYPE.ENGINE_MANAGER.RESUME:
           RenderEngine.resume();
@@ -103,7 +103,7 @@ export default class GameThread extends $Thread {
           if (this.#game && this.#game.shutdown)
             await this.#game.shutdown();
           else
-            throw new GameThreadError(this, 'Game module does not have a "shutdown" method');
+            throw new ThreadError(this, 'Game module does not have a "shutdown" method');
           
           // terminate the run loop
           self.terminate();
