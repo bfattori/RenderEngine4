@@ -23,7 +23,7 @@ export default class DefaultPlugin {
   }
 
   get icon() {
-    return '/src/sprite_editor/img/icons/';
+    return '/sprite_editor/img/icons/';
   }
 
   get isLoaded() {
