@@ -1,5 +1,5 @@
 import Constants from '../../Constants.js';
-import Util from '../../core/Util.js';
+import ColorUtil from '../../core/util/ColorUtil.js';
 
 import $Thread from '../../core/threading/$Thread.js';
 
@@ -133,7 +133,7 @@ export default class LoadCounter {
                 this.#loadBarText[i] = document.createElement('span');
                 this.#loadBarText[i].classList.add('loadBarText');
                 this.#loadBar[i].appendChild(this.#loadBarText[i]);
-                this.#loadBar[i].style.backgroundColor = format.color || Util.getRandomColor(180, 180, 180);
+                this.#loadBar[i].style.backgroundColor = format.color || ColorUtil.getRandomColor(180, 180, 180);
                 entry.appendChild(this.#loadBar[i]);
             }
 

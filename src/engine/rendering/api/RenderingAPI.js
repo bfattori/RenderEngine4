@@ -1,6 +1,6 @@
 import Constants from '../../Constants.js';
 
-import Util from '../../core/Util.js';
+import ColorUtil from '../../core/util/ColorUtil.js';
 import { Matrix2d } from '../../core/lang/Matrix.js';
 import $Math from '../../core/lang/Math.js';
 
@@ -256,7 +256,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         color: (r, g = null, b = null, { a = 1 } = {}) => {
-            const c = Util.getColor(r, g, b, a);
+            const c = ColorUtil.getColor(r, g, b, a);
             let same = false;
             if (c) {
                 if (c === state.currentColor) same = true;
@@ -290,7 +290,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         setColor: (r, g = null, b = null, a = 1) => {
-            const c = Util.getColor(r, g, b, a);
+            const c = ColorUtil.getColor(r, g, b, a);
             if (c !== state.currentColor) {
                 state.currentColor = c;
                 context.addInstruction(`${IL.COLOR} ${state.currentColor}`)
@@ -320,7 +320,7 @@ export default function getAPI() {
          * @returns {Object} Returns this for chaining
          */
         fillColor: (r, g = null, b = null, a = 1) => {
-            const f = Util.getColor(r, g, b, a);
+            const f = ColorUtil.getColor(r, g, b, a);
             let same = false;
             if (f) {
                 if (f === state.currentFillColor) same = true;
@@ -354,7 +354,7 @@ export default function getAPI() {
          * @returns {Object} This for chaining
          */
         setFillColor: (r, g = null, b = null, a = 1) => {
-            const f = Util.getColor(r, g, b, a);
+            const f = ColorUtil.getColor(r, g, b, a);
             if (f !== state.currentFillColor) {
                 state.currentFillColor = f;
                 context.addInstruction(`${IL.FILL} ${f}`);

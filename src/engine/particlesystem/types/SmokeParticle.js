@@ -1,5 +1,5 @@
 import $Math from '../../core/lang/Math.js';
-import Util from '../../core/Util.js';
+import Util from '../../core/util/Util.js';
 
 import Particle from '../Particle.js';
 import DiffuseParticle from './DiffuseParticle.js';

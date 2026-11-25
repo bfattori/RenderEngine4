@@ -1,5 +1,5 @@
 import Config from '../core/config/Config.js';
-import Util from '../core/Util.js';
+import Util from '../core/util/Util.js';
 import $Thread from '../core/threading/$Thread.js'
 
 import { ResourceError } from './loaders/ResourceLoader.js';

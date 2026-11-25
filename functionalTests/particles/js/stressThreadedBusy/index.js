@@ -12,7 +12,7 @@ import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRend
 import burstConfig from '../../../assets/particleConfig/burst.json' with { type: 'json' };
 
 import $Math from '../../../../src/engine/core/lang/Math.js';
-import Util from '../../../../src/engine/core/Util.js';
+import ColorUtil from '../../../../src/engine/core/util/ColorUtil.js';
 
 // number of objects to create
 const numObjects = 500;
@@ -108,7 +108,7 @@ for (let i = 0; i < numObjects; i++) {
     RenderEngine.world.addObject(gameObject);
 
     // vector renderer
-    const color = Util.getColor(Math.random(), Math.random(), Math.random());
+    const color = ColorUtil.getColor(Math.random(), Math.random(), Math.random());
     const renderer = gameObject.getComponentByName("renderer");
     renderer.API
         .color(color)

@@ -1,7 +1,6 @@
 import RenderEngine from '../../../../src/engine/renderEngine4.js';
 
 import $Math from '../../../../src/engine/core/lang/Math.js';
-import Util from '../../../../src/engine/core/Util.js';
 
 import RenderContext from '../../../../src/engine/rendering/context/RenderContext.js';
 import CanvasRenderer from '../../../../src/engine/rendering/renderers/CanvasRenderer.js';

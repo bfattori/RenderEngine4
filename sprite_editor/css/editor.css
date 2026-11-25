@@ -28,7 +28,7 @@ canvas#editor {
   border-radius: 6px;
 }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.row.two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row.two-column { display: grid; grid-template-columns: 100px 100px; gap: 10px; }
 
 label { font-size: 13px; color: #c9c9d4; display: flex; align-items: center; gap: 6px; }
 input[type="color"] { width: 34px; height: 26px; border: none; padding: 0; background: none; cursor: pointer; }
@@ -82,10 +82,26 @@ button.primary:hover { background: #5a7cff; }
   gap: 8px;
   padding: 8px 16px;
   cursor: pointer;
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
 }
 
 .icon-btn.enabled {
   background-color: #95aaff;
+}
+
+.icon-btn img {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: -12px;
+}
+
+div.color-swatch {
+  display: inline-block;
+  margin-right: 5px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #fff;
+  border-radius: 5px;
 }

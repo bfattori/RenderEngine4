@@ -1,4 +1,5 @@
-import Util from '../../core/Util.js';
+import ColorUtil from '../../core/util/ColorUtil.js';
+import TypedArrayUtil from '../../core/util/TypedArrayUtil.js';
 
 import Particle from '../Particle.js';
 import BasicParticle from './BasicParticle.js';
@@ -95,7 +96,7 @@ export default class SparkParticle extends DiffuseParticle {
       let curLen = memSegment.getUint8(SparkParticle.OFFSETS.TRAIL_LEN);
       const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
       const trail = memSegment.getVecF32Array(SparkParticle.OFFSETS.TRAIL, SparkParticle.MAX_TRAIL_LENGTH);
-      Util.unshift(trail, pos[0], pos[1]);
+      TypedArrayUtil.unshift(trail, pos[0], pos[1]);
       curLen = Math.min(trLen, curLen + 1);
       memSegment.setUint8(SparkParticle.OFFSETS.TRAIL_LEN, curLen);
     }
@@ -143,7 +144,7 @@ export default class SparkParticle extends DiffuseParticle {
     // trail positions are stored as 2 elements in the array (x followed by y)
     let i = 0;
     for (let idx = 0; idx < trailLen * 2; idx += 2) {
-      surface.strokeStyle = Util.setAlpha(rollFactor * (this.trailLength - i), particleColor);
+      surface.strokeStyle = ColorUtil.setAlpha(rollFactor * (this.trailLength - i), particleColor);
       surface.lineTo(trail[idx], trail[idx + 1]);
       surface.stroke();
       i++;

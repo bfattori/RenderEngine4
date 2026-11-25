@@ -1,5 +1,5 @@
 import Constants, { NOP, ENGINE_ERRORS } from '../../Constants.js';
-import Util from '../Util.js';
+import Util from '../util/Util.js';
 
 /**
  * Options Configuation

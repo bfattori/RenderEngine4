@@ -1,7 +1,7 @@
 import Constants from '../../Constants.js';
 import Particle from '../Particle.js';
 import $Math from '../../core/lang/Math.js';
-import Util from '../../core/Util.js';
+import ColorUtil from '../../core/util/ColorUtil.js';
 import TileSheet from '../../resources/loaders/TileSheet.js';
 import Assembler from '../../rendering/assemblers/Assembler.js';
 
@@ -106,7 +106,7 @@ export default class BasicParticle extends Particle {
 
         // recompute the colors as rgba() values
         for (let i = 0; i < this.colors.length; i++) {
-            this.colors[i] = Util.getRGBA(this.colors[i]);
+            this.colors[i] = ColorUtil.getRGBA(this.colors[i]);
         }
     }
 

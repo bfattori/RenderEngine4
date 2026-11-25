@@ -1,3 +1,5 @@
+import ColorUtil from '../../src/engine/core/util/ColorUtil.js';
+
 /**
  * Grid - a pixel-editor grid backed by the Canvas API.
  *
@@ -27,6 +29,17 @@ export default class Grid {
   /** Largest cell size (px) allowed when zooming in. */
   static MAX_CELL_SIZE = 512;
 
+  static ACTIONS = {
+    none: 0,
+    painting: 1,
+    erasing: 2,
+    loading: 3,
+    saving: 4,
+    zoomIn: 5,
+    zoomOut: 6
+  };
+
+
   // ---- geometry -------------------------------------------------------
   #cellsX = 16;
   #cellsY = 16;
@@ -38,7 +51,9 @@ export default class Grid {
   // ---- contents & colors ---------------------------------------------
   #cellContents = [];
   #foregroundColor = '#ffffff';
+  #foregroundAlpha = 1.0;
   #backgroundColor = '#000000';
+  #backgroundAlpha = 0.0;
 
   // ---- canvas & preview -----------------------------------------------
   #canvas = null;
@@ -51,6 +66,7 @@ export default class Grid {
   #hoverColor = null;
   #painting = null; // 'fill' | 'clear' | null (while a button is held down)
 
+  #currentAction = Grid.ACTIONS.none;
   #editorInst;
 
   /**
@@ -65,6 +81,13 @@ export default class Grid {
     if (canvas) this.attachCanvas(canvas);
   }
 
+  /**
+   * Get the SpriteEditor for this Grid
+   */
+  get editor() {
+    return this.#editorInst;
+  }
+
   // =====================================================================
   // Geometry
   // =====================================================================
@@ -75,13 +98,6 @@ export default class Grid {
 
   get cellsY() {
     return this.#cellsY;
-  }
-
-  /**
-   * Get the SpriteEditor for this Grid
-   */
-  get editor() {
-    return this.#editorInst;
   }
 
   /**
@@ -108,7 +124,7 @@ export default class Grid {
 
   set foregroundColor(value) {
     if (typeof value === 'string' && value.length > 0) {
-      this.#foregroundColor = value;
+      this.#foregroundColor = this.#mixAlpha(value, this.#foregroundAlpha);
       this.draw();
     }
   }
@@ -120,9 +136,29 @@ export default class Grid {
 
   set backgroundColor(value) {
     if (typeof value === 'string' && value.length > 0) {
-      this.#backgroundColor = value;
+      this.#backgroundColor = this.#mixAlpha(value, this.#backgroundAlpha);
       this.draw();
     }
+  }
+
+  get foreroundAlpha() {
+    return this.#foregroundAlpha;
+  }
+
+  set foregroundAlpha(value) {
+    this.#foregroundAlpha = value;  
+  }
+
+  get backgroundAlpha() {
+    return this.#backgroundAlpha;
+  }
+
+  set backgroundAlpha(value) {
+    this.#backgroundAlpha = value;
+  }
+
+  #mixAlpha(hexColor, alpha) {
+    return ColorUtil.setAlpha(alpha, hexColor);
   }
 
   // =====================================================================
@@ -145,6 +181,17 @@ export default class Grid {
    */
   get hoveredColor() {
     return this.#hoverColor;
+  }
+
+  // =====================================================================
+  // Actions
+  // =====================================================================
+  set action(action) {
+    this.#currentAction = action;
+  }
+
+  get action() {
+    return this.#currentAction;
   }
 
   // =====================================================================
@@ -196,6 +243,7 @@ export default class Grid {
     this.#cellContents = Array.from({ length: this.#cellsY }, () =>
       new Array(this.#cellsX).fill(Grid.BACKGROUND_COLOR)
     );
+    this.editor.triggerHandler('clearGrid');
     this.#redraw();
   }
 
@@ -210,6 +258,8 @@ export default class Grid {
       // Accept a canvas element as well as a raw ImageData object.
       imgData = source.getContext('2d').getImageData(0, 0, source.width, source.height);
     }
+
+    this.editor.triggerHandler('loadSprite', source, imgData);
 
     this.clear();
 
@@ -226,6 +276,8 @@ export default class Grid {
         );
       }
     }
+
+    this.editor.triggerHandler('spriteLoaded');
 
     // Update the grid and preview with the new image.
     this.#redraw();
@@ -252,11 +304,16 @@ export default class Grid {
    * Export the preview as a data URL (e.g. for a PNG download link).
    */
   toDataURL(type = 'image/png') {
+    this.editor.triggerHandler('saveSprite');
+
     const out = document.createElement('canvas');
     out.width = this.#cellsX;
     out.height = this.#cellsY;
     out.getContext('2d').putImageData(this.previewImage, 0, 0);
-    return out.toDataURL(type);
+    const dataUrl = out.toDataURL(type);
+
+    this.editor.triggerHandler('spriteSaved');
+    return dataUrl;
   }
 
   // =====================================================================
@@ -283,7 +340,11 @@ export default class Grid {
       previewCanvas.width = this.#cellsX;
       previewCanvas.height = this.#cellsY;
     }
-    this.#preview = previewCanvas.getContext('2d');
+    this.#preview = previewCanvas.getContext('2d', {
+        alpha: false,
+        colorType: 'float16',
+        willReadFrequently: true
+      });
   }
 
   /**
@@ -403,13 +464,15 @@ export default class Grid {
   }
 
   /** Zoom in by 25%. */
-  zoomIn() {
-    return this.zoom(1.25);
+  zoomIn(factor = 1.25) {
+    this.editor.triggerHandler('zoomIn', factor);
+    return this.zoom(factor);
   }
 
   /** Zoom out by 20%. */
-  zoomOut() {
-    return this.zoom(0.8);
+  zoomOut(factor = 0.8) {
+    this.editor.triggerHandler('zoomOut', factor);
+    return this.zoom(factor);
   }
 
   /** Reset the zoom so the grid fills the attached canvas again. */
@@ -419,6 +482,9 @@ export default class Grid {
     this.#gridHeight = this.#canvas.height;
     this.#cellSizeX = this.#gridWidth / this.#cellsX;
     this.#cellSizeY = this.#gridHeight / this.#cellsY;
+
+    this.editor.triggerHandler('zoomReset');
+
     this.draw();
     return true;
   }

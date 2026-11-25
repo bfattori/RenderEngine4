@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Grid Pixel Editor</title>
+  <title>Sprite Editor</title>
 
   <link rel="stylesheet" href="css/editor.css">
   <script type="module">
@@ -29,8 +29,11 @@
     <div class="panel">
       <div class="section-title">Colors</div>
       <div class="row">
-        <label>Foreground <input type="color" id="fg" value="#ffffff" /></label>
-        <label>Background <input type="color" id="bg" value="#000000" /></label>
+        <label>Foreground <input type="color" id="fg" value="#ffffff" alpha/><input type="range" id="fg-alpha" min="0" max="1" step="0.01" value="1.0"></label>
+        <label>Background <input type="color" id="bg" value="#000000" alpha/><input type="range" id="bg-alpha" min="0" max="1" step="0.01" value="0.0"></label>
+      </div>
+      <div id="previous-colors" class="row">
+
       </div>
 
       <div class="section-title">Zoom</div>

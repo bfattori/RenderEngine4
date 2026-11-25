@@ -1,6 +1,6 @@
 import Grid from './Grid.js';
-import DefaultPlugin, { DefaultPaint, DefaultErase } from './Default.js';
-
+import DefaultToolbarButton, { DefaultPaint, DefaultErase, DefaultUndo } from './Default.js';
+import ColorUtil from '../../src/engine/core/util/ColorUtil.js';
 export default class SpriteEditor {
   static #instance = null;
 
@@ -13,6 +13,8 @@ export default class SpriteEditor {
   #enabledPlugin;
 
   #actionHandlers = new Map();
+
+  #previousColors = [];
 
   static getInstance(editorEl, previewEl) {
     if (SpriteEditor.#instance === null)
@@ -29,20 +31,25 @@ export default class SpriteEditor {
   constructor(editorEl, previewEl) {
     this.#editorEl = editorEl;
     this.#previewEl = previewEl;
-    this.#previewCtx = previewEl.getContext('2d');
+    this.#previewCtx = previewEl.getContext('2d', {
+      alpha: false,
+      colorType: 'float16'
+    });
+
     this.#previewCtx.imageSmoothingEnabled = false;
     this.#grid = new Grid(this, editorEl.width, editorEl.height, 16, 16, editorEl);
     
     this.#setupEvents();
 
     // add the default plugins
-    this.addPlugin(new DefaultPaint());
-    this.addPlugin(new DefaultErase());
+    const firstPlugin = new DefaultPaint();
+    this.addPlugins(firstPlugin, new DefaultErase(), new DefaultUndo());
 
     // get everything ready
     this.#wireUI();
     this.#bindPreview();
     this.refreshPreview();
+    this.enablePlugin(firstPlugin);
   }
 
   /**
@@ -68,7 +75,10 @@ export default class SpriteEditor {
   }
 
   #setupEvents() {
-    ['mouseDown', 'mouseUp', 'mouseLeave', 'mouseMove', 'contextMenu'].forEach(e => {
+    ['mouseDown', 'mouseUp', 'mouseLeave', 'mouseMove', 'contextMenu', 
+      'clearGrid', 'loadSprite', 'spriteLoaded', 'saveSprite', 'spriteSaved',
+      'zoomIn', 'zoomOut', 'zoomReset']
+     .forEach(e => {
       this.#actionHandlers.set(e, []);
     })
   }
@@ -96,23 +106,43 @@ export default class SpriteEditor {
     this.addPlugin(plugin);
   }
 
+  addPlugins(...plugins) {
+    plugins.forEach(plugin => this.addPlugin(plugin));
+  }
+
   addPlugin(plugin) {
     this.#plugins.set(plugin.name, plugin);
     plugin.activate(this);
   }
 
   enablePlugin(plugin) {
-    this.#enabledPlugin?.disabled();
-    this.#enabledPlugin = plugin;
+    if (!plugin.options.momentary) {
+      // if the plugin should stay on, replace the previous plugin
+      this.#enabledPlugin?.disabled();
+      this.#enabledPlugin = plugin;
+    }
+
+    // only change action when not "none"
+    if (plugin.action !== Grid.ACTIONS.none)
+      this.grid.action = plugin.action;
+
     plugin.enabled();
   }
 
   addHandler(plugin, handlerName, fn) {
-    this.#actionHandlers.get(handlerName).push({ p: plugin, f: fn });
+    const handlers = this.#actionHandlers.get(handlerName);
+    handlers.push({ p: plugin, f: fn });
+    this.#actionHandlers.set(handlerName, handlers.sort((a, b) => (b.p.options.priority || 0.5) - (a.p.options.priority || 0.5)));
   }
 
   triggerHandler(handlerName, ... args) {
-    this.#actionHandlers.get(handlerName).forEach(h => { if (h.p.isEnabled) h.f(...args); });
+    const handlers = this.#actionHandlers.get(handlerName);
+    if (handlers) {
+      handlers.forEach(h => { 
+        if (h.p.isEnabled || (h.p.options.always && h.p.options.always.includes(handlerName))) 
+          h.f(...args); 
+      });
+    }
   }
 
   /**
@@ -141,15 +171,49 @@ export default class SpriteEditor {
     }
   }
 
+  #setForegroundColor(color) {
+    if (color !== this.#grid.foregroundColor)
+      this.#makePreviousColorBox(this.#grid.foregroundColor);
+
+    this.#grid.foregroundColor = color;
+  }
+
+  #setBackgroundColor(color) {
+    this.#grid.backgroundColor = color;
+  }
+
+  #makePreviousColorBox(color) {
+    color = ColorUtil.color8Hex(color);
+    if (this.#previousColors.includes(color)) return;
+
+    const prevColors = document.getElementById('previous-colors');
+    const newSwatch = document.createElement('div');
+    newSwatch.classList.add('color-swatch');
+    newSwatch.style.backgroundColor = color;
+    prevColors.appendChild(newSwatch);
+    newSwatch.addEventListener('click', () => {
+      document.getElementById('fg').value = color;
+      this.#grid.foregroundColor = color;
+    });
+
+    this.#previousColors.push(color);
+  }
+
   /**
    * Wire up the user interface elements.
    */
   #wireUI() {
         // ---- colors ----
     const fgInput = document.getElementById('fg');
+    fgInput.title = fgInput.value;
     const bgInput = document.getElementById('bg');
-    fgInput.addEventListener('input', () => { this.#grid.foregroundColor = fgInput.value; });
-    bgInput.addEventListener('input', () => { this.#grid.backgroundColor = bgInput.value; });
+    bgInput.title = bgInput.value;
+    fgInput.addEventListener('change', () => { this.#setForegroundColor(fgInput.value); fgInput.title = fgInput.value; });
+    bgInput.addEventListener('change', () => { this.#setBackgroundColor(bgInput.value); bgInput.title = bgInput.value; });
+    const fgAlpha = document.getElementById('fg-alpha');
+    const bgAlpha = document.getElementById('bg-alpha');
+    fgAlpha.addEventListener('change', () => { this.#grid.foregroundAlpha = fgAlpha.value; });
+    bgAlpha.addEventListener('change', () => { this.#grid.backgroundAlpha = bgAlpha.value; });
 
     // ---- zoom ----
     document.getElementById('zoomIn').addEventListener('click', () => this.#grid.zoomIn());

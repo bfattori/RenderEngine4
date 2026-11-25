@@ -2,7 +2,7 @@
  * Render Engine 4 bootstrapper
  */
 import Engine from './core/Engine.js';
-import Util from './core/Util.js';
+import Util from './core/util/Util.js';
 import KeyboardInput from './parts/input/KeyboardInput.js';
 
 import $Thread from './core/threading/$Thread.js';

@@ -2,7 +2,7 @@ import Enum from '../../core/lang/Enum.js';
 import ResourceLoader, { ResourceError } from './ResourceLoader.js';
 import TileSheet from './TileSheet.js';
 import Engine from '../../core/Engine.js';
-import Util from '../../core/Util.js';
+import $Thread from '../../core/threading/$Thread.js';
 
 /**
  * TileMapFactory is a resource factory for the various types of tile maps that can be loaded into the game.
@@ -77,7 +77,7 @@ export default class TileMap extends ResourceLoader {
 
     compile() {
         let assembler = null
-        if (Util.isWorker())
+        if ($Thread.isWorker)
             assembler = self.$$worker.assembler;
         else
             assembler = Engine.renderContext.renderer.assembler;

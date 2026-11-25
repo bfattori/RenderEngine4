@@ -7,7 +7,7 @@ import Transform2dPart from '../../../../src/engine/parts/transform/Transform2dP
 import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRenderPart.js';
 
 import $Math from '../../../../src/engine/core/lang/Math.js';
-import Util from '../../../../src/engine/core/Util.js';
+import ColorUtil from '../../../../src/engine/core/ColorUtil.js';
 
 // number of objects to create
 const numObjects = 200;
@@ -60,7 +60,7 @@ for (let i = 0; i < numObjects; i++) {
     transform.rotation = $Math.randomRange(0, 4) - 2.0;
 
     // vector renderer
-    const color = Util.getColor(Math.random(), Math.random(), Math.random());
+    const color = ColorUtil.getColor(Math.random(), Math.random(), Math.random());
     const renderer = gameObject.PARTS.renderer;
     renderer.API
         .color(color)

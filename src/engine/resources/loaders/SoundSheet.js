@@ -1,5 +1,5 @@
 import ResourceLoader from './ResourceLoader.js';
-import Util from '../../core/Util.js';
+import Util from '../../core/util/Util.js';
 
 export default class SoundSheet extends ResourceLoader {
     #name = null;
