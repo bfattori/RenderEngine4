@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grid Pixel Editor</title>
+
+  <link rel="stylesheet" href="css/editor.css">
+  <script type="module">
+    import SpriteEditor from './js/SpriteEditor.js';
+    const spriteEditor = SpriteEditor.getInstance(document.getElementById('editor'), document.getElementById('preview'));
+  </script>
+</head>
+<body>
+  <h1>Sprite Editor</h1>
+  <p class="hint">
+    Left click / drag to paint with the foreground color &middot;
+    right click / drag to erase with the background color &middot;
+    hover a cell to inspect it.
+  </p>
+
+  <div class="layout">
+    <div id="editor-area">
+      <canvas id="editor" width="512" height="512"></canvas>
+      <div id="editor-toolbar">
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Colors</div>
+      <div class="row">
+        <label>Foreground <input type="color" id="fg" value="#ffffff" /></label>
+        <label>Background <input type="color" id="bg" value="#000000" /></label>
+      </div>
+
+      <div class="section-title">Zoom</div>
+      <div class="row">
+        <button id="zoomIn">Zoom in</button>
+        <button id="zoomOut">Zoom out</button>
+        <button id="zoomReset">Reset</button>
+      </div>
+
+      <div class="section-title">Grid</div>
+      <div class="row">
+        <label>Cells <input type="number" id="cells" value="16" min="1" max="128" /></label>
+        <button id="applyCells">Apply</button>
+        <button id="clearGrid">Clear</button>
+      </div>
+
+      <div class="section-title">Sprite</div>
+      <div class="row">
+        <label>Load <input type="file" id="load" accept="image/*" /></label>
+        <button id="export" class="primary">Export PNG</button>
+      </div>
+
+      <div class="section-title">Preview (1px per cell)</div>
+      <div class="row two-column">
+        <div id="preview-sizes">
+          <button id="size-256">256</button>
+          <button id="size-128">128</button>
+          <button id="size-64">64</button>
+          <button id="size-32">32</button>
+        </div>
+        <canvas id="preview" width="16" height="16"></canvas>
+      </div>
+      <div id="hover">hover: &mdash;</div>
+    </div>
+  </div>
+</body>
+</html>

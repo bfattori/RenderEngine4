@@ -1,0 +1,91 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #1c1c21;
+  color: #e8e8ec;
+  margin: 0;
+  padding: 24px;
+}
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+p.hint { margin: 0 0 20px; color: #9a9aa5; font-size: 13px; }
+.layout { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+canvas#editor {
+  background: #000;
+  border: 1px solid #3c3c46;
+  border-radius: 6px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 280px;
+  padding: 16px;
+  background: #232329;
+  border: 1px solid #3c3c46;
+  border-radius: 6px;
+}
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row.two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+label { font-size: 13px; color: #c9c9d4; display: flex; align-items: center; gap: 6px; }
+input[type="color"] { width: 34px; height: 26px; border: none; padding: 0; background: none; cursor: pointer; }
+input[type="number"] { width: 64px; }
+button {
+  background: #34343e;
+  color: #e8e8ec;
+  border: 1px solid #4a4a56;
+  border-radius: 5px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+button:hover { background: #3e3e4a; }
+button.primary { background: #4a6cf7; border-color: #4a6cf7; color: #fff; }
+button.primary:hover { background: #5a7cff; }
+#preview {
+  image-rendering: pixelated;
+  width: 256px;
+  height: 256px;
+  border: 1px solid #3c3c46;
+  border-radius: 4px;
+  background:
+    repeating-conic-gradient(#2c2c34 0% 25%, #26262d 0% 50%) 0 0 / 16px 16px;
+}
+#hover { font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 12px; color: #9a9aa5; min-height: 16px; }
+.section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #77778a; margin: 6px 0 -6px; }
+
+#preview-sizes {
+  display: grid;
+  width: 75px;
+  height: 256px;
+}
+
+#preview-sizes button { padding: 4px 12px; font-size: 10px; margin: 5px 2px; }
+
+#editor-toolbar { 
+  display: flex;
+  gap: 3px;
+  border: 1px solid #3c3c46; 
+  border-radius: 4px; 
+  background-color: #292929; 
+  padding: 8px; 
+}
+
+.editor-toolbar button { padding: 4px 10px; font-size: 12px; margin: 5px 2px; }
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+}
+
+.icon-btn.enabled {
+  background-color: #95aaff;
+}
