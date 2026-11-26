@@ -1,7 +1,7 @@
 import Particle from '../Particle.js';
 import BasicParticle from './BasicParticle.js';
 import $Math from '../../core/lang/Math.js';
-import Util from '../../core/util/Util.js';
+import ColorUtil from '../../core/util/ColorUtil.js';
 
 /**
  * @class DiffuseParticle
@@ -47,7 +47,7 @@ export default class DiffuseParticle extends BasicParticle {
 
     // grab the color alphas to init when spawning particles
     for (let i = 0; i < this.colors.length; i++) {
-      const channels = Util.extractColorChannels(this.colors[i]);
+      const channels = ColorUtil.extractColorChannels(this.colors[i]);
       this.#colorAlphas[i] = channels[3];
     }
 
@@ -139,7 +139,7 @@ export default class DiffuseParticle extends BasicParticle {
    */
   #gradient(pos, size, color, alpha, soft) {
     const gradient = this.#ctx.createRadialGradient(pos[0], pos[1], 0, pos[0], pos[1], size);
-    let alphaColor = Util.setAlpha(alpha, color)
+    let alphaColor = ColorUtil.setAlpha(alpha, color)
 
     // start us off
     gradient.addColorStop(0, alphaColor);
@@ -148,7 +148,7 @@ export default class DiffuseParticle extends BasicParticle {
       gradient.addColorStop(soft, alphaColor);
     }
 
-    const alphaZero = Util.setAlpha(0, alphaColor);
+    const alphaZero = ColorUtil.setAlpha(0, alphaColor);
     gradient.addColorStop(1, alphaZero);
     return gradient;
   }
