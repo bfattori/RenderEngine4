@@ -1,4 +1,4 @@
-
+import $Math from '../lang/Math.js';
 
 /**
  * A set of color utility methods to work with color conversions, generation, and manipulation.
@@ -70,7 +70,7 @@ export default class ColorUtil {
    * @returns {number} A 32-bit encoded value of the color
    */
   static to32bitColor(color) {
-      const channels = Util.extractColorChannels(color);
+      const channels = ColorUtil.extractColorChannels(color);
       color = channels[0] & 0xFF << 24 | channels[1] << 16 | channels[2] << 8 | channels[3];
       return color;
   }
@@ -114,7 +114,7 @@ export default class ColorUtil {
    * @returns 
    */
   static getRGBA(color) {
-      const channels = Util.extractColorChannels(color);
+      const channels = ColorUtil.extractColorChannels(color);
       return 'rgba(' + channels[0] + ',' + channels[1] + ',' + channels[2] + ',' + channels[3] + ')';
   }
 
@@ -130,7 +130,7 @@ export default class ColorUtil {
     r = r/255;
     g = g/255;
     b = b/255;
-    return Util.getColor($Math.randomRange(r, 1.0), $Math.randomRange(g, 1.0), $Math.randomRange(b, 1.0), 1.0);
+    return ColorUtil.getColor($Math.randomRange(r, 1.0), $Math.randomRange(g, 1.0), $Math.randomRange(b, 1.0), 1.0);
   }
 
   /**
