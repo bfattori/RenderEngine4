@@ -1,5 +1,5 @@
 import Grid from './Grid.js';
-import DefaultToolbarButton, { DefaultPaint, DefaultErase, DefaultUndo } from './Default.js';
+import { DefaultPaint, DefaultErase, DefaultUndo, DefaultShift, DefaultFlip, DefaultRotate } from './Buttons.js';
 import ColorUtil from '../../src/engine/core/util/ColorUtil.js';
 export default class SpriteEditor {
   static #instance = null;
@@ -43,7 +43,7 @@ export default class SpriteEditor {
 
     // add the default plugins
     const firstPlugin = new DefaultPaint();
-    this.addPlugins(firstPlugin, new DefaultErase(), new DefaultUndo());
+    this.addPlugins(firstPlugin, new DefaultErase(), new DefaultUndo(), new DefaultShift(), new DefaultFlip(), new DefaultRotate());
 
     // get everything ready
     this.#wireUI();
@@ -77,7 +77,7 @@ export default class SpriteEditor {
   #setupEvents() {
     ['mouseDown', 'mouseUp', 'mouseLeave', 'mouseMove', 'contextMenu', 
       'clearGrid', 'loadSprite', 'spriteLoaded', 'saveSprite', 'spriteSaved',
-      'zoomIn', 'zoomOut', 'zoomReset']
+      'zoomIn', 'zoomOut', 'zoomReset', 'keyDown', 'keyUp', 'keyPress']
      .forEach(e => {
       this.#actionHandlers.set(e, []);
     })
@@ -267,6 +267,10 @@ export default class SpriteEditor {
         this.#previewEl.style.height = `${el.id.substring(5)}px`;
       });
     });
+
+    window.addEventListener('keydown', (e) => { this.triggerHandler('keyDown', e.key, e.code); })
+    window.addEventListener('keyup', (e) => { this.triggerHandler('keyUp', e.key, e.code); })
+    window.addEventListener('keypress', (e) => { this.triggerHandler('keyPress', e.key, e.code); })
   }
 
   /**

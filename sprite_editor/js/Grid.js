@@ -162,6 +162,19 @@ export default class Grid {
   }
 
   // =====================================================================
+  // Contents
+  // =====================================================================
+
+  get contentArray() {
+    return this.#cellContents;
+  }
+
+  set contentArray(array) {
+    this.#cellContents = array;
+    this.#redraw();
+  }
+
+  // =====================================================================
   // Hover state (updated on mousemove)
   // =====================================================================
 
@@ -433,8 +446,12 @@ export default class Grid {
 
   /** Redraw both the on-screen grid and the 1:1 preview. */
   #redraw() {
-    this.updatePreview();
     this.draw();
+    this.updatePreview();
+  }
+
+  refreshGrid() {
+    this.#redraw();
   }
 
   // =====================================================================

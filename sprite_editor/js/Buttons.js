@@ -355,9 +355,236 @@ class DefaultUndo extends DefaultToolbarButton {
   }
 }
 
+class DefaultShift extends DefaultToolbarButton {
+  static LEFT = 0;
+  static UP = 1;
+  static RIGHT = 2;
+  static DOWN = 3;
+
+  #direction = DefaultShift.LEFT;
+
+  constructor() {
+    super('Shift', 'Shift the pixels in the grid left, right, up or down');
+  }
+  
+  get icon() {
+    return super.icon + 'shift.png';
+  }
+
+  get options() {
+    return {
+      momentary: true,
+      always: ['keyDown']
+    };
+  }
+
+  activate(editor) {
+    super.activate(editor);
+
+    // register to handle events
+    editor.addHandler(this, 'keyDown', (key) => { this.#pressedKey(key); });
+  }
+
+
+  enabled() {
+    super.enabled();
+    this.#doShift();
+    this.disabled();
+  }
+
+  //--------------------------------
+
+  #pressedKey(key) {
+    switch (key) {
+      case 'ArrowLeft': this.#direction = DefaultShift.LEFT; break;
+      case 'ArrowRight': this.#direction = DefaultShift.RIGHT; break;
+      case 'ArrowDown': this.#direction = DefaultShift.DOWN; break;
+      case 'ArrowUp': this.#direction = DefaultShift.UP; break;
+    }
+  }
+
+  #doShift() {
+    const cX = this.spriteEditor.grid.cellsX,
+          cY = this.spriteEditor.grid.cellsY;
+
+    let cells = this.spriteEditor.grid.contentArray;
+    let temp;
+
+    switch (this.#direction) {
+      case DefaultShift.LEFT:
+        for (let i = 0; i < cY; i++) {
+          const row = cells[i];
+          temp = row.shift();
+          row.push(temp);
+        }
+        break;
+      case DefaultShift.RIGHT:
+        for (let i = 0; i < cY; i++) {
+          const row = cells[i];
+          temp = row[cX - 1];
+          row.unshift(temp);
+          row.length = cX;
+        }
+        break;
+      case DefaultShift.UP:
+        const topRow = cells[0];
+        for (let i = 1; i < cY; i++) {
+          cells[i - 1] = cells[i];
+        }
+        cells[cY - 1] = topRow;
+        break;
+      case DefaultShift.DOWN:
+        const bottomRow = cells[cY - 1];
+        for (let i = cY - 2; i >= 0; i--) {
+          cells[i + 1] = cells[i];
+        }
+        cells[0] = bottomRow;
+        break;
+    }
+    this.spriteEditor.grid.contentArray = cells;
+    this.spriteEditor.refreshPreview();
+  }  
+}
+
+class DefaultFlip extends DefaultToolbarButton {
+  static LEFT_RIGHT = 0;
+  static UP_DOWN = 1;
+
+  #direction = DefaultFlip.LEFT_RIGHT;
+
+  constructor() {
+    super('Flip', 'Mirror the pixels of the grid horizontally or vertically along the centerline');
+  }
+  
+  get icon() {
+    return super.icon + 'flip.png';
+  }
+
+  get options() {
+    return {
+      always: ['keyDown'],
+      momentary: true
+    };
+  }
+
+  activate(editor) {
+    super.activate(editor);
+
+    // register to handle events
+    editor.addHandler(this, 'keyDown', (key) => { this.#pressedKey(key); });
+  }
+
+  enabled() {
+    super.enabled();
+    this.#doFlip();
+    this.disabled();
+  }
+
+  //--------------------------------
+
+  #pressedKey(key) {
+    switch (key) {
+      case 'Shift': this.#direction = DefaultFlip.LEFT_RIGHT; break;
+      case 'Control': this.#direction = DefaultFlip.UP_DOWN; break;
+    }
+  }
+
+  #doFlip() {
+    const cX = this.spriteEditor.grid.cellsX,
+          cY = this.spriteEditor.grid.cellsY;
+
+    let cells = this.spriteEditor.grid.contentArray;
+    let temp;
+
+    switch (this.#direction) {
+      case DefaultFlip.LEFT_RIGHT:
+        for (let i = 0; i < cY; i++) {
+          let row = cells[i];
+          row = row.reverse();
+        }
+        break;
+      case DefaultFlip.UP_DOWN:
+        cells = cells.reverse();
+        break;
+    }
+    this.spriteEditor.grid.contentArray = cells;
+    this.spriteEditor.refreshPreview();
+  }  
+}
+
+class DefaultRotate extends DefaultToolbarButton {
+  static LEFT = 0;
+  static RIGHT = 1;
+
+  #direction = DefaultRotate.RIGHT;
+
+  constructor() {
+    super('Rotate', 'Rotate the pixels in the grid left or right');
+  }
+  
+  get icon() {
+    return super.icon + 'rotate.png';
+  }
+
+  get options() {
+    return {
+      always: ['keyDown'],
+      momentary: true
+    };
+  }
+
+  activate(editor) {
+    super.activate(editor);
+
+    // register to handle events
+    editor.addHandler(this, 'keyDown', (key) => { this.#pressedKey(key); });
+  }
+
+  enabled() {
+    super.enabled();
+    this.#doRotate();
+    this.disabled();
+  }
+
+  //--------------------------------
+
+  #pressedKey(key) {
+    switch (key) {
+      case 'ArrowLeft': this.#direction = DefaultRotate.LEFT; break;
+      case 'ArrowRight': this.#direction = DefaultRotate.RIGHT; break;
+    }
+  }
+
+  #doRotate() {
+    const cX = this.spriteEditor.grid.cellsX,
+          cY = this.spriteEditor.grid.cellsY;
+
+    let cells = this.spriteEditor.grid.contentArray;
+    let temp;
+
+    switch (this.#direction) {
+      case DefaultFlip.LEFT_RIGHT:
+        for (let i = 0; i < cY; i++) {
+          let row = cells[i];
+          row = row.reverse();
+        }
+        break;
+      case DefaultFlip.UP_DOWN:
+        cells = cells.reverse();
+        break;
+    }
+    this.spriteEditor.grid.contentArray = cells;
+    this.spriteEditor.refreshPreview();
+  }  
+
+}
+
 // export default plugins
 export {
   DefaultPaint,
   DefaultErase,
-  DefaultUndo
+  DefaultUndo,
+  DefaultShift,
+  DefaultFlip,
+  DefaultRotate
 };

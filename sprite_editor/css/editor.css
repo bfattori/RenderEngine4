@@ -82,8 +82,8 @@ button.primary:hover { background: #5a7cff; }
   gap: 8px;
   padding: 8px 16px;
   cursor: pointer;
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
 }
 
 .icon-btn.enabled {
@@ -91,10 +91,10 @@ button.primary:hover { background: #5a7cff; }
 }
 
 .icon-btn img {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  margin-left: -12px;
+  margin-left: -6px;
 }
 
 div.color-swatch {
