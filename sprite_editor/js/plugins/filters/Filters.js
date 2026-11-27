@@ -115,8 +115,12 @@ class Kernels {
 
 class ToolFunctions {
   // Tool functions
-  static Brightness = ({amt} = {amt:40}) => { return [1, 0, 0, 0, amt,  0, 1, 0, 0, amt,  0, 0, 1, 0, amt,  0, 0, 0, 1, 0]; }
-  static Contrast = ({amt} = {amt:1.5}) => { return [amt, 0, 0, 0, 128 * (1 - amt),  0, amt, 0, 0, 128 * (1 - amt),  0, 0, amt, 0, 128 * (1 - amt),  0, 0, 0, 1, 0]; }
+  static Brightness = ({amt} = {amt:40}) => { 
+    return [1, 0, 0, 0, amt,  0, 1, 0, 0, amt,  0, 0, 1, 0, amt,  0, 0, 0, 1, 0]; 
+  }
+  static Contrast = ({amt} = {amt:1.5}) => { 
+    return [amt, 0, 0, 0, 128 * (1 - amt),  0, amt, 0, 0, 128 * (1 - amt),  0, 0, amt, 0, 128 * (1 - amt),  0, 0, 0, 1, 0]; 
+  }
   static Tint = ({tint}) => {
     const shift = tint * 0.005;
     return new Float32Array([1 + shift * 0.5, 0, 0, 0, tint * 0.2, 0, 1 - shift, 0, 0, -tint * 0.4, 0, 0, 1 + shift * 0.5, 0, tint * 0.2, 0, 0, 0, 1, 0]);
