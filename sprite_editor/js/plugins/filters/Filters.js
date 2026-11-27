@@ -242,7 +242,7 @@ const FilterTools = {
     inputs: [{type:"slider", val:1, min:0, max:2, decimal:true, name:"Saturation", var:"sat"}],
     filter: ToolFunctions.Saturation
   },
-  "Hue Rotation": {
+  "Rotate Hue": {
     inputs: [{type:"slider", val:0, min:0, max:360, name:"Degrees", var:"degrees"}],
     filter: ToolFunctions.RotateHues
   },
@@ -263,7 +263,7 @@ const FilterTools = {
     ],
     filter: ToolFunctions.Colorize
   },
-  "Chomakey": {
+  "Chroma Key": {
     inputs: [
       {type:"one", options:['Red','Green','Blue'], selected:'Green', name:"Channel", var:"channel"},
       {type:"slider", val:0, min:0, max:1, decimal:true, name:"Amount", var:"amount"}
