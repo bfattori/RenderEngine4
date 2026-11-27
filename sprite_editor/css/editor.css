@@ -65,16 +65,72 @@ button.primary:hover { background: #5a7cff; }
 
 #preview-sizes button { padding: 4px 12px; font-size: 10px; margin: 5px 2px; }
 
-#editor-toolbar { 
-  display: flex;
-  gap: 3px;
+#editor-tabs {
+  display: block;
   border: 1px solid #3c3c46; 
   border-radius: 4px; 
   background-color: #292929; 
   padding: 8px; 
 }
 
-.editor-toolbar button { padding: 4px 10px; font-size: 12px; margin: 5px 2px; }
+#editor-tabs div.tabs {
+  display: flex;
+  gap: 2px;
+}
+
+#editor-tabs div.tabs label {
+  display: inline-block;
+  border-top: 1px solid #4a4a56;
+  border-left: 1px solid #4a4a56;
+  border-right: 1px solid #4a4a56;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  padding: 4px 15px;
+  cursor: pointer;
+}
+
+#editor-tabs div.tabs label:hover {
+   background: #3e3e4a;
+}
+
+#editor-tabs div.tabs label.selected {
+  background-color: #95aaff;
+  color: black;
+  font-weight: bold;
+}
+
+#editor-tabs div.tab {
+  border: 1px solid #4a4a56;
+}
+
+#editor-toolbar,
+#editor-animation,
+#editor-filters { 
+  display: none
+}
+
+#editor-toolbar.visible,
+#editor-animation.visible { 
+  display: flex;
+  gap: 3px;
+}
+
+#editor-filters.visible {
+  display: grid;
+  grid-template-columns: 40px 180px 250px; 
+  gap: 10px;
+}
+
+#editor-filters label {
+  display: inline-block;
+  padding-top: 5px;
+}
+
+#editor-toolbar button { 
+  padding: 4px 10px; 
+  font-size: 12px; 
+  margin: 5px 2px; 
+}
 
 .icon-btn {
   display: inline-flex;
@@ -104,4 +160,47 @@ div.color-swatch {
   height: 24px;
   border: 1px solid #fff;
   border-radius: 5px;
+}
+
+#editor-filters select {
+  margin: 5px;
+  height: 20px;
+}
+
+#editor-filters select optgroup {
+  background-color: #919191;
+  font-size: 11px; 
+  text-transform: uppercase; 
+  letter-spacing: 0.08em; 
+  color: #3d3d47; 
+  margin: 6px 0 -6px;
+}
+
+#editor-filters select option {
+  margin-left: 10px;
+}
+
+#filter-inputs {
+  display: block;
+  width: 250px;
+  height: 130px;
+  border: 1px solid #3c3c46;
+  margin: 4px 0;
+  padding: 5px;
+}
+
+#apply-filter {
+  display: none;
+}
+
+#apply-filter.visible {
+  display: block;
+}
+
+#tool-inputs {
+  display: none;
+}
+
+#tool-inputs.visible {
+  display: block;
 }

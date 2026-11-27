@@ -1,5 +1,5 @@
-import SpriteEditor from './SpriteEditor.js';
-import Grid from './Grid.js';
+import SpriteEditor from '../../SpriteEditor.js';
+import Grid from '../../Grid.js';
 
 export default class DefaultToolbarButton {
   #pluginName;
@@ -29,7 +29,7 @@ export default class DefaultToolbarButton {
     img.height='24';
     this.#button.appendChild(img);
     this.#button.addEventListener('click', () => {
-      this.spriteEditor.enablePlugin(this);
+      this.spriteEditor.enableButton(this);
     });
     
     this.#editor.pluginToolbar.appendChild(this.#button);
@@ -273,7 +273,7 @@ class DefaultUndo extends DefaultToolbarButton {
     return {
       priority: 1.0,
       momentary: true,
-      always: ['mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'clearGrid']
+      always: ['mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'clearGrid', 'beforeFilter']
     };
   }
 
@@ -288,9 +288,10 @@ class DefaultUndo extends DefaultToolbarButton {
       }
     });
     editor.addHandler(this, 'mouseMove', (x, y) => { this.#capture(x, y); });
-    editor.addHandler(this, 'mouseUp', () => { this.capturing = false; });
+    editor.addHandler(this, 'mouseUp', (target) => { if (target === this.spriteEditor.grid.mainCanvas) this.capturing = false; });
     editor.addHandler(this, 'mouseLeave', () => { this.capturing = false; });
-    editor.addHandler(this, 'clearGrid', () => { this.#undoBuffer.length = 0; this.#captures.length = 0; })
+    editor.addHandler(this, 'clearGrid', () => { this.#cleared(); })
+    editor.addHandler(this, 'beforeFilter', () => { this.#captureAll(); })
   }
 
   enabled() {
@@ -300,6 +301,25 @@ class DefaultUndo extends DefaultToolbarButton {
   }
 
   //--------------------------------
+
+  #cleared() {
+    this.#undoBuffer.length = 0;
+    this.#captures = []; 
+  }
+
+  #captureAll() {
+    this.#capturing = true;
+    this.#undoBuffer = [];
+    for (let x = 0; x < this.spriteEditor.grid.cellsX; x++) {
+      for (let y = 0; y < this.spriteEditor.grid.cellsY; y++) {
+        this.#undoBuffer.push({
+          pt: [x, y],
+          c: this.spriteEditor.grid.getCellColor(x, y)
+        });
+      }
+    }
+    this.#storeCurrentCapture(false);
+  }
 
   #capture(x, y) {
     if (this.#lastPoint[0] === x && this.#lastPoint[1] === y)

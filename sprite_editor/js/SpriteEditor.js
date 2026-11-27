@@ -1,6 +1,9 @@
 import Grid from './Grid.js';
-import { DefaultPaint, DefaultErase, DefaultUndo, DefaultShift, DefaultFlip, DefaultRotate } from './Buttons.js';
-import ColorUtil from '../../src/engine/core/util/ColorUtil.js';
+import ColorUtil from './ColorUtil.js';
+
+import { DefaultPaint, DefaultErase, DefaultUndo, DefaultShift, DefaultFlip, DefaultRotate } from './plugins/toolbar/Buttons.js';
+import Filtering, { FilterKernels, FilterTools } from './plugins/filters/Filters.js';
+
 export default class SpriteEditor {
   static #instance = null;
 
@@ -9,8 +12,9 @@ export default class SpriteEditor {
   #editorEl;
   #grid;
 
-  #plugins = new Map();
-  #enabledPlugin;
+  #filterFn;
+  #toolbarButtons = new Map();
+  #enabledButton;
 
   #actionHandlers = new Map();
 
@@ -42,14 +46,20 @@ export default class SpriteEditor {
     this.#setupEvents();
 
     // add the default plugins
-    const firstPlugin = new DefaultPaint();
-    this.addPlugins(firstPlugin, new DefaultErase(), new DefaultUndo(), new DefaultShift(), new DefaultFlip(), new DefaultRotate());
+    const firstButton = new DefaultPaint();
+    this.addButtons(firstButton, new DefaultErase(), new DefaultUndo(), new DefaultShift(), new DefaultFlip(), new DefaultRotate());
+
+    // load default filters
+    this.#loadFilters();
 
     // get everything ready
     this.#wireUI();
     this.#bindPreview();
     this.refreshPreview();
-    this.enablePlugin(firstPlugin);
+    this.enableButton(firstButton);
+
+    // force a new swatch
+    this.#setForegroundColor(document.getElementById('fg').value);
   }
 
   /**
@@ -71,16 +81,7 @@ export default class SpriteEditor {
   }
 
   get currentPluginEnabled() {
-    return this.#enabledPlugin;
-  }
-
-  #setupEvents() {
-    ['mouseDown', 'mouseUp', 'mouseLeave', 'mouseMove', 'contextMenu', 
-      'clearGrid', 'loadSprite', 'spriteLoaded', 'saveSprite', 'spriteSaved',
-      'zoomIn', 'zoomOut', 'zoomReset', 'keyDown', 'keyUp', 'keyPress']
-     .forEach(e => {
-      this.#actionHandlers.set(e, []);
-    })
+    return this.#enabledButton;
   }
 
   /**
@@ -103,38 +104,70 @@ export default class SpriteEditor {
   async loadPlugin(pluginFile) {
     const pluginClass = await import(new URL(`./plugins/${pluginFile}`, import.meta.url));
     const plugin = new pluginClass.default();
-    this.addPlugin(plugin);
+    this.addButtonPlugin(plugin);
   }
 
-  addPlugins(...plugins) {
-    plugins.forEach(plugin => this.addPlugin(plugin));
+  //-----------------------------------------------------------
+  // Plugins
+  //-----------------------------------------------------------
+
+  /**
+   * Add a set of button plugins to the SpriteEditor
+   * @param  {...any} buttons - The plugins to add
+   */
+  addButtons(...buttons) {
+    buttons.forEach(button => this.addButton(button));
   }
 
-  addPlugin(plugin) {
-    this.#plugins.set(plugin.name, plugin);
-    plugin.activate(this);
+  /**
+   * Add a single button plugin to the SpriteEditor
+   * @param  {...any} plugins - The plugins to add
+   */
+  addButton(button) {
+    this.#toolbarButtons.set(button.name, button);
+    button.activate(this);
   }
 
-  enablePlugin(plugin) {
-    if (!plugin.options.momentary) {
+  /**
+   * Enables the plugin associated with the button
+   * @param {DefaultToolbarButton} button - The toolbar button
+   */
+  enableButton(button) {
+    if (!button.options.momentary) {
       // if the plugin should stay on, replace the previous plugin
-      this.#enabledPlugin?.disabled();
-      this.#enabledPlugin = plugin;
+      this.#enabledButton?.disabled();
+      this.#enabledButton = button;
     }
 
     // only change action when not "none"
-    if (plugin.action !== Grid.ACTIONS.none)
-      this.grid.action = plugin.action;
+    if (button.action !== Grid.ACTIONS.none)
+      this.grid.action = button.action;
 
-    plugin.enabled();
+    button.enabled();
   }
 
-  addHandler(plugin, handlerName, fn) {
+  //--------------------------------------------------------------
+  // Event handlers
+  //--------------------------------------------------------------
+
+  /**
+   * Register an event handler to call on a button.
+   * @param {DefaultToolbarButton} button - The target for the event
+   * @param {String} handlerName - The handler to attach to
+   * @param {*} fn - The function to call when the event is triggered
+   */
+  addHandler(button, handlerName, fn) {
     const handlers = this.#actionHandlers.get(handlerName);
-    handlers.push({ p: plugin, f: fn });
+    handlers.push({ p: button, f: fn });
     this.#actionHandlers.set(handlerName, handlers.sort((a, b) => (b.p.options.priority || 0.5) - (a.p.options.priority || 0.5)));
   }
 
+
+  /**
+   * Trigger an event handler on the SpriteEditor.
+   * @param {String} handlerName - The name of the handler to trigger
+   * @param  {...any} args - The arguments to pass to the event handler
+   */
   triggerHandler(handlerName, ... args) {
     const handlers = this.#actionHandlers.get(handlerName);
     if (handlers) {
@@ -143,6 +176,202 @@ export default class SpriteEditor {
           h.f(...args); 
       });
     }
+  }
+
+  //-------------------------------------------------------------
+  // Private methods
+  //-------------------------------------------------------------
+
+  #setupEvents() {
+    ['mouseDown', 'mouseUp', 'mouseLeave', 'mouseMove', 'contextMenu', 
+      'clearGrid', 'loadSprite', 'spriteLoaded', 'saveSprite', 'spriteSaved',
+      'zoomIn', 'zoomOut', 'zoomReset', 'keyDown', 'keyUp', 'keyPress',
+      'beforeFilter', 'filtered']
+     .forEach(e => {
+      this.#actionHandlers.set(e, []);
+    })
+  }
+
+  #loadFilters() {
+    const select = document.getElementById('filter-list');
+    select.addEventListener('change', (e) => {
+      const v = e.target.selectedOptions[0].value.split(':');
+      this.#filterSelected(v[0], v[1]);
+    });
+    
+    let header = document.createElement('optgroup');
+    header.label = 'Color Filters'
+    select.appendChild(header);
+    Object.keys(FilterKernels.color).forEach(k => {
+      const opt = document.createElement('option');
+      opt.label = k;
+      opt.value = `color:${k}`;
+      select.appendChild(opt);
+    });
+
+    header = document.createElement('optgroup');
+    header.label = 'Color Adjustment'
+    select.appendChild(header);
+    Object.keys(FilterTools).forEach(k => {
+      const opt = document.createElement('option');
+      opt.label = k;
+      opt.value = `tool:${k}`;
+      select.appendChild(opt);
+    });
+
+    header = document.createElement('optgroup');
+    header.label = 'Image Filters'
+    select.appendChild(header);
+    Object.keys(FilterKernels.image).forEach(k => {
+      const opt = document.createElement('option');
+      opt.label = k;
+      opt.value = `image:${k}`;
+      select.appendChild(opt);
+    });
+  }
+
+  #filterSelected(type, name) {
+    const btn = document.getElementById('apply-filter');
+    const tool = document.getElementById('tool-inputs');
+
+    if (this.#filterFn)
+      btn.removeEventListener('click', this.#filterFn);
+
+    if (type === 'image' || type === 'color') {
+      tool.classList.remove('visible'); // Filter tool inputs
+      
+      this.#filterFn = () => {
+        this.triggerHandler('beforeFilter');
+        const filter = FilterKernels[type][name];
+        let result;
+        if (type === 'image')
+          result = Filtering.apply2dKernel(this.#grid.previewImage, filter.matrix, filter.divisor, filter.offset);
+        else
+          result = Filtering.applyColorSpace(this.#grid.previewImage, filter);
+        
+        this.#grid.loadContentsFromImage(result, false);
+        this.refreshPreview();
+        this.triggerHandler('filtered');
+      };
+      
+    } else {
+      // show input display
+      tool.classList.add('visible');    // Filter tool inputs
+      tool.replaceChildren();
+
+      const filter = FilterTools[name];
+      const vars = filter.inputs.map(e => e.var);
+
+      this.#filterFn = () => { 
+        this.triggerHandler('beforeFilter');
+
+        const fields = {};
+        vars.forEach(varB => {
+          const inp = tool.querySelector(`input[name=${varB}]`);
+          fields[varB] = ['radio','checkbox'].includes(inp.type) ? inp.checked : inp.value;
+        });
+
+        const matrix = filter.filter(fields);
+        const result = Filtering.applyColorSpace(this.#grid.previewImage, matrix);
+        this.#grid.loadContentsFromImage(result, false);
+        this.refreshPreview();
+        this.triggerHandler('filtered');
+      };
+
+
+      // build the inputs and wire them
+      filter.inputs.forEach(input => {
+
+        let i = document.createElement('div');
+        let lab = document.createElement('label');
+        lab.textContent = `${input.name}: `;
+
+        let el;
+
+        if (['slider','text','select'].includes(input.type)) {
+          el = document.createElement(input.type === 'select' ? 'select' : 'input');
+          el.id = `filter-input-${input.var}`;
+          el.name = input.var;
+          el.value = input.val;
+        }
+
+        switch(input.type) {
+          case 'slider':
+            el.type = 'range';
+            el.min = input.min;
+            el.max = input.max;
+            if (input.decimal)
+              el.step = 0.01;
+            else
+              el.step = 1;
+            break;
+          case 'text':
+            el.type = 'text';
+            el.maxLength = input.len || 10;
+            break;
+          case 'select':
+            input.options.forEach(option => {
+              const opt = document.createElement('option');
+              opt.name = input.var;
+              opt.value = option;
+              el.appendChild(opt);
+            });
+            break;
+
+          case 'one':
+            el = document.createElement('span');
+            input.options.forEach(opt => {
+              const radio = document.createElement('input');
+              radio.type = 'radio';
+              radio.name = input.var;
+              radio.value = opt;
+              if (opt === input.selected) {
+                radio.checked = true;  
+              }
+              el.appendChild(radio);
+              let spn = document.createElement('span');
+              spn.classList.add('radio-option');
+              spn.textContent = opt;
+              el.appendChild(spn);
+            });
+            break;
+          case 'multi':
+            el = document.createElement('span');
+            input.options.forEach(opt => {
+              const check = document.createElement('input');
+              check.type = 'checkbox';
+              check.name = input.var;
+              check.value = opt;
+              if (opt === input.selected) {
+                check.checked = true;  
+              }
+              el.appendChild(check);
+              let spn = document.createElement('span');
+              spn.classList.add('check-option');
+              spn.textContent = opt;
+              el.appendChild(spn);
+            });
+            break;
+        }
+
+        lab.appendChild(el);
+
+        if (input.type === 'slider') {
+            const vis = document.createElement('span');
+            vis.classList.add('slider-val');
+            vis.textContent = input.val;
+            el.addEventListener('input', e => {
+              vis.textContent = e.target.value;
+            });
+            el.after(vis);
+        }
+
+        i.appendChild(lab);
+        tool.appendChild(i);
+      });
+    }
+
+    btn.addEventListener('click', this.#filterFn);
   }
 
   /**
@@ -172,10 +401,8 @@ export default class SpriteEditor {
   }
 
   #setForegroundColor(color) {
-    if (color !== this.#grid.foregroundColor)
-      this.#makePreviousColorBox(this.#grid.foregroundColor);
-
     this.#grid.foregroundColor = color;
+    this.#makePreviousColorBox(this.#grid.foregroundColor);
   }
 
   #setBackgroundColor(color) {
@@ -197,6 +424,14 @@ export default class SpriteEditor {
     });
 
     this.#previousColors.push(color);
+  }
+
+  #switchTab(label, tabId) {
+    const editorTabs = document.getElementById('editor-tabs');
+    editorTabs.querySelector('label.selected').classList.remove('selected');
+    editorTabs.querySelector('div.tab.visible').classList.remove('visible');
+    label.classList.add('selected');
+    document.getElementById(tabId).classList.add('visible');
   }
 
   /**
@@ -268,6 +503,14 @@ export default class SpriteEditor {
       });
     });
 
+    //-------- tabs -------------
+    document.getElementById('editor-tabs').querySelectorAll('div.tabs label').forEach(label => {
+      label.addEventListener('click', () => this.#switchTab(label, `editor-${label.textContent.toLowerCase()}`));
+    });
+
+    //=======================
+    // Keyboard handlers
+
     window.addEventListener('keydown', (e) => { this.triggerHandler('keyDown', e.key, e.code); })
     window.addEventListener('keyup', (e) => { this.triggerHandler('keyUp', e.key, e.code); })
     window.addEventListener('keypress', (e) => { this.triggerHandler('keyPress', e.key, e.code); })
@@ -286,7 +529,7 @@ export default class SpriteEditor {
     this.#grid.fillCell = (x, y, c) => { origFill(x, y, c); this.refreshPreview(); };
     this.#grid.clearCell = (x, y) => { origClearCell(x, y); this.refreshPreview(); };
     this.#grid.clear = () => { origClear(); this.refreshPreview(); };
-    this.#grid.loadContentsFromImage = (src) => { origLoad(src); this.refreshPreview(); };
+    this.#grid.loadContentsFromImage = (src, doClear) => { origLoad(src, doClear); this.refreshPreview(); };
     this.#grid.setCells = (x, y) => { origSetCells(x, y); this.refreshPreview(); };
   }
 

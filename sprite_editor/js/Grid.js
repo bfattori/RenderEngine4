@@ -265,7 +265,7 @@ export default class Grid {
    * any canvas element). Pixels outside the grid are ignored, and fully
    * transparent pixels are treated as background.
    */
-  loadContentsFromImage(source) {
+  loadContentsFromImage(source, doClear = true) {
     let imgData = source;
     if (!imgData || !imgData.data) {
       // Accept a canvas element as well as a raw ImageData object.
@@ -274,7 +274,7 @@ export default class Grid {
 
     this.editor.triggerHandler('loadSprite', source, imgData);
 
-    this.clear();
+    if (doClear) this.clear();
 
     const w = Math.min(imgData.width, this.#cellsX);
     const h = Math.min(imgData.height, this.#cellsY);
@@ -533,6 +533,10 @@ export default class Grid {
     this.draw();
   }
 
+  get mainCanvas() {
+    return this.#canvas;
+  }
+
   /**
    * Detach from the canvas and remove all mouse listeners.
    */
@@ -600,11 +604,11 @@ export default class Grid {
     }
   };
 
-  #onMouseUp = () => {
-    this.editor.triggerHandler('mouseUp');
+  #onMouseUp = (e) => {
+    this.editor.triggerHandler('mouseUp', e.target);
   };
 
-  #onMouseLeave = () => {
+  #onMouseLeave = (e) => {
     this.#hoverX = null;
     this.#hoverY = null;
     this.#hoverColor = null;
