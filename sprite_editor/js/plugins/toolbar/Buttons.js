@@ -21,7 +21,7 @@ export default class DefaultToolbarButton {
   #addToToolbar() {
     this.#button = document.createElement('button');
     this.#button.classList.add('icon-btn');
-    this.#button.title = this.description;
+    this.#button.title = `${this.description}${this.options.hotkey ? '\n(Shortcut: ' + this.options.hotkey + ')' : ''}`;
     const img = document.createElement('img');
     img.src=`${this.icon}`;
     img.alt=`${this.name}`; 
@@ -138,11 +138,17 @@ class DefaultPaint extends DefaultToolbarButton {
   #painting = null;
   
   constructor() {
-    super('PaintBrush', 'Paint cells with the foreground color');
+    super('PaintBrush', 'Paint cells with the\nforeground color');
   }
   
   get icon() {
     return super.icon + 'paintbrush.png';
+  }
+
+  get options() {
+    return {
+      hotkey: 'spacebar'
+    };
   }
 
   activate(editor) {
@@ -192,11 +198,17 @@ class DefaultErase extends DefaultToolbarButton {
   #painting = null;
   
   constructor() {
-    super('Eraser', 'Erase cells with the background color');
+    super('Eraser', 'Erase cells with the\nbackground color');
   }
   
   get icon() {
     return super.icon + 'eraser.png';
+  }
+
+  get options() {
+    return {
+      hotkey: 'shift+spacebar'
+    }
   }
 
   activate(editor) {
@@ -271,6 +283,7 @@ class DefaultUndo extends DefaultToolbarButton {
 
   get options() {
     return {
+      hotkey: "ctrl+z",
       priority: 1.0,
       momentary: true,
       always: ['mouseDown', 'mouseUp', 'mouseMove', 'mouseLeave', 'clearGrid', 'beforeFilter']
@@ -384,7 +397,7 @@ class DefaultShift extends DefaultToolbarButton {
   #direction = DefaultShift.LEFT;
 
   constructor() {
-    super('Shift', 'Shift the pixels in the grid left, right, up or down');
+    super('Shift', 'Shift the pixels in the grid\nleft, right, up or down');
   }
   
   get icon() {
@@ -393,6 +406,7 @@ class DefaultShift extends DefaultToolbarButton {
 
   get options() {
     return {
+      hotkey: 's',
       momentary: true,
       always: ['keyDown']
     };
@@ -473,7 +487,7 @@ class DefaultFlip extends DefaultToolbarButton {
   #direction = DefaultFlip.LEFT_RIGHT;
 
   constructor() {
-    super('Flip', 'Mirror the pixels of the grid horizontally or vertically along the centerline');
+    super('Flip', 'Mirror the pixels of the\ngrid horizontally or\nvertically');
   }
   
   get icon() {
@@ -482,6 +496,7 @@ class DefaultFlip extends DefaultToolbarButton {
 
   get options() {
     return {
+      hotkey: 'f',
       always: ['keyDown'],
       momentary: true
     };
@@ -539,7 +554,7 @@ class DefaultRotate extends DefaultToolbarButton {
   #direction = DefaultRotate.RIGHT;
 
   constructor() {
-    super('Rotate', 'Rotate the pixels in the grid left or right');
+    super('Rotate', 'Rotate the pixels in the grid\ncounter-clockwise or clockwise');
   }
   
   get icon() {
@@ -548,6 +563,7 @@ class DefaultRotate extends DefaultToolbarButton {
 
   get options() {
     return {
+      hotkey: 'r',
       always: ['keyDown'],
       momentary: true
     };
@@ -596,7 +612,36 @@ class DefaultRotate extends DefaultToolbarButton {
     this.spriteEditor.grid.contentArray = cells;
     this.spriteEditor.refreshPreview();
   }  
+}
 
+class DefaultCaptureFrame extends DefaultToolbarButton {
+  constructor() {
+    super('AddFrame', 'Capture the grid as\na new animation frame');
+  }
+  
+  get icon() {
+    return super.icon + 'add-item.png';
+  }
+
+  get options() {
+    return {
+      hotkey: 'enter',
+      momentary: true
+    };
+  }
+
+  enabled() {
+    super.enabled();
+    this.#captureFrame();
+    this.disabled();
+  }
+
+  //--------------------------------
+
+  #captureFrame() {
+    const animation = this.spriteEditor.animation;
+
+  }  
 }
 
 // export default plugins
@@ -606,5 +651,6 @@ export {
   DefaultUndo,
   DefaultShift,
   DefaultFlip,
-  DefaultRotate
+  DefaultRotate,
+  DefaultCaptureFrame
 };

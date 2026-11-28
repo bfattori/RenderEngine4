@@ -1,7 +1,8 @@
 import Grid from './Grid.js';
 import ColorUtil from './ColorUtil.js';
 
-import { DefaultPaint, DefaultErase, DefaultUndo, DefaultShift, DefaultFlip, DefaultRotate } from './plugins/toolbar/Buttons.js';
+import { DefaultPaint, DefaultErase, DefaultUndo, DefaultShift, 
+  DefaultFlip, DefaultRotate, DefaultCaptureFrame } from './plugins/toolbar/Buttons.js';
 import Filtering, { FilterKernels, FilterTools } from './plugins/filters/Filters.js';
 
 export default class SpriteEditor {
@@ -47,7 +48,9 @@ export default class SpriteEditor {
 
     // add the default plugins
     const firstButton = new DefaultPaint();
-    this.addButtons(firstButton, new DefaultErase(), new DefaultUndo(), new DefaultShift(), new DefaultFlip(), new DefaultRotate());
+    this.addButtons(firstButton, new DefaultErase(), new DefaultUndo(), new DefaultCaptureFrame(),
+      new DefaultShift(), new DefaultFlip(), new DefaultRotate()
+    );
 
     // load default filters
     this.#loadFilters();
@@ -102,9 +105,10 @@ export default class SpriteEditor {
   }
 
   async loadPlugin(pluginFile) {
-    const pluginClass = await import(new URL(`./plugins/${pluginFile}`, import.meta.url));
+    const pluginClass = await import(new URL(`./plugins/app/${pluginFile}`, import.meta.url));
     const plugin = new pluginClass.default();
-    this.addButtonPlugin(plugin);
+    this.addAppPlugin(plugin);
+    console.info(`Loaded "${pluginFile}"`);
   }
 
   //-----------------------------------------------------------
@@ -112,8 +116,24 @@ export default class SpriteEditor {
   //-----------------------------------------------------------
 
   /**
+   * Add a set of plugins to the SpriteEditor
+   * @param  {...any} plugins - The plugins to add
+   */
+  addAppPlugins(...plugins) {
+    plugins.forEach(plugin => this.addAppPlugin(plugin));
+  }
+
+  /**
+   * Add a single plugin to the SpriteEditor
+   * @param  {any} plugin - The plugin to add
+   */
+  addAppPlugin(plugin) {
+
+  }
+
+  /**
    * Add a set of button plugins to the SpriteEditor
-   * @param  {...any} buttons - The plugins to add
+   * @param  {...any} buttons - The buttons to add
    */
   addButtons(...buttons) {
     buttons.forEach(button => this.addButton(button));
@@ -121,7 +141,7 @@ export default class SpriteEditor {
 
   /**
    * Add a single button plugin to the SpriteEditor
-   * @param  {...any} plugins - The plugins to add
+   * @param  {any} plugin - The button to add
    */
   addButton(button) {
     this.#toolbarButtons.set(button.name, button);
@@ -198,14 +218,14 @@ export default class SpriteEditor {
       const v = e.target.selectedOptions[0].value.split(':');
       this.#filterSelected(v[0], v[1]);
     });
-    
+
     let header = document.createElement('optgroup');
-    header.label = 'Color Filters'
+    header.label = 'Image Filters'
     select.appendChild(header);
-    Object.keys(FilterKernels.color).forEach(k => {
+    Object.keys(FilterKernels.image).forEach(k => {
       const opt = document.createElement('option');
       opt.label = k;
-      opt.value = `color:${k}`;
+      opt.value = `image:${k}`;
       select.appendChild(opt);
     });
 
@@ -219,15 +239,33 @@ export default class SpriteEditor {
       select.appendChild(opt);
     });
 
-    header = document.createElement('optgroup');
-    header.label = 'Image Filters'
-    select.appendChild(header);
-    Object.keys(FilterKernels.image).forEach(k => {
-      const opt = document.createElement('option');
-      opt.label = k;
-      opt.value = `image:${k}`;
-      select.appendChild(opt);
-    });
+  }
+
+  #getInputsForVariable(varB) {
+    const tool = document.getElementById('tool-inputs');
+    let inp = tool.querySelectorAll(`input[name=${varB}]`);
+    if (inp.length === 0)
+      inp = tool.querySelectorAll(`select[name=${varB}]`);
+
+    return inp;
+  }
+
+  #getValueForVariable(varB) {
+    let inp = this.#getInputsForVariable(varB);
+    if (inp.length === 0) {
+      throw new Error(`No input found for variable "${varB}"`);
+    } else if (inp.length === 1) {
+      inp = inp.item(0);
+    } else {
+      let tmp;
+      inp.forEach(el => {
+        if (el.checked)
+          tmp = el;
+      });
+      inp = tmp;
+    }
+
+    return inp.value;
   }
 
   #filterSelected(type, name) {
@@ -237,88 +275,86 @@ export default class SpriteEditor {
     if (this.#filterFn)
       btn.removeEventListener('click', this.#filterFn);
 
-    if (type === 'image' || type === 'color') {
-      tool.classList.remove('visible'); // Filter tool inputs
-      
-      this.#filterFn = () => {
-        this.triggerHandler('beforeFilter');
-        const filter = FilterKernels[type][name];
-        let result;
-        if (type === 'image')
-          result = Filtering.apply2dKernel(this.#grid.previewImage, filter.matrix, filter.divisor, filter.offset);
-        else
-          result = Filtering.applyColorSpace(this.#grid.previewImage, filter);
-        
-        this.#grid.loadContentsFromImage(result, false);
-        this.refreshPreview();
-        this.triggerHandler('filtered');
-      };
-      
-    } else {
-      // show input display
-      tool.classList.add('visible');    // Filter tool inputs
-      tool.replaceChildren();
+    // show input display
+    tool.classList.add('visible');    // Filter tool inputs
+    tool.replaceChildren();
 
-      const filter = FilterTools[name];
-      const vars = filter.inputs.map(e => e.var);
+    const filter = type === Filtering.TYPE.Tool ? FilterTools[name] : FilterKernels[type][name];
+    const vars = filter.inputs ? filter.inputs.map(e => e.var) : null;
 
-      this.#filterFn = () => { 
-        this.triggerHandler('beforeFilter');
+    this.#filterFn = () => { 
+      this.triggerHandler('beforeFilter');
 
-        const fields = {};
+      const fields = {};
+      if (vars)
         vars.forEach(varB => {
-          const inp = tool.querySelector(`input[name=${varB}]`);
-          fields[varB] = ['radio','checkbox'].includes(inp.type) ? inp.checked : inp.value;
+          fields[varB] = this.#getValueForVariable(varB);
         });
 
-        const matrix = filter.filter(fields);
-        const result = Filtering.applyColorSpace(this.#grid.previewImage, matrix);
-        this.#grid.loadContentsFromImage(result, false);
-        this.refreshPreview();
-        this.triggerHandler('filtered');
-      };
+      const matrix = filter.filter ? filter.filter(fields) : filter.matrix(fields);
+      let result;
+      switch (type) {
+        case Filtering.TYPE.Image: 
+          result = !filter.colorspace ? 
+            Filtering.apply2dKernel(this.#grid.previewImage, matrix.matrix, matrix.divisor, matrix.offset) :
+            Filtering.applyColorSpace(this.#grid.previewImage, matrix);
+          break;
+        case Filtering.TYPE.Tool:
+          result = Filtering.applyColorSpace(this.#grid.previewImage, matrix);
+          break;
+      }
+      this.#grid.loadContentsFromImage(result, false);
+      this.refreshPreview();
+      this.triggerHandler('filtered');
+    };
 
-
-      // build the inputs and wire them
+    // build the user inputs and wire them up
+    if (filter.inputs) {
       filter.inputs.forEach(input => {
 
         let i = document.createElement('div');
-        let lab = document.createElement('label');
-        lab.textContent = `${input.name}: `;
+        let label = document.createElement('label');
+        label.textContent = `${input.name}: `;
 
-        let el;
+        let el, delayed = [];
 
-        if (['slider','text','select'].includes(input.type)) {
-          el = document.createElement(input.type === 'select' ? 'select' : 'input');
+        if ([Filtering.INPUTS.slider,
+            Filtering.INPUTS.text,
+            Filtering.INPUTS.select].includes(input.type)) {
+          el = document.createElement(input.type === Filtering.INPUTS.select ? Filtering.INPUTS.select : 'input');
           el.id = `filter-input-${input.var}`;
           el.name = input.var;
           el.value = input.val;
         }
 
+        if (![Filtering.INPUTS.select, 
+              Filtering.INPUTS.oneOf, 
+              Filtering.INPUTS.manyOf].includes(input.type))
+          el.type = input.type;
+
         switch(input.type) {
-          case 'slider':
-            el.type = 'range';
+          case Filtering.INPUTS.slider:
             el.min = input.min;
             el.max = input.max;
             if (input.decimal)
-              el.step = 0.01;
+              el.step = input.stepSize || 0.01;
             else
-              el.step = 1;
+              el.step = input.stepSize || 1;
             break;
-          case 'text':
-            el.type = 'text';
+          case Filtering.INPUTS.text:
             el.maxLength = input.len || 10;
+            el.placeholder = input.placeholder || '';
             break;
-          case 'select':
+          case Filtering.INPUTS.select:
             input.options.forEach(option => {
               const opt = document.createElement('option');
-              opt.name = input.var;
               opt.value = option;
+              opt.textContent = option;
               el.appendChild(opt);
             });
             break;
 
-          case 'one':
+          case Filtering.INPUTS.oneOf:
             el = document.createElement('span');
             input.options.forEach(opt => {
               const radio = document.createElement('input');
@@ -335,16 +371,15 @@ export default class SpriteEditor {
               el.appendChild(spn);
             });
             break;
-          case 'multi':
+          case Filtering.INPUTS.manyOf:
             el = document.createElement('span');
             input.options.forEach(opt => {
               const check = document.createElement('input');
               check.type = 'checkbox';
               check.name = input.var;
               check.value = opt;
-              if (opt === input.selected) {
+              if (opt === input.selected) 
                 check.checked = true;  
-              }
               el.appendChild(check);
               let spn = document.createElement('span');
               spn.classList.add('check-option');
@@ -354,9 +389,40 @@ export default class SpriteEditor {
             break;
         }
 
-        lab.appendChild(el);
+        if (input.when) {
+          // only visible when the named input has one of the values
+          delayed.push(((when,  varName, values) => {
+            // an iife to setup the inputs
+            return () => {
+              // disable the target(s) when the selected option 
+              // does not match any item in values
+              const inputs = this.#getInputsForVariable(when);
+              const targets = this.#getInputsForVariable(varName);
+              inputs.forEach(elm => {
+                elm.addEventListener('change', () => {
+                  const enabled = values.includes(this.#getValueForVariable(when)); 
+                  targets.forEach(t => t.disabled = !enabled);
+                });
+              });
 
-        if (input.type === 'slider') {
+              // set the default
+              const curValue = this.#getValueForVariable(when);
+              if (!values.includes(curValue)) {
+                targets.forEach(t => t.disabled = true);
+              }
+            }
+          })(input.when, input.var, input.is));
+        }
+
+        label.appendChild(el);
+
+        if (input.suffix) {
+          const sufSpan = document.createElement("span");
+          sufSpan.textContent = input.suffix;
+          label.appendChild(sufSpan);
+        }
+
+        if (input.type === Filtering.INPUTS.slider) {
             const vis = document.createElement('span');
             vis.classList.add('slider-val');
             vis.textContent = input.val;
@@ -366,8 +432,12 @@ export default class SpriteEditor {
             el.after(vis);
         }
 
-        i.appendChild(lab);
+        i.appendChild(label);
         tool.appendChild(i);
+
+        while(delayed.length > 0) {
+          delayed.shift()();
+        }
       });
     }
 

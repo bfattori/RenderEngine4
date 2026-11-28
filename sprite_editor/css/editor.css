@@ -117,13 +117,18 @@ button.primary:hover { background: #5a7cff; }
 
 #editor-filters.visible {
   display: grid;
-  grid-template-columns: 40px 180px 250px; 
+  grid-template-columns: 185px 250px; 
   gap: 10px;
 }
 
 #editor-filters label {
   display: inline-block;
   padding-top: 5px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9e9eac;
+  margin: 0 0 -6px;  
 }
 
 #editor-toolbar button { 
@@ -182,7 +187,7 @@ div.color-swatch {
 
 #filter-inputs {
   display: block;
-  width: 250px;
+  width: 295px;
   height: 130px;
   border: 1px solid #3c3c46;
   margin: 4px 0;
@@ -191,6 +196,8 @@ div.color-swatch {
 
 #apply-filter {
   display: none;
+  margin-top: 10px;
+  margin-left: 85px;
 }
 
 #apply-filter.visible {
@@ -203,4 +210,5 @@ div.color-swatch {
 
 #tool-inputs.visible {
   display: block;
+  margin-bottom: 10px;
 }
