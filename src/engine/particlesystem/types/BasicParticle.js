@@ -245,24 +245,17 @@ export default class BasicParticle extends Particle {
      * @param {Number} deltaTime - The time elapsed since the last frame in milliseconds
      * @param {Spark} memSegment - The particle's instantaneous memory
      * @param {number} lifeSpan - the life left in the particle
-     * @param {String} target - The name of the renderer ('canvas', 'webgl', ...)
-     * @param {CanvasRenderingContext2D} surface - The rendering context
+     * @param {any} surface - The rendering context
      * @type {Function}
      */
-    render(time, deltaTime, memSegment, lifeSpan, target, surface) {
+    render(time, deltaTime, memSegment, lifeSpan, surface) {
         // get the tile's opaque Id or 0 if it's a simple point
         const opaqueId = memSegment.getUint16(BasicParticle.OFFSETS.TILE_OPAQUE_ID);
 
-        switch (target) {
-            case 'canvas':
-                if (opaqueId === Particle.AS_POINT) {
-                    this.drawShape(time, deltaTime, surface, memSegment);
-                } else {
-                    this.drawTile(opaqueId, surface, memSegment);
-                }
-                break;
-            case 'webgl':
-                break;
+        if (opaqueId === Particle.AS_POINT) {
+            this.drawShape(time, deltaTime, lifeSpan, surface, memSegment);
+        } else {
+            this.drawTile(opaqueId, surface, lifeSpan, memSegment);
         }
     }
 
@@ -273,7 +266,7 @@ export default class BasicParticle extends Particle {
      * @param {CanvasRenderingContext2D} surface - The rendering context
      * @param {Spark} memSegment - The memory object containing the particle's instantaneous properties
      */
-    drawShape(time, deltaTime, surface, memSegment) {
+    drawShape(time, deltaTime, lifeSpan, surface, memSegment) {
         // color index
         const colorIdx = memSegment.getUint8(BasicParticle.OFFSETS.COLOR);
 
@@ -295,7 +288,7 @@ export default class BasicParticle extends Particle {
      * @param {Array<number>} pos - The current position of the particle
      * @type {Function}
      */
-    drawTile(opaqueId, surface, memSegment) {
+    drawTile(opaqueId, surface, lifeSpan, memSegment) {
         const tile = Assembler.assemblerInstance.getCompiledTile(opaqueId);
         const frame = tile.frameRect;
         const pos = memSegment.getVecF32(Particle.OFFSETS.POSITION);

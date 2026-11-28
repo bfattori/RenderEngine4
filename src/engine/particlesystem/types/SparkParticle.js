@@ -112,8 +112,8 @@ export default class SparkParticle extends DiffuseParticle {
    * @param {Array<number>} pos - The current position of the particle
    * @type {Function}
    */
-  drawShape(time, deltaTime, surface, memSegment) {
-    super.drawShape(time, deltaTime, surface, memSegment);
+  drawShape(time, deltaTime, lifeSpan, surface, memSegment) {
+    super.drawShape(time, deltaTime, lifeSpan, surface, memSegment);
 
     if (this.trailLength > 0) {
       const colorIdx = memSegment.getUint8(BasicParticle.OFFSETS.COLOR);

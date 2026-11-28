@@ -12,7 +12,7 @@ import CompiledRenderPart from '../../../../src/engine/parts/render/CompiledRend
 import burstConfig from '../../../assets/particleConfig/burst.json' with { type: 'json' };
 
 import $Math from '../../../../src/engine/core/lang/Math.js';
-import ColorUtil from '../../../../src/engine/core/ColorUtil.js';
+import ColorUtil from '../../../../src/engine/core/util/ColorUtil.js';
 
 // number of objects to create
 const numObjects = 500;
@@ -20,7 +20,6 @@ const numObjects = 500;
 self.PARTICLE_ENGINE_OPTIONS = {
     maxParticles: 80000
 };
-
 
 // create a double-buffered canvas renderer
 await RenderEngine.init(import.meta.url, {

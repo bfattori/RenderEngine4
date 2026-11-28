@@ -178,8 +178,8 @@ export default class CanvasRenderer extends Renderer {
      * After rendering, if buffered, swap offscreen to visible context.
      */
     postFrame(time, deltaTime) {
-        // render the particles if the engine is running on the main thread
-        if (!self.threadedEngine && Engine.particleEngine)
+        // render the particles if the engine is running on the main thread & linked
+        if (!($Thread.isThreaded && $Thread.isMainThread) && Engine.particleEngine && Engine.particleEngine.config.link)
             Engine.particleEngine.renderParticles(time, deltaTime, null,  this.surface);
 
         if (this.config.doubleBuffered) {

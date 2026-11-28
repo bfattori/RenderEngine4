@@ -112,12 +112,12 @@ export default class DiffuseParticle extends BasicParticle {
    * @param {CanvasRenderingContext2D} surface - The rendering context
    * @param {Spark} memSegment - The memory object containing the particle's instantaneous properties
    */
-  drawShape(time, deltaTime, surface, memSegment) {
+  drawShape(time, deltaTime, lifeSpan, surface, memSegment) {
     const soft = memSegment.getFloat32(DiffuseParticle.OFFSETS.SOFT);
 
     if (soft === -1.0) {
       // a softness of -1 means no diffuse effect, so we can just draw a solid particle
-      super.drawShape(time, deltaTime, surface, memSegment);
+      super.drawShape(time, deltaTime, lifeSpan, surface, memSegment);
     } else {
       const size = memSegment.getFloat32(BasicParticle.OFFSETS.CUR_SIZE);
       const color = this.colors[memSegment.getUint8(BasicParticle.OFFSETS.COLOR)];

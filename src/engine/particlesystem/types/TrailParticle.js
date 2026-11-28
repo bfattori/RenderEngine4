@@ -82,6 +82,7 @@ export default class TrailParticle extends DiffuseParticle {
     
     const pType = this.engine.types.get(memSegment.getUint8(TrailParticle.OFFSETS.OPAQUE_ID));
     if (pType) {
+      // these should sputter out, not flow
       const count = memSegment.getUint8(TrailParticle.OFFSETS.QUANTITY);
       const worldPos = memSegment.getVecF32(Particle.OFFSETS.POSITION);
       const pVel = memSegment.getVecF32(Particle.OFFSETS.VELOCITY);

@@ -16,20 +16,30 @@ class ParticleEngineConfig extends Config {
              * @type {boolean}
              */
             disabled: false,
+
+            // ------------------------------
+            // Run loop options
+            
             /**
-             * Maximum number of particles to allow
-             * @type {number}
-             */
-            maxParticles: Constants.MAX_PARTICLES,
-            /**
-             * Circular buffer for particles. If `false` particles are allocated as space becomes free.
+             * Link particle engine updates to frame generation. If `true` the update cycle
+             * of the particle engine will be run during the game engine's update. When `false`
+             * the particle engine updates during the browser's animation frame callback.
              * @type {boolean}
              */
-            circularBuffer: true,
+            link: true,
             /**
-             * Play nicely with the main thread
+             * Operating priority for the particle engine in relation to the game engine. When the
+             * two share the same thread, this impacts how much time is allocated to the particle engine
+             * for processing updates to reduce lag in the game engine. It has no effect on the
+             * threaded particle engine. See {@link ParticleEngineThreadingConfig} to configure
+             * the worker `nice` value instead.
+             * @type {number} A value between 0.0 and 1.0
              */
-            nice: 5,
+            nice: 0.25,
+
+            // --------------------------------------
+            // Rendering options
+
             /**
              * The distance from the boundaries at which particles are automatically killed.
              * @type {number}
@@ -38,13 +48,52 @@ class ParticleEngineConfig extends Config {
 
             /**
              * The number of divisions along the X and Y coordinates for the collision model
-             * used to determine when a particle is near a repulsors.
+             * used to determine when a particle is near an influence zone.
              * @type {Object}
              */
             modelSize: {
                 x: 20,
                 y: 15 
-            }
+            },
+
+            // --------------------------------------
+            // Memory options
+
+            /**
+             * Maximum number of particles. Memory is allocated as `[largest particle] * maxParticles`
+             * where `[largest particle]` is based on its memory size.
+             * @type {number}
+             */
+            maxParticles: Constants.MAX_PARTICLES,
+            /**
+             * A circular buffer uses a destructive overwrite method that ignores remaining life
+             * in running particles, giving the appearance of performance for the trade-off that
+             * particles may pop out of existence. When not circular, memory is not reused
+             * until the particle using it has expired.
+             * @type {boolean}
+             */
+            circularBuffer: true,
+            /**
+             * The maximum lifespan expected for a particle before it is removed from the simulation.
+             * @type {number}
+             */
+            maxLifespan: 30000,
+            /**
+             * Memory segments for a non-circular buffer. To prevent longer-lived particles from
+             * impacting the ability to spawn shorter-lived particles, memory is broken up into
+             * segments by the lifespan of the particles. The memory allocated for short-lived
+             * is the smallest, while the allocation for longer-liver particles grows by the
+             * `scalingFactor` option. Segments are allocated
+             * @type {number}
+             */
+            memorySegments: 4,
+            /**
+             * Memory segments are scaled by this factor increase the allocation space for
+             * longer-lived particles compared to shorter-lived ones. At the default of `2`,
+             * memory allocation doubles per segment.
+             * @type {number}
+             */
+            scalingFactor: 2
         });
     }
 
@@ -62,13 +111,12 @@ class ParticleEngineThreadingConfig extends Config {
     constructor() {
         super({
           /**
-           * Operating priority for the particle threads.
-           * The value is a number between 0 and 1. Zero means the thread does 
-           * not get any CPU time, and 1 means the thread gets all available 
-           * CPU time. Default is 1.
-           * @type {number}
+           * Operating priority for the particle threads. Since the threaded workers are running 
+           * separate from the game thread, they can update faster but consume more processing time.
+           * This impacts how much time is allocated to each thread for processing.
+           * @type {number} A value between 0.0 and 1.0
            */
-          nice: 1,
+          nice: 0.125,
           /**
            * Name of the particle threads. Default is 'RE4Particles'.
            * @type {String}
@@ -92,13 +140,7 @@ class ParticleEngineThreadingConfig extends Config {
            * is reached, the orchestrator will distribute particles to the next available worker by increasing
            * the threshold until it reaches 100%. Default is 0.1 (10%).
            */
-          loadFactor: 0.03,
-          /**
-           * The threaded engine is running separate from the game engine so it will can run at
-           * frame rates higher than the game, causing effects to end sooner than desired. Tune this
-           * value to get better results from particle rendering.
-           */
-          framesPerSecond: 30 
+          loadFactor: 0.03
         });
     }
 

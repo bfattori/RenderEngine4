@@ -56,6 +56,10 @@ export default class ParticleManager {
         this.#assembler = renderContext.renderer.assembler;
     }
 
+    get config() {
+        return this.#initProps.config;
+    }
+
     get props() {
         return this.#initProps;
     }

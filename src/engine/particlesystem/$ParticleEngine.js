@@ -13,11 +13,15 @@ import ParticleInfluencer from './ParticleInfluencer.js';
 import BroadphaseModel from '../collisionSystems/broadphase/BroadphaseModel.js';
 import GridBroadphase from '../collisionSystems/broadphase/GridBroadphase.js';
 
+import $Thread from '../core/threading/$Thread.js';
+
 const ctx = Context.getInstance();
 
 export default class $ParticleEngine {
     static #instance = null;
     static #useBuilder = true;
+
+    static #MAX_FR = 240;
 
     #collisionModel = null;
     
@@ -43,6 +47,7 @@ export default class $ParticleEngine {
     // these are the arrays of particle "memories", positions, velocities, and lifespans.  
     // the particle engine only has access to this information during the lifecycle stages
     #memories = null;
+    #memMap = null;
     
     // pointer to the arrays above
     #particleIdx = -1;
@@ -68,6 +73,11 @@ export default class $ParticleEngine {
 
     #particleByteSize = 0;
     #cleaningLatch = false;
+
+    #updateFn = null;
+    #frameTime;
+    #lastTime = 0;
+    #occlusionBitmap;
 
     /**
      * Get the instance of the `ParticleEngine`.  This method should be used instead of creating 
@@ -143,6 +153,8 @@ export default class $ParticleEngine {
         // the rendering context for the particle engine
         this.#offscreen = new OffscreenCanvas(width, height);
         this.#surface = this.#offscreen.getContext('2d');
+
+        this.#frameTime = ((threading ? threading.nice : config.nice) * (!threading && config.link ? 60 : $ParticleEngine.#MAX_FR));
     }
 
     /**
@@ -254,6 +266,34 @@ export default class $ParticleEngine {
         return this.#assembler;
     }
 
+    set frameController(fn) {
+        this.#updateFn = fn;
+    }
+
+    get frameController() {
+        return this.#updateFn;
+    }
+
+    get lastTime() {
+        return this.#lastTime;
+    }
+
+    set lastTime(t) {
+        this.#lastTime = t;
+    }
+
+    get frameTime() {
+        return this.#frameTime;
+    }
+
+    get occlusionMask() {
+        return this.#occlusionBitmap;
+    }
+
+    set occlusionMask(bitmap) {
+        this.#occlusionBitmap = bitmap;
+    }
+
     /**
      * Initialize the particle engine, allocating the memory for position, velocity,
      * lifespan, and particle memory.
@@ -262,9 +302,39 @@ export default class $ParticleEngine {
         const count = this.config.maxParticles;
 
         // Particle memory req: headerSize + maxParticleSize
-        const memoryHeap = new ArrayBuffer(count * (Constants.PH_BYTES + this.#particleByteSize));
+        const byteAllocation = count * (Constants.PH_BYTES + this.#particleByteSize);
+        const memoryHeap = new ArrayBuffer(byteAllocation);
         this.#memories = new Spark(memoryHeap);
+
+        if (!this.config.isCircular) {
+            // if configured to not be circular, us multiple pointers for segmenting particles
+            // of various lifespans. The idea is that the dev can choose to break up their paricle
+            // memory by time-to-live so particles are grouped together and more likely to find
+            // available space for that particle type when needed.
+            //
+            // The allocation grows with the amount of time needed for a particle to live. So
+            // particles with short lives will be allocated first, and particles with longer lives will
+            // be allocated last. This allows for more efficient memory usage and faster particle creation
+            // without overwriting particles that are still executing.
+            this.#memMap = {
+                total: this.config.memorySegments,
+                sizeFactor: Math.floor(this.config.maxParticles / this.config.memorySegments),
+                segmentPointers: new Array(this.config.memorySegments).fill(0)
+            };
+
+            for (let i = 1; i < this.config.memorySegments; i++)
+                this.#memMap.segmentPointers[i] = (i * this.#memMap.sizeFactor / this.config.maxParticles) * byteAllocation;
+        }
+
+        // start the internal update/render loop
+        if (!this.config.link)
+            this.#runUnlinked();
+
         return Promise.resolve(true);
+    }
+
+    #runUnlinked() {
+        this.frameController = requestAnimationFrame(particleLoop);
     }
 
     /**
@@ -539,6 +609,10 @@ export default class $ParticleEngine {
             return 0;
         }
 
+        if (!this.thread && this.config.link)
+            if (time < this.lastTime + this.frameTime)
+                return 0;
+            
         // run all particles
         this.#start = performance.now();
         let livingParticles = 0;
@@ -638,21 +712,30 @@ export default class $ParticleEngine {
     async renderParticles(time, deltaTime, occlusionMask = null, directSurface = null) {
         if (!this.enabled || this.liveParticles === 0) return -1;
 
-        const render = performance.now();
+        let render = performance.now(), skipRender = false;
+        if (!this.thread)
+            if (this.config.link && time > this.lastTime)
+                this.lastTime = time;
+            else if (this.config.link)
+                skipRender = true;
 
         let surf = directSurface || this.#surface;
+        if (!skipRender) {
 
-        for (let p = 0; p < this.maxParticles; p++) {
-            const memOffset = p * this.#particleByteSize;
-            const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleByteSize);
-            
-            const lifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_REMAINING);
-            if (lifeSpan > Constants.DEAD_PARTICLE) {
-                const pType = this.getParticleType(memSegment.getUint8(Particle.OFFSETS.OPAQUE_ID));
+            this.#applyOcclusionMask(occlusionMask, surf);
+
+            for (let p = 0; p < this.maxParticles; p++) {
+                const memOffset = p * this.#particleByteSize;
+                const memSegment = new Spark(this.#memories.buffer, memOffset, this.#particleByteSize);
                 
-                // render the particle
-                if (pType) {
-                    pType.render(time, deltaTime, memSegment, lifeSpan, 'canvas', surf); 
+                const lifeSpan = memSegment.getUint16(Particle.OFFSETS.LF_REMAINING);
+                if (lifeSpan > Constants.DEAD_PARTICLE) {
+                    const pType = this.getParticleType(memSegment.getUint8(Particle.OFFSETS.OPAQUE_ID));
+                    
+                    // render the particle
+                    if (pType) {
+                        pType.render(time, deltaTime, memSegment, lifeSpan, surf); 
+                    }
                 }
             }
         }
@@ -673,7 +756,12 @@ export default class $ParticleEngine {
             surface: surf
         });
 
-        return renderTime;
+        return skipRender ? -1 : renderTime;
+    }
+
+    #applyOcclusionMask(mask, surface) {
+        if (mask)
+            surface.clip(mask);
     }
 
     /**
@@ -697,6 +785,9 @@ export default class $ParticleEngine {
 
     shutdown() {
         this.reset();
+        if (!this.config.linked && this.frameController)
+            cancelAnimationFrame(this.frameController);
+
         this.#particleEffects.clear();
         this.#particleTypes.clear();
         this.#particleInfluencers.clear();
@@ -723,6 +814,30 @@ export default class $ParticleEngine {
             "Live Particles": this.#liveParticles
         }
     }
+}
+
+/**
+ * The default Engine update/render loop
+ */
+async function particleLoop() {
+  const e = $ParticleEngine.getInstance();
+  if (e.config.disabled) return;
+
+  // start the update
+  const currentTime = performance.now();
+  if (currentTime >= e.lastTime + e.frameTime) {
+    // Calculate delta time in milliseconds
+    const deltaTime = (currentTime - e.lastTime); // / this.frameTime;
+    e.lastTime = currentTime;
+    
+    // Update the particles
+    e.update(currentTime, deltaTime);
+    
+    // Render the particles
+    await e.renderParticles(currentTime, deltaTime, null, e.surface);
+  }
+
+  e.frameController = requestAnimationFrame(particleLoop);
 }
 
 await PRAGMA_INIT($ParticleEngine); // required for pragma debugging

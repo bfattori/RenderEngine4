@@ -109,10 +109,10 @@ export default class Engine {
     this.#lastTime = 0;
     this.#deltaTime = 0;
 
-    if (self.isMainThread && ctx.debug)
+    if ($Thread.isMainThread && ctx.debug)
       document.querySelector('body').classList.add('debug');
 
-    // the game event engine
+    // the event engine
     this.#EVENT_ENGINE = new EventEngine(this);
 
     // call loading hook
@@ -126,7 +126,7 @@ export default class Engine {
     renderContext.viewport = this.#ENGINE_OPTIONS.world.viewport;
     renderContext.worldDimensions = this.#ENGINE_OPTIONS.world.dimensions;
   
-    if (!self.isGameThread && renderContext.renderer) {
+    if (!$Thread.isGameThread && renderContext.renderer) {
       // initialize the renderer
       renderContext.renderer.init(renderContext);
     }
@@ -604,12 +604,12 @@ export default class Engine {
       if (e.options.flags.threading.particles)
         threading = new ParticleEngineThreadingConfig();
       
-      if (self.isGameThread || !self.threadedEngine) {
+      if ($Thread.isGameThread || !$Thread.isThreaded) {
         e.particleEngine = await ParticleEngine.getInstance(engineOptions.world.renderContext, e.width, e.height, config, threading);
       }
     }
 
-    if (!self.isMainThread)
+    if (!$Thread.isMainThread)
       // call init hook
       e.hooks.onInit();
 
@@ -638,8 +638,8 @@ export default class Engine {
     this.deltaTime = deltaTime;
 
     try {
-      // update the particles
-      if (this.particleEngine)
+      // update the particles before the world
+      if (this.particleEngine && this.particleEngine.config.link)
         this.particleEngine.update(currentTime, deltaTime);
 
       // Update the world state
